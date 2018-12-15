@@ -22,3 +22,10 @@ class TestSelection(TestCase):
 
         with self.assertRaises(ValueError):
             selection.select_exponential_ranking(self.population, self.fitness_list, self.k, c=-1)
+
+    def test_select_tournament(self):
+        with self.assertRaises(ValueError):
+            selection.select_tournament(self.population, self.fitness_list, self.k, n_way=1)
+
+        with self.assertRaises(ValueError):
+            selection.select_tournament(self.population, self.fitness_list, self.k, n_way=len(self.population) + 1)
