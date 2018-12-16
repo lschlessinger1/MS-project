@@ -1,23 +1,34 @@
+from GPy.kern.src.kern import Kern
+
+from autoks.kernel import subkernel_expression
+
 operators = ['+', '*']
+
+
+def val_to_label(value):
+    if isinstance(value, Kern):
+        return subkernel_expression(value)
+    else:
+        return str(value)
 
 
 class TreeNode:
     def __init__(self, value, parent=None):
         self.value = value
+        self.label = val_to_label(value)
         self.parent = parent
-        self.children = []
-
-    def children(self):
-        return self.children
 
     def get_parent(self):
-        return self.parent()
+        return self.parent
 
-    def get_child_count(self):
-        return len(self.children)
+    def get_value(self):
+        return self.value
+
+    def get_label(self):
+        return self.label
 
     def __str__(self):
-        return str(self.value)
+        return self.get_label()
 
 
 class BinaryTreeNode(TreeNode):
@@ -44,25 +55,25 @@ class BinaryTreeNode(TreeNode):
 
         if root is not None:
             root_id = str(id(root))
-            graph.node(root_id, label=root.value)
+            graph.node(root_id, label=root.get_label())
 
             if root.left is not None:
                 left = root.left
                 left_id = str(id(left))
-                graph.node(left_id, label=left.value)
+                graph.node(left_id, label=left.get_label())
                 graph.edge(root_id, left_id)
                 root.left.create_graph(graph=graph)
             if root.right is not None:
                 right = root.right
                 right_id = str(id(right))
-                graph.node(right_id, label=right.value)
+                graph.node(right_id, label=right.get_label())
                 graph.edge(root_id, right_id)
                 root.right.create_graph(graph=graph)
 
         return graph
 
     def __str__(self):
-        return str(self.value)
+        return self.get_label()
 
 
 class BinaryTree:
