@@ -24,6 +24,11 @@ class TreeNode:
     def get_value(self):
         return self.value
 
+    def set_value(self, value):
+        self.value = value
+        # update label as well
+        self.label = val_to_label(value)
+
     def get_label(self):
         return self.label
 
@@ -119,7 +124,7 @@ class BinaryTree:
                 expression += '('
 
             expression += self._infix_helper(root.left)
-            expression += root.value
+            expression += root.get_label()
             expression += self._infix_helper(root.right)
 
             if root.value in operators:
@@ -128,20 +133,14 @@ class BinaryTree:
         return expression
 
 
-def postfix_to_binexp_tree(postfix):
-    """ Converts a postfix expression to a binary expression tree
-
-    :param postfix: postfix expression
-    :return: binary expression tree
-    """
+def postfix_tokens_to_binexp_tree(postfix_tokens):
     tree = BinaryTree()
 
-    postfix_tokens = postfix.split()
-    root = BinaryTreeNode(postfix_tokens.pop())
+    root = BinaryTreeNode(postfix_tokens[-1])
     tree.root = root
 
     curr = root
-    for token in postfix_tokens[::-1]:
+    for token in postfix_tokens[-2::-1]:
         # while curr can't have more children
         while curr.value not in operators or (curr.right is not None and curr.left is not None):
             curr = curr.parent
@@ -150,41 +149,36 @@ def postfix_to_binexp_tree(postfix):
             node = curr.add_right(token)
         elif curr.left is None:
             node = curr.add_left(token)
-        else:
-            node = None
         curr = node
 
     return tree
 
 
-def infix_to_postfix(infix_expression):
-    # tokenize
-    infix_tokens = infix_expression.split()
-
+def infix_tokens_to_postfix_tokens(infix_tokens):
     pemdas = {}
     pemdas["*"] = 3
     pemdas["+"] = 1
     pemdas["("] = 0
 
     operator_stack = []
-    postfix_list = []
+    postfix_tokens = []
     for token in infix_tokens:
         if token in operators:
             while len(operator_stack) is not 0 and pemdas[operator_stack[-1]] >= pemdas[token]:
-                postfix_list.append(operator_stack.pop())
+                postfix_tokens.append(operator_stack.pop())
             operator_stack.append(token)
         elif token == '(':
             operator_stack.append(token)
         elif token == ')':
-            top_tkn = operator_stack.pop()
-            while top_tkn != '(':
-                postfix_list.append(top_tkn)
-                top_tkn = operator_stack.pop()
+            top_token = operator_stack.pop()
+            while top_token != '(':
+                postfix_tokens.append(top_token)
+                top_token = operator_stack.pop()
         else:
             # token is an operand
-            postfix_list.append(token)
+            postfix_tokens.append(token)
 
     while len(operator_stack) > 0:
-        postfix_list.append(operator_stack.pop())
+        postfix_tokens.append(operator_stack.pop())
 
-    return " ".join(postfix_list)
+    return postfix_tokens
