@@ -1,22 +1,17 @@
 import copy
 
 import numpy as np
+from GPy.kern.src.kern import Kern
 
-from evalg.encoding import operators, infix_to_postfix, postfix_to_binexp_tree, BinaryTreeNode
-
-# todo : get rid of this
-kernels = ['SE1', 'SE2', 'SE3', 'SE4', 'RQ1', 'RQ2', 'RQ3', 'RQ4']
+from evalg.encoding import operators, infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTreeNode
 
 
-def crossover_subtree_exchange(infix_1, infix_2):
-    postfix_1 = infix_to_postfix(infix_1)
-    postfix_2 = infix_to_postfix(infix_2)
+def crossover_subtree_exchange(infix_tokens_1, infix_tokens_2):
+    postfix_tokens_1 = infix_tokens_to_postfix_tokens(infix_tokens_1)
+    postfix_tokens_2 = infix_tokens_to_postfix_tokens(infix_tokens_2)
 
-    tree_1 = postfix_to_binexp_tree(postfix_1)
-    tree_2 = postfix_to_binexp_tree(postfix_2)
-
-    postfix_tokens_1 = postfix_1.split(' ')
-    postfix_tokens_2 = postfix_2.split(' ')
+    tree_1 = postfix_tokens_to_binexp_tree(postfix_tokens_1)
+    tree_2 = postfix_tokens_to_binexp_tree(postfix_tokens_2)
 
     r1, r2 = _select_token_ind(postfix_tokens_1, postfix_tokens_2)
 
@@ -26,13 +21,13 @@ def crossover_subtree_exchange(infix_1, infix_2):
 
     _swap_subtrees(node_1, node_2)
 
-    return tree_1.infix(), tree_2.infix()
+    return tree_1, tree_2
 
 
 def _swap_subtrees(node_1, node_2):
     """Swap parents and of nodes
     """
-    #
+
     node_1_cp = copy.copy(node_1)
     node_2_cp = copy.copy(node_2)
 
@@ -82,7 +77,7 @@ def _select_token_ind(postfix_tokens_1, postfix_tokens_2):
     return r1, r2
 
 
-def grow(depth, max_depth=2):
+def grow(depth, kernels, max_depth=2):
     """ Grow a random tree
     """
     terminals = kernels
@@ -94,7 +89,7 @@ def grow(depth, max_depth=2):
 
         if node.value in internals:
             for i in range(0, n_children):
-                child_i = grow(depth + 1)
+                child_i = grow(depth + 1, kernels)
                 if not node.left:
                     node.left = child_i
                     node.left.parent = node
@@ -107,11 +102,11 @@ def grow(depth, max_depth=2):
     return node
 
 
-def generate_grow(max_depth=2):
-    return grow(depth=0, max_depth=max_depth)
+def generate_grow(kernels, max_depth=2):
+    return grow(depth=0, kernels=kernels, max_depth=max_depth)
 
 
-def full(depth, max_depth=2):
+def full(depth, kernels, max_depth=2):
     """ Grow a random tree
     """
     terminals = kernels
@@ -123,7 +118,7 @@ def full(depth, max_depth=2):
 
         if node.value in internals:
             for i in range(0, n_children):
-                child_i = full(depth + 1)
+                child_i = full(depth + 1, kernels)
                 if not node.left:
                     node.left = child_i
                     node.left.parent = node
@@ -136,8 +131,8 @@ def full(depth, max_depth=2):
     return node
 
 
-def generate_full(max_depth=2):
-    return full(depth=0, max_depth=max_depth)
+def generate_full(kernels, max_depth=2):
+    return full(depth=0, kernels=kernels, max_depth=max_depth)
 
 
 def _swap_mut_subtree(node, random_tree):
@@ -153,53 +148,52 @@ def _swap_mut_subtree(node, random_tree):
     return node, random_tree
 
 
-def _mutate_subtree_exchange(infix, init_method, **init_method_kwargs):
+def _mutate_subtree_exchange(infix_tokens, init_method, **init_method_kwargs):
     """
     init_method: initialization method
     """
-    postfix = infix_to_postfix(infix)
-    tree = postfix_to_binexp_tree(postfix)
-    postfix_tokens = postfix.split(' ')
+    postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
+    tree = postfix_tokens_to_binexp_tree(postfix_tokens)
 
     r = np.random.randint(0, len(postfix_tokens))
     node = tree.select_postorder(r)
 
-    random_tree = init_method(init_method_kwargs)
+    random_tree = init_method(**init_method_kwargs)
 
     _swap_mut_subtree(node, random_tree)
 
-    return tree.infix()
+    return tree
 
 
-def mutate_grow(infix, max_depth=2):
-    return _mutate_subtree_exchange(infix, generate_grow, max_depth=max_depth)
+def mutate_grow(infix_tokens, kernels, max_depth=2):
+    return _mutate_subtree_exchange(infix_tokens, generate_grow, kernels=kernels, max_depth=max_depth)
 
 
-def mutate_half_and_half(infix, max_depth=2):
-    return _mutate_subtree_exchange(infix, generate_full, max_depth=max_depth)
+def mutate_half_and_half(infix_tokens, kernels, max_depth=2):
+    return _mutate_subtree_exchange(infix_tokens, generate_full, kernels=kernels, max_depth=max_depth)
 
 
-def mutate_point(infix):
+def mutate_point(infix_tokens, kernels):
     """Point mutation
 
-    :param infix:
+    :param kernels:
+    :param infix_tokens:
     :return:
     """
-    postfix = infix_to_postfix(infix)
-    tree = postfix_to_binexp_tree(postfix)
-    postfix_tokens = postfix.split(' ')
+    postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
+    tree = postfix_tokens_to_binexp_tree(postfix_tokens)
 
     r = np.random.randint(0, len(postfix_tokens))
     node = tree.select_postorder(r)
 
     # change node value to a different value
-    if node.value in kernels:
+    if isinstance(node.value, Kern):
         new_val = np.random.choice(list(set(kernels) - {node.value}))
     elif node.value in operators:
         new_val = np.random.choice(list(set(operators) - {node.value}))
     else:
-        raise ValueError('%s not in kernels or operators' % node.value)
+        raise ValueError('%s not in kernels or operators' % node.label)
 
-    node.value = new_val
+    node.set_value(new_val)
 
-    return tree.infix()
+    return tree
