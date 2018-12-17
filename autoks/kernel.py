@@ -1,4 +1,5 @@
-import GPy
+from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
+from GPy.kern.src.kern import CombinationKernel, Kern
 
 
 def get_kernel_mapping():
@@ -10,7 +11,7 @@ def get_allowable_kernels():
 
 
 def get_matching_kernels():
-    return [GPy.kern.RBF, GPy.kern.RatQuad, GPy.kern.Linear, GPy.kern.StdPeriodic]
+    return [RBF, RatQuad, Linear, StdPeriodic]
 
 
 def get_all_1d_kernels(base_kernels, n_dims):
@@ -42,3 +43,71 @@ def subkernel_expression(kernel):
     base_kernel = matching_base_kerns[0]
 
     return base_kernel + str(dim)
+
+
+def in_order(root, tokens=[]):
+    if root is not None:
+        if isinstance(root, CombinationKernel):
+
+            for child in root.parts:
+
+                if isinstance(child, CombinationKernel):
+                    if isinstance(child, Add):
+                        op = '+'
+                    elif isinstance(child, Prod):
+                        op = '*'
+
+                    children = in_order(child, tokens=[])
+                    tokens += [children]
+
+                elif isinstance(child, Kern):
+                    tokens += [child]
+
+            if isinstance(root, Add):
+                op = '+'
+            elif isinstance(root, Prod):
+                op = '*'
+
+            tokens = join_operands(tokens, op)
+        elif isinstance(root, Kern):
+            tokens += [root]
+
+    return tokens
+
+
+def tokenize(S):
+    if S == []:
+        return []
+    if isinstance(S[0], list):
+        return ['('] + tokenize(S[0]) + tokenize(S[1:]) + [')']
+
+    return S[:1] + tokenize(S[1:])
+
+
+def join_operands(operands, operator):
+    joined = []
+    for i, operand in enumerate(operands):
+        joined += [operand]
+        if i < len(operands) - 1:
+            joined += [operator]
+    return joined
+
+
+def kernel_to_infix_tokens(kernel):
+    inorder_traversal = in_order(kernel, tokens=[])
+    infix_tokens = tokenize(inorder_traversal)
+    return infix_tokens
+
+
+def tokens_to_str(tokens):
+    token_string = ''
+    for i, token in enumerate(tokens):
+        if isinstance(token, Kern):
+            token_string += subkernel_expression(token)
+        else:
+            token_string += token
+
+        if i < len(tokens) - 1:
+            token_string += ' '
+
+    return token_string
