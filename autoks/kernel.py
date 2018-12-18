@@ -111,3 +111,29 @@ def tokens_to_str(tokens):
             token_string += ' '
 
     return token_string
+
+
+def apply_op(left, right, operator):
+    if operator == '+':
+        return left + right
+    elif operator == '*':
+        return left * right
+    else:
+        print('Unknown operator %s' % operator)
+
+
+def eval_binexp_tree(root):
+    if root is not None:
+        if isinstance(root.value, Kern):
+            return root.value
+
+        left_node = eval_binexp_tree(root.left)
+        right_node = eval_binexp_tree(root.right)
+
+        operator = root.value
+
+        return apply_op(left_node, right_node, operator)
+
+
+def tree_to_kernel(tree):
+    return eval_binexp_tree(tree.root)

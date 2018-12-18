@@ -3,7 +3,8 @@ import copy
 import numpy as np
 from GPy.kern.src.kern import Kern
 
-from evalg.encoding import operators, infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTreeNode
+from evalg.encoding import operators, infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTreeNode, \
+    BinaryTree
 
 
 def crossover_subtree_exchange(infix_tokens_1, infix_tokens_2):
@@ -135,17 +136,21 @@ def generate_full(kernels, max_depth=2):
     return full(depth=0, kernels=kernels, max_depth=max_depth)
 
 
-def _swap_mut_subtree(node, random_tree):
+def _swap_mut_subtree(tree, r, random_tree):
     # add mutated subtree to original
     # swap parents of nodes
+    node = tree.select_postorder(r)
     if node.parent:
         if node.parent.left is node:
             node.parent.left = random_tree
         elif node.parent.right is node:
             node.parent.right = random_tree
-    random_tree.parent = node.parent
-
-    return node, random_tree
+        random_tree.parent = node.parent
+        return tree
+    else:
+        new_tree = BinaryTree()
+        new_tree.root = random_tree
+        return new_tree
 
 
 def _mutate_subtree_exchange(infix_tokens, init_method, **init_method_kwargs):
@@ -155,14 +160,12 @@ def _mutate_subtree_exchange(infix_tokens, init_method, **init_method_kwargs):
     postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
     tree = postfix_tokens_to_binexp_tree(postfix_tokens)
 
+    random_node = init_method(**init_method_kwargs)
+
     r = np.random.randint(0, len(postfix_tokens))
-    node = tree.select_postorder(r)
+    new_tree = _swap_mut_subtree(tree, r, random_node)
 
-    random_tree = init_method(**init_method_kwargs)
-
-    _swap_mut_subtree(node, random_tree)
-
-    return tree
+    return new_tree
 
 
 def mutate_grow(infix_tokens, kernels, max_depth=2):
