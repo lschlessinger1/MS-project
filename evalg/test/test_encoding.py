@@ -1,6 +1,8 @@
 from unittest import TestCase
 
-from evalg.encoding import TreeNode, BinaryTreeNode
+from graphviz import Digraph
+
+from evalg.encoding import TreeNode, BinaryTreeNode, BinaryTree
 
 
 class TestTreeNode(TestCase):
@@ -48,3 +50,34 @@ class TestBinaryTreeNode(TestCase):
         self.assertEqual(result.get_parent().get_value(), self.root_val)
         self.assertEqual(result.get_parent().right, result)
         self.assertEqual(result.get_parent().right.get_value(), self.right_child_val)
+
+    def test_create_graph(self):
+        result = self.root.create_graph()
+        self.assertIsInstance(result, Digraph)
+
+
+class TestBinaryTree(TestCase):
+
+    def setUp(self):
+        self.tree = BinaryTree()
+        self.root = BinaryTreeNode(10)
+        self.tree.root = self.root
+
+    def test_create_graph(self):
+        result = self.tree.create_graph()
+        self.assertIsInstance(result, Digraph)
+
+    def test_select_postorder(self):
+        l = self.root.add_left(20)
+        r = self.root.add_right(30)
+        ll = l.add_left(40)
+        lr = l.add_right(50)
+        rl = r.add_left(60)
+        rr = r.add_right(70)
+        self.assertEqual(self.tree.select_postorder(0), ll)
+        self.assertEqual(self.tree.select_postorder(1), lr)
+        self.assertEqual(self.tree.select_postorder(2), l)
+        self.assertEqual(self.tree.select_postorder(3), rl)
+        self.assertEqual(self.tree.select_postorder(4), rr)
+        self.assertEqual(self.tree.select_postorder(5), r)
+        self.assertEqual(self.tree.select_postorder(6), self.root)
