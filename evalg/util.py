@@ -1,10 +1,5 @@
-def swap(arr, idx_1, idx_2):
+def swap(arr, i, j):
     """Swap two array elements
     """
-    arr_copy = arr.copy()
-    first = arr_copy[idx_1]
-    second = arr_copy[idx_2]
-    arr_copy[idx_1] = second
-    arr_copy[idx_2] = first
-
-    return arr_copy
+    arr[i], arr[j] = arr[j], arr[i]
+    return arr
