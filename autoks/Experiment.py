@@ -8,14 +8,16 @@ from evalg.plotting import plot_best_so_far, plot_score_summary
 class Experiment:
     grammar: BaseGrammar
 
-    def __init__(self, grammar, objective, kernel_families, X, y, n_iters=50, gp_model=None, debug=False):
+    def __init__(self, grammar, objective, kernel_families, X, y, eval_budget=50, gp_model=None, debug=False):
         self.grammar = grammar
         self.objective = objective
         self.kernel_families = kernel_families
         self.X = X
         self.y = y
         self.n_dims = self.X.shape[1]
-        self.n_iters = n_iters
+        # number of model evaluations (budget)
+        self.eval_budget = eval_budget
+        self.n_evals = 0
         self.debug = debug
         self.n_init_models = 15
 
@@ -44,9 +46,9 @@ class Experiment:
         # if plotting
         self.update_stats(model_scores)
 
-        for i in range(self.n_iters):
+        for i in range(self.eval_budget):
             if self.debug and i % 10 == 0:
-                print('Done iteration %d / %d' % (i, self.n_iters))
+                print('Done iteration %d / %d' % (i, self.eval_budget))
                 print('Best Score: %.2f' % max(model_scores))
 
             # Get next round of models
@@ -71,7 +73,11 @@ class Experiment:
         :param models:
         :return:
         """
-        model_scores = np.array([self.objective(self.X, self.y, model) for model in models])
+        scores = []
+        for model in models:
+            scores.append(self.objective(self.X, self.y, model))
+            self.n_evals += 1
+        model_scores = np.array(scores)
         return model_scores
 
     def optimize_models(self, models):
