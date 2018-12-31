@@ -27,10 +27,18 @@ def get_all_1d_kernels(base_kernels, n_dims):
     for kern_fam in base_kernels:
         kern_map = kernel_mapping[kern_fam]
         for d in range(n_dims):
-            kernel = kern_map(input_dim=1, active_dims=[d])
+            kernel = create_1d_kernel(kern_fam, d, kernel_mapping=kernel_mapping, kernel_map=kern_map)
             models.append(kernel)
 
     return models
+
+
+def create_1d_kernel(kernel_family, active_dim, kernel_mapping=None, kernel_map=None):
+    if not kernel_mapping:
+        kernel_mapping = get_kernel_mapping()
+        if not kernel_map:
+            kernel_map = kernel_mapping[kernel_family]
+    return kernel_map(input_dim=1, active_dims=[active_dim])
 
 
 def subkernel_expression(kernel):

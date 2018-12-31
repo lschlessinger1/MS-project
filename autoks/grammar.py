@@ -176,3 +176,9 @@ class CKSGrammar(BaseGrammar):
         :return:
         """
         pass
+
+    def expand_single_kernel(self, kernel, ops, D, base_kernels):
+        pass
+
+    def expand_full_kernel(self, kernel, operators, D, base_kernels):
+        pass
