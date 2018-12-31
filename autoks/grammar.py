@@ -1,4 +1,7 @@
-from autoks.kernel import get_all_1d_kernels
+from GPy.kern import Kern, Prod, Add
+from GPy.kern.src.kern import CombinationKernel
+
+from autoks.kernel import get_all_1d_kernels, create_1d_kernel
 from evalg.selection import select_k_best
 
 
@@ -177,8 +180,50 @@ class CKSGrammar(BaseGrammar):
         """
         pass
 
-    def expand_single_kernel(self, kernel, ops, D, base_kernels):
-        pass
+    @staticmethod
+    def expand_single_kernel(kernel, ops, D, base_kernels):
+        is_kernel = isinstance(kernel, Kern)
+        if not is_kernel:
+            raise ValueError('Unknown kernel type %s' % kernel.__class__)
 
-    def expand_full_kernel(self, kernel, operators, D, base_kernels):
-        pass
+        kernels = []
+
+        is_combo_kernel = isinstance(kernel, CombinationKernel)
+        is_base_kernel = is_kernel and not is_combo_kernel
+
+        for op in ops:
+            for d in range(D):
+                for base_kernel_name in base_kernels:
+                    if op == '+':
+                        kernels.append(kernel + create_1d_kernel(base_kernel_name, d))
+                    elif op == '*':
+                        kernels.append(kernel * create_1d_kernel(base_kernel_name, d))
+                    else:
+                        raise ValueError('Unknown operation %s' % op)
+        for base_kernel_name in base_kernels:
+            if is_base_kernel:
+                kernels.append(create_1d_kernel(base_kernel_name, kernel.active_dims[0]))
+        return kernels
+
+    @staticmethod
+    def expand_full_kernel(kernel, operators, D, base_kernels):
+        result = CKSGrammar.expand_single_kernel(kernel, operators, D, base_kernels)
+        if kernel is None:
+            pass
+        elif isinstance(kernel, CombinationKernel):
+            for i, operand in enumerate(kernel.parts):
+                for e in CKSGrammar.expand_full_kernel(operand, operators, D, base_kernels):
+                    new_operands = kernel.parts[:i] + [e] + kernel.parts[i + 1:]
+                    new_operands = [op.copy() for op in new_operands]
+                    if isinstance(kernel, Prod):
+                        result.append(Prod(new_operands))
+                    elif isinstance(kernel, Add):
+                        result.append(Add(new_operands))
+                    else:
+                        raise RuntimeError('Unknown combination kernel class:', kernel.__class__)
+        elif isinstance(kernel, Kern):
+            # base kernel
+            pass
+        else:
+            raise ValueError('Unknown kernel class:', kernel.__class__)
+        return result
