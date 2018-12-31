@@ -67,6 +67,8 @@ def in_order(root, tokens=[]):
                 op = '+'
             elif isinstance(root, Prod):
                 op = '*'
+            else:
+                raise ValueError('Unrecognized operation %s' % root.__class__)
 
             tokens = join_operands(tokens, op)
         elif isinstance(root, Kern):
@@ -75,13 +77,26 @@ def in_order(root, tokens=[]):
     return tokens
 
 
-def tokenize(S):
-    if S == []:
+def tokenize(list_nd):
+    if not list_nd:
         return []
-    if isinstance(S[0], list):
-        return ['('] + tokenize(S[0]) + tokenize(S[1:]) + [')']
+    if isinstance(list_nd, list):
+        return ['('] + [tokenize(s) for s in list_nd] + [')']
+    return list_nd
 
-    return S[:1] + tokenize(S[1:])
+
+def flatten(list_nd):
+    return [list_nd] if not isinstance(list_nd, list) else [x for X in list_nd for x in flatten(X)]
+
+
+def remove_outer_parens(list_nd):
+    if len(list_nd) >= 2:
+        if list_nd[0] == '(' and list_nd[-1] == ')':
+            return list_nd[1:-1]
+        else:
+            raise ValueError('List must start with \'(\' and end with \')\' ')
+    else:
+        raise ValueError('List must have length >= 2')
 
 
 def join_operands(operands, operator):
@@ -94,8 +109,10 @@ def join_operands(operands, operator):
 
 
 def kernel_to_infix_tokens(kernel):
-    inorder_traversal = in_order(kernel, tokens=[])
-    infix_tokens = tokenize(inorder_traversal)
+    in_order_traversal = in_order(kernel, tokens=[])
+    infix_tokens = flatten(tokenize(in_order_traversal))
+    # for readability, remove outer parentheses
+    infix_tokens = remove_outer_parens(infix_tokens)
     return infix_tokens
 
 
