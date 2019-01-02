@@ -1,7 +1,7 @@
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
-from autoks.kernel import get_all_1d_kernels, create_1d_kernel
+from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping
 from evalg.selection import select_k_best
 
 
@@ -40,13 +40,56 @@ class BaseGrammar:
         return select_k_best(models, model_scores, self.k)
 
 
-def sort_kernel_tree(kernel_tree):
-    """ Sort kernel tree into canonical form
+def argsort(unsorted_list):
+    return [i[0] for i in sorted(enumerate(unsorted_list), key=lambda x: x[1])]
 
-    :param kernel_tree:
-    :return:
+
+def sort_kernel(kernel):
+    """ Sorts kernel tree
     """
-    pass
+
+    if not isinstance(kernel, CombinationKernel):
+        return kernel
+    elif isinstance(kernel, Kern):
+        new_ops = []
+        for op in kernel.parts:
+            op_sorted = sort_kernel(op)
+            if isinstance(op_sorted, CombinationKernel):
+                new_ops.append(op_sorted)
+            elif op_sorted is not None:
+                new_ops.append(op_sorted)
+
+        if len(new_ops) == 0:
+            return None
+        elif len(new_ops) == 1:
+            return new_ops[0]
+        else:
+            k_sorted = sort_combination_kernel(kernel, new_ops)
+            return k_sorted
+
+
+def sort_combination_kernel(kernel, new_ops):
+    """ Helper function to sort a combination kernel
+    """
+    # first sort by kernel name, then by active dim
+    kmap = get_kernel_mapping()
+    kmap_inv = {v: k for k, v in kmap.items()}
+    # add sum and product entries
+    kmap_inv[Prod] = 'PROD'
+    kmap_inv[Add] = 'ADD'
+
+    unsorted_kernel_names = []
+    for operand in new_ops:
+        if isinstance(operand, CombinationKernel):
+            # to sort multiple combination kernels of the same type, use the parameter string
+            param_str = ''.join(str(x) for x in operand.param_array)
+            unsorted_kernel_names.append((kmap_inv[operand.__class__] + param_str))
+        elif isinstance(operand, Kern):
+            unsorted_kernel_names.append((kmap_inv[operand.__class__] + str(operand.active_dims[0])))
+    ind = argsort(unsorted_kernel_names)
+    sorted_ops = [new_ops[i] for i in ind]
+
+    return kernel.__class__(sorted_ops)
 
 
 def remove_duplicates(kernel_trees):
