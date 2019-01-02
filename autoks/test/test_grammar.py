@@ -73,7 +73,8 @@ class TestCKSGrammar(TestCase):
         result = self.grammar.expand_single_kernel(k, ['+', '*'], 2, ['SE', 'RQ'])
 
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
-                        self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1]
+                        self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
+                        self.se0, self.rq0]
         ktypes_exist = [self.has_combo_kernel_type(result, ktype) for ktype in kernel_types]
 
         self.assertTrue(all(ktypes_exist))
