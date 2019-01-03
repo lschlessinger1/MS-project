@@ -1,7 +1,8 @@
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
-from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping
+from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping, tokens_to_str, \
+    kernel_to_infix_tokens
 from evalg.selection import select_k_best
 
 
@@ -92,13 +93,38 @@ def sort_combination_kernel(kernel, new_ops):
     return kernel.__class__(sorted_ops)
 
 
-def remove_duplicates(kernel_trees):
-    """ Remove duplicate kernel trees (after sorting)
-
-    :param kernel_trees:
-    :return:
+def argunique(data):
+    """ Get the indices of the unique elements in a list
     """
-    pass
+    unique_vals = set()
+    unique_ind = []
+
+    for i, datum in enumerate(data):
+        if datum not in unique_vals:
+            unique_vals.add(datum)
+            unique_ind.append(i)
+
+    return unique_ind
+
+
+def remove_duplicates(data, values):
+    """ Remove duplicates of data and replace with values
+    """
+    if len(data) != len(values):
+        raise ValueError('The length of data must be be equal to the length of values')
+
+    unique_ind = argunique(data)
+    return [values[i] for i in unique_ind]
+
+
+def remove_duplicate_models(models):
+    """ Remove duplicate models based on their kernels
+    """
+    kernels = [sort_kernel(m.kernel) for m in models]
+    kernel_infix_list = [tokens_to_str(kernel_to_infix_tokens(k)) for k in kernels]
+
+    models_pruned = remove_duplicates(kernel_infix_list, models)
+    return models_pruned
 
 
 class EvolutionaryGrammar(BaseGrammar):
