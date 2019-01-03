@@ -4,8 +4,9 @@ from unittest import TestCase
 import numpy as np
 from GPy.kern import RBF, RatQuad, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
+from GPy.models import GPRegression
 
-from autoks.grammar import BaseGrammar, CKSGrammar, sort_kernel
+from autoks.grammar import BaseGrammar, CKSGrammar, sort_kernel, remove_duplicates, remove_duplicate_models
 
 
 class TestGrammar(TestCase):
@@ -64,6 +65,45 @@ class TestGrammar(TestCase):
         kernel_types_inner_3 = [(RatQuad, 0), (RatQuad, 1), (RBF, 1)]
         prod_3 = result.parts[2]
         for (k_class, dim), part in zip(kernel_types_inner_3, prod_3.parts):
+            self.assertIsInstance(part, k_class)
+            self.assertEqual(part.active_dims[0], dim)
+
+    def test_remove_duplicates(self):
+        # simple example
+        data = [1, 1, 1, 2, 3, 4, 'a', 'b', True]
+        values = [10, 9, 8, '7', '6', False, 4, 3, 2]
+        result = remove_duplicates(data, values)
+        self.assertEqual(result, [10, '7', '6', False, 4, 3])
+
+        with self.assertRaises(ValueError):
+            remove_duplicates([1, 2, 3], ['1', 2])
+
+    def test_remove_duplicate_models(self):
+        x = np.array([[1, 2], [4, 5]])
+        y = np.zeros((x.shape[0], 1))
+
+        kernels = [self.se0 + self.se0, self.se1, self.se0, self.se0, self.se1 + self.se0, self.se0 + self.se1]
+        models = []
+        for kern in kernels:
+            models.append(GPRegression(X=x, Y=y, kernel=kern))
+
+        models_pruned = remove_duplicate_models(models)
+        kernels_pruned = [m.kern for m in models_pruned]
+        # should be SE0 + SE0, SE1, SE0, SE1 + SE0
+        kernel_types_outer = [(Add, [0]), (RBF, [1]), (RBF, [0]), (Add, [0, 1])]
+        for (k_class, dims), part in zip(kernel_types_outer, kernels_pruned):
+            self.assertIsInstance(part, k_class)
+            self.assertEqual(part.active_dims.tolist(), dims)
+
+        kernel_types_inner_1 = [(RBF, 0), (RBF, 0)]
+        sum_1 = kernels_pruned[0]
+        for (k_class, dim), part in zip(kernel_types_inner_1, sum_1.parts):
+            self.assertIsInstance(part, k_class)
+            self.assertEqual(part.active_dims[0], dim)
+
+        kernel_types_inner_2 = [(RBF, 1), (RBF, 0)]
+        sum_2 = kernels_pruned[3]
+        for (k_class, dim), part in zip(kernel_types_inner_2, sum_2.parts):
             self.assertIsInstance(part, k_class)
             self.assertEqual(part.active_dims[0], dim)
 
