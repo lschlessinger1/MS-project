@@ -120,7 +120,7 @@ def remove_duplicates(data, values):
 def remove_duplicate_models(models):
     """ Remove duplicate models based on their kernels
     """
-    kernels = [sort_kernel(m.kernel) for m in models]
+    kernels = [sort_kernel(m.kern) for m in models]
     kernel_infix_list = [tokens_to_str(kernel_to_infix_tokens(k)) for k in kernels]
 
     models_pruned = remove_duplicates(kernel_infix_list, models)
