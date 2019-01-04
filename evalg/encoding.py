@@ -14,26 +14,22 @@ def val_to_label(value):
 
 class TreeNode:
     def __init__(self, value, parent=None):
-        self.value = value
+        self._value = value
         self.label = val_to_label(value)
         self.parent = parent
 
-    def get_parent(self):
-        return self.parent
+    @property
+    def value(self):
+        return self._value
 
-    def get_value(self):
-        return self.value
-
-    def set_value(self, value):
-        self.value = value
+    @value.setter
+    def value(self, value):
+        self._value = value
         # update label as well
         self.label = val_to_label(value)
 
-    def get_label(self):
-        return self.label
-
     def __str__(self):
-        return self.get_label()
+        return self.label
 
 
 class BinaryTreeNode(TreeNode):
@@ -60,25 +56,25 @@ class BinaryTreeNode(TreeNode):
 
         if root is not None:
             root_id = str(id(root))
-            graph.node(root_id, label=root.get_label())
+            graph.node(root_id, label=root.label)
 
             if root.left is not None:
                 left = root.left
                 left_id = str(id(left))
-                graph.node(left_id, label=left.get_label())
+                graph.node(left_id, label=left.label)
                 graph.edge(root_id, left_id)
                 root.left.create_graph(graph=graph)
             if root.right is not None:
                 right = root.right
                 right_id = str(id(right))
-                graph.node(right_id, label=right.get_label())
+                graph.node(right_id, label=right.label)
                 graph.edge(root_id, right_id)
                 root.right.create_graph(graph=graph)
 
         return graph
 
     def __str__(self):
-        return self.get_label()
+        return self.label
 
 
 class BinaryTree:
@@ -124,7 +120,7 @@ class BinaryTree:
                 expression += '('
 
             expression += self._infix_helper(root.left)
-            expression += root.get_label()
+            expression += root.label
             expression += self._infix_helper(root.right)
 
             if root.value in operators:

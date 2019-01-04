@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from GPy.kern import RBF
 from graphviz import Digraph
 
 from evalg.encoding import TreeNode, BinaryTreeNode, BinaryTree
@@ -16,16 +17,26 @@ class TestTreeNode(TestCase):
         self.child_label = str(self.child_val)
         self.child = TreeNode(self.child_val, parent=self.parent)
 
-    def test_get_parent(self):
-        self.assertEqual(self.child.get_parent(), self.parent)
+        self.kernel_node_val_prev = 10
+        self.kernel_node_label_prev = str(self.kernel_node_val_prev)
+        self.kernel_node = TreeNode(self.kernel_node_val_prev)
 
-    def test_get_value(self):
-        self.assertEqual(self.child.get_value(), self.child_val)
-        self.assertEqual(self.parent.get_value(), self.parent_val)
+    def test_value(self):
+        # test value
+        self.assertEqual(self.child.value, self.child_val)
+        self.assertEqual(self.parent.value, self.parent_val)
+        self.assertEqual(self.kernel_node.value, self.kernel_node_val_prev)
 
-    def test_get_label(self):
-        self.assertEqual(self.parent.get_label(), str(self.parent_label))
-        self.assertEqual(self.child.get_label(), str(self.child_label))
+        new_val = RBF(1, [0])
+        new_label = 'SE0'
+        self.kernel_node.value = new_val
+
+        self.assertEqual(self.kernel_node.value, new_val)
+
+        # test label
+        self.assertEqual(self.parent.label, self.parent_label)
+        self.assertEqual(self.child.label, self.child_label)
+        self.assertEqual(self.kernel_node.label, new_label)
 
 
 class TestBinaryTreeNode(TestCase):
@@ -39,17 +50,17 @@ class TestBinaryTreeNode(TestCase):
 
     def test_add_left(self):
         result = self.root.add_left(self.left_child_val)
-        self.assertEqual(result.get_parent(), self.root)
-        self.assertEqual(result.get_parent().get_value(), self.root_val)
-        self.assertEqual(result.get_parent().left, result)
-        self.assertEqual(result.get_parent().left.get_value(), self.left_child_val)
+        self.assertEqual(result.parent, self.root)
+        self.assertEqual(result.parent.value, self.root_val)
+        self.assertEqual(result.parent.left, result)
+        self.assertEqual(result.parent.left.value, self.left_child_val)
 
     def test_add_right(self):
         result = self.root.add_right(self.right_child_val)
-        self.assertEqual(result.get_parent(), self.root)
-        self.assertEqual(result.get_parent().get_value(), self.root_val)
-        self.assertEqual(result.get_parent().right, result)
-        self.assertEqual(result.get_parent().right.get_value(), self.right_child_val)
+        self.assertEqual(result.parent, self.root)
+        self.assertEqual(result.parent.value, self.root_val)
+        self.assertEqual(result.parent.right, result)
+        self.assertEqual(result.parent.right.value, self.right_child_val)
 
     def test_create_graph(self):
         result = self.root.create_graph()
