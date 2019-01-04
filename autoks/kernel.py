@@ -138,6 +138,10 @@ def tokens_to_str(tokens):
     return token_string
 
 
+def kernel_to_infix(kernel):
+    return tokens_to_str(kernel_to_infix_tokens(kernel))
+
+
 def apply_op(left, right, operator):
     if operator == '+':
         return left + right
