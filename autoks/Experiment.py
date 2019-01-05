@@ -1,7 +1,9 @@
 import numpy as np
 from GPy.models import GPRegression
+from numpy.linalg import LinAlgError
 
 from autoks.grammar import BaseGrammar
+from autoks.kernel import kernel_to_infix
 from evalg.plotting import plot_best_so_far, plot_score_summary
 
 
@@ -53,14 +55,14 @@ class Experiment:
 
             # Get next round of models
             new_models = self.grammar.expand(models, model_scores, self.kernel_families)
-            models.append(new_models)
+            models += new_models
 
             # evaluate, prune, and optimize models
             model_scores = self.evaluate_models(models)
             models = self.optimize_models(models)
 
             # Select next round of models
-            models = self.grammar.select(np.array(models), model_scores)
+            models = self.grammar.select(np.array(models), model_scores).tolist()
 
             # if plotting
             self.update_stats(model_scores)
@@ -86,7 +88,13 @@ class Experiment:
         :param models:
         :return:
         """
-        return [model.optimize() for model in models]
+        for model in models:
+            print(kernel_to_infix(model.kern))
+            try:
+                model.optimize()
+            except LinAlgError:
+                print('Y covariance is not positive semi-definite')
+        return models
 
     def plot_best_scores(self):
         """ Plot the best models scores

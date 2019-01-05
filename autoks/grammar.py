@@ -1,5 +1,6 @@
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
+from GPy.models import GPRegression
 
 from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping, tokens_to_str, \
     kernel_to_infix_tokens
@@ -222,7 +223,9 @@ class CKSGrammar(BaseGrammar):
         :param n_dims:
         :return:
         """
-        kernels = []
+
+        kernels = get_all_1d_kernels(kernel_families, n_dims)
+
         return kernels
 
     def expand(self, models, model_scores, kernel_families):
@@ -238,7 +241,19 @@ class CKSGrammar(BaseGrammar):
         # 1) Any subexpression S can be replaced with S + B, where B is any base kernel family.
         # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
         # 3) Any base kernel B may be replaced with any other base kernel family B'
-        pass
+        new_models = []
+        for model in models:
+            new_kernels = self.expand_full_kernel(model.kern, ['+', '*'], model.X.shape[1], kernel_families)
+            for kernel in new_kernels:
+                # create new model assuming everything is the same except for the kernel
+                input_dict = model.to_dict()
+                input_dict['kernel'] = kernel.to_dict()
+                new_model = GPRegression._from_dict(input_dict)
+                new_models += [new_model]
+
+        new_models = remove_duplicate_models(new_models)
+
+        return new_models
 
     def select(self, active_set, model_scores):
         """ Select all
@@ -247,7 +262,7 @@ class CKSGrammar(BaseGrammar):
         :param model_scores:
         :return:
         """
-        pass
+        return active_set
 
     @staticmethod
     def expand_single_kernel(kernel, ops, D, base_kernels):
