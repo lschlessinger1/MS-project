@@ -1,6 +1,6 @@
+from GPy import Model
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
-from GPy.models import GPRegression
 
 from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping, tokens_to_str, \
     kernel_to_infix_tokens
@@ -248,7 +248,7 @@ class CKSGrammar(BaseGrammar):
                 # create new model assuming everything is the same except for the kernel
                 input_dict = model.to_dict()
                 input_dict['kernel'] = kernel.to_dict()
-                new_model = GPRegression._from_dict(input_dict)
+                new_model = Model.from_dict(input_dict)
                 new_models += [new_model]
 
         new_models = remove_duplicate_models(new_models)
