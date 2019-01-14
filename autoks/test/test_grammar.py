@@ -4,9 +4,8 @@ from unittest import TestCase
 import numpy as np
 from GPy.kern import RBF, RatQuad, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
-from GPy.models import GPRegression
 
-from autoks.grammar import BaseGrammar, CKSGrammar, sort_kernel, remove_duplicates, remove_duplicate_models
+from autoks.grammar import BaseGrammar, CKSGrammar, sort_kernel, remove_duplicates, remove_duplicate_kernels
 
 
 class TestGrammar(TestCase):
@@ -78,17 +77,9 @@ class TestGrammar(TestCase):
         with self.assertRaises(ValueError):
             remove_duplicates([1, 2, 3], ['1', 2])
 
-    def test_remove_duplicate_models(self):
-        x = np.array([[1, 2], [4, 5]])
-        y = np.zeros((x.shape[0], 1))
-
+    def test_remove_duplicate_kernels(self):
         kernels = [self.se0 + self.se0, self.se1, self.se0, self.se0, self.se1 + self.se0, self.se0 + self.se1]
-        models = []
-        for kern in kernels:
-            models.append(GPRegression(X=x, Y=y, kernel=kern))
-
-        models_pruned = remove_duplicate_models(models)
-        kernels_pruned = [m.kern for m in models_pruned]
+        kernels_pruned = remove_duplicate_kernels(kernels)
         # should be SE0 + SE0, SE1, SE0, SE1 + SE0
         kernel_types_outer = [(Add, [0]), (RBF, [1]), (RBF, [0]), (Add, [0, 1])]
         for (k_class, dims), part in zip(kernel_types_outer, kernels_pruned):
@@ -120,7 +111,7 @@ class TestBaseGrammar(TestCase):
 
     def test_expand(self):
         with self.assertRaises(NotImplementedError):
-            self.grammar.expand('', '', '')
+            self.grammar.expand('', '', '', '')
 
     def test_select(self):
         result = self.grammar.select(np.array([1, 2, 3, 4, 5]), np.array([.1, .2, .3, .4, .5]))

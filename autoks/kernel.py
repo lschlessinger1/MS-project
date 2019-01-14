@@ -2,6 +2,25 @@ from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 
 
+class AKSKernel:
+    """AKS kernel wrapper
+    """
+
+    def __init__(self, kernel, scored=False):
+        self.kernel = kernel
+        self.scored = scored
+        self.score = None
+
+    def __str__(self):
+        return kernel_to_infix(self.kernel)
+
+
+def set_model_kern(model, new_kern):
+    model.unlink_parameter(model.kern)
+    model.link_parameter(new_kern)
+    model.kern = new_kern
+
+
 def get_kernel_mapping():
     return dict(zip(get_allowable_kernels(), get_matching_kernels()))
 

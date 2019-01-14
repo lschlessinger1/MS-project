@@ -1,9 +1,7 @@
-from GPy import Model
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
-from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping, tokens_to_str, \
-    kernel_to_infix_tokens
+from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping, kernel_to_infix, AKSKernel
 from evalg.selection import select_k_best
 
 
@@ -12,34 +10,35 @@ class BaseGrammar:
     def __init__(self, k):
         self.k = k
 
-    def initialize(self, kernel_families, n_models, n_dims):
-        """ Initialize models
+    def initialize(self, kernel_families, n_kernels, n_dims):
+        """ Initialize kernels
 
         :param kernel_families:
-        :param n_models:
+        :param n_kernels:
         :param n_dims:
         :return:
         """
         raise NotImplementedError('initialize must implemented in a subclass')
 
-    def expand(self, models, model_scores, kernel_families):
-        """ Get next round of candidate models from current models
+    def expand(self, kernels, model_scores, kernel_families, n_dims):
+        """ Get next round of candidate kernels from current kernels
 
-        :param models:
+        :param kernels:
         :param model_scores:
         :param kernel_families:
+        :param n_dims: number of dimensions
         :return:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
 
-    def select(self, models, model_scores):
-        """ Select next round of models (default is top k models by objective)
+    def select(self, kernels, model_scores):
+        """ Select next round of models (default is top k kernels by objective)
 
-        :param models:
+        :param kernels:
         :param model_scores:
         :return:
         """
-        return select_k_best(models, model_scores, self.k)
+        return select_k_best(kernels, model_scores, self.k)
 
 
 def argsort(unsorted_list):
@@ -118,14 +117,16 @@ def remove_duplicates(data, values):
     return [values[i] for i in unique_ind]
 
 
-def remove_duplicate_models(models):
-    """ Remove duplicate models based on their kernels
+def remove_duplicate_kernels(kernels):
+    """ Remove duplicate kernels
     """
-    kernels = [sort_kernel(m.kern) for m in models]
-    kernel_infix_list = [tokens_to_str(kernel_to_infix_tokens(k)) for k in kernels]
+    return remove_duplicates([kernel_to_infix(k) for k in kernels], kernels)
 
-    models_pruned = remove_duplicates(kernel_infix_list, models)
-    return models_pruned
+
+def remove_duplicate_aks_kernels(aks_kernels):
+    """ Remove duplicate AKSKernel's
+    """
+    return remove_duplicates([kernel_to_infix(aks_kernel.kernel) for aks_kernel in aks_kernels], aks_kernels)
 
 
 class EvolutionaryGrammar(BaseGrammar):
@@ -133,15 +134,14 @@ class EvolutionaryGrammar(BaseGrammar):
     def __init__(self, k):
         super().__init__(k)
 
-    def initialize(self, kernel_families, n_models, n_dims):
+    def initialize(self, kernel_families, n_kernels, n_dims):
         """Naive initialization of all SE_i and RQ_i (for every dimension)
 
         :param kernel_families:
-        :param n_models:
+        :param n_kernels:
         :param n_dims:
         :return:
         """
-        #
         kernels = get_all_1d_kernels(kernel_families, n_dims)
 
         # randomly initialize hyperparameters:
@@ -150,7 +150,7 @@ class EvolutionaryGrammar(BaseGrammar):
 
         return kernels
 
-    def expand(self, population, fitness_list, kernel_families):
+    def expand(self, population, fitness_list, kernel_families, n_dims):
         """ Perform crossover and mutation
 
         :param population: list of models
@@ -171,7 +171,7 @@ class BOMSGrammar(BaseGrammar):
         super().__init__(k)
 
     def initialize(self, kernel_families, n_models, n_dims):
-        """ Initialize models according to number of dimensions
+        """ Initialize kernels according to number of dimensions
 
         :param kernel_families:
         :param n_models:
@@ -183,12 +183,13 @@ class BOMSGrammar(BaseGrammar):
         kernels = []
         return kernels
 
-    def expand(self, active_set, model_scores, kernel_families):
+    def expand(self, active_set, model_scores, kernel_families, n_dims):
         """ Greedy and exploratory expansion of kernels
 
-        :param active_set: list of models
+        :param active_set: list of kernels
         :param model_scores: list of
         :param kernel_families:
+        :param n_dims:
         :return:
         """
         # Exploit:
@@ -198,7 +199,7 @@ class BOMSGrammar(BaseGrammar):
         pass
 
     def select(self, active_set, exp_imp_list):
-        """ Select top 600 models according to expected improvement
+        """ Select top 600 kernels according to expected improvement
 
         :param active_set:
         :param exp_imp_list:
@@ -215,25 +216,25 @@ class CKSGrammar(BaseGrammar):
     def __init__(self, k):
         super().__init__(k)
 
-    def initialize(self, kernel_families, n_models, n_dims):
+    def initialize(self, kernel_families, n_kernels, n_dims):
         """ Initialize with all base kernel families applied to all input dimensions
 
         :param kernel_families:
-        :param n_models:
+        :param n_kernels:
         :param n_dims:
         :return:
         """
-
         kernels = get_all_1d_kernels(kernel_families, n_dims)
-
+        kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, models, model_scores, kernel_families):
+    def expand(self, aks_kernels, model_scores, kernel_families, n_dims):
         """ Greedy expansion of nodes
 
-        :param models:
+        :param aks_kernels:
         :param model_scores:
         :param kernel_families:
+        :param n_dims:
         :return:
         """
         # choose highest scoring kernel (using BIC) and expand it by applying all possible operators
@@ -241,19 +242,15 @@ class CKSGrammar(BaseGrammar):
         # 1) Any subexpression S can be replaced with S + B, where B is any base kernel family.
         # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
         # 3) Any base kernel B may be replaced with any other base kernel family B'
-        new_models = []
-        for model in models:
-            new_kernels = self.expand_full_kernel(model.kern, ['+', '*'], model.X.shape[1], kernel_families)
-            for kernel in new_kernels:
-                # create new model assuming everything is the same except for the kernel
-                input_dict = model.to_dict()
-                input_dict['kernel'] = kernel.to_dict()
-                new_model = Model.from_dict(input_dict)
-                new_models += [new_model]
+        new_kernels = []
+        for aks_kernel in aks_kernels:
+            kernel = aks_kernel.kernel
+            kernels_expanded = self.expand_full_kernel(kernel, ['+', '*'], n_dims, kernel_families)
+            new_kernels += kernels_expanded
 
-        new_models = remove_duplicate_models(new_models)
-
-        return new_models
+        new_kernels = remove_duplicate_kernels(new_kernels)
+        new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
+        return new_kernels
 
     def select(self, active_set, model_scores):
         """ Select all
@@ -265,7 +262,7 @@ class CKSGrammar(BaseGrammar):
         return active_set
 
     @staticmethod
-    def expand_single_kernel(kernel, ops, D, base_kernels):
+    def expand_single_kernel(kernel, ops, n_dims, base_kernels):
         is_kernel = isinstance(kernel, Kern)
         if not is_kernel:
             raise ValueError('Unknown kernel type %s' % kernel.__class__)
@@ -276,7 +273,7 @@ class CKSGrammar(BaseGrammar):
         is_base_kernel = is_kernel and not is_combo_kernel
 
         for op in ops:
-            for d in range(D):
+            for d in range(n_dims):
                 for base_kernel_name in base_kernels:
                     if op == '+':
                         kernels.append(kernel + create_1d_kernel(base_kernel_name, d))
@@ -290,13 +287,13 @@ class CKSGrammar(BaseGrammar):
         return kernels
 
     @staticmethod
-    def expand_full_kernel(kernel, operators, D, base_kernels):
-        result = CKSGrammar.expand_single_kernel(kernel, operators, D, base_kernels)
+    def expand_full_kernel(kernel, operators, n_dims, base_kernels):
+        result = CKSGrammar.expand_single_kernel(kernel, operators, n_dims, base_kernels)
         if kernel is None:
             pass
         elif isinstance(kernel, CombinationKernel):
             for i, operand in enumerate(kernel.parts):
-                for e in CKSGrammar.expand_full_kernel(operand, operators, D, base_kernels):
+                for e in CKSGrammar.expand_full_kernel(operand, operators, n_dims, base_kernels):
                     new_operands = kernel.parts[:i] + [e] + kernel.parts[i + 1:]
                     new_operands = [op.copy() for op in new_operands]
                     if isinstance(kernel, Prod):
