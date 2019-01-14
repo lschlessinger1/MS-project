@@ -7,8 +7,8 @@ from evalg.selection import select_k_best
 
 class BaseGrammar:
 
-    def __init__(self, k):
-        self.k = k
+    def __init__(self, n_parents):
+        self.n_parents = n_parents
 
     def initialize(self, kernel_families, n_kernels, n_dims):
         """ Initialize kernels
@@ -20,25 +20,31 @@ class BaseGrammar:
         """
         raise NotImplementedError('initialize must implemented in a subclass')
 
-    def expand(self, kernels, model_scores, kernel_families, n_dims):
+    def expand(self, kernels, kernel_families, n_dims):
         """ Get next round of candidate kernels from current kernels
 
         :param kernels:
-        :param model_scores:
         :param kernel_families:
         :param n_dims: number of dimensions
         :return:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
 
-    def select(self, kernels, model_scores):
+    def select_parents(self, kernels):
         """ Select next round of models (default is top k kernels by objective)
 
         :param kernels:
-        :param model_scores:
         :return:
         """
-        return select_k_best(kernels, model_scores, self.k)
+        return select_k_best(kernels, [k.score for k in kernels], self.n_parents)
+
+    def select_offspring(self, kernels):
+        """ Select next round of models (default is select all)
+
+        :param kernels:
+        :return:
+        """
+        return kernels
 
 
 def argsort(unsorted_list):
@@ -131,8 +137,8 @@ def remove_duplicate_aks_kernels(aks_kernels):
 
 class EvolutionaryGrammar(BaseGrammar):
 
-    def __init__(self, k):
-        super().__init__(k)
+    def __init__(self, n_parents):
+        super().__init__(n_parents)
 
     def initialize(self, kernel_families, n_kernels, n_dims):
         """Naive initialization of all SE_i and RQ_i (for every dimension)
@@ -150,12 +156,12 @@ class EvolutionaryGrammar(BaseGrammar):
 
         return kernels
 
-    def expand(self, population, fitness_list, kernel_families, n_dims):
+    def expand(self, population, kernel_families, n_dims):
         """ Perform crossover and mutation
 
         :param population: list of models
-        :param fitness_list: list of model scores
         :param kernel_families: base kernels
+        :param n_dims:
         :return:
         """
         offspring = population.copy()
@@ -167,8 +173,8 @@ class BOMSGrammar(BaseGrammar):
     Bayesian optimization for automated model selection (Malkomes et al., 2016)
     """
 
-    def __init__(self, k=600):
-        super().__init__(k)
+    def __init__(self, n_parents=600):
+        super().__init__(n_parents)
 
     def initialize(self, kernel_families, n_models, n_dims):
         """ Initialize kernels according to number of dimensions
@@ -183,11 +189,10 @@ class BOMSGrammar(BaseGrammar):
         kernels = []
         return kernels
 
-    def expand(self, active_set, model_scores, kernel_families, n_dims):
+    def expand(self, active_set, kernel_families, n_dims):
         """ Greedy and exploratory expansion of kernels
 
         :param active_set: list of kernels
-        :param model_scores: list of
         :param kernel_families:
         :param n_dims:
         :return:
@@ -198,11 +203,10 @@ class BOMSGrammar(BaseGrammar):
         # Add 15 random walks (geometric dist w/ prob 1/3) from empty kernel to active set
         pass
 
-    def select(self, active_set, exp_imp_list):
+    def select_offspring(self, active_set):
         """ Select top 600 kernels according to expected improvement
 
         :param active_set:
-        :param exp_imp_list:
         :return:
         """
         pass
@@ -213,8 +217,8 @@ class CKSGrammar(BaseGrammar):
     Structure Discovery in Nonparametric Regression through Compositional Kernel Search (Duvenaud et al., 2013)
     """
 
-    def __init__(self, k):
-        super().__init__(k)
+    def __init__(self, n_parents):
+        super().__init__(n_parents)
 
     def initialize(self, kernel_families, n_kernels, n_dims):
         """ Initialize with all base kernel families applied to all input dimensions
@@ -228,11 +232,10 @@ class CKSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels, model_scores, kernel_families, n_dims):
+    def expand(self, aks_kernels, kernel_families, n_dims):
         """ Greedy expansion of nodes
 
         :param aks_kernels:
-        :param model_scores:
         :param kernel_families:
         :param n_dims:
         :return:
@@ -251,15 +254,6 @@ class CKSGrammar(BaseGrammar):
         new_kernels = remove_duplicate_kernels(new_kernels)
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
         return new_kernels
-
-    def select(self, active_set, model_scores):
-        """ Select all
-
-        :param active_set:
-        :param model_scores:
-        :return:
-        """
-        return active_set
 
     @staticmethod
     def expand_single_kernel(kernel, ops, n_dims, base_kernels):

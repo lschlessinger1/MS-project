@@ -14,6 +14,9 @@ class AKSKernel:
     def __str__(self):
         return kernel_to_infix(self.kernel)
 
+    def pretty_print(self):
+        print(str(self))
+
 
 def set_model_kern(model, new_kern):
     model.unlink_parameter(model.kern)
