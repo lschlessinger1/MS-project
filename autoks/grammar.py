@@ -20,12 +20,13 @@ class BaseGrammar:
         """
         raise NotImplementedError('initialize must implemented in a subclass')
 
-    def expand(self, kernels, kernel_families, n_dims):
+    def expand(self, kernels, kernel_families, n_dims, verbose=False):
         """ Get next round of candidate kernels from current kernels
 
         :param kernels:
         :param kernel_families:
         :param n_dims: number of dimensions
+        :param verbose:
         :return:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
@@ -156,12 +157,13 @@ class EvolutionaryGrammar(BaseGrammar):
 
         return kernels
 
-    def expand(self, population, kernel_families, n_dims):
+    def expand(self, population, kernel_families, n_dims, verbose=False):
         """ Perform crossover and mutation
 
         :param population: list of models
         :param kernel_families: base kernels
         :param n_dims:
+        :param verbose:
         :return:
         """
         offspring = population.copy()
@@ -189,12 +191,13 @@ class BOMSGrammar(BaseGrammar):
         kernels = []
         return kernels
 
-    def expand(self, active_set, kernel_families, n_dims):
+    def expand(self, active_set, kernel_families, n_dims, verbose=False):
         """ Greedy and exploratory expansion of kernels
 
         :param active_set: list of kernels
         :param kernel_families:
         :param n_dims:
+        :param verbose:
         :return:
         """
         # Exploit:
@@ -232,12 +235,13 @@ class CKSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels, kernel_families, n_dims):
+    def expand(self, aks_kernels, kernel_families, n_dims, verbose=False):
         """ Greedy expansion of nodes
 
         :param aks_kernels:
         :param kernel_families:
         :param n_dims:
+        :param verbose:
         :return:
         """
         # choose highest scoring kernel (using BIC) and expand it by applying all possible operators
@@ -245,6 +249,11 @@ class CKSGrammar(BaseGrammar):
         # 1) Any subexpression S can be replaced with S + B, where B is any base kernel family.
         # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
         # 3) Any base kernel B may be replaced with any other base kernel family B'
+        if verbose:
+            print('Seed kernels:')
+            for k in aks_kernels:
+                k.pretty_print()
+
         new_kernels = []
         for aks_kernel in aks_kernels:
             kernel = aks_kernel.kernel
@@ -253,6 +262,12 @@ class CKSGrammar(BaseGrammar):
 
         new_kernels = remove_duplicate_kernels(new_kernels)
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
+
+        if verbose:
+            print('Expanded kernels:')
+            for k in new_kernels:
+                k.pretty_print()
+
         return new_kernels
 
     @staticmethod

@@ -11,7 +11,7 @@ class Experiment:
     grammar: BaseGrammar
 
     def __init__(self, grammar, objective, kernel_families, X, y, eval_budget=50, max_depth=10, gp_model=None,
-                 debug=False):
+                 debug=False, verbose=False):
         self.grammar = grammar
         self.objective = objective
         self.kernel_families = kernel_families
@@ -23,6 +23,7 @@ class Experiment:
         self.max_depth = max_depth
         self.n_evals = 0
         self.debug = debug
+        self.verbose = verbose
         self.n_init_kernels = 15
 
         # if plotting
@@ -67,13 +68,18 @@ class Experiment:
                 for parent in parents:
                     parent.pretty_print()
 
-            new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims)
+            new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose)
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
             kernels = remove_duplicate_aks_kernels(kernels)
 
             self.opt_and_eval_kernels(kernels)
+
+            if self.verbose:
+                print('Printing all results')
+                for k in kernels:
+                    print(str(k), 'score:', k.score)
 
             # Select next round of kernels
             kernels = self.grammar.select_offspring(np.array(kernels)).tolist()
