@@ -3,7 +3,7 @@ from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 
 from autoks.grammar import BaseGrammar, remove_duplicate_aks_kernels
-from autoks.kernel import set_model_kern
+from autoks.model import set_model_kern
 from evalg.plotting import plot_best_so_far, plot_score_summary
 
 
