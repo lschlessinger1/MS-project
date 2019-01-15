@@ -18,12 +18,6 @@ class AKSKernel:
         print(str(self))
 
 
-def set_model_kern(model, new_kern):
-    model.unlink_parameter(model.kern)
-    model.link_parameter(new_kern)
-    model.kern = new_kern
-
-
 def get_kernel_mapping():
     return dict(zip(get_allowable_kernels(), get_matching_kernels()))
 

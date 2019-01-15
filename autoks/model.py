@@ -20,6 +20,12 @@ def model_to_binexptree(model):
     return tree
 
 
+def set_model_kern(model, new_kern):
+    model.unlink_parameter(model.kern)
+    model.link_parameter(new_kern)
+    model.kern = new_kern
+
+
 def BIC(model):
     """
     Calculate the Bayesian Information Criterion (BIC) for a GPy `model` with maximum likelihood hyperparameters on a given dataset.
