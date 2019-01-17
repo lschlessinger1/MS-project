@@ -28,7 +28,8 @@ def set_model_kern(model, new_kern):
 
 def BIC(model):
     """
-    Calculate the Bayesian Information Criterion (BIC) for a GPy `model` with maximum likelihood hyperparameters on a given dataset.
+    Calculate the Bayesian Information Criterion (BIC) for a GPy `model` with maximum likelihood hyperparameters on a
+    given dataset.
     https://en.wikipedia.org/wiki/Bayesian_information_criterion
     """
     # model.log_likelihood() is the natural logarithm of the marginal likelihood of the Gaussian process.
@@ -38,3 +39,16 @@ def BIC(model):
     n = len(model.X)
     k = model._size_transformed()
     return np.log(n) * k - 2 * model.log_likelihood()
+
+
+def AIC(model):
+    """
+    Calculate the Akaike Information Criterion (AIC) for a GPy `model` with maximum likelihood hyperparameters on a
+    given dataset.
+    https://en.wikipedia.org/wiki/Akaike_information_criterion
+    """
+    # model.log_likelihood() is the natural logarithm of the marginal likelihood of the Gaussian process.
+    # model._size_transformed() is the number of optimisation parameters.
+    # AIC = 2k - 2ln(L^)
+    k = model._size_transformed()
+    return 2 * k - 2 * model.log_likelihood()
