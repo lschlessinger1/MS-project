@@ -11,7 +11,7 @@ class Experiment:
     grammar: BaseGrammar
 
     def __init__(self, grammar, objective, kernel_families, X, y, eval_budget=50, max_depth=10, gp_model=None,
-                 debug=False, verbose=False):
+                 debug=False, verbose=False, optimizer=None):
         self.grammar = grammar
         self.objective = objective
         self.kernel_families = kernel_families
@@ -24,18 +24,18 @@ class Experiment:
         self.n_evals = 0
         self.debug = debug
         self.verbose = verbose
+        self.optimizer = optimizer
         self.n_init_kernels = 15
 
-        # if plotting
+        # statistics used for plotting
         self.best_scores = []
         self.mean_scores = []
         self.std_scores = []
 
-        # default model is GP Regression
         if gp_model is not None:
             self.gp_model = gp_model
         else:
-            # self.gp_model = GPRegression
+            # default model is GP Regression
             self.gp_model = GPRegression(self.X, self.y)
 
     def kernel_search(self):
@@ -67,6 +67,10 @@ class Experiment:
                 print('Best (%d) kernel%s:' % (n_parents, 's' if n_parents > 1 else ''))
                 for parent in parents:
                     parent.pretty_print()
+
+            # fix each parent before expansion for use in optimization
+            for parent in parents:
+                parent.kernel.fix()
 
             new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose)
             kernels += new_kernels
@@ -100,6 +104,34 @@ class Experiment:
 
         self.update_stats([k.score for k in kernels])
 
+    def optimize_kernel(self, aks_kernel):
+        if not aks_kernel.scored:
+            try:
+                kernel = aks_kernel.kernel
+                k_copy = kernel.copy()
+                k_copy.unfix()
+
+                # Optimize k_copy (with all params unfixed)
+                set_model_kern(self.gp_model, k_copy)
+                self.gp_model.optimize(ipython_notebook=False, optimizer=self.optimizer)
+
+                # Optimize (with restarts) the newly added parameters
+                k_new = kernel
+
+                # Set param values of k_new to the previously optimized ones of k_copy
+                new_params = k_copy.param_array
+                k_new[:] = new_params
+
+                set_model_kern(self.gp_model, k_new)
+                self.gp_model.optimize_restarts(ipython_notebook=False, optimizer=self.optimizer, verbose=False)
+
+                # Unfix all params and set kernel
+                k_new.unfix()
+                set_model_kern(self.gp_model, k_new)
+                aks_kernel.kernel = self.gp_model.kern
+            except LinAlgError:
+                print('Y covariance is not positive semi-definite')
+
     def evaluate_kernel(self, aks_kernel):
         if not aks_kernel.scored:
             set_model_kern(self.gp_model, aks_kernel.kernel)
@@ -107,15 +139,6 @@ class Experiment:
             self.n_evals += 1
             aks_kernel.scored = True
             aks_kernel.score = score
-
-    def optimize_kernel(self, aks_kernel):
-        if not aks_kernel.scored:
-            try:
-                set_model_kern(self.gp_model, aks_kernel.kernel)
-                self.gp_model.optimize(ipython_notebook=False)
-                aks_kernel.kernel = self.gp_model.kern
-            except LinAlgError:
-                print('Y covariance is not positive semi-definite')
 
     def plot_best_scores(self):
         """ Plot the best models scores
