@@ -52,3 +52,16 @@ def AIC(model):
     # AIC = 2k - 2ln(L^)
     k = model._size_transformed()
     return 2 * k - 2 * model.log_likelihood()
+
+
+def bayes_factor(model_1, model_2):
+    """ Compute the Bayes factor between two models
+    https://en.wikipedia.org/wiki/Bayes_factor
+
+    :param model_1:
+    :param model_2:
+    :return:
+    """
+    model_evidence_1 = np.exp(model_1.log_likelihood())
+    model_evidence_2 = np.exp(model_2.log_likelihood())
+    return model_evidence_1 / model_evidence_2
