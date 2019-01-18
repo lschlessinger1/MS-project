@@ -26,6 +26,12 @@ def set_model_kern(model, new_kern):
     model.kern = new_kern
 
 
+def log_likelihood_normalized(model):
+    """Computes the normalized log likelihood."""
+    dataset_size = model.X.shape[0]
+    return model.log_likelihood() / dataset_size
+
+
 def BIC(model):
     """
     Calculate the Bayesian Information Criterion (BIC) for a GPy `model` with maximum likelihood hyperparameters on a
