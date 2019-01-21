@@ -1,3 +1,6 @@
+import os
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import make_regression
@@ -5,6 +8,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVR
+
+top_path = os.path.abspath('..')
+if top_path not in sys.path:
+    print('Adding to sys.path %s' % top_path)
+    sys.path.append(top_path)
 
 from autoks import model
 from autoks.Experiment import Experiment
