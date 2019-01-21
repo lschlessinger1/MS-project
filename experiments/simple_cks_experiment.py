@@ -16,7 +16,10 @@ np.random.seed(4096)
 X, y, gt = make_regression(n_features=1, n_informative=1, n_samples=100, coef=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-base_kernels = ['SE', 'RQ']
+if X.shape[1] > 1:
+    base_kernels = ['SE', 'RQ']
+else:
+    base_kernels = ['SE', 'RQ', 'LIN', 'PER']
 grammar = CKSGrammar(n_parents=1)
 
 
