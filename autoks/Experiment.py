@@ -11,7 +11,7 @@ class Experiment:
     grammar: BaseGrammar
 
     def __init__(self, grammar, objective, kernel_families, X, y, eval_budget=50, max_depth=10, gp_model=None,
-                 debug=False, verbose=False, optimizer=None):
+                 debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10):
         self.grammar = grammar
         self.objective = objective
         self.kernel_families = kernel_families
@@ -25,6 +25,7 @@ class Experiment:
         self.debug = debug
         self.verbose = verbose
         self.optimizer = optimizer
+        self.n_restarts_optimizer = n_restarts_optimizer
         self.n_init_kernels = 15
 
         # statistics used for plotting
@@ -123,7 +124,8 @@ class Experiment:
                 k_new[:] = new_params
 
                 set_model_kern(self.gp_model, k_new)
-                self.gp_model.optimize_restarts(ipython_notebook=False, optimizer=self.optimizer, verbose=False)
+                self.gp_model.optimize_restarts(ipython_notebook=False, optimizer=self.optimizer,
+                                                num_restarts=self.n_restarts_optimizer, verbose=False)
 
                 # Unfix all params and set kernel
                 k_new.unfix()
