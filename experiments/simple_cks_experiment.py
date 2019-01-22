@@ -71,7 +71,7 @@ print('RMSE = %.3f' % rmse)
 mean_lpd = np.mean(best_model.log_predictive_density(X_test, y_test))
 print('Negative log predictive density = %.3f' % -mean_lpd)
 
-# Compare against linear and logistic regression.
+# Compare against linear and support vector regression.
 lin_reg = LinearRegression().fit(X_train, y_train)
 y_pred_lin_reg = lin_reg.predict(X_test)
 rmse_lin_reg = np.sqrt(mean_squared_error(y_test, y_pred_lin_reg))
