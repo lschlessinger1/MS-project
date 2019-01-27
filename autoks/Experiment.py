@@ -83,7 +83,7 @@ class Experiment:
 
             if self.verbose:
                 print('Printing all results')
-                for k in kernels:
+                for k in sorted(kernels, key=lambda k: k.score, reverse=True):
                     print(str(k), 'score:', k.score)
 
             # Select next round of kernels
