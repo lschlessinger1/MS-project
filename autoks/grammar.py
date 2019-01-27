@@ -1,3 +1,4 @@
+import numpy as np
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
@@ -317,3 +318,51 @@ class CKSGrammar(BaseGrammar):
         else:
             raise ValueError('Unknown kernel class:', kernel.__class__)
         return result
+
+
+class RandomGrammar(BaseGrammar):
+
+    def __init__(self, n_parents):
+        super().__init__(n_parents)
+
+    def initialize(self, kernel_families, n_kernels, n_dims):
+        # use same initialization as CKS and BOMS
+        kernels = get_all_1d_kernels(kernel_families, n_dims)
+        kernels = [AKSKernel(kernel) for kernel in kernels]
+        return kernels
+
+    def expand(self, aks_kernels, kernel_families, n_dims, verbose=False):
+        """Random expansion of nodes."""
+
+        if verbose:
+            print('Seed kernels:')
+            for k in aks_kernels:
+                k.pretty_print()
+
+        new_kernels = []
+
+        # for each kernel, randomly add or multiply a random 1D kernel
+        for aks_kernel in aks_kernels:
+            k = aks_kernel.kernel
+            operators = ['+', '*']
+            all_1d_kernels = get_all_1d_kernels(kernel_families, n_dims)
+
+            random_op = np.random.choice(operators)
+            random_1d_kernel = np.random.choice(all_1d_kernels)
+
+            if random_op == '+':
+                k += random_1d_kernel
+            elif random_op == '*':
+                k *= random_1d_kernel
+
+            new_kernels.append(k)
+
+        new_kernels = remove_duplicate_kernels(new_kernels)
+        new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
+
+        if verbose:
+            print('Expanded kernels:')
+            for k in new_kernels:
+                k.pretty_print()
+
+        return new_kernels
