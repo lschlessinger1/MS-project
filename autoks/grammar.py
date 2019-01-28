@@ -3,6 +3,7 @@ from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
 from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping, kernel_to_infix, AKSKernel
+from autoks.util import argsort
 from evalg.selection import select_k_best
 
 
@@ -48,9 +49,6 @@ class BaseGrammar:
         """
         return kernels
 
-
-def argsort(unsorted_list):
-    return [i[0] for i in sorted(enumerate(unsorted_list), key=lambda x: x[1])]
 
 
 def sort_kernel(kernel):
