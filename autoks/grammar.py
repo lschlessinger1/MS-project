@@ -125,24 +125,33 @@ class EvolutionaryGrammar(BaseGrammar):
         :return:
         """
         kernels = get_all_1d_kernels(kernel_families, n_dims)
-
-        # randomly initialize hyperparameters:
-        for kernel in kernels:
-            kernel.randomize()
-
+        kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, population, kernel_families, n_dims, verbose=False):
+    def expand(self, aks_kernels, kernel_families, n_dims, verbose=False):
         """ Perform crossover and mutation
 
-        :param population: list of models
+        :param aks_kernels: list of AKSKernels
         :param kernel_families: base kernels
         :param n_dims:
         :param verbose:
         :return:
         """
-        offspring = population.copy()
-        return offspring
+        if verbose:
+            print('Seed kernels:')
+            for k in aks_kernels:
+                k.pretty_print()
+
+        # TODO: perform crossover and mutation for all kernels
+        # for now, just return a copy of the original kernels
+        new_kernels = aks_kernels.copy()
+
+        if verbose:
+            print('Expanded kernels:')
+            for k in new_kernels:
+                k.pretty_print()
+
+        return new_kernels
 
 
 class BOMSGrammar(BaseGrammar):
