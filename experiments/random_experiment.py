@@ -1,6 +1,3 @@
-import os
-import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -8,16 +5,10 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVR
 
-from experiments.util import synthetic_data
-
-top_path = os.path.abspath('..')
-if top_path not in sys.path:
-    print('Adding to sys.path %s' % top_path)
-    sys.path.append(top_path)
-
 from autoks import model
-from autoks.Experiment import Experiment
+from autoks.experiment import Experiment
 from autoks.grammar import RandomGrammar
+from experiments.util import synthetic_data
 
 # Set random seed for reproducibility.
 np.random.seed(4096)
@@ -40,7 +31,7 @@ def negative_BIC(m):
 # Use the negative BIC because we want to maximize the objective.
 objective = negative_BIC
 
-# use conjugate gradient descent for CKS
+# use conjugate gradient descent
 optimizer = 'scg'
 
 experiment = Experiment(grammar, objective, base_kernels, X_train, y_train.reshape(-1, 1), eval_budget=50, debug=True,
