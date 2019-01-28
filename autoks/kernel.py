@@ -17,6 +17,9 @@ class AKSKernel:
     def pretty_print(self):
         print(str(self))
 
+    def print_full(self):
+        print(kernel_to_infix(self.kernel, show_params=True))
+
 
 def get_kernel_mapping():
     return dict(zip(get_allowable_kernels(), get_matching_kernels()))
@@ -57,7 +60,7 @@ def create_1d_kernel(kernel_family, active_dim, kernel_mapping=None, kernel_map=
     return kernel_map(input_dim=1, active_dims=[active_dim])
 
 
-def subkernel_expression(kernel):
+def subkernel_expression(kernel, show_params=False):
     kernel_families = get_allowable_kernels()
     kernel_mapping = get_kernel_mapping()
     matching_base_kerns = [kern_fam for kern_fam in kernel_families if isinstance(kernel, kernel_mapping[kern_fam])]
@@ -66,7 +69,12 @@ def subkernel_expression(kernel):
     # assume only 1 matching base kernel
     base_kernel = matching_base_kerns[0]
 
-    return base_kernel + str(dim)
+    kern_str = base_kernel + str(dim)
+    if show_params:
+        params = list(zip(kernel.parameter_names(), kernel.param_array))
+        param_str = ', '.join(tuple([name + '=' + "{:.6f}".format(val) for name, val in params]))
+        kern_str += '(' + param_str + ')'
+    return kern_str
 
 
 def in_order(root, tokens=[]):
@@ -140,11 +148,11 @@ def kernel_to_infix_tokens(kernel):
     return infix_tokens
 
 
-def tokens_to_str(tokens):
+def tokens_to_str(tokens, show_params=False):
     token_string = ''
     for i, token in enumerate(tokens):
         if isinstance(token, Kern):
-            token_string += subkernel_expression(token)
+            token_string += subkernel_expression(token, show_params=show_params)
         else:
             token_string += token
 
@@ -154,8 +162,8 @@ def tokens_to_str(tokens):
     return token_string
 
 
-def kernel_to_infix(kernel):
-    return tokens_to_str(kernel_to_infix_tokens(kernel))
+def kernel_to_infix(kernel, show_params=False):
+    return tokens_to_str(kernel_to_infix_tokens(kernel), show_params=show_params)
 
 
 def apply_op(left, right, operator):
