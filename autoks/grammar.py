@@ -173,12 +173,13 @@ class BOMSGrammar(BaseGrammar):
         # {SE, RQ, LIN, PER} if dataset is 1D
         # {SE_i} + {RQ_i} otherwise
         kernels = []
+        kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, active_set, kernel_families, n_dims, verbose=False):
+    def expand(self, aks_kernels, kernel_families, n_dims, verbose=False):
         """ Greedy and exploratory expansion of kernels
 
-        :param active_set: list of kernels
+        :param aks_kernels: list of AKSKernels
         :param kernel_families:
         :param n_dims:
         :param verbose:
@@ -188,7 +189,21 @@ class BOMSGrammar(BaseGrammar):
         # Add all neighbors (according to CKS grammar) of the best model seen thus far to active set
         # Explore:
         # Add 15 random walks (geometric dist w/ prob 1/3) from empty kernel to active set
-        pass
+        if verbose:
+            print('Seed kernels:')
+            for k in aks_kernels:
+                k.pretty_print()
+
+        # TODO: perform exploitation and exploration for all kernels
+        # for now, just return a copy of the original kernels
+        new_kernels = aks_kernels.copy()
+
+        if verbose:
+            print('Expanded kernels:')
+            for k in new_kernels:
+                k.pretty_print()
+
+        return new_kernels
 
     def select_offspring(self, active_set):
         """ Select top 600 kernels according to expected improvement
@@ -196,7 +211,7 @@ class BOMSGrammar(BaseGrammar):
         :param active_set:
         :return:
         """
-        pass
+        select_k_best(active_set, [k.score for k in active_set], self.n_parents)
 
 
 class CKSGrammar(BaseGrammar):
