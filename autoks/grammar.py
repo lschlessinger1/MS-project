@@ -3,7 +3,7 @@ from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
 from autoks.kernel import get_all_1d_kernels, create_1d_kernel, get_kernel_mapping, kernel_to_infix, AKSKernel
-from autoks.util import argsort
+from autoks.util import argsort, remove_duplicates
 from evalg.selection import select_k_best
 
 
@@ -11,6 +11,7 @@ class BaseGrammar:
 
     def __init__(self, n_parents):
         self.n_parents = n_parents
+        self.operators = ['+', '*']
 
     def initialize(self, kernel_families, n_kernels, n_dims):
         """ Initialize kernels
@@ -48,7 +49,6 @@ class BaseGrammar:
         :return:
         """
         return kernels
-
 
 
 def sort_kernel(kernel):
@@ -97,30 +97,6 @@ def sort_combination_kernel(kernel, new_ops):
     sorted_ops = [new_ops[i] for i in ind]
 
     return kernel.__class__(sorted_ops)
-
-
-def argunique(data):
-    """ Get the indices of the unique elements in a list
-    """
-    unique_vals = set()
-    unique_ind = []
-
-    for i, datum in enumerate(data):
-        if datum not in unique_vals:
-            unique_vals.add(datum)
-            unique_ind.append(i)
-
-    return unique_ind
-
-
-def remove_duplicates(data, values):
-    """ Remove duplicates of data and replace with values
-    """
-    if len(data) != len(values):
-        raise ValueError('The length of data must be be equal to the length of values')
-
-    unique_ind = argunique(data)
-    return [values[i] for i in unique_ind]
 
 
 def remove_duplicate_kernels(kernels):
@@ -256,7 +232,7 @@ class CKSGrammar(BaseGrammar):
         new_kernels = []
         for aks_kernel in aks_kernels:
             kernel = aks_kernel.kernel
-            kernels_expanded = self.expand_full_kernel(kernel, ['+', '*'], n_dims, kernel_families)
+            kernels_expanded = self.expand_full_kernel(kernel, n_dims, kernel_families)
             new_kernels += kernels_expanded
 
         new_kernels = remove_duplicate_kernels(new_kernels)
@@ -269,8 +245,7 @@ class CKSGrammar(BaseGrammar):
 
         return new_kernels
 
-    @staticmethod
-    def expand_single_kernel(kernel, ops, n_dims, base_kernels):
+    def expand_single_kernel(self, kernel, n_dims, base_kernels):
         is_kernel = isinstance(kernel, Kern)
         if not is_kernel:
             raise ValueError('Unknown kernel type %s' % kernel.__class__)
@@ -280,7 +255,7 @@ class CKSGrammar(BaseGrammar):
         is_combo_kernel = isinstance(kernel, CombinationKernel)
         is_base_kernel = is_kernel and not is_combo_kernel
 
-        for op in ops:
+        for op in self.operators:
             for d in range(n_dims):
                 for base_kernel_name in base_kernels:
                     if op == '+':
@@ -294,14 +269,13 @@ class CKSGrammar(BaseGrammar):
                 kernels.append(create_1d_kernel(base_kernel_name, kernel.active_dims[0]))
         return kernels
 
-    @staticmethod
-    def expand_full_kernel(kernel, operators, n_dims, base_kernels):
-        result = CKSGrammar.expand_single_kernel(kernel, operators, n_dims, base_kernels)
+    def expand_full_kernel(self, kernel, n_dims, base_kernels):
+        result = self.expand_single_kernel(kernel, n_dims, base_kernels)
         if kernel is None:
             pass
         elif isinstance(kernel, CombinationKernel):
             for i, operand in enumerate(kernel.parts):
-                for e in CKSGrammar.expand_full_kernel(operand, operators, n_dims, base_kernels):
+                for e in self.expand_full_kernel(operand, n_dims, base_kernels):
                     new_operands = kernel.parts[:i] + [e] + kernel.parts[i + 1:]
                     new_operands = [op.copy() for op in new_operands]
                     if isinstance(kernel, Prod):
@@ -342,10 +316,9 @@ class RandomGrammar(BaseGrammar):
         # for each kernel, randomly add or multiply a random 1D kernel
         for aks_kernel in aks_kernels:
             k = aks_kernel.kernel
-            operators = ['+', '*']
             all_1d_kernels = get_all_1d_kernels(kernel_families, n_dims)
 
-            random_op = np.random.choice(operators)
+            random_op = np.random.choice(self.operators)
             random_1d_kernel = np.random.choice(all_1d_kernels)
 
             if random_op == '+':
