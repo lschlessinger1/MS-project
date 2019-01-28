@@ -3,6 +3,7 @@ from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 
 from autoks.grammar import BaseGrammar, remove_duplicate_aks_kernels
+from autoks.kernel import n_base_kernels
 from autoks.model import set_model_kern
 from evalg.plotting import plot_best_so_far, plot_score_summary
 
@@ -32,6 +33,10 @@ class Experiment:
         self.best_scores = []
         self.mean_scores = []
         self.std_scores = []
+        self.median_n_hyperparameters = []
+        self.std_n_hyperparameters = []
+        self.median_n_operands = []
+        self.std_n_operands = []
 
         if gp_model is not None:
             self.gp_model = gp_model
@@ -103,7 +108,7 @@ class Experiment:
             self.optimize_kernel(aks_kernel)
             self.evaluate_kernel(aks_kernel)
 
-        self.update_stats([k.score for k in kernels])
+        self.update_stats(kernels)
 
     def optimize_kernel(self, aks_kernel):
         if not aks_kernel.scored:
@@ -156,12 +161,21 @@ class Experiment:
         """
         plot_score_summary(self.mean_scores, self.std_scores, self.best_scores)
 
-    def update_stats(self, model_scores):
-        """ Update model score statistics
+    def update_stats(self, kernels):
+        """ Update kernel statistics
 
-        :param model_scores:
+        :param kernels:
         :return:
         """
+        model_scores = [k.score for k in kernels]
         self.best_scores.append(max(model_scores))
         self.mean_scores.append(np.mean(model_scores))
         self.std_scores.append(np.std(model_scores))
+
+        n_params = [aks_kernel.kernel.param_array.size for aks_kernel in kernels]
+        self.median_n_hyperparameters.append(np.median(n_params))
+        self.std_n_hyperparameters.append(np.std(n_params))
+
+        n_operands = [n_base_kernels(aks_kernel.kernel) for aks_kernel in kernels]
+        self.median_n_operands.append(np.median(n_operands))
+        self.std_n_operands.append(np.std(n_operands))

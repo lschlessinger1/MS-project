@@ -190,3 +190,16 @@ def eval_binexp_tree(root):
 
 def tree_to_kernel(tree):
     return eval_binexp_tree(tree.root)
+
+
+def n_base_kernels(kernel):
+    """Count the number of base kernels."""
+    count = [0]
+
+    def count_base_kernels(kern):
+        if isinstance(kern, Kern):
+            if not isinstance(kern, CombinationKernel):
+                count[0] += 1
+
+    kernel.traverse(count_base_kernels)
+    return count[0]
