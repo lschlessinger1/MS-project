@@ -5,7 +5,7 @@ from numpy.linalg import LinAlgError
 from autoks.grammar import BaseGrammar, remove_duplicate_aks_kernels
 from autoks.kernel import n_base_kernels
 from autoks.model import set_model_kern
-from evalg.plotting import plot_best_so_far, plot_score_summary
+from evalg.plotting import plot_best_so_far, plot_distribution
 
 
 class Experiment:
@@ -35,8 +35,11 @@ class Experiment:
         self.std_scores = []
         self.median_n_hyperparameters = []
         self.std_n_hyperparameters = []
+        self.best_n_hyperparameters = []
         self.median_n_operands = []
         self.std_n_operands = []
+        self.best_n_operands = []
+
 
         if gp_model is not None:
             self.gp_model = gp_model
@@ -159,23 +162,42 @@ class Experiment:
 
         :return:
         """
-        plot_score_summary(self.mean_scores, self.std_scores, self.best_scores)
+        plot_distribution(self.mean_scores, self.std_scores, self.best_scores)
+
+    def plot_n_hyperparams_summary(self):
+        """ Plot a summary of the number of hyperparameters
+
+        :return:
+        """
+        plot_distribution(self.median_n_hyperparameters, self.std_n_hyperparameters, self.best_n_hyperparameters,
+                          value_name='median', metric_name='# Hyperparameters')
+
+    def plot_n_operands_summary(self):
+        """ Plot a summary of the number of operands
+
+        :return:
+        """
+        plot_distribution(self.median_n_operands, self.std_n_operands, self.best_n_operands, value_name='median',
+                          metric_name='# Operands')
 
     def update_stats(self, kernels):
-        """ Update kernel statistics
+        """ Update kernel population statistics
 
         :param kernels:
         :return:
         """
-        model_scores = [k.score for k in kernels]
-        self.best_scores.append(max(model_scores))
+        model_scores = np.array([k.score for k in kernels])
+        score_argmax = np.argmax(model_scores)
+        self.best_scores.append(model_scores[score_argmax])
         self.mean_scores.append(np.mean(model_scores))
         self.std_scores.append(np.std(model_scores))
 
-        n_params = [aks_kernel.kernel.param_array.size for aks_kernel in kernels]
+        n_params = np.array([aks_kernel.kernel.param_array.size for aks_kernel in kernels])
         self.median_n_hyperparameters.append(np.median(n_params))
         self.std_n_hyperparameters.append(np.std(n_params))
+        self.best_n_hyperparameters.append(n_params[score_argmax])
 
-        n_operands = [n_base_kernels(aks_kernel.kernel) for aks_kernel in kernels]
+        n_operands = np.array([n_base_kernels(aks_kernel.kernel) for aks_kernel in kernels])
         self.median_n_operands.append(np.median(n_operands))
         self.std_n_operands.append(np.std(n_operands))
+        self.best_n_operands.append(n_operands[score_argmax])

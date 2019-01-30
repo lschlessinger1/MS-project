@@ -41,12 +41,16 @@ aks_kernels = experiment.kernel_search()
 # View results of experiment
 experiment.plot_best_scores()
 experiment.plot_score_summary()
+experiment.plot_n_hyperparams_summary()
+experiment.plot_n_operands_summary()
 
 sorted_aks_kernels = sorted(aks_kernels, key=lambda x: x.score, reverse=True)
 best_aks_kernel = sorted_aks_kernels[0]
 best_kernel = best_aks_kernel.kernel
 print('Best kernel:')
 best_aks_kernel.pretty_print()
+print('In full form:')
+best_aks_kernel.print_full()
 
 best_model = experiment.gp_model.__class__(experiment.X, experiment.y, kernel=best_kernel)
 
@@ -68,7 +72,7 @@ lin_reg = LinearRegression().fit(X_train, y_train)
 y_pred_lin_reg = lin_reg.predict(X_test)
 rmse_lin_reg = np.sqrt(mean_squared_error(y_test, y_pred_lin_reg))
 
-svr = SVR().fit(X_train, y_train)
+svr = SVR(kernel='rbf').fit(X_train, y_train)
 y_pred_svr = svr.predict(X_test)
 rmse_svr = np.sqrt(mean_squared_error(y_test, y_pred_svr))
 

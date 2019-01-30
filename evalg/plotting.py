@@ -18,26 +18,64 @@ def plot_best_so_far(best_so_far, title='Best-So-Far Curve', x_label='Generation
     plt.show()
 
 
-def plot_score_summary(mean_scores, std_scores, best_scores, x_label='Generation', y_label='Fitness'):
-    """ Plot average fitness showing standard deviation area and best fitness
-
-    :param mean_scores:
-    :param std_scores:
-    :param best_scores:
-    :param x_label:
-    :param y_label:
-    :return:
-    """
-    mu = np.array(mean_scores)
-    sigma = np.array(std_scores)
-    t = np.arange(len(mean_scores)) + 1
-
+def setup_plot(x_label, y_label, title):
     fig, ax = plt.subplots(1)
-    ax.plot(t, best_scores, lw=2, label='Max. fitness')
-    ax.plot(t, mu, lw=2, label='Average fitness')
-    ax.fill_between(t, mu + sigma, mu - sigma, alpha=0.5)
-    ax.set_title(r'Average Fitness $\mu$ and $\pm \sigma$ interval')
-    ax.legend()
+
+    ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
+
+    return fig
+
+
+def setup_values(fig, values, value_label):
+    ax = fig.axes[0]
+
+    x = np.arange(len(values)) + 1
+    y = np.array(values)
+    ax.plot(x, y, lw=2, label=value_label)
+
+    return fig, x, y
+
+
+def setup_stds(fig, stds, mu, t, std_label='Confidence'):
+    ax = fig.axes[0]
+
+    sigma = np.array(stds)
+    ax.fill_between(t, mu + sigma, mu - sigma, alpha=0.5, label=std_label)
+
+    return fig, sigma
+
+
+def setup_optima(fig, x, optima, optima_label):
+    ax = fig.axes[0]
+    ax.plot(x, optima, lw=2, label=optima_label)
+    return fig
+
+
+def plot_distribution(values, stds=None, optima=None, x_label='generation', value_name='average',
+                      metric_name='fitness', optima_name='best'):
+    x_name = x_label.capitalize()
+    y_name = metric_name.capitalize()
+    value_label = ('%s %s' % (value_name, metric_name)).capitalize()
+    title = value_label
+
+    fig = setup_plot(x_name, y_name, title)
+    fig, x, y = setup_values(fig, values, value_label)
+
+    if stds is not None:
+        fig, sigma = setup_stds(fig, stds, y, x)
+        title = ''.join((title, ' and $\pm \sigma$ interval'))
+        ax = fig.axes[0]
+        ax.set_title(title)
+
+    if optima is not None:
+        optima_label = ('%s %s' % (optima_name, metric_name)).capitalize()
+        fig = setup_optima(fig, x, optima, optima_label)
+
+    ax = fig.axes[0]
+
+    ax.legend()
     plt.show()
+
+    return fig
