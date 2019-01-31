@@ -3,7 +3,7 @@ from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 
 from autoks.grammar import BaseGrammar, remove_duplicate_aks_kernels
-from autoks.kernel import n_base_kernels
+from autoks.kernel import n_base_kernels, covariance_distance
 from autoks.model import set_model_kern
 from evalg.plotting import plot_best_so_far, plot_distribution
 
@@ -39,7 +39,8 @@ class Experiment:
         self.median_n_operands = []
         self.std_n_operands = []
         self.best_n_operands = []
-
+        self.mean_cov_dists = []
+        self.std_cov_dists = []
 
         if gp_model is not None:
             self.gp_model = gp_model
@@ -180,6 +181,10 @@ class Experiment:
         plot_distribution(self.median_n_operands, self.std_n_operands, self.best_n_operands, value_name='median',
                           metric_name='# Operands')
 
+    def plot_cov_dist_summary(self):
+        """Plot a summary of the homogeneity of models over each generation."""
+        plot_distribution(self.mean_cov_dists, self.std_cov_dists, metric_name='covariance distance')
+
     def update_stats(self, kernels):
         """ Update kernel population statistics
 
@@ -201,3 +206,7 @@ class Experiment:
         self.median_n_operands.append(np.median(n_operands))
         self.std_n_operands.append(np.std(n_operands))
         self.best_n_operands.append(n_operands[score_argmax])
+
+        cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in kernels], self.X)
+        self.mean_cov_dists.append(np.mean(cov_dists))
+        self.std_cov_dists.append(np.std(cov_dists))

@@ -43,6 +43,7 @@ experiment.plot_best_scores()
 experiment.plot_score_summary()
 experiment.plot_n_hyperparams_summary()
 experiment.plot_n_operands_summary()
+experiment.plot_cov_dist_summary()
 
 sorted_aks_kernels = sorted(aks_kernels, key=lambda x: x.score, reverse=True)
 best_aks_kernel = sorted_aks_kernels[0]

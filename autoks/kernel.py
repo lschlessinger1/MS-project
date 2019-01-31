@@ -1,3 +1,5 @@
+import numpy as np
+
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 
@@ -203,3 +205,22 @@ def n_base_kernels(kernel):
 
     kernel.traverse(count_base_kernels)
     return count[0]
+
+
+def covariance_distance(kernels, X):
+    """Euclidean distance of all pairs kernels"""
+    # for each pair of kernel matrices, compute Euclidean norm
+    n_kernels = len(kernels)
+    dists = np.zeros((n_kernels, n_kernels))
+    for i in range(n_kernels):
+        for j in range(i + 1, n_kernels):
+            dists[i, j] = kernel_l2_dist(kernels[i], kernels[j], X)
+            # symmetrize
+    dists = dists + dists.T
+    return dists
+
+
+def kernel_l2_dist(kernel_1, kernel_2, X):
+    """Compute Euclidean distance between two kernel matrices."""
+    dist = np.linalg.norm(kernel_1.K(X) - kernel_2.K(X))
+    return dist
