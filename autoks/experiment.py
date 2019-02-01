@@ -1,3 +1,5 @@
+from time import time
+
 import numpy as np
 from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
@@ -41,6 +43,10 @@ class Experiment:
         self.best_n_operands = []
         self.mean_cov_dists = []
         self.std_cov_dists = []
+        self.total_optimization_time = 0
+        self.total_eval_time = 0
+        self.total_expansion_time = 0
+        self.total_kernel_search_time = 0
 
         if gp_model is not None:
             self.gp_model = gp_model
@@ -53,6 +59,7 @@ class Experiment:
 
         :return: list of kernels
         """
+        t_init = time()
         # initialize models
         kernels = self.grammar.initialize(self.kernel_families, n_kernels=self.n_init_kernels, n_dims=self.n_dims)
 
@@ -82,7 +89,10 @@ class Experiment:
             for parent in parents:
                 parent.kernel.fix()
 
+            t0_exp = time()
             new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose)
+            self.total_expansion_time += time() - t0_exp
+
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
@@ -100,6 +110,7 @@ class Experiment:
 
             depth += 1
 
+        self.total_kernel_search_time += time() - t_init
         return kernels
 
     def opt_and_eval_kernels(self, kernels):
@@ -109,8 +120,16 @@ class Experiment:
         :return:
         """
         for aks_kernel in kernels:
+            t0 = time()
+
             self.optimize_kernel(aks_kernel)
+
+            t1 = time()
+            self.total_optimization_time += t1 - t0
+
             self.evaluate_kernel(aks_kernel)
+
+            self.total_eval_time += time() - t1
 
         self.update_stats(kernels)
 
@@ -184,6 +203,21 @@ class Experiment:
     def plot_cov_dist_summary(self):
         """Plot a summary of the homogeneity of models over each generation."""
         plot_distribution(self.mean_cov_dists, self.std_cov_dists, metric_name='covariance distance')
+
+    def timing_report(self):
+        """Print a runtime report of the kernel search."""
+        eval_time = self.total_eval_time
+        opt_time = self.total_optimization_time
+        expansion_time = self.total_expansion_time
+        total_time = self.total_kernel_search_time
+        other_time = total_time - eval_time - opt_time - expansion_time
+        labels = ['Evaluation', 'Optimization', 'Expansion', 'Other']
+        x = np.array([eval_time, opt_time, expansion_time, other_time])
+
+        x_pct = 100 * (x / total_time)
+        print('Runtimes:')
+        for pct, sec, label in sorted(zip(x_pct, x, labels), key=lambda v: v[1], reverse=True):
+            print('%s: %0.2f%% (%0.2fs)' % (label, pct, sec))
 
     def update_stats(self, kernels):
         """ Update kernel population statistics
