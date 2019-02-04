@@ -1,7 +1,8 @@
 import numpy as np
-
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
+
+from autoks.grammar import sort_kernel
 
 
 class AKSKernel:
@@ -224,3 +225,33 @@ def kernel_l2_dist(kernel_1, kernel_2, X):
     """Compute Euclidean distance between two kernel matrices."""
     dist = np.linalg.norm(kernel_1.K(X) - kernel_2.K(X))
     return dist
+
+
+def additive_form(kernel):
+    if isinstance(kernel, Prod):
+        # Distribute kernel parts if necessary
+        additive_ops = [additive_form(part) for part in kernel.parts]
+        additive_kernel = additive_ops[0]
+
+        for additive_op in additive_ops[1:]:
+            if isinstance(additive_kernel, Add):
+                additive_parts = [additive_form(op * additive_op) for op in additive_kernel.parts]
+                additive_kernel = Add(additive_parts)
+            elif isinstance(additive_op, Add):
+                additive_parts = [additive_form(op * additive_kernel) for op in additive_op.parts]
+                additive_kernel = Add(additive_parts)
+            else:
+                additive_kernel *= additive_op
+
+        return sort_kernel(additive_kernel)
+    elif isinstance(kernel, Add):
+        # Make all kernel parts additive
+        additive_parts = [additive_form(part) for part in kernel.parts]
+        additive_kernel = Add(additive_parts)
+
+        return sort_kernel(additive_kernel)
+    elif isinstance(kernel, Kern):
+        # Base kernel
+        return kernel
+    else:
+        raise ValueError('%s is not a subclass of %s' % (kernel.__class__, Kern))
