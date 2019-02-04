@@ -4,8 +4,8 @@ import numpy as np
 from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 
-from autoks.grammar import BaseGrammar, remove_duplicate_aks_kernels
-from autoks.kernel import n_base_kernels, covariance_distance
+from autoks.grammar import BaseGrammar
+from autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels
 from autoks.model import set_model_kern
 from evalg.plotting import plot_best_so_far, plot_distribution
 

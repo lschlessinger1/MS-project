@@ -2,7 +2,7 @@ import numpy as np
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 
-from autoks.grammar import sort_kernel
+from autoks.util import remove_duplicates, argsort
 
 
 class AKSKernel:
@@ -225,6 +225,66 @@ def kernel_l2_dist(kernel_1, kernel_2, X):
     """Compute Euclidean distance between two kernel matrices."""
     dist = np.linalg.norm(kernel_1.K(X) - kernel_2.K(X))
     return dist
+
+
+def sort_kernel(kernel):
+    """ Sorts kernel tree
+    """
+
+    if not isinstance(kernel, CombinationKernel):
+        return kernel
+    elif isinstance(kernel, Kern):
+        new_ops = []
+        for op in kernel.parts:
+            op_sorted = sort_kernel(op)
+            if isinstance(op_sorted, CombinationKernel):
+                new_ops.append(op_sorted)
+            elif op_sorted is not None:
+                new_ops.append(op_sorted)
+
+        if len(new_ops) == 0:
+            return None
+        elif len(new_ops) == 1:
+            return new_ops[0]
+        else:
+            k_sorted = sort_combination_kernel(kernel, new_ops)
+            return k_sorted
+
+
+def sort_combination_kernel(kernel, new_ops):
+    """ Helper function to sort a combination kernel
+    """
+    # first sort by kernel name, then by active dim
+    kmap = get_kernel_mapping()
+    kmap_inv = {v: k for k, v in kmap.items()}
+    # add sum and product entries
+    kmap_inv[Prod] = 'PROD'
+    kmap_inv[Add] = 'ADD'
+
+    unsorted_kernel_names = []
+    for operand in new_ops:
+        if isinstance(operand, CombinationKernel):
+            # to sort multiple combination kernels of the same type, use the parameter string
+            param_str = ''.join(str(x) for x in operand.param_array)
+            unsorted_kernel_names.append((kmap_inv[operand.__class__] + param_str))
+        elif isinstance(operand, Kern):
+            unsorted_kernel_names.append((kmap_inv[operand.__class__] + str(operand.active_dims[0])))
+    ind = argsort(unsorted_kernel_names)
+    sorted_ops = [new_ops[i] for i in ind]
+
+    return kernel.__class__(sorted_ops)
+
+
+def remove_duplicate_kernels(kernels):
+    """ Remove duplicate kernels
+    """
+    return remove_duplicates([kernel_to_infix(k) for k in kernels], kernels)
+
+
+def remove_duplicate_aks_kernels(aks_kernels):
+    """ Remove duplicate AKSKernel's
+    """
+    return remove_duplicates([kernel_to_infix(aks_kernel.kernel) for aks_kernel in aks_kernels], aks_kernels)
 
 
 def additive_form(kernel):
