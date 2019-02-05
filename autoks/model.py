@@ -71,3 +71,16 @@ def bayes_factor(model_1, model_2):
     model_evidence_1 = np.exp(model_1.log_likelihood())
     model_evidence_2 = np.exp(model_2.log_likelihood())
     return model_evidence_1 / model_evidence_2
+
+
+def pl2(model):
+    """ Compute the modified expected log-predictive likelihood (PL2) score of a model.
+
+    Ando & Tsay, 2009
+    :param model:
+    :return:
+    """
+    n = len(model.X)
+    k = model._size_transformed()
+    nll = -model.log_likelihood()
+    return nll / n + k / (2 * n)
