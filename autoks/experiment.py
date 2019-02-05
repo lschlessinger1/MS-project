@@ -5,7 +5,7 @@ from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 
 from autoks.grammar import BaseGrammar
-from autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels
+from autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist
 from autoks.model import set_model_kern
 from evalg.plotting import plot_best_so_far, plot_distribution
 
@@ -43,6 +43,7 @@ class Experiment:
         self.best_n_operands = []
         self.mean_cov_dists = []
         self.std_cov_dists = []
+        self.diversity_scores = []
         self.total_optimization_time = 0
         self.total_eval_time = 0
         self.total_expansion_time = 0
@@ -204,6 +205,10 @@ class Experiment:
         """Plot a summary of the homogeneity of models over each generation."""
         plot_distribution(self.mean_cov_dists, self.std_cov_dists, metric_name='covariance distance')
 
+    def plot_kernel_diversity_summary(self):
+        """Plot a summary of the diversity of models over each generation."""
+        plot_distribution(self.diversity_scores, metric_name='Diversity', value_name='')
+
     def timing_report(self):
         """Print a runtime report of the kernel search."""
         eval_time = self.total_eval_time
@@ -244,3 +249,7 @@ class Experiment:
         cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in kernels], self.X)
         self.mean_cov_dists.append(np.mean(cov_dists))
         self.std_cov_dists.append(np.std(cov_dists))
+
+        diversity_score = all_pairs_avg_dist([aks_kernel.kernel for aks_kernel in kernels], self.kernel_families,
+                                             self.n_dims)
+        self.diversity_scores.append(diversity_score)

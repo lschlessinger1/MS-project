@@ -315,3 +315,88 @@ def additive_form(kernel):
         return kernel
     else:
         raise ValueError('%s is not a subclass of %s' % (kernel.__class__, Kern))
+
+
+def additive_part_to_vec(additive_part, base_kernels, n_dims):
+    # convert product into vector
+    # ex: k1 * k1 * k2 * k4 ---> [2, 1, 0, 1]
+
+    if isinstance(additive_part, Add):
+        raise ValueError('additive_part cannot be a sum')
+
+    all_kerns = get_all_1d_kernels(base_kernels, n_dims)
+    vec_length = len(base_kernels) * n_dims
+    vec = np.zeros(vec_length)
+
+    if isinstance(additive_part, Prod):
+        # has parts
+        parts = additive_part.parts
+    elif isinstance(additive_part, Kern):
+        # Base kernel
+        parts = [additive_part]
+    else:
+        raise ValueError('Unknown kernel %s' % additive_part)
+
+    # count number of each kernel type in additive part
+    for i, op in enumerate(parts):
+        for j, kern in enumerate(all_kerns):
+            same_kernel = isinstance(op, kern.__class__) and op.active_dims == kern.active_dims
+            if same_kernel:
+                vec[j] += 1
+
+    return vec
+
+
+def kernel_vec_avg_dist(kvecs1, kvecs2):
+    """Average Euclidean distance between two lists of vectors."""
+
+    total_dist = 0
+    for kv1 in kvecs1:
+        for kv2 in kvecs2:
+            dist = np.linalg.norm(kv1 - kv2)
+            total_dist += dist
+
+    n = len(kvecs1) + len(kvecs2)
+    avg_dist = total_dist / n
+
+    return avg_dist
+
+
+def all_pairs_avg_dist(kernels, base_kernels, n_dims):
+    """ Calculates the mean distance between all pairs of kernels
+
+    Can be thought of as a diversity score of a population of kernels
+    """
+    from scipy.special import comb
+    # first change each kernel into additive form
+    additive_kernels = [additive_form(kernel) for kernel in kernels]
+
+    # For each kernel, convert each additive part into a vector
+    kernel_vecs = []
+    for additive_kernel in additive_kernels:
+        kernel_vec = []
+        if isinstance(additive_kernel, CombinationKernel):
+            for additive_part in additive_kernel.parts:
+                vec = additive_part_to_vec(additive_part, base_kernels, n_dims)
+                kernel_vec.append(vec)
+        elif isinstance(additive_kernel, Kern):
+            # base kernel
+            additive_part = additive_kernel
+            vec = additive_part_to_vec(additive_part, base_kernels, n_dims)
+            kernel_vec.append(vec)
+        else:
+            raise ValueError('Unknown kernel %s' % additive_kernel)
+
+        kernel_vecs.append(kernel_vec)
+
+    # compute average Eucldiean distance for all pairs of kernels
+    all_pairs_total_dist = 0
+    for i, v in enumerate(kernel_vecs):
+        for u in kernel_vecs[i + 1:]:
+            # compute dist between v and u
+            avg_dist = kernel_vec_avg_dist(v, u)
+            all_pairs_total_dist += avg_dist
+
+    n_pairs = int(comb(N=len(kernel_vecs), k=2))
+    all_pairs_avg_dist = all_pairs_total_dist / n_pairs
+    return all_pairs_avg_dist
