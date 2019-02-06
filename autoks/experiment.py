@@ -207,7 +207,7 @@ class Experiment:
 
     def plot_kernel_diversity_summary(self):
         """Plot a summary of the diversity of models over each generation."""
-        plot_distribution(self.diversity_scores, metric_name='Diversity', value_name='')
+        plot_distribution(self.diversity_scores, metric_name='diversity', value_name='population')
 
     def timing_report(self):
         """Print a runtime report of the kernel search."""
