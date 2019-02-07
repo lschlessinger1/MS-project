@@ -26,6 +26,10 @@ def set_model_kern(model, new_kern):
     model.kern = new_kern
 
 
+def is_nan_model(model):
+    return np.isnan(model.param_array).any()
+
+
 def log_likelihood_normalized(model):
     """Computes the normalized log likelihood."""
     dataset_size = model.X.shape[0]

@@ -9,19 +9,34 @@ class AKSKernel:
     """AKS kernel wrapper
     """
 
-    def __init__(self, kernel, scored=False):
+    def __init__(self, kernel, scored=False, nan_scored=False):
         self.kernel = kernel
         self.scored = scored
-        self.score = None
+        self.nan_scored = nan_scored
+        self._score = None
 
-    def __str__(self):
-        return kernel_to_infix(self.kernel)
+    @property
+    def score(self):
+        return self._score
+
+    @score.setter
+    def score(self, score):
+        self._score = score
+        # Update scored as well
+        self.scored = True
 
     def pretty_print(self):
         print(str(self))
 
     def print_full(self):
         print(kernel_to_infix(self.kernel, show_params=True))
+
+    def __str__(self):
+        return kernel_to_infix(self.kernel)
+
+    def __repr__(self):
+        return 'AKSKernel(kernel=%s, score=%s)' % \
+               (kernel_to_infix(self.kernel, show_params=True), self.score)
 
 
 def get_kernel_mapping():

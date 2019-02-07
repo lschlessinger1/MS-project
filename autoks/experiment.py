@@ -1,3 +1,4 @@
+import warnings
 from time import time
 
 import numpy as np
@@ -6,7 +7,7 @@ from numpy.linalg import LinAlgError
 
 from autoks.grammar import BaseGrammar
 from autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist
-from autoks.model import set_model_kern
+from autoks.model import set_model_kern, is_nan_model
 from evalg.plotting import plot_best_so_far, plot_distribution
 
 
@@ -72,9 +73,8 @@ class Experiment:
                 break
 
             if self.debug and depth % 2 == 0:
-                print('Done iteration %d/%d' % (depth, self.max_depth))
+                print('Starting iteration %d/%d' % (depth, self.max_depth))
                 print('Evaluated %d/%d kernels' % (self.n_evals, self.eval_budget))
-                print('Best Score: %.2f' % max([k.score for k in kernels]))
 
             # Get next round of kernels
             parents = self.grammar.select_parents(np.array(kernels)).tolist()
@@ -86,8 +86,8 @@ class Experiment:
                 for parent in parents:
                     parent.pretty_print()
 
-            # fix each parent before expansion for use in optimization
-            for parent in parents:
+            # Fix each parent before expansion for use in optimization, skipping nan-scored kernels
+            for parent in self.remove_nan_scored_kernels(parents):
                 parent.kernel.fix()
 
             t0_exp = time()
@@ -120,6 +120,8 @@ class Experiment:
         :param kernels:
         :return:
         """
+        # kernels = self.remove_nan_scored_kernels(kernels)
+
         for aks_kernel in kernels:
             t0 = time()
 
@@ -132,6 +134,7 @@ class Experiment:
 
             self.total_eval_time += time() - t1
 
+        kernels = self.remove_nan_scored_kernels(kernels)
         self.update_stats(kernels)
 
     def optimize_kernel(self, aks_kernel):
@@ -161,15 +164,26 @@ class Experiment:
                 set_model_kern(self.gp_model, k_new)
                 aks_kernel.kernel = self.gp_model.kern
             except LinAlgError:
-                print('Y covariance is not positive semi-definite')
+                warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
 
     def evaluate_kernel(self, aks_kernel):
         if not aks_kernel.scored:
             set_model_kern(self.gp_model, aks_kernel.kernel)
-            score = self.objective(self.gp_model)
-            self.n_evals += 1
-            aks_kernel.scored = True
-            aks_kernel.score = score
+
+            # Check if parameters are well-defined:
+            aks_kernel.nan_scored = is_nan_model(self.gp_model)
+            if not aks_kernel.nan_scored:
+                score = self.objective(self.gp_model)
+                self.n_evals += 1
+                # aks_kernel.scored = True
+                aks_kernel.score = score
+            else:
+                aks_kernel.score = np.nan
+                # also count a nan-scored kernel as an evaluation
+                self.n_evals += 1
+
+    def remove_nan_scored_kernels(self, aks_kernels):
+        return [aks_kernel for aks_kernel in aks_kernels if not aks_kernel.nan_scored]
 
     def plot_best_scores(self):
         """ Plot the best models scores
@@ -230,26 +244,27 @@ class Experiment:
         :param kernels:
         :return:
         """
-        model_scores = np.array([k.score for k in kernels])
-        score_argmax = np.argmax(model_scores)
-        self.best_scores.append(model_scores[score_argmax])
-        self.mean_scores.append(np.mean(model_scores))
-        self.std_scores.append(np.std(model_scores))
+        if len(kernels) > 0:
+            model_scores = np.array([k.score for k in kernels])
+            score_argmax = np.argmax(model_scores)
+            self.best_scores.append(model_scores[score_argmax])
+            self.mean_scores.append(np.mean(model_scores))
+            self.std_scores.append(np.std(model_scores))
 
-        n_params = np.array([aks_kernel.kernel.param_array.size for aks_kernel in kernels])
-        self.median_n_hyperparameters.append(np.median(n_params))
-        self.std_n_hyperparameters.append(np.std(n_params))
-        self.best_n_hyperparameters.append(n_params[score_argmax])
+            n_params = np.array([aks_kernel.kernel.param_array.size for aks_kernel in kernels])
+            self.median_n_hyperparameters.append(np.median(n_params))
+            self.std_n_hyperparameters.append(np.std(n_params))
+            self.best_n_hyperparameters.append(n_params[score_argmax])
 
-        n_operands = np.array([n_base_kernels(aks_kernel.kernel) for aks_kernel in kernels])
-        self.median_n_operands.append(np.median(n_operands))
-        self.std_n_operands.append(np.std(n_operands))
-        self.best_n_operands.append(n_operands[score_argmax])
+            n_operands = np.array([n_base_kernels(aks_kernel.kernel) for aks_kernel in kernels])
+            self.median_n_operands.append(np.median(n_operands))
+            self.std_n_operands.append(np.std(n_operands))
+            self.best_n_operands.append(n_operands[score_argmax])
 
-        cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in kernels], self.X)
-        self.mean_cov_dists.append(np.mean(cov_dists))
-        self.std_cov_dists.append(np.std(cov_dists))
+            cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in kernels], self.X)
+            self.mean_cov_dists.append(np.mean(cov_dists))
+            self.std_cov_dists.append(np.std(cov_dists))
 
-        diversity_score = all_pairs_avg_dist([aks_kernel.kernel for aks_kernel in kernels], self.kernel_families,
-                                             self.n_dims)
-        self.diversity_scores.append(diversity_score)
+            diversity_score = all_pairs_avg_dist([aks_kernel.kernel for aks_kernel in kernels], self.kernel_families,
+                                                 self.n_dims)
+            self.diversity_scores.append(diversity_score)
