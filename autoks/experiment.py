@@ -1,6 +1,7 @@
 import warnings
 from time import time
 
+import matplotlib.pyplot as plt
 import numpy as np
 from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
@@ -191,6 +192,7 @@ class Experiment:
         :return:
         """
         plot_best_so_far(self.best_scores)
+        plt.show()
 
     def plot_score_summary(self):
         """ Plot a summary of model scores
@@ -198,6 +200,7 @@ class Experiment:
         :return:
         """
         plot_distribution(self.mean_scores, self.std_scores, self.best_scores)
+        plt.show()
 
     def plot_n_hyperparams_summary(self):
         """ Plot a summary of the number of hyperparameters
@@ -206,6 +209,7 @@ class Experiment:
         """
         plot_distribution(self.median_n_hyperparameters, self.std_n_hyperparameters, self.best_n_hyperparameters,
                           value_name='median', metric_name='# Hyperparameters')
+        plt.show()
 
     def plot_n_operands_summary(self):
         """ Plot a summary of the number of operands
@@ -214,14 +218,17 @@ class Experiment:
         """
         plot_distribution(self.median_n_operands, self.std_n_operands, self.best_n_operands, value_name='median',
                           metric_name='# Operands')
+        plt.show()
 
     def plot_cov_dist_summary(self):
         """Plot a summary of the homogeneity of models over each generation."""
         plot_distribution(self.mean_cov_dists, self.std_cov_dists, metric_name='covariance distance')
+        plt.show()
 
     def plot_kernel_diversity_summary(self):
         """Plot a summary of the diversity of models over each generation."""
         plot_distribution(self.diversity_scores, metric_name='diversity', value_name='population')
+        plt.show()
 
     def timing_report(self):
         """Print a runtime report of the kernel search."""

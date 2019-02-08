@@ -15,7 +15,6 @@ def plot_best_so_far(best_so_far, title='Best-So-Far Curve', x_label='Generation
     plt.plot(best_so_far)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.show()
 
 
 def setup_plot(x_label, y_label, title):
@@ -76,6 +75,5 @@ def plot_distribution(values, stds=None, optima=None, x_label='generation', valu
     ax = fig.axes[0]
 
     ax.legend()
-    plt.show()
 
     return fig
