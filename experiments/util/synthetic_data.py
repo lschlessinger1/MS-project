@@ -127,7 +127,8 @@ def generate_data(n_samples=100, n_dims=1, min_terms=2, max_terms=10, periodic=F
     y = np.sum(y[:, :, None], axis=1)
     for op, ufunc, c, b in itertools.zip_longest(operator_sample, pointwise_func_sample[1:],
                                                  coeffs[1:], biases[1:]):
-        f_val = c * ufunc(np.sum(X[:, :, None])) + b
+        f_val = c * ufunc(X) + b
+        f_val = np.sum(f_val[:, :, None])
         if op == '+':
             y += f_val
         elif op == '-':
