@@ -2,7 +2,7 @@ import GPy
 import numpy as np
 
 
-# the following were mostly taken from:
+# the following were mostly taken or modified from:
 # https://gpy.readthedocs.io/en/deploy/_modules/GPy/examples/regression.html
 
 
@@ -11,8 +11,9 @@ def sinosoid_1(n_samples=50, n_dims=1):
     X = np.random.rand(n_samples, n_dims) * 8
 
     # build a suitable set of observed variables
-    Y = np.sin(X) + np.random.randn(*X.shape) * 0.05
-    return X, Y
+    y = np.sin(X) + np.random.randn(*X.shape) * 0.05
+    y = np.sum(y[:, :, None], axis=1)
+    return X, y
 
 
 def sinosoid_2(n_samples=30, n_dims=1):
@@ -20,39 +21,51 @@ def sinosoid_2(n_samples=30, n_dims=1):
     X = np.random.rand(n_samples, n_dims) * 5
 
     # build a suitable set of observed variables
-    Y = np.sin(X) + np.random.randn(*X.shape) * 0.05 + 2.
-    return X, Y
+    y = np.sin(X) + np.random.randn(n_samples, n_dims) * 0.05 + 2.
+    y = np.sum(y[:, :, None], axis=1)
+    return X, y
 
 
-def simple_periodic():
-    x = np.linspace(0, 10, 100)
-    y_sin = np.sin(x * 1.5)
-    noise = np.random.randn(*x.shape)
-    y = (y_sin + noise).reshape(x.shape[0], 1)
-    return x, y
+def simple_periodic_1d(n_samples=100):
+    """1-D simple periodic data."""
+    X = np.linspace(0, 10, n_samples).reshape(-1, 1)
+    y_sin = np.sin(X * 1.5)
+    noise = np.random.randn(*X.shape)
+    y = (y_sin + noise).reshape(X.shape[0], 1)
+    return X, y
 
 
-def periodic_trend():
-    x = np.linspace(0, 10, 100)
-    y_sin = np.sin(x * 1.5)
-    noise = np.random.randn(*x.shape)
-    y = (x * (1 + y_sin) + noise * 2).reshape(x.shape[0], 1)
-    return x, y
+def periodic_trend_1d(n_samples=100):
+    """1-D periodic trend"""
+    X = np.linspace(0, 10, n_samples).reshape(-1, 1)
+    y_sin = np.sin(X * 1.5)
+    noise = np.random.randn(*X.shape)
+    y = (X * (1 + y_sin) + noise * 2).reshape(X.shape[0], 1)
+    return X, y
 
 
-def linear():
-    x = np.linspace(0, 10, 100)
-    noise = np.random.randn(*x.shape)
-    gp_x = x.reshape(x.shape[0], 1)
-    y = (x + noise).reshape(x.shape[0], 1)
-    return x, y
+def linear_1d(n_samples=100):
+    """1-D linear data."""
+    X = np.linspace(0, 10, n_samples).reshape(-1, 1)
+    noise = np.random.randn(*X.shape)
+    y = (X + noise).reshape(X.shape[0], 1)
+    return X, y
 
 
 def rbf_1d(n_samples=100):
-    X = np.linspace(0, 10, n_samples)[:, None]
+    X = np.linspace(0, 10, n_samples).reshape(-1, 1)
     f_true = np.random.multivariate_normal(np.zeros(n_samples), GPy.kern.RBF(1).K(X))
-    Y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:, None]
-    return X, Y
+    y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:, None]
+    return X, y
+
+
+def cubic_sine_1d(n_samples=151):
+    X = (2 * np.pi) * np.random.random(n_samples) - np.pi
+    y = np.sin(X) + np.random.normal(0, 0.2, n_samples)
+    y = np.array([np.power(abs(y), float(1) / 3) * (1, -1)[y < 0] for y in y])
+    X = X[:, None]
+    y = y[:, None]
+    return X, y
 
 
 def toy_ARD_4d(n_samples=300):
@@ -65,24 +78,15 @@ def toy_ARD_4d(n_samples=300):
     X4 = np.log(np.sort(np.random.rand(n_samples, 1), 0))
     X = np.hstack((X1, X2, X3, X4))
 
-    Y1 = np.asarray(2 * X[:, 0] + 3).reshape(-1, 1)
-    Y2 = np.asarray(4 * (X[:, 2] - 1.5 * X[:, 0])).reshape(-1, 1)
-    Y = np.hstack((Y1, Y2))
+    y1 = np.asarray(2 * X[:, 0] + 3).reshape(-1, 1)
+    y2 = np.asarray(4 * (X[:, 2] - 1.5 * X[:, 0])).reshape(-1, 1)
+    y = np.hstack((y1, y2))
 
-    Y = np.dot(Y, np.random.rand(2, 4))
-    Y = Y + 0.2 * np.random.randn(Y.shape[0], Y.shape[1])
-    Y -= Y.mean()
-    Y /= Y.std()
-    return X, Y
-
-
-def cubic_sine(n_samples=151):
-    X = (2 * np.pi) * np.random.random(n_samples) - np.pi
-    Y = np.sin(X) + np.random.normal(0, 0.2, n_samples)
-    Y = np.array([np.power(abs(y), float(1) / 3) * (1, -1)[y < 0] for y in Y])
-    X = X[:, None]
-    Y = Y[:, None]
-    return X, Y
+    y = np.dot(y, np.random.rand(2, 4))
+    y = y + 0.2 * np.random.randn(y.shape[0], y.shape[1])
+    y -= y.mean()
+    y /= y.std()
+    return X, y
 
 
 def generate_data(n_samples=100, n_dims=1, min_terms=2, max_terms=10, periodic=False):
@@ -120,9 +124,10 @@ def generate_data(n_samples=100, n_dims=1, min_terms=2, max_terms=10, periodic=F
     c0 = coeffs[0]
     b0 = biases[0]
     y = c0 * f0(X) + b0
+    y = np.sum(y[:, :, None], axis=1)
     for op, ufunc, c, b in itertools.zip_longest(operator_sample, pointwise_func_sample[1:],
                                                  coeffs[1:], biases[1:]):
-        f_val = c * ufunc(X) + b
+        f_val = c * ufunc(np.sum(X[:, :, None])) + b
         if op == '+':
             y += f_val
         elif op == '-':
