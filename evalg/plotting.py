@@ -12,9 +12,9 @@ def plot_best_so_far(best_so_far, title='Best-So-Far Curve', x_label='Generation
     :return:
     """
     plt.title(title)
-    plt.plot(best_so_far)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    return plt.plot(best_so_far)
 
 
 def setup_plot(x_label, y_label, title):
@@ -64,7 +64,7 @@ def plot_distribution(values, stds=None, optima=None, x_label='generation', valu
 
     if stds is not None:
         fig, sigma = setup_stds(fig, stds, y, x)
-        title = ''.join((title, ' and $\pm \sigma$ interval'))
+        title = ''.join((title, r' and $\pm \sigma$ interval'))
         ax = fig.axes[0]
         ax.set_title(title)
 
