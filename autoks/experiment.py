@@ -104,7 +104,7 @@ class Experiment:
 
             if self.verbose:
                 print('Printing all results')
-                for k in sorted(kernels, key=lambda k: k.score, reverse=True):
+                for k in sorted(kernels, key=lambda x: x.score, reverse=True):
                     print(str(k), 'score:', k.score)
 
             # Select next round of kernels
@@ -230,17 +230,22 @@ class Experiment:
         plot_distribution(self.diversity_scores, metric_name='diversity', value_name='population')
         plt.show()
 
-    def timing_report(self):
-        """Print a runtime report of the kernel search."""
+    def get_timing_report(self):
         eval_time = self.total_eval_time
         opt_time = self.total_optimization_time
         expansion_time = self.total_expansion_time
         total_time = self.total_kernel_search_time
         other_time = total_time - eval_time - opt_time - expansion_time
+
         labels = ['Evaluation', 'Optimization', 'Expansion', 'Other']
         x = np.array([eval_time, opt_time, expansion_time, other_time])
-
         x_pct = 100 * (x / total_time)
+
+        return labels, x, x_pct
+
+    def timing_report(self):
+        """Print a runtime report of the kernel search."""
+        labels, x, x_pct = self.get_timing_report()
         print('Runtimes:')
         for pct, sec, label in sorted(zip(x_pct, x, labels), key=lambda v: v[1], reverse=True):
             print('%s: %0.2f%% (%0.2fs)' % (label, pct, sec))
