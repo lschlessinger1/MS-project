@@ -4,3 +4,4 @@ scikit-learn
 matplotlib
 numpy
 GPy
+pylatex
