@@ -10,7 +10,8 @@ from sklearn.preprocessing import StandardScaler
 from autoks.grammar import BaseGrammar
 from autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist
 from autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
-from autoks.postprocessing import ExperimentReportGenerator, compute_gpy_model_rmse, rmse_svr, rmse_lin_reg
+from autoks.postprocessing import ExperimentReportGenerator, compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, \
+    rmse_knn
 from evalg.plotting import plot_best_so_far, plot_distribution
 
 
@@ -248,14 +249,19 @@ class Experiment:
         print('PL2 = %.3f' % pl2_score)
         print('')
 
-        # Compare RMSE of best model to SVR and Linear Regression
+        # Compare RMSE of best model to other models
         best_model_rmse = compute_gpy_model_rmse(best_model, self.X_test, self.y_test)
         svm_rmse = rmse_svr(self.X_train, self.y_train, self.X_test, self.y_test)
         lr_rmse = rmse_lin_reg(self.X_train, self.y_train, self.X_test, self.y_test)
+        se_rmse = rmse_rbf(self.X_train, self.y_train, self.X_test, self.y_test)
+        knn_rmse = rmse_knn(self.X_train, self.y_train, self.X_test, self.y_test)
+
 
         print('RMSE Best Model = %.3f' % best_model_rmse)
         print('RMSE Linear Regression = %.3f' % lr_rmse)
         print('RMSE SVM = %.3f' % svm_rmse)
+        print('RMSE RBF = %.3f' % se_rmse)
+        print('RMSE k-NN = %.3f' % knn_rmse)
 
     def run(self, summarize=True, create_report=True):
         aks_kernels = self.kernel_search()

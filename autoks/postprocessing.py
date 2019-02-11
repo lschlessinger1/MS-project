@@ -2,11 +2,14 @@ import datetime
 import os
 
 import numpy as np
+from GPy.kern import RBF
+from GPy.models import GPRegression
 from pylatex import Document, Section, Figure, NoEscape, SubFigure, Center, Tabu, MiniPage, LineBreak, VerticalSpace, \
     Subsection, Command, HorizontalSpace
 from pylatex.utils import bold, italic
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
 
 from autoks.kernel import kernel_to_infix
@@ -26,12 +29,21 @@ def compute_gpy_model_rmse(model, X_test, y_test):
     return np.sqrt(mean_squared_error(y_test, y_pred))
 
 
+def rmse_rbf(X_train, y_train, X_test, y_test):
+    model = GPRegression(X_train, y_train, kernel=RBF(input_dim=X_train.shape[1]))
+    return compute_gpy_model_rmse(model, X_test, y_test)
+
+
 def rmse_svr(X_train, y_train, X_test, y_test):
     return compute_skmodel_rmse(SVR(kernel='rbf'), X_train, y_train, X_test, y_test)
 
 
 def rmse_lin_reg(X_train, y_train, X_test, y_test):
     return compute_skmodel_rmse(LinearRegression(), X_train, y_train, X_test, y_test)
+
+
+def rmse_knn(X_train, y_train, X_test, y_test):
+    return compute_skmodel_rmse(KNeighborsRegressor(), X_train, y_train, X_test, y_test)
 
 
 class ExperimentReportGenerator:
@@ -205,16 +217,20 @@ class ExperimentReportGenerator:
             doc.append(VerticalSpace("1pt"))
             doc.append(LineBreak())
             with doc.create(Center()) as centered:
-                with centered.create(Tabu("|c|c|c|", to="4in")) as data_table:
-                    header_row = ["Best Model", "Linear Regression", "Support Vector Regression"]
+                with centered.create(Tabu("|c|c|c|c|c|", to="4in")) as data_table:
+                    header_row = ["Best Model", "Linear Regression", "Support Vector Regression", "GP (RBF kernel)",
+                                  "k-NN Regression"]
                     data_table.add_row(header_row, mapper=[bold])
                     data_table.add_hline()
 
                     rmse_best_model = compute_gpy_model_rmse(self.best_model, self.X_test, self.y_test)
                     rmse_lr = rmse_lin_reg(self.X_train, self.y_train, self.X_test, self.y_test)
                     rmse_svm = rmse_svr(self.X_train, self.y_train, self.X_test, self.y_test)
+                    se_rmse = rmse_rbf(self.X_train, self.y_train, self.X_test, self.y_test)
+                    knn_rmse = rmse_knn(self.X_train, self.y_train, self.X_test, self.y_test)
 
-                    row = ('%0.3f %0.3f %0.3f' % (rmse_best_model, rmse_lr, rmse_svm)).split(' ')
+                    row = ('%0.3f %0.3f %0.3f %0.3f %0.3f' %
+                           (rmse_best_model, rmse_lr, rmse_svm, se_rmse, knn_rmse)).split(' ')
                     data_table.add_row(row)
 
     def add_performance(self, doc, title='Predictive Performance'):
