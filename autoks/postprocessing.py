@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 from pylatex import Document, Section, Figure, NoEscape, SubFigure, Center, Tabu, MiniPage, LineBreak, VerticalSpace, \
-    Subsection, Command
+    Subsection, Command, HorizontalSpace
 from pylatex.utils import bold, italic
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
@@ -51,8 +51,11 @@ class ExperimentReportGenerator:
         self.best_model = self.experiment.gp_model.__class__(self.experiment.X, self.experiment.y,
                                                              kernel=self.best_kernel)
 
-    def add_overview(self, doc):
-        with doc.create(Section('Overview')):
+        self.width = r'1\textwidth'
+        self.dpi = 300
+
+    def add_overview(self, doc, title='Overview'):
+        with doc.create(Section(title)):
             doc.append('Overview of kernel search results.')
             doc.append("\n")
             doc.append(VerticalSpace("10pt"))
@@ -76,70 +79,81 @@ class ExperimentReportGenerator:
                 doc.append("\n")
                 doc.append(best_kern_long)
 
-    def add_model_scores(self, doc, width, *args, **kwargs):
-        with doc.create(Subsection('Model Score Evolution')):
+    def add_model_scores(self, doc, width, title='Model Score Evolution', *args, **kwargs):
+        with doc.create(Subsection(title)):
             doc.append('A summary of the distribution of model scores.')
             with doc.create(Figure(position='h!')) as plot:
-                with doc.create(SubFigure(position='h!',
+                with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as left:
                     plot_best_so_far(self.experiment.best_scores)
                     left.add_plot(width=NoEscape(width), *args, **kwargs)
-                    left.add_caption('I am a caption.')
-                with doc.create(SubFigure(position='h!',
+                    left.add_caption('A plot of the maximum score over each iteration.')
+                plot.append(HorizontalSpace("10pt"))
+                with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as right:
                     plot_distribution(self.experiment.mean_scores, self.experiment.std_scores,
                                       self.experiment.best_scores)
                     right.add_plot(width=NoEscape(width), *args, **kwargs)
-                    right.add_caption('I am a caption.')
-                plot.add_caption('I am a caption.')
+                    right.add_caption('A distribution of the maximum model score, the mean model score, and standard \
+                    deviation of models scores per iteration.')
+                plot.add_caption('These two figures show the model scores. The left shows a best-so-far curve and the \
+                right one shows a distribution of scores.')
 
-    def add_kernel_structure_subsection(self, doc, width, *args, **kwargs):
-        with doc.create(Subsection('Kernel Structure Evolution')):
+    def add_kernel_structure_subsection(self, doc, width, title='Kernel Structure Evolution', *args, **kwargs):
+        with doc.create(Subsection(title)):
             doc.append('A summary of the structure of kernels searched.')
             with doc.create(Figure(position='h!')) as plot:
-                with doc.create(SubFigure(position='h!',
+                with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as left:
                     plot_distribution(self.experiment.median_n_hyperparameters, self.experiment.std_n_hyperparameters,
                                       self.experiment.best_n_hyperparameters, value_name='median',
                                       metric_name='# Hyperparameters')
                     left.add_plot(width=NoEscape(width), *args, **kwargs)
-                    left.add_caption('I am a caption.')
-                with doc.create(SubFigure(position='h!',
+                    left.add_caption('A plot of the number of hyperparameters for each iteration of the best model, \
+                    the median number of hyperparameters, and the standard deviation.')
+                plot.append(HorizontalSpace("10pt"))
+                with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as right:
                     plot_distribution(self.experiment.median_n_operands,
                                       self.experiment.std_n_operands, self.experiment.best_n_operands,
                                       value_name='median', metric_name='# Operands')
                     right.add_plot(width=NoEscape(width), *args, **kwargs)
-                    right.add_caption('I am a caption.')
-                plot.add_caption('I am a caption.')
+                    right.add_caption('A plot of the number of operands (number of 1-D kernels) over time including \
+                    the best model, the median number of operands, and the standard deviation.')
+                plot.add_caption('These two figures show how the structure of the compositional kernels changed over \
+                time. The left figure shows the hyperparameter distribution and the right one shows operand \
+                distribution.')
 
-    def add_population_subsection(self, doc, width, *args, **kwargs):
-        with doc.create(Subsection('Population Evolution')):
+    def add_population_subsection(self, doc, width, title='Population Evolution', *args, **kwargs):
+        with doc.create(Subsection(title)):
             doc.append('A summary of the population of kernels searched.')
             with doc.create(Figure(position='h!')) as plot:
-                with doc.create(SubFigure(position='h!',
+                with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as left:
                     plot_distribution(self.experiment.mean_cov_dists, self.experiment.std_cov_dists,
                                       metric_name='covariance distance')
                     left.add_plot(width=NoEscape(width), *args, **kwargs)
-                    left.add_caption('I am a caption.')
-                with doc.create(SubFigure(position='h!',
+                    left.add_caption('This plot shows the mean Euclidean covariance distance over time of all \
+                    pairs of kernel matrices. It represents the homogeneity of the population.')
+                plot.append(HorizontalSpace("10pt"))
+                with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as right:
                     plot_distribution(self.experiment.diversity_scores, metric_name='diversity',
                                       value_name='population')
                     right.add_plot(width=NoEscape(width), *args, **kwargs)
-                    right.add_caption('I am a caption.')
-                plot.add_caption('I am a caption.')
+                    right.add_caption('This plot shows the mean Euclidean distance of all pairs of kernel expressions \
+                    in additive form. It represents the diversity/heterogeneity of the population.')
+                plot.add_caption('Two figures showing the evolution of the population homogeneity and heterogeneity.')
 
-    def add_model_plot(self, doc, width, *args, **kwargs):
-        with doc.create(Subsection('Model Plot')):
+    def add_model_plot(self, doc, width, title='Model Plot', *args, **kwargs):
+        with doc.create(Subsection(title)):
             with doc.create(Figure(position='h!')) as plot:
                 self.best_model.plot(plot_density=True)
                 plot.add_plot(width=NoEscape(width), *args, **kwargs)
-                plot.add_caption('I am a caption.')
+                plot.add_caption('A plot of the fit of the best Gaussian Process discovered in the search.')
 
-    def add_results(self, doc, width, *args, **kwargs):
-        with doc.create(Section('Results')):
+    def add_results(self, doc, width, title='Results', *args, **kwargs):
+        with doc.create(Section(title)):
             doc.append('Here are some plots summarizing the kernel search.')
             self.add_model_scores(doc, width, *args, **kwargs)
             self.add_kernel_structure_subsection(doc, width, *args, **kwargs)
@@ -148,8 +162,8 @@ class ExperimentReportGenerator:
                 # If training data is 1D, show a plot.
                 self.add_model_plot(doc, width, *args, **kwargs)
 
-    def add_timing_report(self, doc):
-        with doc.create(Section('Timing Report')):
+    def add_timing_report(self, doc, title='Timing Report'):
+        with doc.create(Section(title)):
             doc.append('Here is a summary of the execution time of various parts of the algorithm.')
             with doc.create(Center()) as centered:
                 with centered.create(Tabu("X[r] X[r] X[r]", to="4in")) as data_table:
@@ -162,8 +176,8 @@ class ExperimentReportGenerator:
                         row = ('%s %0.2f %0.2f%%' % (label, sec, pct)).split(' ')
                         data_table.add_row(row)
 
-    def add_model_summary(self, doc):
-        with doc.create(Subsection('Best Model Summary')):
+    def add_model_summary(self, doc, title='Best Model Summary'):
+        with doc.create(Subsection(title)):
             doc.append('This table contains various scores of the best model.')
             doc.append("\n")
             doc.append(VerticalSpace("1pt"))
@@ -185,8 +199,8 @@ class ExperimentReportGenerator:
                                                                     aic, pl2_score)).split(' ')
                     data_table.add_row(row)
 
-    def add_comparison(self, doc):
-        with doc.create(Subsection('Comparison to Other Models')):
+    def add_comparison(self, doc, title='Comparison to Other Models'):
+        with doc.create(Subsection(title)):
             doc.append('This table contains the RMSE of the best model and others.')
             doc.append("\n")
             doc.append(VerticalSpace("1pt"))
@@ -204,23 +218,24 @@ class ExperimentReportGenerator:
                     row = ('%0.3f %0.3f %0.3f' % (rmse_best_model, rmse_lr, rmse_svm)).split(' ')
                     data_table.add_row(row)
 
-    def add_performance(self, doc):
-        with doc.create(Section('Predictive Performance')):
+    def add_performance(self, doc, title='Predictive Performance'):
+        with doc.create(Section(title)):
             doc.append('An evaluation of the performance of the best model discovered.')
             self.add_model_summary(doc)
             self.add_comparison(doc)
 
-    def add_exp_params(self, doc):
-        with doc.create(Section('Experimental Parameters')):
+    def add_exp_params(self, doc, title='Experimental Parameters'):
+        with doc.create(Section(title)):
             doc.append('This section contains the parameters of the experiment')
             # TODO: fill out this section
 
-    def create_result_file(self, fname, width, *args, **kwargs):
+    def create_result_file(self, fname, width, title, author, *args,
+                           **kwargs):
         geometry_options = {"right": "2cm", "left": "2cm"}
         doc = Document(fname, geometry_options=geometry_options)
 
-        doc.preamble.append(Command('title', 'CKS Experiment Results'))
-        doc.preamble.append(Command('author', 'Automatically Generated'))
+        doc.preamble.append(Command('title', title))
+        doc.preamble.append(Command('author', author))
         doc.preamble.append(Command('date', NoEscape(r'\today')))
         doc.append(NoEscape(r'\maketitle'))
 
@@ -228,11 +243,11 @@ class ExperimentReportGenerator:
         self.add_results(doc, width, *args, **kwargs)
         self.add_timing_report(doc)
         self.add_performance(doc)
-        self.add_performance(doc)
+        self.add_exp_params(doc)
 
         doc.generate_pdf(clean_tex=True)
 
-    def summarize_experiment(self):
+    def summarize_experiment(self, title='Experiment Results', author='Automatically Generated'):
         # Create results folder if it doesn't exist
         results_path = os.path.join('..', self.results_dir_name)
         if not os.path.isdir(results_path):
@@ -244,4 +259,4 @@ class ExperimentReportGenerator:
         file_name = now_fmt_str
         file_path = os.path.join(results_path, file_name)
 
-        self.create_result_file(file_path, r'1\textwidth', dpi=300)
+        self.create_result_file(file_path, self.width, title, author, dpi=self.dpi)
