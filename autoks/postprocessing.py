@@ -40,16 +40,15 @@ class ExperimentReportGenerator:
         self.aks_kernels = aks_kernels
         self.results_dir_name = results_dir_name
 
-        self.X_train = self.experiment.X
-        self.y_train = self.experiment.y
+        self.X_train = self.experiment.X_train
+        self.y_train = self.experiment.y_train
         self.X_test = X_test
         self.y_test = y_test
 
         sorted_aks_kernels = sorted(self.aks_kernels, key=lambda x: x.score, reverse=True)
         self.best_aks_kernel = sorted_aks_kernels[0]
         self.best_kernel = self.best_aks_kernel.kernel
-        self.best_model = self.experiment.gp_model.__class__(self.experiment.X, self.experiment.y,
-                                                             kernel=self.best_kernel)
+        self.best_model = self.experiment.gp_model.__class__(self.X_train, self.y_train, kernel=self.best_kernel)
 
         self.width = r'1\textwidth'
         self.dpi = 300
