@@ -20,6 +20,6 @@ grammar = EvolutionaryGrammar(n_parents=4)
 
 objective = log_likelihood_normalized
 
-experiment = Experiment(grammar, objective, base_kernels, X_train, y_train.reshape(-1, 1), eval_budget=50, debug=True,
-                        verbose=True)
-aks_kernels = experiment.kernel_search()
+experiment = Experiment(grammar, objective, base_kernels, X_train, y_train, X_train, y_train, eval_budget=50,
+                        debug=True, verbose=True)
+experiment.run()
