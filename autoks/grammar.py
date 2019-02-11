@@ -101,17 +101,17 @@ class BOMSGrammar(BaseGrammar):
     def __init__(self, n_parents=600):
         super().__init__(n_parents)
 
-    def initialize(self, kernel_families, n_models, n_dims):
+    def initialize(self, kernel_families, n_kernels, n_dims):
         """ Initialize kernels according to number of dimensions
 
         :param kernel_families:
-        :param n_models:
+        :param n_kernels:
         :param n_dims:
         :return:
         """
         # {SE, RQ, LIN, PER} if dataset is 1D
         # {SE_i} + {RQ_i} otherwise
-        kernels = []
+        kernels = get_all_1d_kernels(kernel_families, n_dims)
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
@@ -145,12 +145,12 @@ class BOMSGrammar(BaseGrammar):
         return new_kernels
 
     def select_offspring(self, active_set):
-        """ Select top 600 kernels according to expected improvement
+        """ Select top `n_parents` kernels according to expected improvement
 
         :param active_set:
         :return:
         """
-        select_k_best(active_set, [k.score for k in active_set], self.n_parents)
+        return select_k_best(active_set, [k.score for k in active_set], self.n_parents)
 
 
 class CKSGrammar(BaseGrammar):
