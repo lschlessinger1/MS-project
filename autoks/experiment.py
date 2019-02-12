@@ -256,7 +256,6 @@ class Experiment:
         se_rmse = rmse_rbf(self.X_train, self.y_train, self.X_test, self.y_test)
         knn_rmse = rmse_knn(self.X_train, self.y_train, self.X_test, self.y_test)
 
-
         print('RMSE Best Model = %.3f' % best_model_rmse)
         print('RMSE Linear Regression = %.3f' % lr_rmse)
         print('RMSE SVM = %.3f' % svm_rmse)
