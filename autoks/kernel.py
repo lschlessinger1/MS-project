@@ -225,14 +225,14 @@ def n_base_kernels(kernel):
 
 def covariance_distance(kernels, X):
     """Euclidean distance of all pairs kernels"""
-    # for each pair of kernel matrices, compute Euclidean norm
+    # For each pair of kernel matrices, compute Euclidean distance
     n_kernels = len(kernels)
     dists = np.zeros((n_kernels, n_kernels))
     for i in range(n_kernels):
         for j in range(i + 1, n_kernels):
             dists[i, j] = kernel_l2_dist(kernels[i], kernels[j], X)
-            # symmetrize
-    dists = dists + dists.T
+    # Make symmetric
+    dists = (dists + dists.T) / 2.
     return dists
 
 

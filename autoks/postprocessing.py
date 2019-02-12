@@ -145,7 +145,7 @@ class ExperimentReportGenerator:
                                       metric_name='covariance distance')
                     left.add_plot(width=NoEscape(width), *args, **kwargs)
                     left.add_caption('This plot shows the mean Euclidean covariance distance over time of all \
-                    pairs of kernel matrices. It represents the homogeneity of the population.')
+                    pairs of kernel matrices. It represents the heterogeneity of the population.')
                 plot.append(HorizontalSpace("10pt"))
                 with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as right:
@@ -154,7 +154,7 @@ class ExperimentReportGenerator:
                     right.add_plot(width=NoEscape(width), *args, **kwargs)
                     right.add_caption('This plot shows the mean Euclidean distance of all pairs of kernel expressions \
                     in additive form. It represents the diversity/heterogeneity of the population.')
-                plot.add_caption('Two figures showing the evolution of the population homogeneity and heterogeneity.')
+                plot.add_caption('Two figures showing the evolution of the population heterogeneity.')
 
     def add_model_plot(self, doc, width, title='Model Plot', *args, **kwargs):
         with doc.create(Subsection(title)):
