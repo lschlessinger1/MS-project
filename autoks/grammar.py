@@ -3,7 +3,7 @@ from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
 from autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels
-from evalg.selection import select_k_best
+from evalg.selection import TruncationSelector
 
 
 class BaseGrammar:
@@ -39,7 +39,8 @@ class BaseGrammar:
         :param kernels:
         :return:
         """
-        return select_k_best(kernels, [k.score for k in kernels], self.n_parents)
+        selector = TruncationSelector(kernels, self.n_parents, [k.score for k in kernels])
+        return selector.select()
 
     def select_offspring(self, kernels):
         """ Select next round of models (default is select all)
@@ -150,7 +151,8 @@ class BOMSGrammar(BaseGrammar):
         :param active_set:
         :return:
         """
-        return select_k_best(active_set, [k.score for k in active_set], self.n_parents)
+        selector = TruncationSelector(active_set, self.n_parents, [k.score for k in active_set])
+        return selector.select()
 
 
 class CKSGrammar(BaseGrammar):

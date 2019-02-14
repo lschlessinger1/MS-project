@@ -1,163 +1,205 @@
+from abc import ABC
+
 import numpy as np
 
 
-def argselect_uniform(population, k):
-    """Uniform Stochastic Selection
+class Selector:
 
-    Select the arguments of k individuals
-    with replacement from the population uniformly
-    at random.
-    """
-    pop_size = population.shape[0]
+    def __init__(self, population, n_individuals):
+        self.population = population
 
-    ind = np.random.choice(pop_size, size=k, replace=True)
+        if n_individuals < 0:
+            raise ValueError('The number of individuals must be nonnegative.')
+        self.n_individuals = n_individuals
+        self.pop_size = self.population.shape[0]
 
-    return ind
+    def select(self):
+        # Select entire population if k > population size
+        if self.n_individuals >= self.pop_size:
+            return self.population
 
+        ind = self.arg_select()
+        individuals = self.population[ind]
+        return individuals
 
-def select_uniform(population, k):
-    """Uniform Stochastic Selection
-
-    Select k individuals with replacement from the
-    population uniformly at random.
-    """
-
-    ind = argselect_uniform(population, k)
-    individuals = population[ind]
-
-    return individuals
+    def arg_select(self):
+        raise NotImplementedError("Implement arg_select in a child class")
 
 
-def select_fitness_proportional(population, fitness_list, k):
-    """Fitness-Proportional Selection
+class FitnessBasedSelector(Selector, ABC):
 
-    Select k individuals with replacement from the population
-    uniformly at random proportional to the fitness of
-    the individual. This is also known as roulette-wheel
-    selection or stochastic sampling with replacement.
-    """
-    pop_size = population.shape[0]
-
-    probabilities = fitness_list / np.sum(fitness_list)
-    ind = np.random.choice(pop_size, size=k, replace=True, p=probabilities)
-    individuals = population[ind]
-
-    return individuals
+    def __init__(self, population, n_individuals, fitness_list):
+        super().__init__(population, n_individuals)
+        self.fitness_list = fitness_list
 
 
-def select_stochast_univ_samp():
-    """ Stochastic Universal Sampling
-    """
-    raise NotImplementedError("select_stochast_univ_samp not yet implemented")
+class UniformSelector(Selector):
+
+    def __init__(self, population, n_individuals):
+        super().__init__(population, n_individuals)
+
+    def arg_select(self):
+        """Uniform Stochastic Selection
+
+        Select the arguments of k individuals
+        with replacement from the population uniformly
+        at random.
+        """
+        ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True)
+        return ind
 
 
-def select_sigma_scaling(population, fitness_list, k):
-    """Sigma scaling selection
-    """
-    pop_size = population.shape[0]
+class StochasticUnivSampSelector(Selector):
 
-    sigma = np.std(fitness_list)
-    expected_cnts = np.empty(pop_size)
-    if sigma > 0.0001:
-        expected_cnts[:] = 1 + (fitness_list - np.mean(fitness_list)) / sigma
-    else:
-        expected_cnts[:] = 1
+    def __init__(self, population, n_individuals):
+        super().__init__(population, n_individuals)
 
-    max_exp_cnt = 1.5
-    min_exp_cnt = 0
-
-    expected_cnts[expected_cnts > max_exp_cnt] = max_exp_cnt
-    expected_cnts[expected_cnts < min_exp_cnt] = min_exp_cnt
-
-    probabilities = expected_cnts / np.sum(expected_cnts)
-    ind = np.random.choice(pop_size, size=k, replace=True, p=probabilities)
-    individuals = population[ind]
-
-    return individuals
+    def arg_select(self):
+        """ Stochastic Universal Sampling
+        """
+        raise NotImplementedError("Stochastic Universal Sampling selection is not yet implemented.")
 
 
-def select_boltzmann(population, fitness_list, k, T, prev_pop_avg):
-    """Boltzmann Selection
-    """
-    raise NotImplementedError("select_boltzmann not yet implemented")
+class BoltzmannSelector(Selector):
+
+    def __init__(self, population, n_individuals, temperature, prev_pop_avg):
+        super().__init__(population, n_individuals)
+        self.temperature = temperature
+        self.prev_pop_avg = prev_pop_avg
+
+    def arg_select(self):
+        """Boltzmann Selection
+        """
+        raise NotImplementedError("Boltzmann selection is not yet implemented.")
 
 
-def select_k_best(population, fitness_list, k):
-    """Truncation selection
+class FitnessProportionalSelector(FitnessBasedSelector):
 
-    Select k best from population according to fitness_list.
+    def __init__(self, population, n_individuals, fitness_list):
+        super().__init__(population, n_individuals, fitness_list)
 
-    k: number of individuals
-    """
+    def arg_select(self):
+        """Fitness-Proportional Selection
 
-    top_k_idxs = np.argpartition(fitness_list, -k)[-k:]
-    individuals = population[top_k_idxs]
-
-    return individuals
-
-
-def select_linear_ranking(population, fitness_list, k):
-    """Linear Ranking Selection
-
-    Select k individuals with replacement from the population
-    uniformly at random proportional to the relative fitness
-    ranking of the individual.
-    """
-    pop_size = population.shape[0]
-
-    rankings_asc = np.argsort(np.argsort(fitness_list)) + 1
-    probabilities = rankings_asc / np.sum(rankings_asc)
-
-    ind = np.random.choice(pop_size, size=k, replace=True, p=probabilities)
-
-    individuals = population[ind]
-
-    return individuals
+        Select k individuals with replacement from the population
+        uniformly at random proportional to the fitness of
+        the individual. This is also known as roulette-wheel
+        selection or stochastic sampling with replacement.
+        """
+        probabilities = self.fitness_list / np.sum(self.fitness_list)
+        ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True, p=probabilities)
+        return ind
 
 
-def select_exponential_ranking(population, fitness_list, k, c=0.99):
-    """Exponential Ranking Selection
-    """
-    if c <= 0 or c >= 1:
-        raise ValueError("0 < c < 1 must hold")
+class SigmaScalingSelector(FitnessBasedSelector):
 
-    pop_size = population.shape[0]
+    def __init__(self, population, n_individuals, fitness_list):
+        super().__init__(population, n_individuals, fitness_list)
 
-    rankings_asc = np.argsort(np.argsort(fitness_list))
-    probabilities = (c ** (pop_size - rankings_asc)) / np.sum(c ** (pop_size - rankings_asc))
+    def arg_select(self):
+        """Sigma scaling selection
+        """
+        sigma = np.std(self.fitness_list)
+        expected_cnts = np.empty(self.pop_size)
+        if sigma > 0.0001:
+            expected_cnts[:] = 1 + (self.fitness_list - np.mean(self.fitness_list)) / sigma
+        else:
+            expected_cnts[:] = 1
 
-    ind = np.random.choice(pop_size, size=k, replace=True, p=probabilities)
+        max_exp_cnt = 1.5
+        min_exp_cnt = 0
 
-    individuals = population[ind]
+        expected_cnts[expected_cnts > max_exp_cnt] = max_exp_cnt
+        expected_cnts[expected_cnts < min_exp_cnt] = min_exp_cnt
 
-    return individuals
+        probabilities = expected_cnts / np.sum(expected_cnts)
+        ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True, p=probabilities)
+        return ind
 
 
-def select_tournament(population, fitness_list, k, n_way=2):
-    """Tournament Selection
-    Uniformly at random select `n_way` individuals from the
-    population then selecting the best (or worst) individual
-    from the `n_way` competitors as the winner (or loser). There
-    will be `k` tournaments run with replacement on the
-    population.
+class TruncationSelector(FitnessBasedSelector):
 
-    Notes
-    -----
-    Binary tournaments (`n_way` = 2) are equivalent to linear
-    ranking selection in expectation. If `n_way` = 3, it is
-    equivalent, in expectation, to quadratic ranking selection.
-    """
+    def __init__(self, population, n_individuals, fitness_list):
+        super().__init__(population, n_individuals, fitness_list)
 
-    if n_way < 2 or n_way > len(population):
-        raise ValueError("The number of competitors in the \
-                         tournament must be greater than 1 and less \
-                         than the number of individuals in the \
-                         population")
+    def arg_select(self):
+        """Truncation selection
 
-    individuals = []
-    for i in range(k):
-        ind = argselect_uniform(population, n_way)
-        winner = np.argmax(fitness_list[ind], axis=0)
-        individuals.append(population[winner])
+        Select k best from population according to fitness_list.
 
-    return individuals
+        k: number of individuals
+        """
+        ind = np.argpartition(self.fitness_list, -self.n_individuals)[-self.n_individuals:]
+        return ind
+
+
+class LinearRankingSelector(FitnessBasedSelector):
+
+    def __init__(self, population, n_individuals, fitness_list):
+        super().__init__(population, n_individuals, fitness_list)
+
+    def arg_select(self):
+        """Linear Ranking Selection
+
+        Select k individuals with replacement from the population
+        uniformly at random proportional to the relative fitness
+        ranking of the individual.
+        """
+        rankings_asc = np.argsort(np.argsort(self.fitness_list)) + 1
+        probabilities = rankings_asc / np.sum(rankings_asc)
+
+        ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True, p=probabilities)
+        return ind
+
+
+class ExponentialRankingSelector(FitnessBasedSelector):
+
+    def __init__(self, population, n_individuals, fitness_list, c=0.99):
+        super().__init__(population, n_individuals, fitness_list)
+
+        if c <= 0 or c >= 1:
+            raise ValueError("0 < c < 1 must hold")
+        self.c = c
+
+    def arg_select(self):
+        """Exponential Ranking Selection
+        """
+        rankings_asc = np.argsort(np.argsort(self.fitness_list))
+        probabilities = (self.c ** (self.pop_size - rankings_asc)) / np.sum(self.c ** (self.pop_size - rankings_asc))
+
+        ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True, p=probabilities)
+        return ind
+
+
+class TournamentSelector(FitnessBasedSelector):
+
+    def __init__(self, population, n_individuals, fitness_list, n_way=2):
+        super().__init__(population, n_individuals, fitness_list)
+
+        if n_way < 2 or n_way > len(population):
+            raise ValueError("The number of competitors in the tournament must be greater than 1 and less than the \
+            number of individuals in the population.")
+        self.n_way = n_way
+
+    def arg_select(self):
+        """Tournament Selection
+        Uniformly at random select `n_way` individuals from the
+        population then selecting the best (or worst) individual
+        from the `n_way` competitors as the winner (or loser). There
+        will be `k` tournaments run with replacement on the
+        population.
+
+        Notes
+        -----
+        Binary tournaments (`n_way` = 2) are equivalent to linear
+        ranking selection in expectation. If `n_way` = 3, it is
+        equivalent, in expectation, to quadratic ranking selection.
+        """
+        ind = np.empty(self.n_individuals)
+        for i in range(self.n_individuals):
+            selector = UniformSelector(self.population, self.n_way)
+            rand_ind = selector.arg_select()
+            winner = np.argmax(self.fitness_list[rand_ind], axis=0)
+            ind[i] = winner
+
+        return ind.astype(np.int)
