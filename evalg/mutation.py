@@ -3,69 +3,105 @@ import numpy as np
 from evalg.util import swap
 
 
-def mutate_bit_flip(individual, gene_mut_prob=None):
-    """Bit-flip mutation
-    """
-    indiv_mut = individual.copy()
-    L = individual.size
+class Mutator:
 
-    if gene_mut_prob is None:
-        gene_mut_prob = 1 / L
+    def __init__(self, individual):
+        self.individual = individual.copy()
+        self.L = individual.size
 
-    mutated = np.random.uniform(0, 1, size=L) < gene_mut_prob
-    indiv_mut = np.where(mutated, ~indiv_mut.astype(bool), indiv_mut)
-
-    return indiv_mut
+    def mutate(self):
+        raise NotImplementedError("Implement mutate in a child class.")
 
 
-def mutate_interchange(individual):
-    """Interchange mutation
-    """
-    indiv_mut = individual.copy()
-    L = indiv_mut.size
-    ind = np.random.randint(0, L, size=2)
-    # swap first and second genes
-    indiv_mut = swap(indiv_mut, ind[0], ind[1])
+class BitFlipMutator(Mutator):
 
-    return indiv_mut
+    def __init__(self, individual, gene_mut_prob=None):
+        super().__init__(individual)
+        if gene_mut_prob is None:
+            self.gene_mut_prob = 1 / self.L
+        else:
+            self.gene_mut_prob = gene_mut_prob
 
+    def mutate(self):
+        """Bit-flip mutation"""
+        mutated = np.random.uniform(0, 1, size=self.L) < self.gene_mut_prob
+        indiv_mut = np.where(mutated, ~self.individual.astype(bool), self.individual)
 
-def mutate_reverse(individual):
-    """Reverse mutation
-    """
-    indiv_mut = individual.copy()
-    L = indiv_mut.size
-    ind = np.random.randint(0, L)
-    indiv_mut = swap(indiv_mut, ind, ind - 1)
-
-    return indiv_mut
+        return indiv_mut
 
 
-def mutate_gaussian(individual):
-    """Gaussian mutation
-    """
-    raise NotImplementedError("mutate_gaussian not yet implemented")
+class InterchangeMutator(Mutator):
+
+    def __init__(self, individual):
+        super().__init__(individual)
+
+    def mutate(self):
+        """Interchange mutation"""
+        ind = np.random.randint(0, self.L, size=2)
+        # swap first and second genes
+        indiv_mut = swap(self.individual, ind[0], ind[1])
+
+        return indiv_mut
 
 
-def mutate_boundary(individual):
-    """Boundary mutation
-    """
-    raise NotImplementedError("mutate_boundary not yet implemented")
+class ReverseMutator(Mutator):
+
+    def __init__(self, individual):
+        super().__init__(individual)
+
+    def mutate(self):
+        """Reverse mutation."""
+        ind = np.random.randint(0, self.L)
+        indiv_mut = swap(self.individual, ind, ind - 1)
+
+        return indiv_mut
 
 
-def mutate_uniform(individual):
-    """Uniform mutation
-    """
-    raise NotImplementedError("mutate_uniform not yet implemented")
+class GaussianMutator(Mutator):
+
+    def __init__(self, individual):
+        super().__init__(individual)
+
+    def mutate(self):
+        """Gaussian mutation."""
+        raise NotImplementedError("Gaussian mutation not yet implemented")
 
 
-def mutate_non_uniform(individual):
-    """Non-Uniform mutation
-    """
-    raise NotImplementedError("mutate_non_uniform not yet implemented")
+class BoundaryMutator(Mutator):
+
+    def __init__(self, individual):
+        super().__init__(individual)
+
+    def mutate(self):
+        """Boundary mutation."""
+        raise NotImplementedError("Boundary mutation not yet implemented")
 
 
-def mutate_shrink(individual):
-    """Shrink mutation
-    """
-    raise NotImplementedError("mutate_shrink not yet implemented")
+class UniformMutator(Mutator):
+
+    def __init__(self, individual):
+        super().__init__(individual)
+
+    def mutate(self):
+        """Uniform mutation."""
+        raise NotImplementedError("Uniform mutation not yet implemented")
+
+
+class NonuniformMutator(Mutator):
+
+    def __init__(self, individual):
+        super().__init__(individual)
+
+    def mutate(self):
+        """Non-Uniform mutation."""
+        raise NotImplementedError("Non-Uniform mutation not yet implemented")
+
+
+class ShrinkMutator(Mutator):
+
+    def __init__(self, individual):
+        super().__init__(individual)
+
+    def mutate(self):
+        """Shrink mutation."""
+        raise NotImplementedError("Shrink mutation not yet implemented")
