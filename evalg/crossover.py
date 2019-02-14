@@ -62,7 +62,7 @@ class NPointBinaryRecombinator(BinaryRecombinator):
         """n-point crossover"""
         # TODO: use np.where instead
 
-        crossover_points = sorted(np.random.choice(np.arange(0, L), size=n, replace=False))
+        crossover_points = sorted(np.random.choice(np.arange(0, self.L), size=self.n, replace=False))
         child_1 = self.parent_1
         child_2 = self.parent_2
 
