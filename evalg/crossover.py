@@ -1,47 +1,88 @@
+from abc import ABC
+
 import numpy as np
 
 
-def crossover_one_point(parent_1, parent_2):
-    """One-point crossover
-    """
+class Recombinator:
 
-    L = parent_1.size
-    crossover_point = np.random.randint(0, L)
-    child_1 = np.hstack((parent_1[:crossover_point], parent_2[crossover_point:]))
-    child_2 = np.hstack((parent_2[:crossover_point], parent_1[crossover_point:]))
+    def __init__(self, parents):
+        if len(parents) < 2:
+            raise ValueError('At least two parents are required.')
 
-    return child_1, child_2
+        self.parents = parents
+        self.L = parents[0].size
 
-
-def crossover_two_point(parent_1, parent_2):
-    """ Two-point crossover
-    """
-    return crossover_n_point(parent_1, parent_2, n=2)
+    def crossover(self):
+        raise NotImplementedError("crossover must be implemented in a child class")
 
 
-def crossover_n_point(parent_1, parent_2, n):
-    """ n-point crossover
-    """
-    # TODO: use np.where instead
+class BinaryRecombinator(Recombinator, ABC):
 
-    L = parent_1.size
-    crossover_points = sorted(np.random.choice(np.arange(0, L), size=n, replace=False))
-    child_1 = parent_1.copy()
-    child_2 = parent_2.copy()
-
-    for i, cpoint in enumerate(crossover_points):
-        if i == len(crossover_points) - 1:
-            break
-        next_cpoint = crossover_points[i + 1]
-        if i % 2 == 0:
-            child_1[cpoint:next_cpoint] = parent_2[cpoint:next_cpoint]
-        else:
-            child_2[cpoint:next_cpoint] = parent_1[cpoint:next_cpoint]
-
-    return child_1, child_2
+    def __init__(self, parents):
+        super().__init__(parents)
+        if len(parents) != 2:
+            raise ValueError('Exactly two parents are required.')
+        self.parent_1 = self.parents[0].copy()
+        self.parent_2 = self.parents[1].copy()
 
 
-def crossover_uniform(parent_1, parent_2):
-    """Uniform crossover
-    """
-    raise NotImplementedError("crossover_uniform not yet implemented")
+class OnePointBinaryRecombinator(BinaryRecombinator):
+
+    def __init__(self, parents):
+        super().__init__(parents)
+
+    def crossover(self):
+        """One-point crossover."""
+
+        crossover_point = np.random.randint(0, self.L)
+        child_1 = np.hstack((self.parent_1[:crossover_point], self.parent_2[crossover_point:]))
+        child_2 = np.hstack((self.parent_2[:crossover_point], self.parent_1[crossover_point:]))
+
+        return child_1, child_2
+
+
+class TwoPointBinaryRecombinator(BinaryRecombinator):
+
+    def __init__(self, parents):
+        super().__init__(parents)
+
+    def crossover(self):
+        """Two-point crossover."""
+        recombinator = NPointBinaryRecombinator(self.parents, n=2)
+        return recombinator.crossover()
+
+
+class NPointBinaryRecombinator(BinaryRecombinator):
+
+    def __init__(self, parents, n):
+        super().__init__(parents)
+        self.n = n
+
+    def crossover(self):
+        """n-point crossover"""
+        # TODO: use np.where instead
+
+        crossover_points = sorted(np.random.choice(np.arange(0, L), size=n, replace=False))
+        child_1 = self.parent_1
+        child_2 = self.parent_2
+
+        for i, cx_point in enumerate(crossover_points):
+            if i == len(crossover_points) - 1:
+                break
+            next_cx_point = crossover_points[i + 1]
+            if i % 2 == 0:
+                child_1[cx_point:next_cx_point] = self.parent_2[cx_point:next_cx_point]
+            else:
+                child_2[cx_point:next_cx_point] = self.parent_1[cx_point:next_cx_point]
+
+        return child_1, child_2
+
+
+class UniformBinaryRecombinator(BinaryRecombinator):
+
+    def __init__(self, parents):
+        super().__init__(parents)
+
+    def crossover(self):
+        """Uniform crossover."""
+        raise NotImplementedError("crossover_uniform not yet implemented")
