@@ -1,50 +1,105 @@
 import numpy as np
 
-
-def crossover_all(parents, n_offspring, crossover_operator, n_way=2, n_points=2, c_prob=1.):
-    '''Crossover applied to all parents
-
-    n_way: number of parents in crossover
-    n_points: number of points in crossover operator
-    c_prob: probability of crossover
-    '''
-
-    offspring = []
-    for i in range(0, n_offspring, n_way):
-        if np.random.rand() < c_prob:
-            selected_parents = [parents[(i + j) % len(parents)] for j in range(n_way)]
-            children = crossover_operator(selected_parents, n_points)
-
-            # add children to offspring
-            for j, child in enumerate(children):
-                if len(offspring) < n_offspring:
-                    offspring.append(child)
-
-    return offspring
+from evalg.crossover import Recombinator
 
 
-def mutate_all(offspring, mutate_operator, m_prob=1.):
-    '''Mutation applied to all offspring
+class Variator:
 
-    m_prob: probability of mutation
-    '''
-
-    offspring_mut = []
-
-    for child in offspring:
-        if np.random.rand() < m_prob:
-            child = mutate_operator(child)
-
-        offspring_mut.append(child)
-
-    return offspring_mut
+    def __init__(self, operator):
+        self.operator = operator
 
 
-def crossover_and_mutate_all(parents, n_offspring, crossover_operator, mutate_operator, c_prob=1., m_prob=1.):
-    ''' Perform both crossover and mutation
-    '''
+class CrossoverVariator(Variator):
 
-    offspring = crossover_all(parents, n_offspring, crossover_operator, c_prob=c_prob)
-    offspring = mutate_all(offspring, mutate_operator, m_prob=m_prob)
+    def __init__(self, operator, n_offspring, n_way=2, n_points=2, c_prob=1.):
+        """
 
+        :param operator: the recombinator containing the crossover operator
+        :param n_offspring: the number of individuals to return
+        :param n_way: number of parents in crossover
+        :param n_points: number of points in crossover operator
+        :param c_prob: probability of crossover
+        """
+        super().__init__(operator)
+        if not isinstance(operator, Recombinator):
+            raise TypeError('operator must be of type %s' % Recombinator.__class__)
+        self.n_offspring = n_offspring
+        self.n_way = n_way
+        self.n_points = n_points
+        self.c_prob = c_prob
+
+    def crossover_all(self, parents):
+        """Crossover applied to all parents.
+
+        :param parents: the members of the population
+        :return:
+        """
+        recombinator = self.operator
+
+        offspring = []
+        for i in range(0, self.n_offspring, self.n_way):
+            if np.random.rand() < self.c_prob:
+                selected_parents = [parents[(i + j) % len(parents)] for j in range(self.n_way)]
+
+                recombinator.parents = selected_parents
+                recombinator.n_points = self.n_points
+                children = recombinator.crossover()
+
+                # add children to offspring
+                for j, child in enumerate(children):
+                    if len(offspring) < self.n_offspring:
+                        offspring.append(child)
+
+        return offspring
+
+
+class MutationVariator(Variator):
+
+    def __init__(self, operator, m_prob=1.):
+        """
+
+        :param operator: the mutator
+        :param m_prob: probability of mutation
+        """
+        super().__init__(operator)
+        if not isinstance(operator, Recombinator):
+            raise TypeError('operator must be of type %s' % Recombinator.__class__)
+        self.m_prob = m_prob
+
+    def mutate_all(self, individuals):
+        """Mutation applied to all offspring.
+
+        :param individuals: the members of the population
+        :return:
+        """
+        offspring = individuals.copy()
+        mutator = self.operator
+
+        offspring_mut = []
+
+        for child in offspring:
+            if np.random.rand() < self.m_prob:
+                mutator.individual = child
+                child = mutator.mutate()
+
+            offspring_mut.append(child)
+
+        return offspring_mut
+
+
+def crossover_mutate_all(individuals, crossover_variator, mutation_variator):
+    """Perform both crossover then mutation to all individuals
+
+    :param individuals:
+    :param crossover_variator:
+    :param mutation_variator:
+    :return:
+    """
+    if not isinstance(crossover_variator, CrossoverVariator):
+        raise TypeError('crossover_variator must be of type %s' % CrossoverVariator.__class__)
+    if not isinstance(mutation_variator, MutationVariator):
+        raise TypeError('mutation_variator must be of type %s' % MutationVariator.__class__)
+
+    offspring = crossover_variator.crossover_all(individuals)
+    offspring = mutation_variator.mutate_all(offspring)
     return offspring
