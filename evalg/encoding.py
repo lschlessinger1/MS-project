@@ -111,6 +111,12 @@ class BinaryTree:
     def infix(self):
         return self._infix_helper(self.root)
 
+    def infix_tokens(self):
+        return self._infix_tokens_helper(self.root)
+
+    def postfix_tokens(self):
+        return infix_tokens_to_postfix_tokens(self.infix_tokens())
+
     def _infix_helper(self, root, expression=None):
         if expression is None:
             expression = ''
@@ -127,6 +133,23 @@ class BinaryTree:
                 expression += ')'
 
         return expression
+
+    def _infix_tokens_helper(self, root, tokens=None):
+        if tokens is None:
+            tokens = []
+
+        if root is not None:
+            if root.value in operators:
+                tokens += ['(']
+
+            tokens += self._infix_tokens_helper(root.left)
+            tokens += [root.label]
+            tokens += self._infix_tokens_helper(root.right)
+
+            if root.value in operators:
+                tokens += [')']
+
+        return tokens
 
 
 def postfix_tokens_to_binexp_tree(postfix_tokens):

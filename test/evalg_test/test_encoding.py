@@ -3,7 +3,8 @@ from unittest import TestCase
 from GPy.kern import RBF
 from graphviz import Digraph
 
-from evalg.encoding import TreeNode, BinaryTreeNode, BinaryTree
+from evalg.encoding import TreeNode, BinaryTreeNode, BinaryTree, infix_tokens_to_postfix_tokens, \
+    postfix_tokens_to_binexp_tree
 
 
 class TestTreeNode(TestCase):
@@ -71,7 +72,7 @@ class TestBinaryTree(TestCase):
 
     def setUp(self):
         self.tree = BinaryTree()
-        self.root = BinaryTreeNode(10)
+        self.root = BinaryTreeNode('*')
         self.tree.root = self.root
 
     def test_create_graph(self):
@@ -92,3 +93,88 @@ class TestBinaryTree(TestCase):
         self.assertEqual(self.tree.select_postorder(4), rr)
         self.assertEqual(self.tree.select_postorder(5), r)
         self.assertEqual(self.tree.select_postorder(6), self.root)
+
+    def test_infix_tokens(self):
+        l = self.root.add_left('+')
+        r = self.root.add_right('+')
+        l.add_left('A')
+        l.add_right('B')
+        r.add_left('C')
+        r.add_right('D')
+
+        tokens = ['(', '(', 'A', '+', 'B', ')', self.tree.root.label, '(', 'C', '+', 'D', ')', ')']
+        result = self.tree.infix_tokens()
+        self.assertCountEqual(result, tokens)
+
+    def test_postfix_tokens(self):
+        tree = BinaryTree()
+        root = BinaryTreeNode('*')
+        tree.root = root
+
+        l = root.add_left('+')
+        r = root.add_right('+')
+        l.add_left('A')
+        l.add_right('B')
+        r.add_left('C')
+        r.add_right('D')
+
+        tokens = ['A', 'B', 'C', tree.root.label, '+', 'D', '+']
+        result = tree.postfix_tokens()
+        self.assertCountEqual(result, tokens)
+
+        tree = BinaryTree()
+        root = BinaryTreeNode('+')
+        tree.root = root
+
+        l = root.add_left('+')
+        r = root.add_right('+')
+        l.add_left('A')
+        l.add_right('B')
+        r.add_left('C')
+        r.add_right('D')
+
+        tokens = ['A', 'B', '+', 'C', '+', 'D', '+']
+        result = tree.postfix_tokens()
+        self.assertCountEqual(result, tokens)
+
+
+class TestEncoding(TestCase):
+
+    def test_infix_tokens_to_postfix_tokens(self):
+        infix_tokens = ['A', '+', 'B', '*', 'C', '+', 'D']
+        result = infix_tokens_to_postfix_tokens(infix_tokens)
+        postfix_tokens = ['A', 'B', 'C', '*', '+', 'D', '+']
+        self.assertCountEqual(result, postfix_tokens)
+
+        infix_tokens = ['(', 'A', '+', 'B', ')', '*', '(', 'C', '+', 'D', ')']
+        result = infix_tokens_to_postfix_tokens(infix_tokens)
+        postfix_tokens = ['A', 'B', 'C', '*', '+', 'D', '+']
+        self.assertCountEqual(result, postfix_tokens)
+
+        infix_tokens = ['A', '*', 'B', '+', 'C', '*', 'D']
+        result = infix_tokens_to_postfix_tokens(infix_tokens)
+        postfix_tokens = ['A', 'B', '*', 'C', 'D', '*', '+']
+        self.assertCountEqual(result, postfix_tokens)
+
+        infix_tokens = ['(', '(', 'A', '+', 'B', ')', '+', '(', 'C', '+', 'D', ')', ')']
+        result = infix_tokens_to_postfix_tokens(infix_tokens)
+        postfix_tokens = ['A', 'B', '+', 'C', '+', 'D', '+']
+        self.assertCountEqual(result, postfix_tokens)
+
+        infix_tokens = ['A', '+', 'B', '+', 'C', '+', 'D']
+        result = infix_tokens_to_postfix_tokens(infix_tokens)
+        postfix_tokens = ['A', 'B', '+', 'C', '+', 'D', '+']
+        self.assertCountEqual(result, postfix_tokens)
+
+    def test_postfix_tokens_to_binexp_tree(self):
+        # (A + B) * (C + D)
+        postfix_tokens = ['A', 'B', '+', 'C', 'D', '+', '*']
+        tree = postfix_tokens_to_binexp_tree(postfix_tokens)
+        root = tree.root
+        self.assertEqual(root.label, '*')
+        self.assertEqual(root.left.label, '+')
+        self.assertEqual(root.right.label, '+')
+        self.assertEqual(root.left.left.label, 'A')
+        self.assertEqual(root.left.right.label, 'B')
+        self.assertEqual(root.right.left.label, 'C')
+        self.assertEqual(root.right.right.label, 'D')
