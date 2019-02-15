@@ -118,7 +118,7 @@ def in_order(root, tokens=[]):
             elif isinstance(root, Prod):
                 op = '*'
             else:
-                raise ValueError('Unrecognized operation %s' % root.__class__)
+                raise TypeError('Unrecognized operation %s' % root.__class__)
 
             tokens = join_operands(tokens, op)
         elif isinstance(root, Kern):
@@ -190,7 +190,7 @@ def apply_op(left, right, operator):
     elif operator == '*':
         return left * right
     else:
-        print('Unknown operator %s' % operator)
+        raise TypeError('Unknown operator %s' % operator)
 
 
 def eval_binexp_tree(root):
@@ -329,7 +329,7 @@ def additive_form(kernel):
         # Base kernel
         return kernel
     else:
-        raise ValueError('%s is not a subclass of %s' % (kernel.__class__, Kern))
+        raise TypeError('%s is not a subclass of %s' % (kernel.__class__, Kern))
 
 
 def additive_part_to_vec(additive_part, base_kernels, n_dims):
@@ -337,7 +337,7 @@ def additive_part_to_vec(additive_part, base_kernels, n_dims):
     # ex: k1 * k1 * k2 * k4 ---> [2, 1, 0, 1]
 
     if isinstance(additive_part, Add):
-        raise ValueError('additive_part cannot be a sum')
+        raise TypeError('additive_part cannot be a sum')
 
     all_kerns = get_all_1d_kernels(base_kernels, n_dims)
     vec_length = len(base_kernels) * n_dims
@@ -350,7 +350,7 @@ def additive_part_to_vec(additive_part, base_kernels, n_dims):
         # Base kernel
         parts = [additive_part]
     else:
-        raise ValueError('Unknown kernel %s' % additive_part)
+        raise TypeError('Unknown kernel %s' % additive_part)
 
     # count number of each kernel type in additive part
     for i, op in enumerate(parts):
@@ -400,7 +400,7 @@ def all_pairs_avg_dist(kernels, base_kernels, n_dims):
             vec = additive_part_to_vec(additive_part, base_kernels, n_dims)
             kernel_vec.append(vec)
         else:
-            raise ValueError('Unknown kernel %s' % additive_kernel)
+            raise TypeError('Unknown kernel %s' % additive_kernel)
 
         kernel_vecs.append(kernel_vec)
 
