@@ -1,3 +1,5 @@
+from abc import ABC
+
 import numpy as np
 
 from evalg.util import swap
@@ -7,57 +9,62 @@ class Mutator:
 
     def __init__(self, individual):
         self.individual = individual.copy()
-        self.L = individual.size
 
     def mutate(self):
         raise NotImplementedError("Implement mutate in a child class.")
 
 
-class BitFlipMutator(Mutator):
+class GAMutator(Mutator, ABC):
+
+    def __init__(self, individual):
+        super().__init__(individual)
+        self.gene_size = individual.size
+
+class BitFlipMutator(GAMutator):
 
     def __init__(self, individual, gene_mut_prob=None):
         super().__init__(individual)
         if gene_mut_prob is None:
-            self.gene_mut_prob = 1 / self.L
+            self.gene_mut_prob = 1 / self.gene_size
         else:
             self.gene_mut_prob = gene_mut_prob
 
     def mutate(self):
         """Bit-flip mutation"""
-        mutated = np.random.uniform(0, 1, size=self.L) < self.gene_mut_prob
+        mutated = np.random.uniform(0, 1, size=self.gene_size) < self.gene_mut_prob
         indiv_mut = np.where(mutated, ~self.individual.astype(bool), self.individual)
 
         return indiv_mut
 
 
-class InterchangeMutator(Mutator):
+class InterchangeMutator(GAMutator):
 
     def __init__(self, individual):
         super().__init__(individual)
 
     def mutate(self):
         """Interchange mutation"""
-        ind = np.random.randint(0, self.L, size=2)
+        ind = np.random.randint(0, self.gene_size, size=2)
         # swap first and second genes
         indiv_mut = swap(self.individual, ind[0], ind[1])
 
         return indiv_mut
 
 
-class ReverseMutator(Mutator):
+class ReverseMutator(GAMutator):
 
     def __init__(self, individual):
         super().__init__(individual)
 
     def mutate(self):
         """Reverse mutation."""
-        ind = np.random.randint(0, self.L)
+        ind = np.random.randint(0, self.gene_size)
         indiv_mut = swap(self.individual, ind, ind - 1)
 
         return indiv_mut
 
 
-class GaussianMutator(Mutator):
+class GaussianMutator(GAMutator):
 
     def __init__(self, individual):
         super().__init__(individual)
@@ -67,7 +74,7 @@ class GaussianMutator(Mutator):
         raise NotImplementedError("Gaussian mutation not yet implemented")
 
 
-class BoundaryMutator(Mutator):
+class BoundaryMutator(GAMutator):
 
     def __init__(self, individual):
         super().__init__(individual)
@@ -77,7 +84,7 @@ class BoundaryMutator(Mutator):
         raise NotImplementedError("Boundary mutation not yet implemented")
 
 
-class UniformMutator(Mutator):
+class UniformMutator(GAMutator):
 
     def __init__(self, individual):
         super().__init__(individual)
@@ -87,7 +94,7 @@ class UniformMutator(Mutator):
         raise NotImplementedError("Uniform mutation not yet implemented")
 
 
-class NonuniformMutator(Mutator):
+class NonuniformMutator(GAMutator):
 
     def __init__(self, individual):
         super().__init__(individual)
@@ -97,7 +104,7 @@ class NonuniformMutator(Mutator):
         raise NotImplementedError("Non-Uniform mutation not yet implemented")
 
 
-class ShrinkMutator(Mutator):
+class ShrinkMutator(GAMutator):
 
     def __init__(self, individual):
         super().__init__(individual)
