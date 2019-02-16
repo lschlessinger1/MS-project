@@ -76,10 +76,15 @@ class BinaryTreeNode(TreeNode):
     def __str__(self):
         return self.label
 
+    def __repr__(self):
+        return '{} {}'.format(self.__class__.__name__, self.__str__())
+
 
 class BinaryTree:
 
     def __init__(self, root=None):
+        if root is not None and not isinstance(root, BinaryTreeNode):
+            raise TypeError('root must be a {}'.format(BinaryTreeNode.__class__.__name__))
         self.root = root
 
     def create_graph(self):
