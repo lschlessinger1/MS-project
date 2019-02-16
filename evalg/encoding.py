@@ -79,8 +79,8 @@ class BinaryTreeNode(TreeNode):
 
 class BinaryTree:
 
-    def __init__(self):
-        self.root = None
+    def __init__(self, root=None):
+        self.root = root
 
     def create_graph(self):
         return self.root.create_graph()
@@ -110,6 +110,9 @@ class BinaryTree:
 
     def infix(self):
         return self._infix_helper(self.root)
+
+    def height(self):
+        return self._height_helper(self.root)
 
     def infix_tokens(self):
         return self._infix_tokens_helper(self.root)
@@ -150,6 +153,19 @@ class BinaryTree:
                 tokens += [')']
 
         return tokens
+
+    def _height_helper(self, node):
+        if node is None:
+            return 0
+
+        # Get the depth of each sub-tree
+        left_depth = self._height_helper(node.left)
+        right_depth = self._height_helper(node.right)
+
+        if left_depth > right_depth:
+            return left_depth + 1
+        else:
+            return right_depth + 1
 
 
 def postfix_tokens_to_binexp_tree(postfix_tokens):

@@ -94,6 +94,30 @@ class TestBinaryTree(TestCase):
         self.assertEqual(self.tree.select_postorder(5), r)
         self.assertEqual(self.tree.select_postorder(6), self.root)
 
+    def test_height(self):
+        tree = BinaryTree()
+        self.assertEqual(tree.height(), 0)
+
+        tree.root = BinaryTreeNode('*')
+        self.assertEqual(tree.height(), 1)
+
+        l = tree.root.add_left(10)
+        self.assertEqual(tree.height(), 2)
+        r = tree.root.add_right(20)
+        self.assertEqual(tree.height(), 2)
+
+        ll = l.add_left(40)
+        self.assertEqual(tree.height(), 3)
+        lr = l.add_right(50)
+        self.assertEqual(tree.height(), 3)
+        rl = r.add_left(60)
+        self.assertEqual(tree.height(), 3)
+        rr = r.add_right(70)
+        self.assertEqual(tree.height(), 3)
+
+        lll = ll.add_left(80)
+        self.assertEqual(tree.height(), 4)
+
     def test_infix_tokens(self):
         l = self.root.add_left('+')
         r = self.root.add_right('+')
