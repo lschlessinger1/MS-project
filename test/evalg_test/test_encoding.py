@@ -76,7 +76,7 @@ class TestBinaryTree(TestCase):
         self.tree.root = self.root
 
     def test_root(self):
-        self.failUnlessRaises(TypeError, BinaryTree, 'bad type')
+        self.assertRaises(TypeError, BinaryTree, 'bad type')
 
     def test_create_graph(self):
         result = self.tree.create_graph()
