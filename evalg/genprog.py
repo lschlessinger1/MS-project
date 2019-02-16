@@ -1,202 +1,326 @@
 import copy
+from abc import ABC
 
 import numpy as np
-from GPy.kern.src.kern import Kern
 
+from evalg.crossover import Recombinator, BinaryRecombinator
 from evalg.encoding import operators, infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTreeNode, \
     BinaryTree
+from evalg.mutation import Mutator
 
 
-def crossover_subtree_exchange(infix_tokens_1, infix_tokens_2):
-    postfix_tokens_1 = infix_tokens_to_postfix_tokens(infix_tokens_1)
-    postfix_tokens_2 = infix_tokens_to_postfix_tokens(infix_tokens_2)
+class BinaryTreeGenerator:
 
-    tree_1 = postfix_tokens_to_binexp_tree(postfix_tokens_1)
-    tree_2 = postfix_tokens_to_binexp_tree(postfix_tokens_2)
+    def __init__(self, binary_operators, operands, max_depth):
+        self.binary_operators = binary_operators
+        self.operands = operands
+        if max_depth < 0:
+            raise ValueError('max depth must be nonnegative')
+        self.max_depth = max_depth
 
-    r1, r2 = _select_token_ind(postfix_tokens_1, postfix_tokens_2)
-
-    # select nodes in tree
-    node_1 = tree_1.select_postorder(r1)
-    node_2 = tree_2.select_postorder(r2)
-
-    _swap_subtrees(node_1, node_2)
-
-    return tree_1, tree_2
+    def generate(self):
+        raise NotImplementedError('generate must be implemented in a child class.')
 
 
-def _swap_subtrees(node_1, node_2):
-    """Swap parents and of nodes
-    """
+# Binary tree generators
 
-    node_1_cp = copy.copy(node_1)
-    node_2_cp = copy.copy(node_2)
+class GrowGenerator(BinaryTreeGenerator):
 
-    node_1_parent_cp = node_1_cp.parent
-    node_2_parent_cp = node_2_cp.parent
+    def __init__(self, binary_operators, operands, max_depth):
+        super().__init__(binary_operators, operands, max_depth)
 
-    # find out if node is left or right child
-    if node_1_parent_cp:
-        if node_1_parent_cp.left is node_1:
-            node_1.parent.left = node_2_cp
-        elif node_1_parent_cp.right is node_1:
-            node_1.parent.right = node_2_cp
+    def generate(self):
+        """ Generate random binary tree
 
-    if node_2_parent_cp:
-        if node_2_parent_cp.left is node_2:
-            node_2.parent.left = node_1_cp
-        elif node_2_parent_cp.right is node_2:
-            node_2.parent.right = node_1_cp
+        :return:
+        """
+        return BinaryTree(self.grow(depth=0))
 
-    node_1.parent = node_2_parent_cp
-    node_2.parent = node_1_parent_cp
+    def grow(self, depth):
+        """Grow a random binary tree node
 
-    return node_1, node_2
+        :param depth: the level of the current tree
+        :return:
+        """
+        if depth < 0:
+            raise ValueError('depth must be nonnegative.')
 
+        terminals = self.operands
+        internals = self.binary_operators
+        # 2 children for binary trees
+        n_children = 2
+        if depth < self.max_depth:
+            node = BinaryTreeNode(np.random.choice(terminals + internals))
 
-def _valid_pair(postfix_tokens_a, postfix_tokens_b, r1, r2):
-    """ Checks if postfix token pair is valid
-    """
-    if postfix_tokens_a[r1] in operators and postfix_tokens_b[r2] in operators:
-        return True
-    elif postfix_tokens_a[r1] not in operators and postfix_tokens_b[r2] not in operators:
-        return True
+            if node.value in internals:
+                for i in range(0, n_children):
+                    child_i = self.grow(depth + 1)
+                    if not node.left:
+                        node.left = child_i
+                        node.left.parent = node
+                    elif not node.right:
+                        node.right = child_i
+                        node.right.parent = node
+        else:
+            node = BinaryTreeNode(np.random.choice(terminals))
 
-    return False
-
-
-def _select_token_ind(postfix_tokens_1, postfix_tokens_2):
-    """Select indices of parent postfix tokens
-    """
-
-    r1 = np.random.randint(0, len(postfix_tokens_1))
-    r2 = np.random.randint(0, len(postfix_tokens_2))
-    while not _valid_pair(postfix_tokens_1, postfix_tokens_2, r1, r2):
-        r1 = np.random.randint(0, len(postfix_tokens_1))
-        r2 = np.random.randint(0, len(postfix_tokens_2))
-
-    return r1, r2
+        return node
 
 
-def grow(depth, kernels, max_depth=2):
-    """ Grow a random tree
-    """
-    terminals = kernels
-    internals = operators
-    # 2 children for binary trees
-    n_children = 2
-    if depth < max_depth:
-        node = BinaryTreeNode(np.random.choice(terminals + internals))
+class FullGenerator(BinaryTreeGenerator):
 
-        if node.value in internals:
-            for i in range(0, n_children):
-                child_i = grow(depth + 1, kernels)
-                if not node.left:
-                    node.left = child_i
-                    node.left.parent = node
-                elif not node.right:
-                    node.right = child_i
-                    node.right.parent = node
-    else:
-        node = BinaryTreeNode(np.random.choice(terminals))
+    def __init__(self, binary_operators, operands, max_depth):
+        super().__init__(binary_operators, operands, max_depth)
 
-    return node
+    def generate(self):
+        return BinaryTree(self.full(depth=0))
 
+    def full(self, depth):
+        """ Grow a random tree"""
+        if depth < 0:
+            raise ValueError('depth must be nonnegative.')
 
-def generate_grow(kernels, max_depth=2):
-    return grow(depth=0, kernels=kernels, max_depth=max_depth)
+        terminals = self.operands
+        internals = self.binary_operators
+        # 2 children for binary trees
+        n_children = 2
+        if depth < self.max_depth:
+            node = BinaryTreeNode(np.random.choice(internals))
 
+            if node.value in internals:
+                for i in range(0, n_children):
+                    child_i = self.full(depth + 1)
+                    if not node.left:
+                        node.left = child_i
+                        node.left.parent = node
+                    elif not node.right:
+                        node.right = child_i
+                        node.right.parent = node
+        else:
+            node = BinaryTreeNode(np.random.choice(terminals))
 
-def full(depth, kernels, max_depth=2):
-    """ Grow a random tree
-    """
-    terminals = kernels
-    internals = operators
-    # 2 children for binary trees
-    n_children = 2
-    if depth < max_depth:
-        node = BinaryTreeNode(np.random.choice(internals))
-
-        if node.value in internals:
-            for i in range(0, n_children):
-                child_i = full(depth + 1, kernels)
-                if not node.left:
-                    node.left = child_i
-                    node.left.parent = node
-                elif not node.right:
-                    node.right = child_i
-                    node.right.parent = node
-    else:
-        node = BinaryTreeNode(np.random.choice(terminals))
-
-    return node
+        return node
 
 
-def generate_full(kernels, max_depth=2):
-    return full(depth=0, kernels=kernels, max_depth=max_depth)
+class TreeMutator(Mutator, ABC):
+
+    def __init__(self, individual, operands):
+        super().__init__(individual)
+        if not isinstance(individual, BinaryTree):
+            raise TypeError('individual must be of type %s' % BinaryTree.__class__)
+
+        self.operands = operands  # the possible operands to choose from
 
 
-def _swap_mut_subtree(tree, r, random_tree):
-    # add mutated subtree to original
-    # swap parents of nodes
-    node = tree.select_postorder(r)
-    if node.parent:
-        if node.parent.left is node:
-            node.parent.left = random_tree
-        elif node.parent.right is node:
-            node.parent.right = random_tree
-        random_tree.parent = node.parent
+class TreeRecombinator(Recombinator, ABC):
+
+    def __init__(self, parents):
+        super().__init__(parents)
+
+        if not all(isinstance(parent, BinaryTree) for parent in parents):
+            raise TypeError('all parents must be of type %s' % BinaryTree.__class__)
+
+
+class BinaryTreeRecombinator(TreeRecombinator, BinaryRecombinator, ABC):
+
+    def __init__(self, parents):
+        super().__init__(parents)
+
+
+# Binary tree mutators
+
+class TreePointMutator(TreeMutator):
+
+    def __init__(self, individual, operands):
+        super().__init__(individual, operands)
+
+    def mutate(self):
+        """Point mutation."""
+        tree = self.individual
+
+        postfix_tokens = tree.postfix_tokens()
+
+        r = np.random.randint(0, len(postfix_tokens))
+        node = tree.select_postorder(r)
+
+        # change node value to a different value
+        if node.value in self.operands:
+            new_val = np.random.choice(list(set(self.operands) - {node.value}))
+        elif node.value in operators:
+            new_val = np.random.choice(list(set(operators) - {node.value}))
+        else:
+            raise TypeError('%s not in operands or operators' % node.label)
+
+        node.value = new_val
+
         return tree
-    else:
-        new_tree = BinaryTree()
-        new_tree.root = random_tree
+
+
+class SubTreeExchangeMutator(TreeMutator, ABC):
+
+    def __init__(self, individual, operands, max_depth):
+        """
+
+        :param individual:
+        :param operands:
+        :param max_depth:
+        """
+        super().__init__(individual, operands)
+        if max_depth < 0:
+            raise ValueError('max depth must be nonnegative')
+        self.max_depth = max_depth
+
+    @staticmethod
+    def _mutate_subtree_exchange(tree, tree_generator):
+        """
+
+        :param tree:
+        :param tree_generator:
+        :return:
+        """
+        postfix_tokens = tree.postfix_tokens()
+
+        random_tree = tree_generator.generate()
+
+        r = np.random.randint(0, len(postfix_tokens))
+        new_tree = SubTreeExchangeMutator._swap_mut_subtree(tree, r, random_tree)
+
         return new_tree
 
+    @staticmethod
+    def _swap_mut_subtree(tree, r, random_tree):
+        """ Add mutated subtree to original tree
 
-def _mutate_subtree_exchange(infix_tokens, init_method, **init_method_kwargs):
-    """
-    init_method: initialization method
-    """
-    postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
-    tree = postfix_tokens_to_binexp_tree(postfix_tokens)
-
-    random_node = init_method(**init_method_kwargs)
-
-    r = np.random.randint(0, len(postfix_tokens))
-    new_tree = _swap_mut_subtree(tree, r, random_node)
-
-    return new_tree
-
-
-def mutate_grow(infix_tokens, kernels, max_depth=2):
-    return _mutate_subtree_exchange(infix_tokens, generate_grow, kernels=kernels, max_depth=max_depth)
-
-
-def mutate_half_and_half(infix_tokens, kernels, max_depth=2):
-    return _mutate_subtree_exchange(infix_tokens, generate_full, kernels=kernels, max_depth=max_depth)
+        :param tree:
+        :param r:
+        :param random_tree:
+        :return:
+        """
+        # swap parents of nodes
+        node = tree.select_postorder(r)
+        if node.parent:
+            if node.parent.left is node:
+                node.parent.left = random_tree.root
+            elif node.parent.right is node:
+                node.parent.right = random_tree.root
+            random_tree.root.parent = node.parent
+            return tree
+        else:
+            new_tree = BinaryTree()
+            new_tree.root = random_tree.root
+            return new_tree
 
 
-def mutate_point(infix_tokens, kernels):
-    """Point mutation
+class GrowMutator(SubTreeExchangeMutator):
 
-    :param kernels:
-    :param infix_tokens:
-    :return:
-    """
-    postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
-    tree = postfix_tokens_to_binexp_tree(postfix_tokens)
+    def __init__(self, individual, operands, max_depth=2):
+        super().__init__(individual, operands, max_depth)
 
-    r = np.random.randint(0, len(postfix_tokens))
-    node = tree.select_postorder(r)
+    def mutate(self):
+        tree = self.individual
+        tree_generator = GrowGenerator(operators, self.operands, self.max_depth)
+        tree = self._mutate_subtree_exchange(tree, tree_generator)
+        return tree
 
-    # change node value to a different value
-    if isinstance(node.value, Kern):
-        new_val = np.random.choice(list(set(kernels) - {node.value}))
-    elif node.value in operators:
-        new_val = np.random.choice(list(set(operators) - {node.value}))
-    else:
-        raise ValueError('%s not in kernels or operators' % node.label)
 
-    node.set_value(new_val)
+class HalfAndHalfMutator(SubTreeExchangeMutator):
 
-    return tree
+    def __init__(self, individual, operands, max_depth=2):
+        super().__init__(individual, operands, max_depth)
+
+    def mutate(self):
+        tree = self.individual
+        tree_generator = FullGenerator(operators, self.operands, self.max_depth)
+        tree = self._mutate_subtree_exchange(tree, tree_generator)
+        return tree
+
+
+# Binary tree recombinators
+
+class SubtreeExchangeBinaryRecombinator(BinaryTreeRecombinator):
+
+    def __init__(self, parents):
+        super().__init__(parents)
+
+    def crossover(self):
+        """Sub-tree exchange crossover
+
+        :return:
+        """
+        tree_1 = self.parent_1
+        tree_2 = self.parent_2
+
+        postfix_tokens_1 = tree_1.postfix_tokens()
+        postfix_tokens_2 = tree_2.postfix_tokens()
+
+        r1, r2 = SubtreeExchangeBinaryRecombinator._select_token_ind(postfix_tokens_1, postfix_tokens_2)
+
+        # select nodes in tree
+        node_1 = tree_1.select_postorder(r1)
+        node_2 = tree_2.select_postorder(r2)
+
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(node_1, node_2)
+
+        return tree_1, tree_2
+
+    @staticmethod
+    def _swap_subtrees(node_1, node_2):
+        """Swap parents and of nodes
+        """
+
+        node_1_cp = copy.copy(node_1)
+        node_2_cp = copy.copy(node_2)
+
+        node_1_parent_cp = node_1_cp.parent
+        node_2_parent_cp = node_2_cp.parent
+
+        # find out if node is left or right child
+        if node_1_parent_cp:
+            if node_1_parent_cp.left is node_1:
+                node_1.parent.left = node_2_cp
+            elif node_1_parent_cp.right is node_1:
+                node_1.parent.right = node_2_cp
+
+        if node_2_parent_cp:
+            if node_2_parent_cp.left is node_2:
+                node_2.parent.left = node_1_cp
+            elif node_2_parent_cp.right is node_2:
+                node_2.parent.right = node_1_cp
+
+        node_1.parent = node_2_parent_cp
+        node_2.parent = node_1_parent_cp
+
+        return node_1, node_2
+
+    @staticmethod
+    def _valid_pair(postfix_tokens_1, postfix_tokens_2, r1, r2):
+        """Checks if postfix token pair is valid
+
+        :param postfix_tokens_1: The first list of tokens in post-order notation
+        :param postfix_tokens_2: The second list of tokens in post-order notation
+        :param r1: The first postfix index
+        :param r2: The second postfix index
+        :return:
+        """
+        if postfix_tokens_1[r1] in operators and postfix_tokens_2[r2] in operators:
+            return True
+        elif postfix_tokens_1[r1] not in operators and postfix_tokens_2[r2] not in operators:
+            return True
+
+        return False
+
+    @staticmethod
+    def _select_token_ind(postfix_tokens_1, postfix_tokens_2):
+        """Select indices of parent postfix tokens
+
+        :param postfix_tokens_1: The first list of tokens in post-order notation
+        :param postfix_tokens_2: The second list of tokens in post-order notation
+        :return:
+        """
+        r1 = np.random.randint(0, len(postfix_tokens_1))
+        r2 = np.random.randint(0, len(postfix_tokens_2))
+        while not SubtreeExchangeBinaryRecombinator._valid_pair(postfix_tokens_1, postfix_tokens_2, r1, r2):
+            r1 = np.random.randint(0, len(postfix_tokens_1))
+            r2 = np.random.randint(0, len(postfix_tokens_2))
+
+        return r1, r2
