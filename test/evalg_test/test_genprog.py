@@ -103,6 +103,10 @@ class TestTreePointMutator(TestCase):
         self.assertEqual(tree.root.label, '+')
         self.assertIsInstance(tree, BinaryTree)
 
+    def tearDown(self):
+        # reset random seed
+        np.random.seed()
+
 
 class TestSubTreeExchangeMutator(TestCase):
 

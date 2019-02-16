@@ -54,6 +54,10 @@ class TestUniformSelector(TestCase):
         result = selector.arg_select()
         self.assertCountEqual(result.tolist(), [3, 4, 2])
 
+    def tearDown(self):
+        # reset random seed
+        np.random.seed()
+
 
 class TestFitnessProportionalSelector(TestCase):
 
@@ -72,6 +76,10 @@ class TestFitnessProportionalSelector(TestCase):
         result = selector.arg_select()
         self.assertCountEqual(result.tolist(), [1, 4, 3])
 
+    def tearDown(self):
+        # reset random seed
+        np.random.seed()
+
 
 class TestSigmaScalingSelector(TestCase):
 
@@ -89,6 +97,10 @@ class TestSigmaScalingSelector(TestCase):
         selector = SigmaScalingSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
         result = selector.arg_select()
         self.assertEqual(result.tolist(), [1, 3, 3])
+
+    def tearDown(self):
+        # reset random seed
+        np.random.seed()
 
 
 class TestTruncationSelector(TestCase):
@@ -125,6 +137,10 @@ class TestLinearRankingSelector(TestCase):
         result = selector.arg_select()
         self.assertCountEqual(result.tolist(), [1, 4, 3])
 
+    def tearDown(self):
+        # reset random seed
+        np.random.seed()
+
 
 class TestExponentialRankingSelector(TestCase):
 
@@ -149,6 +165,10 @@ class TestExponentialRankingSelector(TestCase):
         selector = ExponentialRankingSelector(self.population, self.n_indivs, self.fitness_list, self.c)
         result = selector.arg_select()
         self.assertCountEqual(result.tolist(), [2, 3, 3])
+
+    def tearDown(self):
+        # reset random seed
+        np.random.seed()
 
 
 class TestTournamentSelector(TestCase):
@@ -177,3 +197,7 @@ class TestTournamentSelector(TestCase):
         selector = TournamentSelector(self.population, self.n_indivs, self.fitness_list, self.n_way)
         result = selector.arg_select()
         self.assertCountEqual(result.tolist(), [0, 0, 1])
+
+    def tearDown(self):
+        # reset random seed
+        np.random.seed()
