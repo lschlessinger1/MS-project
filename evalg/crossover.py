@@ -27,8 +27,8 @@ class BinaryRecombinator(Recombinator, ABC):
         super().__init__(parents)
         if len(parents) != 2:
             raise ValueError('Exactly two parents are required.')
-        self.parent_1 = self.parents[0].copy()
-        self.parent_2 = self.parents[1].copy()
+        self.parent_1 = self.parents[0]
+        self.parent_2 = self.parents[1]
 
 
 class OnePointBinaryRecombinator(BinaryRecombinator, GARecombinator):

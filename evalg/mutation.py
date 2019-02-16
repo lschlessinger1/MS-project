@@ -8,7 +8,7 @@ from evalg.util import swap
 class Mutator:
 
     def __init__(self, individual):
-        self.individual = individual.copy()
+        self.individual = individual
 
     def mutate(self):
         raise NotImplementedError("Implement mutate in a child class.")
@@ -19,6 +19,7 @@ class GAMutator(Mutator, ABC):
     def __init__(self, individual):
         super().__init__(individual)
         self.gene_size = individual.size
+
 
 class BitFlipMutator(GAMutator):
 
