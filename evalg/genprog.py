@@ -4,8 +4,7 @@ from abc import ABC
 import numpy as np
 
 from evalg.crossover import Recombinator, BinaryRecombinator
-from evalg.encoding import operators, infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTreeNode, \
-    BinaryTree
+from evalg.encoding import operators, BinaryTreeNode, BinaryTree
 from evalg.mutation import Mutator
 
 
