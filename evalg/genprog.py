@@ -293,18 +293,16 @@ class SubtreeExchangeBinaryRecombinator(BinaryTreeRecombinator):
         return node_1, node_2
 
     @staticmethod
-    def _valid_pair(postfix_tokens_1, postfix_tokens_2, r1, r2):
+    def _valid_pair(postfix_token_1, postfix_token_2):
         """Checks if postfix token pair is valid
 
-        :param postfix_tokens_1: The first list of tokens in post-order notation
-        :param postfix_tokens_2: The second list of tokens in post-order notation
-        :param r1: The first postfix index
-        :param r2: The second postfix index
+        :param postfix_token_1: The first token in post-order notation
+        :param postfix_token_2: The second token in post-order notation
         :return:
         """
-        if postfix_tokens_1[r1] in operators and postfix_tokens_2[r2] in operators:
+        if postfix_token_1 in operators and postfix_token_2 in operators:
             return True
-        elif postfix_tokens_1[r1] not in operators and postfix_tokens_2[r2] not in operators:
+        elif postfix_token_1 not in operators and postfix_token_2 not in operators:
             return True
 
         return False
@@ -319,7 +317,7 @@ class SubtreeExchangeBinaryRecombinator(BinaryTreeRecombinator):
         """
         r1 = np.random.randint(0, len(postfix_tokens_1))
         r2 = np.random.randint(0, len(postfix_tokens_2))
-        while not SubtreeExchangeBinaryRecombinator._valid_pair(postfix_tokens_1, postfix_tokens_2, r1, r2):
+        while not SubtreeExchangeBinaryRecombinator._valid_pair(postfix_tokens_1[r1], postfix_tokens_2[r2]):
             r1 = np.random.randint(0, len(postfix_tokens_1))
             r2 = np.random.randint(0, len(postfix_tokens_2))
 

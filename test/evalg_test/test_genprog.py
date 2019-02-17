@@ -187,21 +187,15 @@ class TestHalfAndHalfMutator(TestCase):
 
 class TestSubtreeExchangeBinaryRecombinator(TestCase):
 
-    def setUp(self):
-        pass
-
     def test_crossover(self):
-        tree_1 = BinaryTree()
-        tree_1.root = BinaryTreeNode('*')
-        tree_1.root = tree_1.root
+        np.random.seed(10)
+        tree_1 = BinaryTree(BinaryTreeNode('*'))
         tree_1.root.add_left('A')
         tree_1.root.add_right('B')
 
-        tree_2 = BinaryTree()
-        tree_2.root = BinaryTreeNode('+')
-        tree_2.root = tree_1.root
+        tree_2 = BinaryTree(BinaryTreeNode('+'))
         tree_2.root.add_left('C')
-        tree_2.root.add_left('D')
+        tree_2.root.add_right('D')
 
         parents = [tree_1, tree_2]
         recombinator = SubtreeExchangeBinaryRecombinator(parents)
@@ -209,16 +203,55 @@ class TestSubtreeExchangeBinaryRecombinator(TestCase):
         self.assertIsInstance(result_1, BinaryTree)
         self.assertIsInstance(result_2, BinaryTree)
 
-        # TODO: test correctness of results
+        self.assertEqual(result_1.root.value, '*')
+        self.assertEqual(result_1.root.left.value, 'A')
+        self.assertEqual(result_1.root.right.value, 'D')
+        self.assertEqual(result_2.root.value, '+')
+        self.assertEqual(result_2.root.left.value, 'C')
+        self.assertEqual(result_2.root.right.value, 'B')
 
     def test__swap_subtrees(self):
-        # TODO: test correctness of SubtreeExchangeBinaryRecombinator._swap_subtrees
-        pass
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+
+        new_node_1, new_node_2 = SubtreeExchangeBinaryRecombinator._swap_subtrees(node_1.left, node_2.left)
+
+        self.assertIsInstance(new_node_1, BinaryTreeNode)
+        self.assertIsInstance(new_node_2, BinaryTreeNode)
+
+        self.assertEqual(new_node_1.value, 'A')
+        self.assertEqual(new_node_1.parent.value, '+')
+        self.assertEqual(new_node_1.parent.left.value, 'A')
+        self.assertEqual(new_node_1.parent.right.value, 'D')
+        self.assertEqual(new_node_2.value, 'C')
+        self.assertEqual(new_node_2.parent.value, '*')
+        self.assertEqual(new_node_2.parent.left.value, 'C')
+        self.assertEqual(new_node_2.parent.right.value, 'B')
 
     def test__valid_pair(self):
-        # TODO: test correctness of SubtreeExchangeBinaryRecombinator._valid_pair
-        pass
+        result = SubtreeExchangeBinaryRecombinator._valid_pair('A', 'B')
+        self.assertTrue(result)
+        result = SubtreeExchangeBinaryRecombinator._valid_pair('+', '*')
+        self.assertTrue(result)
+        result = SubtreeExchangeBinaryRecombinator._valid_pair('+', 'B')
+        self.assertFalse(result)
 
     def test__select_token_ind(self):
-        # TODO: test correctness of SubtreeExchangeBinaryRecombinator._select_token_ind
-        pass
+        np.random.seed(10)
+        tokens_1 = ['A', 'B', '+']
+        tokens_2 = ['C', 'D', '*']
+        idx_1, idx_2 = SubtreeExchangeBinaryRecombinator._select_token_ind(tokens_1, tokens_2)
+        self.assertIsInstance(idx_1, int)
+        self.assertIsInstance(idx_2, int)
+        self.assertLess(idx_1, len(tokens_1))
+        self.assertLess(idx_2, len(tokens_2))
+        self.assertEqual(tokens_1[idx_1], 'B')
+        self.assertEqual(tokens_2[idx_2], 'D')
+
+    def tearDown(self):
+        np.random.seed()
