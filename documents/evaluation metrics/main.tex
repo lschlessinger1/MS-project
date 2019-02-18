@@ -1,0 +1,87 @@
+\documentclass{article}
+
+\usepackage{amsmath, amsfonts}
+
+\title{Evaluation Criteria}
+\author{Louis Schlessinger}
+\date{February 2019}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+The following are the evaluation criteria used to assess the performance of the automated kernel search process. They include three broad areas: model score, model complexity, and population diversity. Each one is tracked over time and presented as a time-series.
+
+\section{Model Score}
+These evaluation criteria measure the performance of a single model. E.g. negative log marginal likelihood, Bayesian information criterion, etc.
+\subsection{Best-so-far}
+The maximum model score for each generation.
+\subsection{Average Score}
+The mean model score for each generation.
+\subsection{Score Confidence}
+The sample standard deviation of model scores for each generation. 
+\section{Model Complexity}
+The model complexity over time shows how the model space is explored and which models in that space perform the best. The mean and standard deviation of each is recorded at each time step.
+\subsection{Number of Hyperparameters}
+The number of kernel hyperparameters used. E.g., the squared-exponential covariance function in one dimension, $k_y(x_p, x_q)=\sigma_{f}^{2}(-\frac{1}{2\ell^2}(x_p - x_q)^2)+\sigma_{n}^{2}\delta_{pq}$, has 3 hyperparameters ($\sigma_{f}, \ell,\sigma_{n}$). This includes parameters such as length scale, period and variance. This shows the evolution of the types of kernels explored over time and which types of kernels performed the best. It can be thought of as a model complexity score of the kernel structure.
+\subsection{Number of Operands}
+The number of 1-D sub-kernels used in the full kernel. E.g. $SE_0 + RQ_1 \cdot SE_1$ has 3 operands. This is strongly correlated with the number of model hyperparameters and can also be thought of as a model complexity score. 
+\section{Population Diversity}
+These heterogeneity scores measure distance between pairs of kernels.  The mean and standard deviation of each is recorded at each time step.
+\subsection{Kernel Expression Distance}
+The distance between kernels in algebraic form. The kernel expression distance measures the similarity based on the algebraic expression of the kernel in additive form. To compute this population diversity score, we first take the mean distance between all pairs of kernels (for each generation). To compute the distance between a pair of kernels $k_i$ and $k_j$, we first convert each on to additive form. Then, we vectorize each product within each additive kernel using a simple label encoding. Lastly, the mean Euclidean distance between the two additive kernels' parts are calculated for all possible pairs of products.
+
+Example:
+\[k_i = SE_0 + RQ_1(RQ_1 + SE1)\]
+\[k_j = SE_1 SE_1 + SE_1 RQ_1(RQ_0 + RQ_1)+RQ_0\]
+\begin{enumerate}
+\item Convert to additive form
+\[k_i = SE_0 + RQ_1 RQ_1 + RQ_1 SE_1\]
+\[k_j = SE_1 SE_1 + SE_1 RQ_1 RQ_0 + SE_1 RQ_1 RQ_1 + RQ_0\]
+
+\item Encode additive kernels (assume $d=2, \mathcal{B} = \{SE, RQ\}$)
+
+\[k_i \implies  L_i = \{
+\begin{bmatrix} 0 \\0 \\ 1 \\ 0 \end{bmatrix}, 
+\begin{bmatrix} 0 \\ 2 \\ 0 \\ 0 \end{bmatrix},
+\begin{bmatrix} 0 \\ 1 \\ 0 \\ 1 \end{bmatrix}
+\}\]
+ 
+\[k_j \implies  L_j = \{
+\begin{bmatrix} 0 \\ 0 \\ 0 \\ 2 \end{bmatrix}, 
+\begin{bmatrix} 1 \\ 1 \\ 0 \\ 1 \end{bmatrix},
+\begin{bmatrix} 0 \\ 2 \\ 0 \\ 1 \end{bmatrix},
+\begin{bmatrix} 1 \\ 0 \\ 0 \\ 0 \end{bmatrix}
+\}\]
+
+\item Take Cartesian product of all pairs of additive kernels
+
+\[C_{ij} = L_i\times L_j = \{(\ell_i, \ell_j) \mid \ell_i \in L_i,  \ell_j \in L_j\}\]
+
+\item Compute mean Euclidean distance of all Cartesian products
+
+\[d_{ij} = \left\Vert \ell_i - \ell_j \right\Vert_2\]
+\[D_{ij} = \frac{1}{\left\vert C_{ij} \right\vert}\sum_{k=1}^{\left\vert C_{ij} \right\vert}d_{ij}\]
+
+\item Compute mean $\bar{D}$ and standard deviation $\sigma_D$ of D
+
+\end{enumerate}
+
+\subsection{Covariate Distance}
+The $\ell$-2 (Euclidean) distance between a pair of kernel matrices. It can be thought of as a naïve similarity score between different explanations of the data offered by each kernel. The distribution of Euclidean distances at each generation can be thought of as population heterogeneity score. For example, suppose we wish to compute the distance matrix $D \in \mathbb{R}^{n \times n}$:
+
+\[D_{ij} = \left\Vert k_i(X, X) - k_j(X, X) \right\Vert_2 \]
+\[D = \frac{D + D^\top}{2}\]
+We can then compute the mean and standard deviation of $D$.
+\[\bar{D} = \frac{1}{n^2} \sum_{i=1}^{n}\sum_{j=1}^{n} D_{ij} \]
+\[\sigma_D = \sqrt{\frac{\frac{1}{n^2} \sum_{i=1}^{n}\sum_{j=1}^{n} (D_{ij} - \bar{D})^2}{n^2 - 1}}\]
+Equivalently, we can vectorize $D$:
+let $\vec{v} = vec(D)\in \mathbb{R^{n^2}}$
+Then,
+\[\bar{v} = \bar{D} = \frac{1}{n^2}\sum_{i=1}^{n^2} v_{i} = \frac{1}{N}\sum_{i=1}^{N} v_{i} \]
+\[\sigma_v = \sigma_D = \sqrt{\frac{\sum_{i=1}^{n^2} (v_i - \bar{D})^2}{n^2 - 1}} = \sqrt{\frac{\sum_{i=1}^{N} (v_i - \bar{v})^2}{N - 1}}\]
+where $N = n^2$
+
+\end{document}
