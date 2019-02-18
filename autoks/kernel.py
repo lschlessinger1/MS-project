@@ -2,7 +2,11 @@ import numpy as np
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 
+import evalg.encoding
 from autoks.util import remove_duplicates, argsort
+
+
+# from evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree
 
 
 class AKSKernel:
@@ -24,6 +28,12 @@ class AKSKernel:
         self._score = score
         # Update scored as well
         self.scored = True
+
+    def to_binary_tree(self):
+        infix_tokens = kernel_to_infix_tokens(self.kernel)
+        postfix_tokens = evalg.encoding.infix_tokens_to_postfix_tokens(infix_tokens)
+        tree = evalg.encoding.postfix_tokens_to_binexp_tree(postfix_tokens)
+        return tree
 
     def pretty_print(self):
         print(str(self))

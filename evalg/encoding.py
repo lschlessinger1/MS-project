@@ -1,13 +1,13 @@
 from GPy.kern.src.kern import Kern
 
-from autoks.kernel import subkernel_expression
+import autoks.kernel
 
 operators = ['+', '*']
 
 
 def val_to_label(value):
     if isinstance(value, Kern):
-        return subkernel_expression(value)
+        return autoks.kernel.subkernel_expression(value)
     else:
         return str(value)
 

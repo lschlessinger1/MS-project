@@ -2,8 +2,9 @@ import unittest
 
 from GPy.kern import RBF, Add, RatQuad, Prod
 
-from autoks.kernel import sort_kernel
+from autoks.kernel import sort_kernel, AKSKernel
 from autoks.util import remove_duplicates
+from evalg.encoding import BinaryTree
 
 
 class TestKernel(unittest.TestCase):
@@ -74,6 +75,16 @@ class TestKernel(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             remove_duplicates([1, 2, 3], ['1', 2])
+
+
+class TestAKSKernel(unittest.TestCase):
+
+    def test_to_binary_tree(self):
+        kernel = RBF(1) * RBF(1) + RatQuad(1)
+        aks_kernel = AKSKernel(kernel)
+        result = aks_kernel.to_binary_tree()
+        self.assertIsInstance(result, BinaryTree)
+        self.assertCountEqual(result.postfix_tokens(), ['SE0', 'SE0', '*', 'RQ0', '+'])
 
 
 if __name__ == '__main__':
