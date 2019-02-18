@@ -3,7 +3,7 @@ from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
 from autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels
-from evalg.selection import TruncationSelector
+from evalg.selection import TruncationSelector, Selector
 
 
 class BaseGrammar:
@@ -56,8 +56,16 @@ class BaseGrammar:
 
 class EvolutionaryGrammar(BaseGrammar):
 
-    def __init__(self, n_parents):
+    def __init__(self, n_parents, parent_selector, offspring_selector):
         super().__init__(n_parents)
+
+        if not isinstance(parent_selector, Selector):
+            raise TypeError(f'parent_selector must be of type {Selector.__name__}')
+        self.parent_selector = parent_selector
+
+        if not isinstance(offspring_selector, Selector):
+            raise TypeError(f'offspring_selector must be of type {Selector.__name__}')
+        self.offspring_selector = offspring_selector
 
     def initialize(self, kernel_families, n_kernels, n_dims):
         """Naive initialization of all SE_i and RQ_i (for every dimension)
@@ -95,6 +103,14 @@ class EvolutionaryGrammar(BaseGrammar):
                 k.pretty_print()
 
         return new_kernels
+
+    def select_parents(self, kernels):
+        self.parent_selector.population = kernels
+        return self.parent_selector.select()
+
+    def select_offspring(self, kernels):
+        self.offspring_selector.population = kernels
+        return self.offspring_selector.select()
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
