@@ -25,7 +25,7 @@ class CrossoverVariator(Variator):
         """
         super().__init__(operator)
         if not isinstance(operator, Recombinator):
-            raise TypeError('operator must be of type %s' % Recombinator.__class__)
+            raise TypeError('operator must be of type 'f'{Recombinator.__name__}')
         self.n_offspring = n_offspring
         self.n_way = n_way
         self.n_points = n_points
@@ -70,7 +70,7 @@ class MutationVariator(Variator):
         """
         super().__init__(operator)
         if not isinstance(operator, Recombinator):
-            raise TypeError('operator must be of type %s' % Recombinator.__class__)
+            raise TypeError('operator must be of type %s' % Recombinator.__name__)
         self.m_prob = m_prob
 
     def mutate_all(self, individuals):
@@ -106,9 +106,9 @@ def crossover_mutate_all(individuals, crossover_variator, mutation_variator):
     :return:
     """
     if not isinstance(crossover_variator, CrossoverVariator):
-        raise TypeError('crossover_variator must be of type %s' % CrossoverVariator.__class__)
+        raise TypeError('crossover_variator must be of type %s' % CrossoverVariator.__name__)
     if not isinstance(mutation_variator, MutationVariator):
-        raise TypeError('mutation_variator must be of type %s' % MutationVariator.__class__)
+        raise TypeError('mutation_variator must be of type %s' % MutationVariator.__name__)
 
     offspring = crossover_variator.crossover_all(individuals)
     offspring = mutation_variator.mutate_all(offspring)

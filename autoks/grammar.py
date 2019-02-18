@@ -222,7 +222,7 @@ class CKSGrammar(BaseGrammar):
     def expand_single_kernel(self, kernel, n_dims, base_kernels):
         is_kernel = isinstance(kernel, Kern)
         if not is_kernel:
-            raise ValueError('Unknown kernel type %s' % kernel.__class__)
+            raise ValueError('Unknown kernel type %s' % kernel.__class__.__name__)
 
         kernels = []
 

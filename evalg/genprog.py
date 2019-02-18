@@ -118,7 +118,7 @@ class TreeMutator(Mutator, ABC):
     def __init__(self, individual, operands):
         super().__init__(individual)
         if not isinstance(individual, BinaryTree):
-            raise TypeError('individual must be of type %s' % BinaryTree.__class__)
+            raise TypeError('individual must be of type %s' % BinaryTree.__name__)
 
         self.operands = operands  # the possible operands to choose from
 
@@ -132,7 +132,7 @@ class TreeRecombinator(Recombinator, ABC):
         super().__init__(parents)
 
         if not all(isinstance(parent, BinaryTree) for parent in parents):
-            raise TypeError('all parents must be of type %s' % BinaryTree.__class__)
+            raise TypeError('all parents must be of type %s' % BinaryTree.__name__)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'individual={self.parents!r})'
