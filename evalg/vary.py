@@ -8,6 +8,9 @@ class Variator:
     def __init__(self, operator):
         self.operator = operator
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'operator={self.operator!r})'
+
 
 class CrossoverVariator(Variator):
 
@@ -52,6 +55,10 @@ class CrossoverVariator(Variator):
 
         return offspring
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'operator={self.operator!r}, n_offspring={self.n_offspring!r}, ' \
+            f'n_way={self.n_way!r}, n_points={self.n_points!r}, c_prob={self.c_prob!r})'
+
 
 class MutationVariator(Variator):
 
@@ -85,6 +92,9 @@ class MutationVariator(Variator):
             offspring_mut.append(child)
 
         return offspring_mut
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'operator={self.operator!r}, m_prob={self.m_prob!r})'
 
 
 def crossover_mutate_all(individuals, crossover_variator, mutation_variator):

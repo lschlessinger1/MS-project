@@ -20,6 +20,10 @@ class BinaryTreeGenerator:
     def generate(self):
         raise NotImplementedError('generate must be implemented in a child class.')
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'binary_operators={self.binary_operators!r}, operands=' \
+            f'{self.operands!r}, max_depth={self.max_depth!r})'
+
 
 # Binary tree generators
 
@@ -65,6 +69,10 @@ class GrowGenerator(BinaryTreeGenerator):
 
         return node
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'binary_operators={self.binary_operators!r}, operands=' \
+            f'{self.operands!r}, max_depth={self.max_depth!r})'
+
 
 class FullGenerator(BinaryTreeGenerator):
 
@@ -100,6 +108,10 @@ class FullGenerator(BinaryTreeGenerator):
 
         return node
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'binary_operators={self.binary_operators!r}, operands=' \
+            f'{self.operands!r}, max_depth={self.max_depth!r})'
+
 
 class TreeMutator(Mutator, ABC):
 
@@ -110,6 +122,9 @@ class TreeMutator(Mutator, ABC):
 
         self.operands = operands  # the possible operands to choose from
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands={self.operands!r})'
+
 
 class TreeRecombinator(Recombinator, ABC):
 
@@ -119,11 +134,17 @@ class TreeRecombinator(Recombinator, ABC):
         if not all(isinstance(parent, BinaryTree) for parent in parents):
             raise TypeError('all parents must be of type %s' % BinaryTree.__class__)
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.parents!r})'
+
 
 class BinaryTreeRecombinator(TreeRecombinator, BinaryRecombinator, ABC):
 
     def __init__(self, parents):
         super().__init__(parents)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r})'
 
 
 # Binary tree mutators
@@ -153,6 +174,9 @@ class TreePointMutator(TreeMutator):
         node.value = new_val
 
         return tree
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands={self.operands!r})'
 
 
 class SubTreeExchangeMutator(TreeMutator, ABC):
@@ -209,6 +233,10 @@ class SubTreeExchangeMutator(TreeMutator, ABC):
             new_tree.root = random_tree.root
             return new_tree
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands=' \
+            f'{self.operands!r}, max_depth={self.max_depth!r})'
+
 
 class GrowMutator(SubTreeExchangeMutator):
 
@@ -221,6 +249,10 @@ class GrowMutator(SubTreeExchangeMutator):
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands=' \
+            f'{self.operands!r}, max_depth={self.max_depth!r})'
+
 
 class HalfAndHalfMutator(SubTreeExchangeMutator):
 
@@ -232,6 +264,10 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
         tree_generator = FullGenerator(operators, self.operands, self.max_depth)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands=' \
+            f'{self.operands!r}, max_depth={self.max_depth!r})'
 
 
 # Binary tree recombinators
@@ -321,3 +357,6 @@ class SubtreeExchangeBinaryRecombinator(BinaryTreeRecombinator):
             r2 = np.random.randint(0, len(postfix_tokens_2))
 
         return r1, r2
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r})'

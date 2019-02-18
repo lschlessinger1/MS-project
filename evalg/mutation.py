@@ -20,6 +20,9 @@ class GAMutator(Mutator, ABC):
         super().__init__(individual)
         self.gene_size = individual.size
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
+
 
 class BitFlipMutator(GAMutator):
 
@@ -37,6 +40,10 @@ class BitFlipMutator(GAMutator):
 
         return indiv_mut
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r}, ' \
+            f'gene_mut_prob={self.gene_mut_prob!r})'
+
 
 class InterchangeMutator(GAMutator):
 
@@ -51,6 +58,9 @@ class InterchangeMutator(GAMutator):
 
         return indiv_mut
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
+
 
 class ReverseMutator(GAMutator):
 
@@ -64,6 +74,9 @@ class ReverseMutator(GAMutator):
 
         return indiv_mut
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
+
 
 class GaussianMutator(GAMutator):
 
@@ -73,6 +86,9 @@ class GaussianMutator(GAMutator):
     def mutate(self):
         """Gaussian mutation."""
         raise NotImplementedError("Gaussian mutation not yet implemented")
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
 
 
 class BoundaryMutator(GAMutator):
@@ -84,6 +100,9 @@ class BoundaryMutator(GAMutator):
         """Boundary mutation."""
         raise NotImplementedError("Boundary mutation not yet implemented")
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
+
 
 class UniformMutator(GAMutator):
 
@@ -93,6 +112,9 @@ class UniformMutator(GAMutator):
     def mutate(self):
         """Uniform mutation."""
         raise NotImplementedError("Uniform mutation not yet implemented")
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
 
 
 class NonuniformMutator(GAMutator):
@@ -104,6 +126,9 @@ class NonuniformMutator(GAMutator):
         """Non-Uniform mutation."""
         raise NotImplementedError("Non-Uniform mutation not yet implemented")
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
+
 
 class ShrinkMutator(GAMutator):
 
@@ -113,3 +138,6 @@ class ShrinkMutator(GAMutator):
     def mutate(self):
         """Shrink mutation."""
         raise NotImplementedError("Shrink mutation not yet implemented")
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'

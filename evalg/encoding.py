@@ -31,6 +31,9 @@ class TreeNode:
     def __str__(self):
         return self.label
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'label={self.label!r}, value={self.value!r}, parent={self.parent!r})'
+
 
 class BinaryTreeNode(TreeNode):
 
@@ -77,7 +80,8 @@ class BinaryTreeNode(TreeNode):
         return self.label
 
     def __repr__(self):
-        return '{} {}'.format(self.__class__.__name__, self.__str__())
+        return f'{self.__class__.__name__}('f'label={self.label!r}, value={self.value!r}, parent={self.parent!r}, ' \
+            f'left={self.left!r}, right={self.right!r})'
 
 
 class BinaryTree:
@@ -171,6 +175,9 @@ class BinaryTree:
             return left_depth + 1
         else:
             return right_depth + 1
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'root={self.root!r})'
 
 
 def postfix_tokens_to_binexp_tree(postfix_tokens):

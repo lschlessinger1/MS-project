@@ -13,12 +13,18 @@ class Recombinator:
     def crossover(self):
         raise NotImplementedError("crossover must be implemented in a child class")
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parents={self.parents!r})'
+
 
 class GARecombinator(Recombinator, ABC):
 
     def __init__(self, parents):
         super().__init__(parents)
         self.gene_size = parents[0].size
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parents={self.parents!r}, gene_size={self.gene_size!r})'
 
 
 class BinaryRecombinator(Recombinator, ABC):
@@ -29,6 +35,9 @@ class BinaryRecombinator(Recombinator, ABC):
             raise ValueError('Exactly two parents are required.')
         self.parent_1 = self.parents[0]
         self.parent_2 = self.parents[1]
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r})'
 
 
 class OnePointBinaryRecombinator(BinaryRecombinator, GARecombinator):
@@ -45,6 +54,9 @@ class OnePointBinaryRecombinator(BinaryRecombinator, GARecombinator):
 
         return child_1, child_2
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r})'
+
 
 class TwoPointBinaryRecombinator(BinaryRecombinator, GARecombinator):
 
@@ -55,6 +67,9 @@ class TwoPointBinaryRecombinator(BinaryRecombinator, GARecombinator):
         """Two-point crossover."""
         recombinator = NPointBinaryRecombinator(self.parents, n=2)
         return recombinator.crossover()
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r})'
 
 
 class NPointBinaryRecombinator(BinaryRecombinator, GARecombinator):
@@ -82,6 +97,10 @@ class NPointBinaryRecombinator(BinaryRecombinator, GARecombinator):
 
         return child_1, child_2
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r}, , n=' \
+            f'{self.n!r})'
+
 
 class UniformBinaryRecombinator(BinaryRecombinator, GARecombinator):
 
@@ -91,3 +110,6 @@ class UniformBinaryRecombinator(BinaryRecombinator, GARecombinator):
     def crossover(self):
         """Uniform crossover."""
         raise NotImplementedError("crossover_uniform not yet implemented")
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r})'

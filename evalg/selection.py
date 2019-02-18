@@ -25,12 +25,18 @@ class Selector:
     def arg_select(self):
         raise NotImplementedError("Implement arg_select in a child class")
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
+
 
 class FitnessBasedSelector(Selector, ABC):
 
     def __init__(self, population, n_individuals, fitness_list):
         super().__init__(population, n_individuals)
         self.fitness_list = fitness_list
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
 
 
 class UniformSelector(Selector):
@@ -48,6 +54,9 @@ class UniformSelector(Selector):
         ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True)
         return ind
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
+
 
 class StochasticUnivSampSelector(Selector):
 
@@ -58,6 +67,9 @@ class StochasticUnivSampSelector(Selector):
         """ Stochastic Universal Sampling
         """
         raise NotImplementedError("Stochastic Universal Sampling selection is not yet implemented.")
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
 
 
 class BoltzmannSelector(Selector):
@@ -71,6 +83,10 @@ class BoltzmannSelector(Selector):
         """Boltzmann Selection
         """
         raise NotImplementedError("Boltzmann selection is not yet implemented.")
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r}, ' \
+            f'temperature={self.temperature!r}, prev_pop_avg={self.prev_pop_avg!r})'
 
 
 class FitnessProportionalSelector(FitnessBasedSelector):
@@ -89,6 +105,9 @@ class FitnessProportionalSelector(FitnessBasedSelector):
         probabilities = self.fitness_list / np.sum(self.fitness_list)
         ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True, p=probabilities)
         return ind
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
 
 
 class SigmaScalingSelector(FitnessBasedSelector):
@@ -116,6 +135,9 @@ class SigmaScalingSelector(FitnessBasedSelector):
         ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True, p=probabilities)
         return ind
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
+
 
 class TruncationSelector(FitnessBasedSelector):
 
@@ -131,6 +153,9 @@ class TruncationSelector(FitnessBasedSelector):
         """
         ind = np.argpartition(self.fitness_list, -self.n_individuals)[-self.n_individuals:]
         return ind
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
 
 
 class LinearRankingSelector(FitnessBasedSelector):
@@ -151,6 +176,9 @@ class LinearRankingSelector(FitnessBasedSelector):
         ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True, p=probabilities)
         return ind
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
+
 
 class ExponentialRankingSelector(FitnessBasedSelector):
 
@@ -169,6 +197,10 @@ class ExponentialRankingSelector(FitnessBasedSelector):
 
         ind = np.random.choice(self.pop_size, size=self.n_individuals, replace=True, p=probabilities)
         return ind
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r}, ' \
+            f'c={self.c!r})'
 
 
 class TournamentSelector(FitnessBasedSelector):
@@ -203,3 +235,7 @@ class TournamentSelector(FitnessBasedSelector):
             ind[i] = winner
 
         return ind.astype(np.int)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r}, ' \
+            f'n_way={self.n_way!r})'

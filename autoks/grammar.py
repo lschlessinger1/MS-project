@@ -50,6 +50,9 @@ class BaseGrammar:
         """
         return kernels
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
+
 
 class EvolutionaryGrammar(BaseGrammar):
 
@@ -92,6 +95,9 @@ class EvolutionaryGrammar(BaseGrammar):
                 k.pretty_print()
 
         return new_kernels
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
 
 
 class BOMSGrammar(BaseGrammar):
@@ -153,6 +159,9 @@ class BOMSGrammar(BaseGrammar):
         """
         selector = TruncationSelector(active_set, self.n_parents, [k.score for k in active_set])
         return selector.select()
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
 
 
 class CKSGrammar(BaseGrammar):
@@ -256,6 +265,9 @@ class CKSGrammar(BaseGrammar):
             raise ValueError('Unknown kernel class:', kernel.__class__)
         return result
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
+
 
 class RandomGrammar(BaseGrammar):
 
@@ -302,3 +314,6 @@ class RandomGrammar(BaseGrammar):
                 k.pretty_print()
 
         return new_kernels
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'

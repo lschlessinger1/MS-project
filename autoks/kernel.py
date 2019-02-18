@@ -35,8 +35,8 @@ class AKSKernel:
         return kernel_to_infix(self.kernel)
 
     def __repr__(self):
-        return 'AKSKernel(kernel=%s, score=%s)' % \
-               (kernel_to_infix(self.kernel, show_params=True), self.score)
+        return f'{self.__class__.__name__}('f'kernel={kernel_to_infix(self.kernel, show_params=True)!r}, score=' \
+            f'{self.score!r}) '
 
 
 def get_kernel_mapping():
