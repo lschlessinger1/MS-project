@@ -25,7 +25,7 @@ class BaseGrammar:
         """
         raise NotImplementedError('initialize must implemented in a subclass')
 
-    def expand(self, kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
+    def expand(self, kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
         """ Get next round of candidate kernels from current kernels
 
         :param kernels:
@@ -79,7 +79,7 @@ class EvolutionaryGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
         """ Perform crossover and mutation
 
         :param aks_kernels: list of AKSKernels
@@ -110,10 +110,10 @@ class EvolutionaryGrammar(BaseGrammar):
 
         return new_kernels
 
-    def select_parents(self, kernels):
+    def select_parents(self, kernels: List[AKSKernel]):
         return self.parent_selector.select(kernels, [k.score for k in kernels])
 
-    def select_offspring(self, kernels):
+    def select_offspring(self, kernels: List[AKSKernel]):
         return self.offspring_selector.select(kernels, [k.score for k in kernels])
 
     def __repr__(self):
@@ -125,7 +125,7 @@ class BOMSGrammar(BaseGrammar):
     Bayesian optimization for automated model selection (Malkomes et al., 2016)
     """
 
-    def __init__(self, n_parents=600):
+    def __init__(self, n_parents: int = 600):
         super().__init__(n_parents)
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
@@ -142,7 +142,7 @@ class BOMSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
         """ Greedy and exploratory expansion of kernels
 
         :param aks_kernels: list of AKSKernels
@@ -204,7 +204,7 @@ class CKSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
         """ Greedy expansion of nodes
 
         :param aks_kernels:
@@ -239,10 +239,10 @@ class CKSGrammar(BaseGrammar):
 
         return new_kernels
 
-    def expand_single_kernel(self, kernel, n_dims, base_kernels):
+    def expand_single_kernel(self, kernel: Kern, n_dims: int, base_kernels: List[str]):
         is_kernel = isinstance(kernel, Kern)
         if not is_kernel:
-            raise ValueError('Unknown kernel type %s' % kernel.__class__.__name__)
+            raise TypeError(f'Unknown kernel type {kernel.__class__.__name__}')
 
         kernels = []
 
@@ -263,7 +263,7 @@ class CKSGrammar(BaseGrammar):
                 kernels.append(create_1d_kernel(base_kernel_name, kernel.active_dims[0]))
         return kernels
 
-    def expand_full_kernel(self, kernel, n_dims, base_kernels):
+    def expand_full_kernel(self, kernel: Kern, n_dims: int, base_kernels: List[str]):
         result = self.expand_single_kernel(kernel, n_dims, base_kernels)
         if kernel is None:
             pass
@@ -300,7 +300,7 @@ class RandomGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
         """Random expansion of nodes."""
 
         if verbose:
