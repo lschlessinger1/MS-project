@@ -3,12 +3,12 @@ import numpy as np
 
 class Selector:
 
-    def __init__(self, n_individuals):
+    def __init__(self, n_individuals: int):
         if n_individuals < 0:
             raise ValueError('The number of individuals must be nonnegative.')
         self.n_individuals = n_individuals
 
-    def _select_helper(self, population, fitness_list):
+    def _select_helper(self, population: np.array, fitness_list: np.array):
         # Select entire population if k > population size
         pop_size = population.shape[0]
         if self.n_individuals >= pop_size:
@@ -16,10 +16,10 @@ class Selector:
 
         return population[self.arg_select(population, fitness_list)]
 
-    def select(self, population, fitness_list):
+    def select(self, population: np.array, fitness_list: np.array):
         raise NotImplementedError("Implement select in a child class")
 
-    def arg_select(self, population, fitness_list):
+    def arg_select(self, population: np.array, fitness_list: np.array):
         raise NotImplementedError("Implement arg_select in a child class")
 
     def __repr__(self):
@@ -28,13 +28,13 @@ class Selector:
 
 class AllSelector(Selector):
 
-    def __init__(self, n_individuals):
+    def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population, fitness_list=None):
+    def select(self, population: np.array, fitness_list=None):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list=None):
+    def arg_select(self, population: np.array, fitness_list=None):
         return np.arange(population.shape[0])
 
     def __repr__(self):
@@ -43,13 +43,13 @@ class AllSelector(Selector):
 
 class UniformSelector(Selector):
 
-    def __init__(self, n_individuals):
+    def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population, fitness_list=None):
+    def select(self, population: np.array, fitness_list=None):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list=None):
+    def arg_select(self, population: np.array, fitness_list=None):
         """Uniform Stochastic Selection
 
         Select the arguments of k individuals
@@ -66,13 +66,13 @@ class UniformSelector(Selector):
 
 class StochasticUnivSampSelector(Selector):
 
-    def __init__(self, n_individuals):
+    def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population, fitness_list=None):
+    def select(self, population: np.array, fitness_list=None):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list=None):
+    def arg_select(self, population: np.array, fitness_list=None):
         """ Stochastic Universal Sampling
         """
         raise NotImplementedError("Stochastic Universal Sampling selection is not yet implemented.")
@@ -83,15 +83,15 @@ class StochasticUnivSampSelector(Selector):
 
 class BoltzmannSelector(Selector):
 
-    def __init__(self, n_individuals, temperature, prev_pop_avg):
+    def __init__(self, n_individuals: int, temperature: float, prev_pop_avg: float):
         super().__init__(n_individuals)
         self.temperature = temperature
         self.prev_pop_avg = prev_pop_avg
 
-    def select(self, population, fitness_list=None):
+    def select(self, population: np.array, fitness_list=None):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list=None):
+    def arg_select(self, population: np.array, fitness_list=None):
         """Boltzmann Selection
         """
         raise NotImplementedError("Boltzmann selection is not yet implemented.")
@@ -103,13 +103,13 @@ class BoltzmannSelector(Selector):
 
 class FitnessProportionalSelector(Selector):
 
-    def __init__(self, n_individuals):
+    def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population, fitness_list):
+    def select(self, population: np.array, fitness_list: np.array):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list):
+    def arg_select(self, population: np.array, fitness_list: np.array):
         """Fitness-Proportional Selection
 
         Select k individuals with replacement from the population
@@ -128,13 +128,13 @@ class FitnessProportionalSelector(Selector):
 
 class SigmaScalingSelector(Selector):
 
-    def __init__(self, n_individuals):
+    def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population, fitness_list):
+    def select(self, population: np.array, fitness_list: np.array):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list):
+    def arg_select(self, population: np.array, fitness_list: np.array):
         """Sigma scaling selection
         """
         pop_size = population.shape[0]
@@ -161,13 +161,13 @@ class SigmaScalingSelector(Selector):
 
 class TruncationSelector(Selector):
 
-    def __init__(self, n_individuals):
+    def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
     def select(self, population, fitness_list):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list):
+    def arg_select(self, population: np.array, fitness_list: np.array):
         """Truncation selection
 
         Select k best from population according to fitness_list.
@@ -183,13 +183,13 @@ class TruncationSelector(Selector):
 
 class LinearRankingSelector(Selector):
 
-    def __init__(self, n_individuals):
+    def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population, fitness_list):
+    def select(self, population: np.array, fitness_list: np.array):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list):
+    def arg_select(self, population: np.array, fitness_list: np.array):
         """Linear Ranking Selection
 
         Select k individuals with replacement from the population
@@ -209,17 +209,17 @@ class LinearRankingSelector(Selector):
 
 class ExponentialRankingSelector(Selector):
 
-    def __init__(self, n_individuals, c=0.99):
+    def __init__(self, n_individuals: int, c: float = 0.99):
         super().__init__(n_individuals)
 
         if c <= 0 or c >= 1:
             raise ValueError("0 < c < 1 must hold")
         self.c = c
 
-    def select(self, population, fitness_list):
+    def select(self, population: np.array, fitness_list: np.array):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list):
+    def arg_select(self, population: np.array, fitness_list: np.array):
         """Exponential Ranking Selection
         """
         pop_size = population.shape[0]
@@ -235,17 +235,17 @@ class ExponentialRankingSelector(Selector):
 
 class TournamentSelector(Selector):
 
-    def __init__(self, n_individuals, n_way=2):
+    def __init__(self, n_individuals: int, n_way: int = 2):
         super().__init__(n_individuals)
 
         if n_way < 2:
             raise ValueError("The number of competitors in the tournament must be greater than 1.")
         self.n_way = n_way
 
-    def select(self, population, fitness_list):
+    def select(self, population: np.array, fitness_list: np.array):
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population, fitness_list):
+    def arg_select(self, population: np.array, fitness_list: np.array):
         """Tournament Selection
         Uniformly at random select `n_way` individuals from the
         population then selecting the best (or worst) individual
