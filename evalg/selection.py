@@ -29,6 +29,18 @@ class Selector:
         return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
 
 
+class AllSelector(Selector):
+
+    def __init__(self, population, n_individuals):
+        super().__init__(population, n_individuals)
+
+    def arg_select(self):
+        return np.arange(self.pop_size)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, pop_size={self.pop_size!r})'
+
+
 class FitnessBasedSelector(Selector, ABC):
 
     def __init__(self, population, n_individuals, fitness_list):
