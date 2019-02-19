@@ -1,44 +1,46 @@
 import numpy as np
+from GPy.core import GP
+from GPy.kern import Kern
 
 from autoks.kernel import kernel_to_infix_tokens, tokens_to_str
 from evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree
 
 
-def model_to_infix_tokens(model):
+def model_to_infix_tokens(model: GP):
     return kernel_to_infix_tokens(model.kern)
 
 
-def model_to_infix(model):
+def model_to_infix(model: GP):
     infix_tokens = model_to_infix_tokens(model)
     return tokens_to_str(infix_tokens)
 
 
-def model_to_binexptree(model):
+def model_to_binexptree(model: GP):
     infix_tokens = model_to_infix_tokens(model)
     postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
     tree = postfix_tokens_to_binexp_tree(postfix_tokens)
     return tree
 
 
-def set_model_kern(model, new_kern):
+def set_model_kern(model: GP, new_kern: Kern):
     model.unlink_parameter(model.kern)
     model.link_parameter(new_kern)
     model.kern = new_kern
 
 
-def is_nan_model(model):
+def is_nan_model(model: GP):
     return np.isnan(model.param_array).any()
 
 
 # Model selection criteria
 
-def log_likelihood_normalized(model):
+def log_likelihood_normalized(model: GP):
     """Computes the normalized log likelihood."""
     dataset_size = model.X.shape[0]
     return model.log_likelihood() / dataset_size
 
 
-def BIC(model):
+def BIC(model: GP):
     """
     Calculate the Bayesian Information Criterion (BIC) for a GPy `model` with maximum likelihood hyperparameters on a
     given dataset.
@@ -53,7 +55,7 @@ def BIC(model):
     return np.log(n) * k - 2 * model.log_likelihood()
 
 
-def AIC(model):
+def AIC(model: GP):
     """
     Calculate the Akaike Information Criterion (AIC) for a GPy `model` with maximum likelihood hyperparameters on a
     given dataset.
@@ -66,7 +68,7 @@ def AIC(model):
     return 2 * k - 2 * model.log_likelihood()
 
 
-def pl2(model):
+def pl2(model: GP):
     """ Compute the modified expected log-predictive likelihood (PL2) score of a model.
 
     Ando & Tsay, 2009
@@ -81,7 +83,7 @@ def pl2(model):
 
 # Model comparison scores
 
-def bayes_factor(model_1, model_2):
+def bayes_factor(model_1: GP, model_2: GP):
     """ Compute the Bayes factor between two models
     https://en.wikipedia.org/wiki/Bayes_factor
 
