@@ -5,7 +5,7 @@ from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
 from autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, tree_to_kernel
-from evalg.selection import TruncationSelector, Selector
+from evalg.selection import TruncationSelector, Selector, AllSelector
 from evalg.vary import PopulationOperator
 
 
@@ -51,7 +51,8 @@ class BaseGrammar:
         :param kernels:
         :return:
         """
-        return kernels
+        selector = AllSelector(self.n_parents)
+        return selector.select(kernels)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
