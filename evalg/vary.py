@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 
 from evalg.crossover import Recombinator
@@ -9,7 +11,7 @@ class Variator:
     def __init__(self, operator):
         self.operator = operator
 
-    def vary(self, parents):
+    def vary(self, parents: list):
         raise NotImplementedError('vary must be implemented in a child class')
 
     def __repr__(self):
@@ -18,7 +20,7 @@ class Variator:
 
 class CrossoverVariator(Variator):
 
-    def __init__(self, operator: Recombinator, n_offspring, n_way=2, c_prob=1.):
+    def __init__(self, operator: Recombinator, n_offspring, n_way: int = 2, c_prob: float = 1.):
         """
 
         :param operator: the recombinator containing the crossover operator
@@ -31,7 +33,7 @@ class CrossoverVariator(Variator):
         self.n_way = n_way
         self.c_prob = c_prob
 
-    def crossover_all(self, parents):
+    def crossover_all(self, parents: list):
         """Crossover applied to all parents.
 
         :param parents: the members of the population
@@ -52,7 +54,7 @@ class CrossoverVariator(Variator):
 
         return offspring
 
-    def vary(self, parents):
+    def vary(self, parents: list):
         return self.crossover_all(parents)
 
     def __repr__(self):
@@ -62,7 +64,7 @@ class CrossoverVariator(Variator):
 
 class MutationVariator(Variator):
 
-    def __init__(self, operator: Mutator, m_prob=1.):
+    def __init__(self, operator: Mutator, m_prob: float = 1.):
         """
 
         :param operator: the mutator
@@ -71,7 +73,7 @@ class MutationVariator(Variator):
         super().__init__(operator)
         self.m_prob = m_prob
 
-    def mutate_all(self, individuals):
+    def mutate_all(self, individuals: list):
         """Mutation applied to all offspring.
 
         :param individuals: the members of the population
@@ -90,7 +92,7 @@ class MutationVariator(Variator):
 
         return offspring_mut
 
-    def vary(self, parents):
+    def vary(self, parents: list):
         return self.mutate_all(parents)
 
     def __repr__(self):
@@ -101,14 +103,15 @@ class PopulationOperator:
     """ Collection of variators
 
     """
-    def __init__(self, variators):
+
+    def __init__(self, variators: List[Variator]):
         if len(variators) == 0:
             raise ValueError('variators cannot be empty')
         if not all([isinstance(v, Variator) for v in variators]):
             raise TypeError(f'All items must be of type {Variator.__name__}')
         self.variators = variators
 
-    def create_offspring(self, population):
+    def create_offspring(self, population: list):
         offspring = population
         for variator in self.variators:
             offspring = variator.vary(offspring)
@@ -118,7 +121,7 @@ class PopulationOperator:
 class CrossMutPopOperator(PopulationOperator):
     """Perform both crossover then mutation to all individuals"""
 
-    def __init__(self, variators):
+    def __init__(self, variators: List[Variator]):
         super().__init__(variators)
         if len(self.variators) != 2:
             raise ValueError('Must have exactly 2 variators')
@@ -135,7 +138,7 @@ class CrossMutPopOperator(PopulationOperator):
 
 class CrossoverPopOperator(PopulationOperator):
 
-    def __init__(self, variators):
+    def __init__(self, variators: List[Variator]):
         super().__init__(variators)
         if len(self.variators) != 1:
             raise ValueError('Must have exactly 1 variator')
@@ -148,7 +151,7 @@ class CrossoverPopOperator(PopulationOperator):
 
 class MutationPopOperator(PopulationOperator):
 
-    def __init__(self, variators):
+    def __init__(self, variators: List[Variator]):
         super().__init__(variators)
         if len(self.variators) != 1:
             raise ValueError('Must have exactly 1 variator')
