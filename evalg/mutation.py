@@ -1,5 +1,3 @@
-from abc import ABC
-
 import numpy as np
 
 from evalg.util import swap
@@ -7,137 +5,87 @@ from evalg.util import swap
 
 class Mutator:
 
-    def __init__(self, individual):
-        self.individual = individual
-
-    def mutate(self):
+    def mutate(self, individual):
         raise NotImplementedError("Implement mutate in a child class.")
 
 
-class GAMutator(Mutator, ABC):
+class BitFlipMutator(Mutator):
 
-    def __init__(self, individual):
-        super().__init__(individual)
-        self.gene_size = individual.size
+    def __init__(self, gene_mut_prob=None):
+        # super().__init__(individual)
+        self.gene_mut_prob = gene_mut_prob
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
-
-
-class BitFlipMutator(GAMutator):
-
-    def __init__(self, individual, gene_mut_prob=None):
-        super().__init__(individual)
-        if gene_mut_prob is None:
-            self.gene_mut_prob = 1 / self.gene_size
-        else:
-            self.gene_mut_prob = gene_mut_prob
-
-    def mutate(self):
+    def mutate(self, individual):
         """Bit-flip mutation"""
-        mutated = np.random.uniform(0, 1, size=self.gene_size) < self.gene_mut_prob
-        indiv_mut = np.where(mutated, ~self.individual.astype(bool), self.individual)
+        gene_size = individual.size
+        if self.gene_mut_prob is None:
+            self.gene_mut_prob = 1 / gene_size
+
+        mutated = np.random.uniform(0, 1, size=gene_size) < self.gene_mut_prob
+        indiv_mut = np.where(mutated, ~individual.astype(bool), individual)
 
         return indiv_mut
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r}, ' \
-            f'gene_mut_prob={self.gene_mut_prob!r})'
+        return f'gene_mut_prob={self.gene_mut_prob!r})'
 
 
-class InterchangeMutator(GAMutator):
+class InterchangeMutator(Mutator):
 
     def __init__(self, individual):
         super().__init__(individual)
 
-    def mutate(self):
+    def mutate(self, individual):
         """Interchange mutation"""
-        ind = np.random.randint(0, self.gene_size, size=2)
+        gene_size = individual.size
+        ind = np.random.randint(0, gene_size, size=2)
         # swap first and second genes
-        indiv_mut = swap(self.individual, ind[0], ind[1])
+        indiv_mut = swap(individual, ind[0], ind[1])
 
         return indiv_mut
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
 
+class ReverseMutator(Mutator):
 
-class ReverseMutator(GAMutator):
-
-    def __init__(self, individual):
-        super().__init__(individual)
-
-    def mutate(self):
+    def mutate(self, individual):
         """Reverse mutation."""
-        ind = np.random.randint(0, self.gene_size)
-        indiv_mut = swap(self.individual, ind, ind - 1)
+        gene_size = individual.size
+        ind = np.random.randint(0, gene_size)
+        indiv_mut = swap(individual, ind, ind - 1)
 
         return indiv_mut
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
 
+class GaussianMutator(Mutator):
 
-class GaussianMutator(GAMutator):
-
-    def __init__(self, individual):
-        super().__init__(individual)
-
-    def mutate(self):
+    def mutate(self, individual):
         """Gaussian mutation."""
         raise NotImplementedError("Gaussian mutation not yet implemented")
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
 
+class BoundaryMutator(Mutator):
 
-class BoundaryMutator(GAMutator):
-
-    def __init__(self, individual):
-        super().__init__(individual)
-
-    def mutate(self):
+    def mutate(self, individual):
         """Boundary mutation."""
         raise NotImplementedError("Boundary mutation not yet implemented")
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
 
+class UniformMutator(Mutator):
 
-class UniformMutator(GAMutator):
-
-    def __init__(self, individual):
-        super().__init__(individual)
-
-    def mutate(self):
+    def mutate(self, individual):
         """Uniform mutation."""
         raise NotImplementedError("Uniform mutation not yet implemented")
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
 
+class NonuniformMutator(Mutator):
 
-class NonuniformMutator(GAMutator):
-
-    def __init__(self, individual):
-        super().__init__(individual)
-
-    def mutate(self):
+    def mutate(self, individual):
         """Non-Uniform mutation."""
         raise NotImplementedError("Non-Uniform mutation not yet implemented")
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'
 
+class ShrinkMutator(Mutator):
 
-class ShrinkMutator(GAMutator):
-
-    def __init__(self, individual):
-        super().__init__(individual)
-
-    def mutate(self):
+    def mutate(self, individual):
         """Shrink mutation."""
         raise NotImplementedError("Shrink mutation not yet implemented")
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, gene_size={self.gene_size!r})'

@@ -115,15 +115,18 @@ class FullGenerator(BinaryTreeGenerator):
 
 class TreeMutator(Mutator, ABC):
 
-    def __init__(self, individual, operands):
-        super().__init__(individual)
-        if not isinstance(individual, BinaryTree):
-            raise TypeError('individual must be of type %s' % BinaryTree.__name__)
+    def __init__(self, operands):
+        """
 
-        self.operands = operands  # the possible operands to choose from
+        :param operands: the possible operands to choose from
+        """
+        self.operands = operands
+
+    def mutate(self, individual: BinaryTree):
+        raise NotImplementedError('mutate must be implemented in a child class.')
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands={self.operands!r})'
+        return f'{self.__class__.__name__}('f'operands={self.operands!r})'
 
 
 class TreeRecombinator(Recombinator, ABC):
@@ -151,12 +154,12 @@ class BinaryTreeRecombinator(TreeRecombinator, BinaryRecombinator, ABC):
 
 class TreePointMutator(TreeMutator):
 
-    def __init__(self, individual, operands):
-        super().__init__(individual, operands)
+    def __init__(self, operands):
+        super().__init__(operands)
 
-    def mutate(self):
+    def mutate(self, individual: BinaryTree):
         """Point mutation."""
-        tree = self.individual
+        tree = individual
 
         postfix_tokens = tree.postfix_tokens()
 
@@ -176,19 +179,18 @@ class TreePointMutator(TreeMutator):
         return tree
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands={self.operands!r})'
+        return f'{self.__class__.__name__}('f'operands={self.operands!r})'
 
 
 class SubTreeExchangeMutator(TreeMutator, ABC):
 
-    def __init__(self, individual, operands, max_depth):
+    def __init__(self, operands, max_depth):
         """
 
-        :param individual:
         :param operands:
         :param max_depth:
         """
-        super().__init__(individual, operands)
+        super().__init__(operands)
         if max_depth < 0:
             raise ValueError('max depth must be nonnegative')
         self.max_depth = max_depth
@@ -234,40 +236,37 @@ class SubTreeExchangeMutator(TreeMutator, ABC):
             return new_tree
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands=' \
-            f'{self.operands!r}, max_depth={self.max_depth!r})'
+        return f'{self.__class__.__name__}('f'operands={self.operands!r}, max_depth={self.max_depth!r})'
 
 
 class GrowMutator(SubTreeExchangeMutator):
 
-    def __init__(self, individual, operands, max_depth=2):
-        super().__init__(individual, operands, max_depth)
+    def __init__(self, operands, max_depth=2):
+        super().__init__(operands, max_depth)
 
-    def mutate(self):
-        tree = self.individual
+    def mutate(self, individual: BinaryTree):
+        tree = individual
         tree_generator = GrowGenerator(operators, self.operands, self.max_depth)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands=' \
-            f'{self.operands!r}, max_depth={self.max_depth!r})'
+        return f'{self.__class__.__name__}('f'operands={self.operands!r}, max_depth={self.max_depth!r})'
 
 
 class HalfAndHalfMutator(SubTreeExchangeMutator):
 
-    def __init__(self, individual, operands, max_depth=2):
-        super().__init__(individual, operands, max_depth)
+    def __init__(self, operands, max_depth=2):
+        super().__init__(operands, max_depth)
 
-    def mutate(self):
-        tree = self.individual
+    def mutate(self, individual: BinaryTree):
+        tree = individual
         tree_generator = FullGenerator(operators, self.operands, self.max_depth)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.individual!r}, operands=' \
-            f'{self.operands!r}, max_depth={self.max_depth!r})'
+        return f'{self.__class__.__name__}('f'{self.operands!r}, max_depth={self.max_depth!r})'
 
 
 # Binary tree recombinators

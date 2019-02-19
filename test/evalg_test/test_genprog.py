@@ -63,9 +63,9 @@ class TestFullGenerator(TestCase):
 class TestTreeMutator(TestCase):
 
     def test_tree_type(self):
-        self.assertRaises(TypeError, TreeMutator, 'bad type')
-        self.assertRaises(TypeError, TreeMutator, 1)
-        self.assertRaises(TypeError, TreeMutator, True)
+        self.assertRaises(TypeError, TreeMutator.mutate, 'bad type')
+        self.assertRaises(TypeError, TreeMutator.mutate, 1)
+        self.assertRaises(TypeError, TreeMutator.mutate, True)
 
 
 class TestTreeRecombinator(TestCase):
@@ -98,8 +98,8 @@ class TestTreePointMutator(TestCase):
         np.random.seed(42)
 
     def test_mutate(self):
-        mutator = TreePointMutator(individual=self.tree, operands=['A', 'B', 'C', 'D'])
-        tree = mutator.mutate()
+        mutator = TreePointMutator(operands=['A', 'B', 'C', 'D'])
+        tree = mutator.mutate(self.tree)
         self.assertEqual(tree.root.label, '+')
         self.assertIsInstance(tree, BinaryTree)
 
@@ -119,7 +119,7 @@ class TestSubTreeExchangeMutator(TestCase):
 
     def test_max_depth(self):
         operands = ['A', 'B', 'C', 'D']
-        self.assertRaises(ValueError, SubTreeExchangeMutator, self.tree, operands, max_depth=-2)
+        self.assertRaises(ValueError, SubTreeExchangeMutator, operands, max_depth=-2)
 
     def test__mutate_subtree_exchange(self):
         max_depth = 2
@@ -159,8 +159,8 @@ class TestGrowMutator(TestCase):
     def test_mutate(self):
         individual = self.tree
         operands = ['A', 'B', 'C']
-        mutator = GrowMutator(individual, operands, max_depth=2)
-        result = mutator.mutate()
+        mutator = GrowMutator(operands, max_depth=2)
+        result = mutator.mutate(individual)
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
@@ -178,8 +178,8 @@ class TestHalfAndHalfMutator(TestCase):
     def test_mutate(self):
         individual = self.tree
         operands = ['A', 'B', 'C']
-        mutator = HalfAndHalfMutator(individual, operands, max_depth=2)
-        result = mutator.mutate()
+        mutator = HalfAndHalfMutator(operands, max_depth=2)
+        result = mutator.mutate(individual)
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
