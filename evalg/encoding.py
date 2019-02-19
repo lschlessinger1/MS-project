@@ -1,3 +1,5 @@
+from typing import List
+
 from GPy.kern.src.kern import Kern
 
 import autoks.kernel
@@ -86,7 +88,7 @@ class BinaryTreeNode(TreeNode):
 
 class BinaryTree:
 
-    def __init__(self, root=None):
+    def __init__(self, root: BinaryTreeNode = None):
         if root is not None and not isinstance(root, BinaryTreeNode):
             raise TypeError('root must be a {}'.format(BinaryTreeNode.__name__))
         self.root = root
@@ -94,7 +96,7 @@ class BinaryTree:
     def create_graph(self):
         return self.root.create_graph()
 
-    def select_postorder(self, node_idx):
+    def select_postorder(self, node_idx: int):
         """ Select node from binary tree given postorder index
         """
         node = self.root
@@ -129,7 +131,7 @@ class BinaryTree:
     def postfix_tokens(self):
         return infix_tokens_to_postfix_tokens(self.infix_tokens())
 
-    def _infix_helper(self, root, expression=None):
+    def _infix_helper(self, root: BinaryTreeNode, expression=None):
         if expression is None:
             expression = ''
 
@@ -146,7 +148,7 @@ class BinaryTree:
 
         return expression
 
-    def _infix_tokens_helper(self, root, tokens=None):
+    def _infix_tokens_helper(self, root: BinaryTreeNode, tokens=None):
         if tokens is None:
             tokens = []
 
@@ -163,7 +165,7 @@ class BinaryTree:
 
         return tokens
 
-    def _height_helper(self, node):
+    def _height_helper(self, node: BinaryTreeNode):
         if node is None:
             return 0
 
@@ -180,7 +182,7 @@ class BinaryTree:
         return f'{self.__class__.__name__}('f'root={self.root!r})'
 
 
-def postfix_tokens_to_binexp_tree(postfix_tokens):
+def postfix_tokens_to_binexp_tree(postfix_tokens: List[str]):
     tree = BinaryTree()
 
     root = BinaryTreeNode(postfix_tokens[-1])
@@ -201,7 +203,7 @@ def postfix_tokens_to_binexp_tree(postfix_tokens):
     return tree
 
 
-def infix_tokens_to_postfix_tokens(infix_tokens):
+def infix_tokens_to_postfix_tokens(infix_tokens: List[str]):
     pemdas = {}
     pemdas["*"] = 3
     pemdas["+"] = 1
