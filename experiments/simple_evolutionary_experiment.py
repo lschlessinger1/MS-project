@@ -1,14 +1,20 @@
-import numpy as np
-from sklearn.model_selection import train_test_split
 import os
 import sys
+
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 top_path = os.path.abspath('..')
 if top_path not in sys.path:
     print('Adding to sys.path %s' % top_path)
     sys.path.append(top_path)
 
+from evalg.genprog import SubtreeExchangeBinaryRecombinator, GrowMutator
+from evalg.selection import TruncationSelector, AllSelector
+from evalg.vary import CrossMutPopOperator, CrossoverVariator, MutationVariator
+
 from autoks.experiment import Experiment
+from autoks.kernel import get_all_1d_kernels
 from autoks.grammar import EvolutionaryGrammar
 from autoks.model import log_likelihood_normalized
 from experiments.util import synthetic_data
@@ -23,7 +29,18 @@ if X.shape[1] > 1:
     base_kernels = ['SE', 'RQ']
 else:
     base_kernels = ['SE', 'RQ', 'LIN', 'PER']
-grammar = EvolutionaryGrammar(n_parents=4)
+
+parent_selector = TruncationSelector(10)
+offspring_selector = AllSelector(1)
+
+mutator = GrowMutator(operands=get_all_1d_kernels(base_kernels, X.shape[1]))
+recombinator = SubtreeExchangeBinaryRecombinator()
+cx_variator = CrossoverVariator(recombinator, n_offspring=10)
+mut_variator = MutationVariator(mutator)
+variators = [cx_variator, mut_variator]
+pop_operator = CrossMutPopOperator(variators)
+grammar = EvolutionaryGrammar(n_parents=4, parent_selector=parent_selector, offspring_selector=offspring_selector,
+                              population_operator=pop_operator)
 
 objective = log_likelihood_normalized
 
