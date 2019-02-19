@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
 
 
-def plot_best_so_far(best_so_far, title='Best-So-Far Curve', x_label='Generation', y_label='Fitness Best So Far'):
+def plot_best_so_far(best_so_far: np.array, title: str = 'Best-So-Far Curve', x_label: str = 'Generation',
+                     y_label: str = 'Fitness Best So Far'):
     """ Display the maximum fitness value at each generation
 
     :param best_so_far:
@@ -17,7 +19,7 @@ def plot_best_so_far(best_so_far, title='Best-So-Far Curve', x_label='Generation
     return plt.plot(best_so_far)
 
 
-def setup_plot(x_label, y_label, title):
+def setup_plot(x_label: str, y_label: str, title: str):
     fig, ax = plt.subplots(1)
 
     ax.set_title(title)
@@ -27,7 +29,7 @@ def setup_plot(x_label, y_label, title):
     return fig
 
 
-def setup_values(fig, values, value_label):
+def setup_values(fig: Figure, values: np.array, value_label: str):
     ax = fig.axes[0]
 
     x = np.arange(len(values)) + 1
@@ -37,7 +39,7 @@ def setup_values(fig, values, value_label):
     return fig, x, y
 
 
-def setup_stds(fig, stds, mu, t, std_label='Confidence'):
+def setup_stds(fig: Figure, stds: np.array, mu: np.array, t: np.array, std_label: str = 'Confidence'):
     ax = fig.axes[0]
 
     sigma = np.array(stds)
@@ -46,14 +48,14 @@ def setup_stds(fig, stds, mu, t, std_label='Confidence'):
     return fig, sigma
 
 
-def setup_optima(fig, x, optima, optima_label):
+def setup_optima(fig: Figure, x: np.array, optima: np.array, optima_label: str):
     ax = fig.axes[0]
     ax.plot(x, optima, lw=2, label=optima_label)
     return fig
 
 
-def plot_distribution(values, stds=None, optima=None, x_label='generation', value_name='average',
-                      metric_name='fitness', optima_name='best'):
+def plot_distribution(values: np.array, stds: np.array = None, optima: np.array = None, x_label: str = 'generation',
+                      value_name: str = 'average', metric_name: str = 'fitness', optima_name: str = 'best'):
     x_name = x_label.capitalize()
     y_name = metric_name.capitalize()
     value_label = ('%s %s' % (value_name, metric_name)).capitalize()
