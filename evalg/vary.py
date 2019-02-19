@@ -121,7 +121,7 @@ class PopulationOperator:
 class CrossMutPopOperator(PopulationOperator):
     """Perform both crossover then mutation to all individuals"""
 
-    def __init__(self, variators: List[Variator]):
+    def __init__(self, variators: List[Union[CrossoverVariator, MutationVariator]]):
         super().__init__(variators)
         if len(self.variators) != 2:
             raise ValueError('Must have exactly 2 variators')
@@ -138,7 +138,7 @@ class CrossMutPopOperator(PopulationOperator):
 
 class CrossoverPopOperator(PopulationOperator):
 
-    def __init__(self, variators: List[Variator]):
+    def __init__(self, variators: List[CrossoverVariator]):
         super().__init__(variators)
         if len(self.variators) != 1:
             raise ValueError('Must have exactly 1 variator')
@@ -151,7 +151,7 @@ class CrossoverPopOperator(PopulationOperator):
 
 class MutationPopOperator(PopulationOperator):
 
-    def __init__(self, variators: List[Variator]):
+    def __init__(self, variators: List[MutationVariator]):
         super().__init__(variators)
         if len(self.variators) != 1:
             raise ValueError('Must have exactly 1 variator')
