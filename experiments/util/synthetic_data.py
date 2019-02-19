@@ -6,7 +6,7 @@ import numpy as np
 # https://gpy.readthedocs.io/en/deploy/_modules/GPy/examples/regression.html
 
 
-def sinosoid_1(n_samples=50, n_dims=1):
+def sinosoid_1(n_samples: int = 50, n_dims: int = 1):
     # build a design matrix with a column of integers indicating the output
     X = np.random.rand(n_samples, n_dims) * 8
 
@@ -16,7 +16,7 @@ def sinosoid_1(n_samples=50, n_dims=1):
     return X, y
 
 
-def sinosoid_2(n_samples=30, n_dims=1):
+def sinosoid_2(n_samples: int = 30, n_dims: int = 1):
     # build a design matrix with a column of integers indicating the output
     X = np.random.rand(n_samples, n_dims) * 5
 
@@ -26,7 +26,7 @@ def sinosoid_2(n_samples=30, n_dims=1):
     return X, y
 
 
-def simple_periodic_1d(n_samples=100):
+def simple_periodic_1d(n_samples: int = 100):
     """1-D simple periodic data."""
     X = np.linspace(0, 10, n_samples).reshape(-1, 1)
     y_sin = np.sin(X * 1.5)
@@ -35,7 +35,7 @@ def simple_periodic_1d(n_samples=100):
     return X, y
 
 
-def periodic_trend_1d(n_samples=100):
+def periodic_trend_1d(n_samples: int = 100):
     """1-D periodic trend"""
     X = np.linspace(0, 10, n_samples).reshape(-1, 1)
     y_sin = np.sin(X * 1.5)
@@ -44,7 +44,7 @@ def periodic_trend_1d(n_samples=100):
     return X, y
 
 
-def linear_1d(n_samples=100):
+def linear_1d(n_samples: int = 100):
     """1-D linear data."""
     X = np.linspace(0, 10, n_samples).reshape(-1, 1)
     noise = np.random.randn(*X.shape)
@@ -52,14 +52,14 @@ def linear_1d(n_samples=100):
     return X, y
 
 
-def rbf_1d(n_samples=100):
+def rbf_1d(n_samples: int = 100):
     X = np.linspace(0, 10, n_samples).reshape(-1, 1)
     f_true = np.random.multivariate_normal(np.zeros(n_samples), GPy.kern.RBF(1).K(X))
     y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:, None]
     return X, y
 
 
-def cubic_sine_1d(n_samples=151):
+def cubic_sine_1d(n_samples: int = 151):
     X = (2 * np.pi) * np.random.random(n_samples) - np.pi
     y = np.sin(X) + np.random.normal(0, 0.2, n_samples)
     y = np.array([np.power(abs(y), float(1) / 3) * (1, -1)[y < 0] for y in y])
@@ -68,7 +68,7 @@ def cubic_sine_1d(n_samples=151):
     return X, y
 
 
-def toy_ARD_4d(n_samples=300):
+def toy_ARD_4d(n_samples: int = 300):
     # Create an artificial dataset where the values in the targets (Y)
     # only depend in dimensions 1 and 3 of the inputs (X). Run ARD to
     # see if this dependency can be recovered
@@ -89,7 +89,8 @@ def toy_ARD_4d(n_samples=300):
     return X, y
 
 
-def generate_data(n_samples=100, n_dims=1, min_terms=2, max_terms=10, periodic=False):
+def generate_data(n_samples: int = 100, n_dims: int = 1, min_terms: int = 2, max_terms: int = 10,
+                  periodic: bool = False):
     """ Create regression problem
 
     :param n_samples:
