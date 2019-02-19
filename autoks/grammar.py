@@ -256,7 +256,7 @@ class CKSGrammar(BaseGrammar):
                     elif op == '*':
                         kernels.append(kernel * create_1d_kernel(base_kernel_name, d))
                     else:
-                        raise ValueError('Unknown operation %s' % op)
+                        raise ValueError(f'Unknown operation {op}')
         for base_kernel_name in base_kernels:
             if is_base_kernel:
                 kernels.append(create_1d_kernel(base_kernel_name, kernel.active_dims[0]))
@@ -276,12 +276,12 @@ class CKSGrammar(BaseGrammar):
                     elif isinstance(kernel, Add):
                         result.append(Add(new_operands))
                     else:
-                        raise RuntimeError('Unknown combination kernel class:', kernel.__class__)
+                        raise TypeError(f'Unknown combination kernel class {kernel.__class__.__name__}')
         elif isinstance(kernel, Kern):
             # base kernel
             pass
         else:
-            raise ValueError('Unknown kernel class:', kernel.__class__)
+            raise TypeError(f'Unknown kernel class {kernel.__class__.__name__}')
         return result
 
     def __repr__(self):
