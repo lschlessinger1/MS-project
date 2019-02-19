@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
@@ -9,11 +11,11 @@ from evalg.vary import PopulationOperator
 
 class BaseGrammar:
 
-    def __init__(self, n_parents):
+    def __init__(self, n_parents: int):
         self.n_parents = n_parents
         self.operators = ['+', '*']
 
-    def initialize(self, kernel_families, n_kernels, n_dims):
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         """ Initialize kernels
 
         :param kernel_families:
@@ -23,7 +25,7 @@ class BaseGrammar:
         """
         raise NotImplementedError('initialize must implemented in a subclass')
 
-    def expand(self, kernels, kernel_families, n_dims, verbose=False):
+    def expand(self, kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
         """ Get next round of candidate kernels from current kernels
 
         :param kernels:
@@ -34,7 +36,7 @@ class BaseGrammar:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
 
-    def select_parents(self, kernels):
+    def select_parents(self, kernels: List[AKSKernel]):
         """ Select next round of models (default is top k kernels by objective)
 
         :param kernels:
@@ -43,7 +45,7 @@ class BaseGrammar:
         selector = TruncationSelector(self.n_parents)
         return selector.select(kernels, [k.score for k in kernels])
 
-    def select_offspring(self, kernels):
+    def select_offspring(self, kernels: List[AKSKernel]):
         """ Select next round of models (default is select all)
 
         :param kernels:
@@ -57,21 +59,14 @@ class BaseGrammar:
 
 class EvolutionaryGrammar(BaseGrammar):
 
-    def __init__(self, n_parents, population_operator, parent_selector, offspring_selector):
+    def __init__(self, n_parents: int, population_operator: PopulationOperator, parent_selector: Selector,
+                 offspring_selector: Selector):
         super().__init__(n_parents)
-        if not isinstance(population_operator, PopulationOperator):
-            raise TypeError(f'population_operator must be of type {PopulationOperator.__name__}')
         self.population_operator = population_operator
-
-        if not isinstance(parent_selector, Selector):
-            raise TypeError(f'parent_selector must be of type {Selector.__name__}')
         self.parent_selector = parent_selector
-
-        if not isinstance(offspring_selector, Selector):
-            raise TypeError(f'offspring_selector must be of type {Selector.__name__}')
         self.offspring_selector = offspring_selector
 
-    def initialize(self, kernel_families, n_kernels, n_dims):
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         """Naive initialization of all SE_i and RQ_i (for every dimension)
 
         :param kernel_families:
@@ -83,7 +78,7 @@ class EvolutionaryGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels, kernel_families, n_dims, verbose=False):
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
         """ Perform crossover and mutation
 
         :param aks_kernels: list of AKSKernels
@@ -132,7 +127,7 @@ class BOMSGrammar(BaseGrammar):
     def __init__(self, n_parents=600):
         super().__init__(n_parents)
 
-    def initialize(self, kernel_families, n_kernels, n_dims):
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         """ Initialize kernels according to number of dimensions
 
         :param kernel_families:
@@ -146,7 +141,7 @@ class BOMSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels, kernel_families, n_dims, verbose=False):
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
         """ Greedy and exploratory expansion of kernels
 
         :param aks_kernels: list of AKSKernels
@@ -175,7 +170,7 @@ class BOMSGrammar(BaseGrammar):
 
         return new_kernels
 
-    def select_offspring(self, active_set):
+    def select_offspring(self, active_set: List[AKSKernel]):
         """ Select top `n_parents` kernels according to expected improvement
 
         :param active_set:
@@ -193,10 +188,10 @@ class CKSGrammar(BaseGrammar):
     Structure Discovery in Nonparametric Regression through Compositional Kernel Search (Duvenaud et al., 2013)
     """
 
-    def __init__(self, n_parents):
+    def __init__(self, n_parents: int):
         super().__init__(n_parents)
 
-    def initialize(self, kernel_families, n_kernels, n_dims):
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         """ Initialize with all base kernel families applied to all input dimensions
 
         :param kernel_families:
@@ -208,7 +203,7 @@ class CKSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels, kernel_families, n_dims, verbose=False):
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
         """ Greedy expansion of nodes
 
         :param aks_kernels:
@@ -295,16 +290,16 @@ class CKSGrammar(BaseGrammar):
 
 class RandomGrammar(BaseGrammar):
 
-    def __init__(self, n_parents):
+    def __init__(self, n_parents: int):
         super().__init__(n_parents)
 
-    def initialize(self, kernel_families, n_kernels, n_dims):
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         # use same initialization as CKS and BOMS
         kernels = get_all_1d_kernels(kernel_families, n_dims)
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels, kernel_families, n_dims, verbose=False):
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose=False):
         """Random expansion of nodes."""
 
         if verbose:
