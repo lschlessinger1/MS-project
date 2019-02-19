@@ -24,7 +24,6 @@ class CrossoverVariator(Variator):
         :param operator: the recombinator containing the crossover operator
         :param n_offspring: the number of individuals to return
         :param n_way: number of parents in crossover
-        :param n_points: number of points in crossover operator
         :param c_prob: probability of crossover
         """
         super().__init__(operator)
@@ -109,9 +108,11 @@ class PopulationOperator:
     """ Collection of variators
 
     """
-
     def __init__(self, variators):
-        # TODO make sure len > 0 and all of type Variator
+        if len(variators) == 0:
+            raise ValueError('variators cannot be empty')
+        if not all([isinstance(v, Variator) for v in variators]):
+            raise TypeError(f'All items must be of type {Variator.__name__}')
         self.variators = variators
 
     def create_offspring(self, population):
@@ -121,19 +122,45 @@ class PopulationOperator:
         return offspring
 
 
-def crossover_mutate_all(individuals, crossover_variator, mutation_variator):
-    """Perform both crossover then mutation to all individuals
+class CrossMutPopOperator(PopulationOperator):
+    """Perform both crossover then mutation to all individuals"""
 
-    :param individuals:
-    :param crossover_variator:
-    :param mutation_variator:
-    :return:
-    """
-    if not isinstance(crossover_variator, CrossoverVariator):
-        raise TypeError('crossover_variator must be of type %s' % CrossoverVariator.__name__)
-    if not isinstance(mutation_variator, MutationVariator):
-        raise TypeError('mutation_variator must be of type %s' % MutationVariator.__name__)
+    def __init__(self, variators):
+        super().__init__(variators)
+        if len(self.variators) != 2:
+            raise ValueError('Must have exactly 2 variators')
 
-    offspring = crossover_variator.crossover_all(individuals)
-    offspring = mutation_variator.mutate_all(offspring)
-    return offspring
+        if not isinstance(self.variators[0], CrossoverVariator):
+            raise TypeError('first variator must be of type %s' % CrossoverVariator.__name__)
+
+        if not isinstance(self.variators[1], MutationVariator):
+            raise TypeError('second variator must be of type %s' % MutationVariator.__name__)
+
+        self.crossover_variator = self.variators[0]
+        self.mutation_variator = self.variators[1]
+
+
+class CrossoverPopOperator(PopulationOperator):
+
+    def __init__(self, variators):
+        super().__init__(variators)
+        if len(self.variators) != 1:
+            raise ValueError('Must have exactly 1 variator')
+
+        if not isinstance(self.variators[0], CrossoverVariator):
+            raise TypeError('first variator must be of type %s' % CrossoverVariator.__name__)
+
+        self.crossover_variator = self.variators[0]
+
+
+class MutationPopOperator(PopulationOperator):
+
+    def __init__(self, variators):
+        super().__init__(variators)
+        if len(self.variators) != 1:
+            raise ValueError('Must have exactly 1 variator')
+
+        if not isinstance(self.variators[0], MutationVariator):
+            raise TypeError('First variator must be of type %s' % MutationVariator.__name__)
+
+        self.mutation_variator = self.variators[0]
