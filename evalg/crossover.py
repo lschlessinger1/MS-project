@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 
 
@@ -24,14 +26,14 @@ def check_two_parents(f):
 class Recombinator:
 
     @check_gte_two_parents
-    def crossover(self, parents):
+    def crossover(self, parents: list):
         raise NotImplementedError("crossover must be implemented in a child class")
 
 
 class OnePointBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents):
+    def crossover(self, parents: List[np.array]):
         """One-point crossover."""
         parent_1 = parents[0]
         parent_2 = parents[1]
@@ -47,7 +49,7 @@ class OnePointBinaryRecombinator(Recombinator):
 class TwoPointBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents):
+    def crossover(self, parents: List[np.array]):
         """Two-point crossover."""
         recombinator = NPointBinaryRecombinator(n_points=2)
         return recombinator.crossover(parents)
@@ -55,13 +57,13 @@ class TwoPointBinaryRecombinator(Recombinator):
 
 class NPointBinaryRecombinator(Recombinator):
 
-    def __init__(self, n_points):
+    def __init__(self, n_points: int):
         if n_points < 1:
             raise ValueError('n_points must be at least 1')
         self.n_points = n_points
 
     @check_two_parents
-    def crossover(self, parents):
+    def crossover(self, parents: List[np.array]):
         """n-point crossover"""
         # TODO: use np.where instead
         parent_1 = parents[0]
@@ -90,6 +92,6 @@ class NPointBinaryRecombinator(Recombinator):
 class UniformBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents):
+    def crossover(self, parents: List[np.array]):
         """Uniform crossover."""
         raise NotImplementedError("crossover_uniform not yet implemented")
