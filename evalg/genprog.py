@@ -129,25 +129,20 @@ class TreeMutator(Mutator, ABC):
         return f'{self.__class__.__name__}('f'operands={self.operands!r})'
 
 
-class TreeRecombinator(Recombinator, ABC):
-
-    def __init__(self, parents):
-        super().__init__(parents)
-
+def check_binary_trees(decorated):
+    def func_wrapper(parents):
         if not all(isinstance(parent, BinaryTree) for parent in parents):
             raise TypeError('all parents must be of type %s' % BinaryTree.__name__)
+        return decorated(parents)
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'individual={self.parents!r})'
+    return func_wrapper
 
 
-class BinaryTreeRecombinator(TreeRecombinator, BinaryRecombinator, ABC):
+class TreeRecombinator(Recombinator, ABC):
 
-    def __init__(self, parents):
-        super().__init__(parents)
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r})'
+    @check_binary_trees
+    def crossover(self, parents):
+        raise NotImplementedError('crossover must be implemented in a child class')
 
 
 # Binary tree mutators
@@ -271,18 +266,15 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
 
 # Binary tree recombinators
 
-class SubtreeExchangeBinaryRecombinator(BinaryTreeRecombinator):
+class SubtreeExchangeBinaryRecombinator(TreeRecombinator, BinaryRecombinator):
 
-    def __init__(self, parents):
-        super().__init__(parents)
-
-    def crossover(self):
+    def crossover(self, parents):
         """Sub-tree exchange crossover
 
         :return:
         """
-        tree_1 = self.parent_1
-        tree_2 = self.parent_2
+        tree_1 = parents[0]
+        tree_2 = parents[1]
 
         postfix_tokens_1 = tree_1.postfix_tokens()
         postfix_tokens_2 = tree_2.postfix_tokens()
@@ -356,6 +348,3 @@ class SubtreeExchangeBinaryRecombinator(BinaryTreeRecombinator):
             r2 = np.random.randint(0, len(postfix_tokens_2))
 
         return r1, r2
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'parent_1={self.parent_1!r}, parent_2={self.parent_2!r})'

@@ -16,7 +16,7 @@ class TestPopulationOperator(TestCase):
 class TestCrossMutPopOperator(TestCase):
 
     def test_variators(self):
-        cx_variator = CrossoverVariator(Recombinator([1, 2, 3]), 2)
+        cx_variator = CrossoverVariator(Recombinator(), 2)
         mut_variator = MutationVariator(Mutator())
         self.assertRaises(ValueError, CrossMutPopOperator, [cx_variator, cx_variator, cx_variator])
         self.assertRaises(TypeError, CrossMutPopOperator, [mut_variator, cx_variator])
@@ -27,7 +27,7 @@ class TestCrossMutPopOperator(TestCase):
 class TestCrossoverPopOperator(TestCase):
 
     def test_variators(self):
-        cx_variator = CrossoverVariator(Recombinator([1, 2, 3]), 2)
+        cx_variator = CrossoverVariator(Recombinator(), 2)
         mut_variator = MutationVariator(Mutator())
         self.assertRaises(ValueError, CrossoverPopOperator, [cx_variator, mut_variator])
         self.assertRaises(TypeError, CrossoverPopOperator, [mut_variator])
@@ -36,7 +36,7 @@ class TestCrossoverPopOperator(TestCase):
 class TestMutationPopOperator(TestCase):
 
     def test_variators(self):
-        cx_variator = CrossoverVariator(Recombinator([1, 2, 3]), 2)
+        cx_variator = CrossoverVariator(Recombinator(), 2)
         mut_variator = MutationVariator(Mutator())
         self.assertRaises(ValueError, MutationPopOperator, [cx_variator, mut_variator])
         self.assertRaises(TypeError, MutationPopOperator, [cx_variator])

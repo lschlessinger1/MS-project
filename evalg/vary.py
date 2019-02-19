@@ -46,8 +46,7 @@ class CrossoverVariator(Variator):
             if np.random.rand() < self.c_prob:
                 selected_parents = [parents[(i + j) % len(parents)] for j in range(self.n_way)]
 
-                recombinator.parents = selected_parents
-                children = recombinator.crossover()
+                children = recombinator.crossover(selected_parents)
 
                 # add children to offspring
                 for j, child in enumerate(children):
@@ -90,8 +89,7 @@ class MutationVariator(Variator):
 
         for child in offspring:
             if np.random.rand() < self.m_prob:
-                mutator.individual = child
-                child = mutator.mutate()
+                child = mutator.mutate(child)
 
             offspring_mut.append(child)
 
