@@ -2,8 +2,9 @@ import numpy as np
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
-from autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels
+from autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, tree_to_kernel
 from evalg.selection import TruncationSelector, Selector
+from evalg.vary import PopulationOperator
 
 
 class BaseGrammar:
@@ -39,8 +40,8 @@ class BaseGrammar:
         :param kernels:
         :return:
         """
-        selector = TruncationSelector(kernels, self.n_parents, [k.score for k in kernels])
-        return selector.select()
+        selector = TruncationSelector(self.n_parents)
+        return selector.select(kernels, [k.score for k in kernels])
 
     def select_offspring(self, kernels):
         """ Select next round of models (default is select all)
@@ -56,8 +57,11 @@ class BaseGrammar:
 
 class EvolutionaryGrammar(BaseGrammar):
 
-    def __init__(self, n_parents, parent_selector, offspring_selector):
+    def __init__(self, n_parents, population_operator, parent_selector, offspring_selector):
         super().__init__(n_parents)
+        if not isinstance(population_operator, PopulationOperator):
+            raise TypeError(f'population_operator must be of type {PopulationOperator.__name__}')
+        self.population_operator = population_operator
 
         if not isinstance(parent_selector, Selector):
             raise TypeError(f'parent_selector must be of type {Selector.__name__}')
@@ -93,9 +97,15 @@ class EvolutionaryGrammar(BaseGrammar):
             for k in aks_kernels:
                 k.pretty_print()
 
-        # TODO: perform crossover and mutation for all kernels
-        # for now, just return a copy of the original kernels
-        new_kernels = aks_kernels.copy()
+        # Convert GPy kernels to BinaryTrees
+        trees = [aks_kernel.to_binary_tree() for aks_kernel in aks_kernels]
+
+        # Mutate/Crossover Trees
+        offspring = self.population_operator.create_offspring(trees)
+
+        # Convert Trees back to GPy kernels, then to AKSKernels
+        kernels = [tree_to_kernel(tree) for tree in offspring]
+        new_kernels = [AKSKernel(kernel) for kernel in kernels]
 
         if verbose:
             print('Expanded kernels:')
@@ -105,12 +115,10 @@ class EvolutionaryGrammar(BaseGrammar):
         return new_kernels
 
     def select_parents(self, kernels):
-        self.parent_selector.population = kernels
-        return self.parent_selector.select()
+        return self.parent_selector.select(kernels, [k.score for k in kernels])
 
     def select_offspring(self, kernels):
-        self.offspring_selector.population = kernels
-        return self.offspring_selector.select()
+        return self.offspring_selector.select(kernels, [k.score for k in kernels])
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
@@ -173,8 +181,8 @@ class BOMSGrammar(BaseGrammar):
         :param active_set:
         :return:
         """
-        selector = TruncationSelector(active_set, self.n_parents, [k.score for k in active_set])
-        return selector.select()
+        selector = TruncationSelector(self.n_parents)
+        return selector.select(active_set, [k.score for k in active_set])
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
