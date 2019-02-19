@@ -12,30 +12,23 @@ class TestSelector(TestCase):
         self.population = np.array([1, 2, 3, 4, 5])
 
     def test_select(self):
-        n = len(self.population)
-        selector = Selector(self.population, n_individuals=n)
-        result = selector.select()
-        self.assertCountEqual(result.tolist(), self.population.tolist())
-
-        n = len(self.population) + 1
-        selector = Selector(self.population, n_individuals=n)
-        result = selector.select()
-        self.assertCountEqual(result.tolist(), self.population.tolist())
+        # n = len(self.population)
+        # selector = Selector(n_individuals=n)
+        # result = selector.select(self.population, fitness_list=None)
+        # self.assertCountEqual(result.tolist(), self.population.tolist())
+        #
+        # n = len(self.population) + 1
+        # selector = Selector(n_individuals=n)
+        # result = selector.select(self.population, fitness_list=None)
+        # self.assertCountEqual(result.tolist(), self.population.tolist())
 
         n = min(1, len(self.population - 1))
-        selector = Selector(self.population, n_individuals=n)
+        selector = Selector(n_individuals=n)
+        self.assertRaises(NotImplementedError, selector.select, self.population, fitness_list=None)
+        self.assertRaises(NotImplementedError, selector.arg_select, self.population, fitness_list=None)
 
-        with self.assertRaises(NotImplementedError):
-            selector.select()
-        with self.assertRaises(NotImplementedError):
-            selector.arg_select()
-
-        # Test negative k
-        n = -1
-        with self.assertRaises(ValueError):
-            Selector(self.population, n_individuals=n)
-        with self.assertRaises(ValueError):
-            Selector(self.population, n_individuals=n)
+        # Test negative n
+        self.assertRaises(ValueError, Selector, n_individuals=-1)
 
 
 class TestUniformSelector(TestCase):
@@ -45,13 +38,13 @@ class TestUniformSelector(TestCase):
         self.population = np.array([1, 2, 3, 4, 5])
 
     def test_select(self):
-        selector = UniformSelector(self.population, n_individuals=3)
-        result = selector.select()
+        selector = UniformSelector(n_individuals=3)
+        result = selector.select(self.population)
         self.assertCountEqual(result.tolist(), [4, 5, 3])
 
     def test_arg_select(self):
-        selector = UniformSelector(self.population, n_individuals=3)
-        result = selector.arg_select()
+        selector = UniformSelector(n_individuals=3)
+        result = selector.arg_select(self.population)
         self.assertCountEqual(result.tolist(), [3, 4, 2])
 
     def tearDown(self):
@@ -67,13 +60,13 @@ class TestFitnessProportionalSelector(TestCase):
         self.fitness_list = np.array([15, 30, 20, 40, 10])
 
     def test_select(self):
-        selector = FitnessProportionalSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
-        result = selector.select()
+        selector = FitnessProportionalSelector(n_individuals=3)
+        result = selector.select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [2, 5, 4])
 
     def test_arg_select(self):
-        selector = FitnessProportionalSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
-        result = selector.arg_select()
+        selector = FitnessProportionalSelector(n_individuals=3)
+        result = selector.arg_select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [1, 4, 3])
 
     def tearDown(self):
@@ -89,13 +82,13 @@ class TestSigmaScalingSelector(TestCase):
         self.fitness_list = np.array([15, 30, 20, 40, 10])
 
     def test_select(self):
-        selector = SigmaScalingSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
-        result = selector.select()
+        selector = SigmaScalingSelector(n_individuals=3)
+        result = selector.select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [2, 4, 4])
 
     def test_arg_select(self):
-        selector = SigmaScalingSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
-        result = selector.arg_select()
+        selector = SigmaScalingSelector(n_individuals=3)
+        result = selector.arg_select(self.population, self.fitness_list)
         self.assertEqual(result.tolist(), [1, 3, 3])
 
     def tearDown(self):
@@ -110,13 +103,13 @@ class TestTruncationSelector(TestCase):
         self.fitness_list = np.array([15, 30, 20, 40, 10])
 
     def test_select(self):
-        selector = TruncationSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
-        result = selector.select()
+        selector = TruncationSelector(n_individuals=3)
+        result = selector.select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [3, 4, 2])
 
     def test_arg_select(self):
-        selector = TruncationSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
-        result = selector.arg_select()
+        selector = TruncationSelector(n_individuals=3)
+        result = selector.arg_select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [2, 3, 1])
 
 
@@ -128,13 +121,13 @@ class TestLinearRankingSelector(TestCase):
         self.fitness_list = np.array([15, 30, 20, 40, 10])
 
     def test_select(self):
-        selector = LinearRankingSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
-        result = selector.select()
+        selector = LinearRankingSelector(n_individuals=3)
+        result = selector.select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [2, 5, 4])
 
     def test_arg_select(self):
-        selector = LinearRankingSelector(self.population, n_individuals=3, fitness_list=self.fitness_list)
-        result = selector.arg_select()
+        selector = LinearRankingSelector(n_individuals=3)
+        result = selector.arg_select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [1, 4, 3])
 
     def tearDown(self):
@@ -153,17 +146,17 @@ class TestExponentialRankingSelector(TestCase):
 
     def test_c_value(self):
         n = 1
-        self.assertRaises(ValueError, ExponentialRankingSelector, self.population, n, self.fitness_list, c=2)
-        self.assertRaises(ValueError, ExponentialRankingSelector, self.population, n, self.fitness_list, c=-1)
+        self.assertRaises(ValueError, ExponentialRankingSelector, n, c=2)
+        self.assertRaises(ValueError, ExponentialRankingSelector, n, c=-1)
 
     def test_select(self):
-        selector = ExponentialRankingSelector(self.population, self.n_indivs, self.fitness_list, self.c)
-        result = selector.select()
+        selector = ExponentialRankingSelector(self.n_indivs, self.c)
+        result = selector.select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [3, 4, 4])
 
     def test_arg_select(self):
-        selector = ExponentialRankingSelector(self.population, self.n_indivs, self.fitness_list, self.c)
-        result = selector.arg_select()
+        selector = ExponentialRankingSelector(self.n_indivs, self.c)
+        result = selector.arg_select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [2, 3, 3])
 
     def tearDown(self):
@@ -182,20 +175,25 @@ class TestTournamentSelector(TestCase):
 
     def test_n_way_value(self):
         n = 1
-
-        n_way = len(self.population) + 1
-        self.assertRaises(ValueError, TournamentSelector, self.population, n, self.fitness_list, n_way=n_way)
         n_way = 1
-        self.assertRaises(ValueError, TournamentSelector, self.population, n, self.fitness_list, n_way=n_way)
+        self.assertRaises(ValueError, TournamentSelector, n, n_way=n_way)
 
     def test_select(self):
-        selector = TournamentSelector(self.population, self.n_indivs, self.fitness_list, self.n_way)
-        result = selector.select()
+        n_way = len(self.population) + 1
+        selector = TournamentSelector(self.n_indivs, n_way)
+        self.assertRaises(ValueError, selector.select, self.population, self.fitness_list)
+
+        selector = TournamentSelector(self.n_indivs, self.n_way)
+        result = selector.select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [1, 1, 2])
 
     def test_arg_select(self):
-        selector = TournamentSelector(self.population, self.n_indivs, self.fitness_list, self.n_way)
-        result = selector.arg_select()
+        n_way = len(self.population) + 1
+        selector = TournamentSelector(self.n_indivs, n_way)
+        self.assertRaises(ValueError, selector.arg_select, self.population, self.fitness_list)
+
+        selector = TournamentSelector(self.n_indivs, self.n_way)
+        result = selector.arg_select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [0, 0, 1])
 
     def tearDown(self):
