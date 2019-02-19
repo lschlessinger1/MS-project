@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
@@ -12,6 +14,9 @@ from autoks.util import remove_duplicates, argsort
 class AKSKernel:
     """AKS kernel wrapper
     """
+    kernel: Kern
+    scored: bool
+    nan_scored: bool
 
     def __init__(self, kernel, scored=False, nan_scored=False):
         self.kernel = kernel
@@ -24,7 +29,7 @@ class AKSKernel:
         return self._score
 
     @score.setter
-    def score(self, score):
+    def score(self, score: float):
         self._score = score
         # Update scored as well
         self.scored = True
@@ -61,7 +66,7 @@ def get_matching_kernels():
     return [RBF, RatQuad, Linear, StdPeriodic]
 
 
-def get_all_1d_kernels(base_kernels, n_dims):
+def get_all_1d_kernels(base_kernels: List[str], n_dims: int):
     """
 
     :param base_kernels:
@@ -80,7 +85,7 @@ def get_all_1d_kernels(base_kernels, n_dims):
     return models
 
 
-def create_1d_kernel(kernel_family, active_dim, kernel_mapping=None, kernel_map=None):
+def create_1d_kernel(kernel_family: str, active_dim: int, kernel_mapping: dict = None, kernel_map=None):
     if not kernel_mapping:
         kernel_mapping = get_kernel_mapping()
         if not kernel_map:
@@ -88,7 +93,7 @@ def create_1d_kernel(kernel_family, active_dim, kernel_mapping=None, kernel_map=
     return kernel_map(input_dim=1, active_dims=[active_dim])
 
 
-def subkernel_expression(kernel, show_params=False):
+def subkernel_expression(kernel: Kern, show_params: bool = False):
     kernel_families = get_allowable_kernels()
     kernel_mapping = get_kernel_mapping()
     matching_base_kerns = [kern_fam for kern_fam in kernel_families if isinstance(kernel, kernel_mapping[kern_fam])]
@@ -105,7 +110,7 @@ def subkernel_expression(kernel, show_params=False):
     return kern_str
 
 
-def in_order(root, tokens=[]):
+def in_order(root: Kern, tokens: list = []):
     if root is not None:
         if isinstance(root, CombinationKernel):
 
@@ -137,7 +142,7 @@ def in_order(root, tokens=[]):
     return tokens
 
 
-def tokenize(list_nd):
+def tokenize(list_nd: list):
     if not list_nd:
         return []
     if isinstance(list_nd, list):
@@ -145,11 +150,11 @@ def tokenize(list_nd):
     return list_nd
 
 
-def flatten(list_nd):
+def flatten(list_nd: list):
     return [list_nd] if not isinstance(list_nd, list) else [x for X in list_nd for x in flatten(X)]
 
 
-def remove_outer_parens(list_nd):
+def remove_outer_parens(list_nd: list):
     if len(list_nd) >= 2:
         if list_nd[0] == '(' and list_nd[-1] == ')':
             return list_nd[1:-1]
@@ -168,7 +173,7 @@ def join_operands(operands, operator):
     return joined
 
 
-def kernel_to_infix_tokens(kernel):
+def kernel_to_infix_tokens(kernel: Kern):
     in_order_traversal = in_order(kernel, tokens=[])
     infix_tokens = flatten(tokenize(in_order_traversal))
     # for readability, remove outer parentheses
@@ -176,7 +181,7 @@ def kernel_to_infix_tokens(kernel):
     return infix_tokens
 
 
-def tokens_to_str(tokens, show_params=False):
+def tokens_to_str(tokens: list, show_params: bool = False):
     token_string = ''
     for i, token in enumerate(tokens):
         if isinstance(token, Kern):
@@ -190,20 +195,20 @@ def tokens_to_str(tokens, show_params=False):
     return token_string
 
 
-def kernel_to_infix(kernel, show_params=False):
+def kernel_to_infix(kernel: Kern, show_params: bool = False):
     return tokens_to_str(kernel_to_infix_tokens(kernel), show_params=show_params)
 
 
-def apply_op(left, right, operator):
+def apply_op(left: Kern, right: Kern, operator: str):
     if operator == '+':
         return left + right
     elif operator == '*':
         return left * right
     else:
-        raise ValueError('Unknown operator %s' % operator)
+        raise ValueError(f'Unknown operator {operator}')
 
 
-def eval_binexp_tree(root):
+def eval_binexp_tree(root: evalg.encoding.BinaryTreeNode):
     if root is not None:
         if isinstance(root.value, Kern):
             return root.value
@@ -216,11 +221,11 @@ def eval_binexp_tree(root):
         return apply_op(left_node, right_node, operator)
 
 
-def tree_to_kernel(tree):
+def tree_to_kernel(tree: evalg.encoding.BinaryTree):
     return eval_binexp_tree(tree.root)
 
 
-def n_base_kernels(kernel):
+def n_base_kernels(kernel: Kern):
     """Count the number of base kernels."""
     count = [0]
 
@@ -233,7 +238,7 @@ def n_base_kernels(kernel):
     return count[0]
 
 
-def covariance_distance(kernels, X):
+def covariance_distance(kernels: list, X: np.array):
     """Euclidean distance of all pairs kernels"""
     # For each pair of kernel matrices, compute Euclidean distance
     n_kernels = len(kernels)
@@ -246,13 +251,13 @@ def covariance_distance(kernels, X):
     return dists
 
 
-def kernel_l2_dist(kernel_1, kernel_2, X):
+def kernel_l2_dist(kernel_1: Kern, kernel_2: Kern, X: np.array):
     """Compute Euclidean distance between two kernel matrices."""
     dist = np.linalg.norm(kernel_1.K(X) - kernel_2.K(X))
     return dist
 
 
-def sort_kernel(kernel):
+def sort_kernel(kernel: Kern):
     """ Sorts kernel tree
     """
 
@@ -276,7 +281,7 @@ def sort_kernel(kernel):
             return k_sorted
 
 
-def sort_combination_kernel(kernel, new_ops):
+def sort_combination_kernel(kernel: Kern, new_ops):
     """ Helper function to sort a combination kernel
     """
     # first sort by kernel name, then by active dim
@@ -300,19 +305,19 @@ def sort_combination_kernel(kernel, new_ops):
     return kernel.__class__(sorted_ops)
 
 
-def remove_duplicate_kernels(kernels):
+def remove_duplicate_kernels(kernels: List[Kern]):
     """ Remove duplicate kernels
     """
     return remove_duplicates([kernel_to_infix(k) for k in kernels], kernels)
 
 
-def remove_duplicate_aks_kernels(aks_kernels):
+def remove_duplicate_aks_kernels(aks_kernels: List[AKSKernel]):
     """ Remove duplicate AKSKernel's
     """
     return remove_duplicates([kernel_to_infix(aks_kernel.kernel) for aks_kernel in aks_kernels], aks_kernels)
 
 
-def additive_form(kernel):
+def additive_form(kernel: Kern):
     if isinstance(kernel, Prod):
         # Distribute kernel parts if necessary
         additive_ops = [additive_form(part) for part in kernel.parts]
@@ -342,7 +347,7 @@ def additive_form(kernel):
         raise TypeError('%s is not a subclass of %s' % (kernel.__class__.__name__, Kern.__name__))
 
 
-def additive_part_to_vec(additive_part, base_kernels, n_dims):
+def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: int):
     # convert product into vector
     # ex: k1 * k1 * k2 * k4 ---> [2, 1, 0, 1]
 
@@ -372,7 +377,7 @@ def additive_part_to_vec(additive_part, base_kernels, n_dims):
     return vec
 
 
-def kernel_vec_avg_dist(kvecs1, kvecs2):
+def kernel_vec_avg_dist(kvecs1: List[np.array], kvecs2: List[np.array]):
     """Average Euclidean distance between two lists of vectors."""
 
     total_dist = 0
@@ -387,7 +392,7 @@ def kernel_vec_avg_dist(kvecs1, kvecs2):
     return avg_dist
 
 
-def all_pairs_avg_dist(kernels, base_kernels, n_dims):
+def all_pairs_avg_dist(kernels: List[Kern], base_kernels: List[str], n_dims: int):
     """ Calculates the mean distance between all pairs of kernels
 
     Can be thought of as a diversity score of a population of kernels
