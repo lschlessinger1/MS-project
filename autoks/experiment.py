@@ -13,8 +13,8 @@ from autoks.grammar import BaseGrammar
 from autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
     AKSKernel
 from autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
-from autoks.postprocessing import ExperimentReportGenerator, compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, \
-    rmse_knn
+from autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
+    ExperimentReportGenerator
 from evalg.plotting import plot_best_so_far, plot_distribution
 
 

@@ -14,7 +14,6 @@ from sklearn.metrics import mean_squared_error
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
 
-from autoks.experiment import Experiment
 from autoks.kernel import kernel_to_infix, AKSKernel
 from autoks.model import AIC, BIC, pl2, log_likelihood_normalized
 from evalg.plotting import plot_distribution, plot_best_so_far
@@ -50,7 +49,6 @@ def rmse_knn(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.
 
 
 class ExperimentReportGenerator:
-    experiment: Experiment
     aks_kernels: List[AKSKernel]
     X_test: np.array
     y_test: np.array
