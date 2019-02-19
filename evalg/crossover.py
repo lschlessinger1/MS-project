@@ -1,26 +1,24 @@
-from abc import ABC
-
 import numpy as np
 
 
 # Decorators
 
-def check_gte_two_parents(decorated):
-    def func_wrapper(parents):
+def check_gte_two_parents(f):
+    def wrapper(self, parents):
         if len(parents) < 2:
             raise ValueError('At least two parents are required.')
-        return decorated(parents)
+        return f(self, parents)
 
-    return func_wrapper
+    return wrapper
 
 
-def check_two_parents(decorated):
-    def func_wrapper(parents):
+def check_two_parents(f):
+    def wrapper(self, parents):
         if len(parents) != 2:
             raise ValueError('Exactly two parents are required.')
-        return decorated(parents)
+        return f(self, parents)
 
-    return func_wrapper
+    return wrapper
 
 
 class Recombinator:
@@ -30,15 +28,9 @@ class Recombinator:
         raise NotImplementedError("crossover must be implemented in a child class")
 
 
-class BinaryRecombinator(Recombinator, ABC):
+class OnePointBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents):
-        raise NotImplementedError('crossover must be implemented in a child class')
-
-
-class OnePointBinaryRecombinator(BinaryRecombinator):
-
     def crossover(self, parents):
         """One-point crossover."""
         parent_1 = parents[0]
@@ -52,19 +44,23 @@ class OnePointBinaryRecombinator(BinaryRecombinator):
         return child_1, child_2
 
 
-class TwoPointBinaryRecombinator(BinaryRecombinator):
+class TwoPointBinaryRecombinator(Recombinator):
 
+    @check_two_parents
     def crossover(self, parents):
         """Two-point crossover."""
-        recombinator = NPointBinaryRecombinator(n=2)
+        recombinator = NPointBinaryRecombinator(n_points=2)
         return recombinator.crossover(parents)
 
 
-class NPointBinaryRecombinator(BinaryRecombinator):
+class NPointBinaryRecombinator(Recombinator):
 
-    def __init__(self, n):
-        self.n = n
+    def __init__(self, n_points):
+        if n_points < 1:
+            raise ValueError('n_points must be at least 1')
+        self.n_points = n_points
 
+    @check_two_parents
     def crossover(self, parents):
         """n-point crossover"""
         # TODO: use np.where instead
@@ -72,7 +68,7 @@ class NPointBinaryRecombinator(BinaryRecombinator):
         parent_2 = parents[1]
         gene_size = parent_1.size
 
-        crossover_points = sorted(np.random.choice(np.arange(0, gene_size), size=self.n, replace=False))
+        crossover_points = sorted(np.random.choice(np.arange(0, gene_size), size=self.n_points, replace=False))
         child_1 = parent_1
         child_2 = parent_2
 
@@ -88,11 +84,12 @@ class NPointBinaryRecombinator(BinaryRecombinator):
         return child_1, child_2
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'n={self.n!r})'
+        return f'{self.__class__.__name__}('f'n={self.n_points!r})'
 
 
-class UniformBinaryRecombinator(BinaryRecombinator):
+class UniformBinaryRecombinator(Recombinator):
 
+    @check_two_parents
     def crossover(self, parents):
         """Uniform crossover."""
         raise NotImplementedError("crossover_uniform not yet implemented")

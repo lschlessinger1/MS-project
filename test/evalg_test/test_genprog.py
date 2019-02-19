@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from evalg.encoding import BinaryTree, BinaryTreeNode
-from evalg.genprog import TreePointMutator, TreeMutator, TreeRecombinator, SubTreeExchangeMutator, BinaryTreeGenerator, \
+from evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
     GrowGenerator, FullGenerator, GrowMutator, HalfAndHalfMutator, SubtreeExchangeBinaryRecombinator
 
 
@@ -65,16 +65,6 @@ class TestTreeMutator(TestCase):
         self.assertRaises(TypeError, TreeMutator.mutate, 'bad type')
         self.assertRaises(TypeError, TreeMutator.mutate, 1)
         self.assertRaises(TypeError, TreeMutator.mutate, True)
-
-
-class TestTreeRecombinator(TestCase):
-
-    def test_tree_type(self):
-        tree_1 = BinaryTree()
-        tree_2 = BinaryTree()
-        self.assertRaises(TypeError, TreeRecombinator, 'bad type')
-        self.assertRaises(TypeError, TreeRecombinator, [tree_1, tree_2, 45])
-
 
 class TestTreePointMutator(TestCase):
 
@@ -185,6 +175,10 @@ class TestSubtreeExchangeBinaryRecombinator(TestCase):
         tree_2 = BinaryTree(BinaryTreeNode('+'))
         tree_2.root.add_left('C')
         tree_2.root.add_right('D')
+
+        # test bad type
+        self.assertRaises(TypeError, SubtreeExchangeBinaryRecombinator.crossover, 'bad type')
+        self.assertRaises(TypeError, SubtreeExchangeBinaryRecombinator.crossover, [tree_1, tree_2, 45])
 
         parents = [tree_1, tree_2]
         recombinator = SubtreeExchangeBinaryRecombinator()

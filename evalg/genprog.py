@@ -3,7 +3,7 @@ from abc import ABC
 
 import numpy as np
 
-from evalg.crossover import Recombinator, BinaryRecombinator
+from evalg.crossover import Recombinator, check_two_parents
 from evalg.encoding import operators, BinaryTreeNode, BinaryTree
 from evalg.mutation import Mutator
 
@@ -129,20 +129,21 @@ class TreeMutator(Mutator, ABC):
         return f'{self.__class__.__name__}('f'operands={self.operands!r})'
 
 
-def check_binary_trees(decorated):
-    def func_wrapper(parents):
+def check_binary_trees(f):
+    def wrapper(self, parents):
         if not all(isinstance(parent, BinaryTree) for parent in parents):
             raise TypeError('all parents must be of type %s' % BinaryTree.__name__)
-        return decorated(parents)
+        return f(self, parents)
 
-    return func_wrapper
+    return wrapper
 
 
-class TreeRecombinator(Recombinator, ABC):
-
-    @check_binary_trees
-    def crossover(self, parents):
-        raise NotImplementedError('crossover must be implemented in a child class')
+#
+# class TreeRecombinator(Recombinator, ABC):
+#
+#     @check_binary_trees
+#     def crossover(self, parents):
+#         raise NotImplementedError('crossover must be implemented in a child class')
 
 
 # Binary tree mutators
@@ -266,8 +267,10 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
 
 # Binary tree recombinators
 
-class SubtreeExchangeBinaryRecombinator(TreeRecombinator, BinaryRecombinator):
+class SubtreeExchangeBinaryRecombinator(Recombinator):
 
+    @check_binary_trees
+    @check_two_parents
     def crossover(self, parents):
         """Sub-tree exchange crossover
 
