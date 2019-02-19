@@ -1,14 +1,17 @@
 import warnings
 from time import time
+from typing import Callable, List
 
 import matplotlib.pyplot as plt
 import numpy as np
+from GPy.core import GP
 from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
 from autoks.grammar import BaseGrammar
-from autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist
+from autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
+    AKSKernel
 from autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from autoks.postprocessing import ExperimentReportGenerator, compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, \
     rmse_knn
@@ -17,6 +20,21 @@ from evalg.plotting import plot_best_so_far, plot_distribution
 
 class Experiment:
     grammar: BaseGrammar
+    objective: Callable
+    kernel_families: List[str]
+    X_train: np.array
+    y_train: np.array
+    X_test: np.array
+    y_test: np.array
+    standardize_X: bool
+    standardize_y: bool
+    eval_budget: int
+    max_depth: int
+    gp_model: GP
+    debug: bool
+    verbose: bool
+    optimizer: str
+    n_restarts_optimizer: int
 
     def __init__(self, grammar, objective, kernel_families, X_train, y_train, X_test, y_test, standardize_X=True,
                  standardize_y=True, eval_budget=50, max_depth=10, gp_model=None, debug=False, verbose=False,
@@ -132,7 +150,7 @@ class Experiment:
         self.total_kernel_search_time += time() - t_init
         return kernels
 
-    def opt_and_eval_kernels(self, kernels):
+    def opt_and_eval_kernels(self, kernels: List[AKSKernel]):
         """ Optimize and evaluate kernels
 
         :param kernels:
@@ -155,7 +173,7 @@ class Experiment:
         kernels = self.remove_nan_scored_kernels(kernels)
         self.update_stats(kernels)
 
-    def optimize_kernel(self, aks_kernel):
+    def optimize_kernel(self, aks_kernel: AKSKernel):
         if not aks_kernel.scored:
             try:
                 kernel = aks_kernel.kernel
@@ -184,7 +202,7 @@ class Experiment:
             except LinAlgError:
                 warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
 
-    def evaluate_kernel(self, aks_kernel):
+    def evaluate_kernel(self, aks_kernel: AKSKernel):
         if not aks_kernel.scored:
             set_model_kern(self.gp_model, aks_kernel.kernel)
 
@@ -200,10 +218,10 @@ class Experiment:
                 # also count a nan-scored kernel as an evaluation
                 self.n_evals += 1
 
-    def remove_nan_scored_kernels(self, aks_kernels):
+    def remove_nan_scored_kernels(self, aks_kernels: List[AKSKernel]):
         return [aks_kernel for aks_kernel in aks_kernels if not aks_kernel.nan_scored]
 
-    def summarize(self, aks_kernels):
+    def summarize(self, aks_kernels: List[AKSKernel]):
         sorted_aks_kernels = sorted(aks_kernels, key=lambda x: x.score, reverse=True)
         best_aks_kernel = sorted_aks_kernels[0]
         best_kernel = best_aks_kernel.kernel
@@ -262,7 +280,7 @@ class Experiment:
         print('RMSE RBF = %.3f' % se_rmse)
         print('RMSE k-NN = %.3f' % knn_rmse)
 
-    def run(self, summarize=True, create_report=True):
+    def run(self, summarize: bool = True, create_report: bool = True):
         aks_kernels = self.kernel_search()
         if summarize:
             self.summarize(aks_kernels)
@@ -340,7 +358,7 @@ class Experiment:
         for pct, sec, label in sorted(zip(x_pct, x, labels), key=lambda v: v[1], reverse=True):
             print('%s: %0.2f%% (%0.2fs)' % (label, pct, sec))
 
-    def update_stats(self, kernels):
+    def update_stats(self, kernels: List[AKSKernel]):
         """ Update kernel population statistics
 
         :param kernels:
