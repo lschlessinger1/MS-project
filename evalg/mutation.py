@@ -11,10 +11,10 @@ class Mutator:
 
 class BitFlipMutator(Mutator):
 
-    def __init__(self, gene_mut_prob=None):
+    def __init__(self, gene_mut_prob: float = None):
         self.gene_mut_prob = gene_mut_prob
 
-    def mutate(self, individual):
+    def mutate(self, individual: np.array):
         """Bit-flip mutation"""
         gene_size = individual.size
         if self.gene_mut_prob is None:
@@ -31,7 +31,7 @@ class BitFlipMutator(Mutator):
 
 class InterchangeMutator(Mutator):
 
-    def mutate(self, individual):
+    def mutate(self, individual: np.array):
         """Interchange mutation"""
         gene_size = individual.size
         ind = np.random.randint(0, gene_size, size=2)
@@ -43,7 +43,7 @@ class InterchangeMutator(Mutator):
 
 class ReverseMutator(Mutator):
 
-    def mutate(self, individual):
+    def mutate(self, individual: np.array):
         """Reverse mutation."""
         gene_size = individual.size
         ind = np.random.randint(0, gene_size)
@@ -54,34 +54,34 @@ class ReverseMutator(Mutator):
 
 class GaussianMutator(Mutator):
 
-    def mutate(self, individual):
+    def mutate(self, individual: np.array):
         """Gaussian mutation."""
         raise NotImplementedError("Gaussian mutation not yet implemented")
 
 
 class BoundaryMutator(Mutator):
 
-    def mutate(self, individual):
+    def mutate(self, individual: np.array):
         """Boundary mutation."""
         raise NotImplementedError("Boundary mutation not yet implemented")
 
 
 class UniformMutator(Mutator):
 
-    def mutate(self, individual):
+    def mutate(self, individual: np.array):
         """Uniform mutation."""
         raise NotImplementedError("Uniform mutation not yet implemented")
 
 
 class NonuniformMutator(Mutator):
 
-    def mutate(self, individual):
+    def mutate(self, individual: np.array):
         """Non-Uniform mutation."""
         raise NotImplementedError("Non-Uniform mutation not yet implemented")
 
 
 class ShrinkMutator(Mutator):
 
-    def mutate(self, individual):
+    def mutate(self, individual: np.array):
         """Shrink mutation."""
         raise NotImplementedError("Shrink mutation not yet implemented")
