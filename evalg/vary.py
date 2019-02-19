@@ -18,7 +18,7 @@ class Variator:
 
 class CrossoverVariator(Variator):
 
-    def __init__(self, operator, n_offspring, n_way=2, c_prob=1.):
+    def __init__(self, operator: Recombinator, n_offspring, n_way=2, c_prob=1.):
         """
 
         :param operator: the recombinator containing the crossover operator
@@ -27,8 +27,6 @@ class CrossoverVariator(Variator):
         :param c_prob: probability of crossover
         """
         super().__init__(operator)
-        if not isinstance(operator, Recombinator):
-            raise TypeError('operator must be of type 'f'{Recombinator.__name__}')
         self.n_offspring = n_offspring
         self.n_way = n_way
         self.c_prob = c_prob
@@ -45,7 +43,6 @@ class CrossoverVariator(Variator):
         for i in range(0, self.n_offspring, self.n_way):
             if np.random.rand() < self.c_prob:
                 selected_parents = [parents[(i + j) % len(parents)] for j in range(self.n_way)]
-
                 children = recombinator.crossover(selected_parents)
 
                 # add children to offspring
@@ -65,15 +62,13 @@ class CrossoverVariator(Variator):
 
 class MutationVariator(Variator):
 
-    def __init__(self, operator, m_prob=1.):
+    def __init__(self, operator: Mutator, m_prob=1.):
         """
 
         :param operator: the mutator
         :param m_prob: probability of mutation
         """
         super().__init__(operator)
-        if not isinstance(operator, Mutator):
-            raise TypeError('operator must be of type %s' % Mutator.__name__)
         self.m_prob = m_prob
 
     def mutate_all(self, individuals):
