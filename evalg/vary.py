@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 import numpy as np
 
@@ -8,7 +8,7 @@ from evalg.mutation import Mutator
 
 class Variator:
 
-    def __init__(self, operator):
+    def __init__(self, operator: Union[Mutator, Recombinator]):
         self.operator = operator
 
     def vary(self, parents: list):
