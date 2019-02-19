@@ -1,7 +1,9 @@
 import datetime
 import os
+from typing import List
 
 import numpy as np
+from GPy.core import GP
 from GPy.kern import RBF
 from GPy.models import GPRegression
 from pylatex import Document, Section, Figure, NoEscape, SubFigure, Center, Tabu, MiniPage, LineBreak, VerticalSpace, \
@@ -12,41 +14,48 @@ from sklearn.metrics import mean_squared_error
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
 
-from autoks.kernel import kernel_to_infix
+from autoks.experiment import Experiment
+from autoks.kernel import kernel_to_infix, AKSKernel
 from autoks.model import AIC, BIC, pl2, log_likelihood_normalized
 from evalg.plotting import plot_distribution, plot_best_so_far
 
 
-def compute_skmodel_rmse(model, X_train, y_train, X_test, y_test):
+def compute_skmodel_rmse(model, X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array):
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     return np.sqrt(mean_squared_error(y_test, y_pred))
 
 
-def compute_gpy_model_rmse(model, X_test, y_test):
+def compute_gpy_model_rmse(model: GP, X_test: np.array, y_test: np.array):
     mean, var = model.predict(X_test)
     y_pred = mean
     return np.sqrt(mean_squared_error(y_test, y_pred))
 
 
-def rmse_rbf(X_train, y_train, X_test, y_test):
+def rmse_rbf(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array):
     model = GPRegression(X_train, y_train, kernel=RBF(input_dim=X_train.shape[1]))
     return compute_gpy_model_rmse(model, X_test, y_test)
 
 
-def rmse_svr(X_train, y_train, X_test, y_test):
+def rmse_svr(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array):
     return compute_skmodel_rmse(SVR(kernel='rbf'), X_train, y_train, X_test, y_test)
 
 
-def rmse_lin_reg(X_train, y_train, X_test, y_test):
+def rmse_lin_reg(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array):
     return compute_skmodel_rmse(LinearRegression(), X_train, y_train, X_test, y_test)
 
 
-def rmse_knn(X_train, y_train, X_test, y_test):
+def rmse_knn(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array):
     return compute_skmodel_rmse(KNeighborsRegressor(), X_train, y_train, X_test, y_test)
 
 
 class ExperimentReportGenerator:
+    experiment: Experiment
+    aks_kernels: List[AKSKernel]
+    X_test: np.array
+    y_test: np.array
+    results_dir_name: str
+
     def __init__(self, experiment, aks_kernels, X_test, y_test, results_dir_name='results'):
         self.experiment = experiment
         self.aks_kernels = aks_kernels
@@ -65,7 +74,7 @@ class ExperimentReportGenerator:
         self.width = r'1\textwidth'
         self.dpi = 300
 
-    def add_overview(self, doc, title='Overview'):
+    def add_overview(self, doc: Document, title: str = 'Overview'):
         with doc.create(Section(title)):
             doc.append('Overview of kernel search results.')
             doc.append("\n")
@@ -90,7 +99,7 @@ class ExperimentReportGenerator:
                 doc.append("\n")
                 doc.append(best_kern_long)
 
-    def add_model_scores(self, doc, width, title='Model Score Evolution', *args, **kwargs):
+    def add_model_scores(self, doc: Document, width: str, title: str = 'Model Score Evolution', *args, **kwargs):
         with doc.create(Subsection(title)):
             doc.append('A summary of the distribution of model scores.')
             with doc.create(Figure(position='h!')) as plot:
@@ -110,7 +119,8 @@ class ExperimentReportGenerator:
                 plot.add_caption('These two figures show the model scores. The left shows a best-so-far curve and the \
                 right one shows a distribution of scores.')
 
-    def add_kernel_structure_subsection(self, doc, width, title='Kernel Structure Evolution', *args, **kwargs):
+    def add_kernel_structure_subsection(self, doc: Document, width: str, title: str = 'Kernel Structure Evolution',
+                                        *args, **kwargs):
         with doc.create(Subsection(title)):
             doc.append('A summary of the structure of kernels searched.')
             with doc.create(Figure(position='h!')) as plot:
@@ -135,7 +145,8 @@ class ExperimentReportGenerator:
                 time. The left figure shows the hyperparameter distribution and the right one shows operand \
                 distribution.')
 
-    def add_population_subsection(self, doc, width, title='Population Evolution', *args, **kwargs):
+    def add_population_subsection(self, doc: Document, width: str, title: str = 'Population Evolution', *args,
+                                  **kwargs):
         with doc.create(Subsection(title)):
             doc.append('A summary of the population of kernels searched.')
             with doc.create(Figure(position='h!')) as plot:
@@ -156,14 +167,14 @@ class ExperimentReportGenerator:
                     in additive form. It represents the diversity/heterogeneity of the population.')
                 plot.add_caption('Two figures showing the evolution of the population heterogeneity.')
 
-    def add_model_plot(self, doc, width, title='Model Plot', *args, **kwargs):
+    def add_model_plot(self, doc: Document, width: str, title: str = 'Model Plot', *args, **kwargs):
         with doc.create(Subsection(title)):
             with doc.create(Figure(position='h!')) as plot:
                 self.best_model.plot(plot_density=True)
                 plot.add_plot(width=NoEscape(width), *args, **kwargs)
                 plot.add_caption('A plot of the fit of the best Gaussian Process discovered in the search.')
 
-    def add_results(self, doc, width, title='Results', *args, **kwargs):
+    def add_results(self, doc: Document, width: str, title: str = 'Results', *args, **kwargs):
         with doc.create(Section(title)):
             doc.append('Here are some plots summarizing the kernel search.')
             self.add_model_scores(doc, width, *args, **kwargs)
@@ -173,7 +184,7 @@ class ExperimentReportGenerator:
                 # If training data is 1D, show a plot.
                 self.add_model_plot(doc, width, *args, **kwargs)
 
-    def add_timing_report(self, doc, title='Timing Report'):
+    def add_timing_report(self, doc: Document, title: str = 'Timing Report'):
         with doc.create(Section(title)):
             doc.append('Here is a summary of the execution time of various parts of the algorithm.')
             with doc.create(Center()) as centered:
@@ -187,7 +198,7 @@ class ExperimentReportGenerator:
                         row = ('%s %0.2f %0.2f%%' % (label, sec, pct)).split(' ')
                         data_table.add_row(row)
 
-    def add_model_summary(self, doc, title='Best Model Summary'):
+    def add_model_summary(self, doc: Document, title: str = 'Best Model Summary'):
         with doc.create(Subsection(title)):
             doc.append('This table contains various scores of the best model.')
             doc.append("\n")
@@ -210,7 +221,7 @@ class ExperimentReportGenerator:
                                                                     aic, pl2_score)).split(' ')
                     data_table.add_row(row)
 
-    def add_comparison(self, doc, title='Comparison to Other Models'):
+    def add_comparison(self, doc: Document, title: str = 'Comparison to Other Models'):
         with doc.create(Subsection(title)):
             doc.append('This table contains the RMSE of the best model and others.')
             doc.append("\n")
@@ -233,19 +244,18 @@ class ExperimentReportGenerator:
                            (rmse_best_model, rmse_lr, rmse_svm, se_rmse, knn_rmse)).split(' ')
                     data_table.add_row(row)
 
-    def add_performance(self, doc, title='Predictive Performance'):
+    def add_performance(self, doc: Document, title: str = 'Predictive Performance'):
         with doc.create(Section(title)):
             doc.append('An evaluation of the performance of the best model discovered.')
             self.add_model_summary(doc)
             self.add_comparison(doc)
 
-    def add_exp_params(self, doc, title='Experimental Parameters'):
+    def add_exp_params(self, doc: Document, title: str = 'Experimental Parameters'):
         with doc.create(Section(title)):
             doc.append('This section contains the parameters of the experiment')
             # TODO: fill out this section
 
-    def create_result_file(self, fname, width, title, author, *args,
-                           **kwargs):
+    def create_result_file(self, fname: str, width: str, title: str, author: str, *args, **kwargs):
         geometry_options = {"right": "2cm", "left": "2cm"}
         doc = Document(fname, geometry_options=geometry_options)
 
@@ -262,7 +272,7 @@ class ExperimentReportGenerator:
 
         doc.generate_pdf(clean_tex=True)
 
-    def summarize_experiment(self, title='Experiment Results', author='Automatically Generated'):
+    def summarize_experiment(self, title: str = 'Experiment Results', author: str = 'Automatically Generated'):
         # Create results folder if it doesn't exist
         results_path = os.path.join('..', self.results_dir_name)
         if not os.path.isdir(results_path):
