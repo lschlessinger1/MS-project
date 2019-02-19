@@ -1,6 +1,7 @@
 import numpy as np
 
 from evalg.crossover import Recombinator
+from evalg.mutation import Mutator
 
 
 class Variator:
@@ -8,13 +9,16 @@ class Variator:
     def __init__(self, operator):
         self.operator = operator
 
+    def vary(self, parents):
+        raise NotImplementedError('vary must be implemented in a child class')
+
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operator={self.operator!r})'
 
 
 class CrossoverVariator(Variator):
 
-    def __init__(self, operator, n_offspring, n_way=2, n_points=2, c_prob=1.):
+    def __init__(self, operator, n_offspring, n_way=2, c_prob=1.):
         """
 
         :param operator: the recombinator containing the crossover operator
@@ -28,7 +32,6 @@ class CrossoverVariator(Variator):
             raise TypeError('operator must be of type 'f'{Recombinator.__name__}')
         self.n_offspring = n_offspring
         self.n_way = n_way
-        self.n_points = n_points
         self.c_prob = c_prob
 
     def crossover_all(self, parents):
@@ -45,7 +48,6 @@ class CrossoverVariator(Variator):
                 selected_parents = [parents[(i + j) % len(parents)] for j in range(self.n_way)]
 
                 recombinator.parents = selected_parents
-                recombinator.n_points = self.n_points
                 children = recombinator.crossover()
 
                 # add children to offspring
@@ -55,9 +57,12 @@ class CrossoverVariator(Variator):
 
         return offspring
 
+    def vary(self, parents):
+        return self.crossover_all(parents)
+
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operator={self.operator!r}, n_offspring={self.n_offspring!r}, ' \
-            f'n_way={self.n_way!r}, n_points={self.n_points!r}, c_prob={self.c_prob!r})'
+            f'n_way={self.n_way!r}, c_prob={self.c_prob!r})'
 
 
 class MutationVariator(Variator):
@@ -69,8 +74,8 @@ class MutationVariator(Variator):
         :param m_prob: probability of mutation
         """
         super().__init__(operator)
-        if not isinstance(operator, Recombinator):
-            raise TypeError('operator must be of type %s' % Recombinator.__name__)
+        if not isinstance(operator, Mutator):
+            raise TypeError('operator must be of type %s' % Mutator.__name__)
         self.m_prob = m_prob
 
     def mutate_all(self, individuals):
@@ -93,8 +98,27 @@ class MutationVariator(Variator):
 
         return offspring_mut
 
+    def vary(self, parents):
+        return self.mutate_all(parents)
+
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operator={self.operator!r}, m_prob={self.m_prob!r})'
+
+
+class PopulationOperator:
+    """ Collection of variators
+
+    """
+
+    def __init__(self, variators):
+        # TODO make sure len > 0 and all of type Variator
+        self.variators = variators
+
+    def create_offspring(self, population):
+        offspring = population
+        for variator in self.variators:
+            offspring = variator.vary(offspring)
+        return offspring
 
 
 def crossover_mutate_all(individuals, crossover_variator, mutation_variator):
