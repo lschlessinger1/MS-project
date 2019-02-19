@@ -20,7 +20,7 @@ class Variator:
 
 class CrossoverVariator(Variator):
 
-    def __init__(self, operator: Recombinator, n_offspring, n_way: int = 2, c_prob: float = 1.):
+    def __init__(self, operator: Recombinator, n_offspring: int, n_way: int = 2, c_prob: float = 1.):
         """
 
         :param operator: the recombinator containing the crossover operator
