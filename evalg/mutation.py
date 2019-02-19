@@ -12,7 +12,6 @@ class Mutator:
 class BitFlipMutator(Mutator):
 
     def __init__(self, gene_mut_prob=None):
-        # super().__init__(individual)
         self.gene_mut_prob = gene_mut_prob
 
     def mutate(self, individual):
@@ -31,9 +30,6 @@ class BitFlipMutator(Mutator):
 
 
 class InterchangeMutator(Mutator):
-
-    def __init__(self, individual):
-        super().__init__(individual)
 
     def mutate(self, individual):
         """Interchange mutation"""
