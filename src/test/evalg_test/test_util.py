@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from evalg import util
+from src.evalg import util
 
 
 class TestUtil(TestCase):

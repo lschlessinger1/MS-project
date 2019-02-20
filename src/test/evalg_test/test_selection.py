@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from evalg.selection import Selector, UniformSelector, FitnessProportionalSelector, SigmaScalingSelector, \
+from src.evalg.selection import Selector, UniformSelector, FitnessProportionalSelector, SigmaScalingSelector, \
     TruncationSelector, LinearRankingSelector, ExponentialRankingSelector, TournamentSelector
 
 

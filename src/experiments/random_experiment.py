@@ -1,17 +1,18 @@
-import numpy as np
-from sklearn.model_selection import train_test_split
 import os
 import sys
+
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 top_path = os.path.abspath('..')
 if top_path not in sys.path:
     print('Adding to sys.path %s' % top_path)
     sys.path.append(top_path)
 
-from autoks import model
-from autoks.experiment import Experiment
-from autoks.grammar import RandomGrammar
-from experiments.util import synthetic_data
+from src.autoks import model
+from src.autoks.experiment import Experiment
+from src.autoks.grammar import RandomGrammar
+from src.experiments.util import synthetic_data
 
 # Set random seed for reproducibility.
 np.random.seed(4096)

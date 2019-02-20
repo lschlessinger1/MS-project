@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import numpy as np
 
-from evalg.encoding import BinaryTree, BinaryTreeNode
-from evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
+from src.evalg.encoding import BinaryTree, BinaryTreeNode
+from src.evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
     GrowGenerator, FullGenerator, GrowMutator, HalfAndHalfMutator, SubtreeExchangeBinaryRecombinator
 
 

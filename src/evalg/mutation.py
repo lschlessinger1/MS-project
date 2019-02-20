@@ -1,6 +1,6 @@
 import numpy as np
 
-from evalg.util import swap
+from src.evalg.util import swap
 
 
 class Mutator:

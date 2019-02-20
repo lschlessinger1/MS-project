@@ -14,9 +14,9 @@ from sklearn.metrics import mean_squared_error
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
 
-from autoks.kernel import kernel_to_infix, AKSKernel
-from autoks.model import AIC, BIC, pl2, log_likelihood_normalized
-from evalg.plotting import plot_distribution, plot_best_so_far
+from src.autoks.kernel import kernel_to_infix, AKSKernel
+from src.autoks.model import AIC, BIC, pl2, log_likelihood_normalized
+from src.evalg.plotting import plot_distribution, plot_best_so_far
 
 
 def compute_skmodel_rmse(model, X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array):

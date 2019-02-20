@@ -2,9 +2,9 @@ import unittest
 
 from GPy.kern import RBF, Add, RatQuad, Prod
 
-from autoks.kernel import sort_kernel, AKSKernel
-from autoks.util import remove_duplicates
-from evalg.encoding import BinaryTree
+from src.autoks.kernel import sort_kernel, AKSKernel
+from src.autoks.util import remove_duplicates
+from src.evalg.encoding import BinaryTree
 
 
 class TestKernel(unittest.TestCase):

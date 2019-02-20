@@ -2,8 +2,8 @@ import numpy as np
 from GPy.core import GP
 from GPy.kern import Kern
 
-from autoks.kernel import kernel_to_infix_tokens, tokens_to_str
-from evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree
+from src.autoks.kernel import kernel_to_infix_tokens, tokens_to_str
+from src.evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree
 
 
 def model_to_infix_tokens(model: GP):

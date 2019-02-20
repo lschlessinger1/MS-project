@@ -4,9 +4,9 @@ from typing import List
 
 import numpy as np
 
-from evalg.crossover import Recombinator, check_two_parents
-from evalg.encoding import operators, BinaryTreeNode, BinaryTree
-from evalg.mutation import Mutator
+from src.evalg.crossover import Recombinator, check_two_parents
+from src.evalg.encoding import operators, BinaryTreeNode, BinaryTree
+from src.evalg.mutation import Mutator
 
 
 class BinaryTreeGenerator:

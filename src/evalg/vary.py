@@ -2,8 +2,8 @@ from typing import List, Union
 
 import numpy as np
 
-from evalg.crossover import Recombinator
-from evalg.mutation import Mutator
+from src.evalg.crossover import Recombinator
+from src.evalg.mutation import Mutator
 
 
 class Variator:

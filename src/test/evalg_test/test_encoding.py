@@ -3,7 +3,7 @@ from unittest import TestCase
 from GPy.kern import RBF
 from graphviz import Digraph
 
-from evalg.encoding import TreeNode, BinaryTreeNode, BinaryTree, infix_tokens_to_postfix_tokens, \
+from src.evalg.encoding import TreeNode, BinaryTreeNode, BinaryTree, infix_tokens_to_postfix_tokens, \
     postfix_tokens_to_binexp_tree
 
 

@@ -2,14 +2,14 @@ from typing import List
 
 from GPy.kern.src.kern import Kern
 
-import autoks.kernel
+import src.autoks.kernel
 
 operators = ['+', '*']
 
 
 def val_to_label(value):
     if isinstance(value, Kern):
-        return autoks.kernel.subkernel_expression(value)
+        return src.autoks.kernel.subkernel_expression(value)
     else:
         return str(value)
 

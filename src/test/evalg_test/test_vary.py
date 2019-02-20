@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from evalg.crossover import Recombinator
-from evalg.mutation import Mutator
-from evalg.vary import PopulationOperator, CrossMutPopOperator, CrossoverVariator, MutationVariator, \
+from src.evalg.crossover import Recombinator
+from src.evalg.mutation import Mutator
+from src.evalg.vary import PopulationOperator, CrossMutPopOperator, CrossoverVariator, MutationVariator, \
     CrossoverPopOperator, MutationPopOperator
 
 

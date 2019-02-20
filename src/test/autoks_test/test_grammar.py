@@ -5,8 +5,8 @@ import numpy as np
 from GPy.kern import RBF, RatQuad, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 
-from autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels
-from autoks.kernel import AKSKernel
+from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels
+from src.autoks.kernel import AKSKernel
 
 
 class TestGrammar(TestCase):

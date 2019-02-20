@@ -4,8 +4,8 @@ import numpy as np
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 
-import evalg.encoding
-from autoks.util import remove_duplicates, argsort
+import src.evalg.encoding
+from src.autoks.util import remove_duplicates, argsort
 
 
 # from evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree
@@ -36,8 +36,8 @@ class AKSKernel:
 
     def to_binary_tree(self):
         infix_tokens = kernel_to_infix_tokens(self.kernel)
-        postfix_tokens = evalg.encoding.infix_tokens_to_postfix_tokens(infix_tokens)
-        tree = evalg.encoding.postfix_tokens_to_binexp_tree(postfix_tokens)
+        postfix_tokens = src.evalg.encoding.infix_tokens_to_postfix_tokens(infix_tokens)
+        tree = src.evalg.encoding.postfix_tokens_to_binexp_tree(postfix_tokens)
         return tree
 
     def pretty_print(self):
@@ -208,7 +208,7 @@ def apply_op(left: Kern, right: Kern, operator: str):
         raise ValueError(f'Unknown operator {operator}')
 
 
-def eval_binexp_tree(root: evalg.encoding.BinaryTreeNode):
+def eval_binexp_tree(root: src.evalg.encoding.BinaryTreeNode):
     if root is not None:
         if isinstance(root.value, Kern):
             return root.value
@@ -221,7 +221,7 @@ def eval_binexp_tree(root: evalg.encoding.BinaryTreeNode):
         return apply_op(left_node, right_node, operator)
 
 
-def tree_to_kernel(tree: evalg.encoding.BinaryTree):
+def tree_to_kernel(tree: src.evalg.encoding.BinaryTree):
     return eval_binexp_tree(tree.root)
 
 

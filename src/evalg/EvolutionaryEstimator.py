@@ -1,6 +1,6 @@
 import numpy as np
 
-from evalg import plotting
+from src.evalg import plotting
 
 
 class EvolutionaryEstimator:
