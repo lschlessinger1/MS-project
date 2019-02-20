@@ -33,4 +33,4 @@ optimizer = 'scg'
 
 experiment = Experiment(grammar, objective, base_kernels, X_train, y_train, X_test, y_test, eval_budget=50, debug=True,
                         verbose=True, optimizer=optimizer)
-experiment.run()
+experiment.run(title='Simple CKS Experiment')

@@ -22,4 +22,4 @@ objective = log_likelihood_normalized
 
 experiment = Experiment(grammar, objective, base_kernels, X_train, y_train, X_train, y_train, eval_budget=50,
                         debug=True, verbose=True)
-experiment.run()
+experiment.run(title='Simple BOMS Experiment')

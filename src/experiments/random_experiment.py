@@ -1,9 +1,9 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from src.autoks import model
 from src.autoks.experiment import Experiment
 from src.autoks.grammar import RandomGrammar
+from src.autoks.model import BIC
 from src.experiments.util import synthetic_data
 
 # Set random seed for reproducibility.
@@ -21,7 +21,7 @@ grammar = RandomGrammar(n_parents=4)
 
 def negative_BIC(m):
     """Computes the negative of the Bayesian Information Criterion (BIC)."""
-    return -model.BIC(m)
+    return -BIC(m)
 
 
 # Use the negative BIC because we want to maximize the objective.
@@ -32,4 +32,4 @@ optimizer = 'scg'
 
 experiment = Experiment(grammar, objective, base_kernels, X_train, y_train, X_test, y_test, eval_budget=50, debug=True,
                         verbose=True, optimizer=optimizer)
-experiment.run()
+experiment.run(title='Random Experiment')

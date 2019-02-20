@@ -280,7 +280,7 @@ class Experiment:
         print('RMSE RBF = %.3f' % se_rmse)
         print('RMSE k-NN = %.3f' % knn_rmse)
 
-    def run(self, summarize: bool = True, create_report: bool = True):
+    def run(self, summarize: bool = True, create_report: bool = True, **kwargs):
         aks_kernels = self.kernel_search()
         if summarize:
             self.summarize(aks_kernels)
@@ -290,7 +290,7 @@ class Experiment:
                 print('')
                 print('Creating report...')
             report_gen = ExperimentReportGenerator(self, aks_kernels, self.X_test, self.y_test)
-            report_gen.summarize_experiment()
+            report_gen.summarize_experiment(**kwargs)
 
         return aks_kernels
 
