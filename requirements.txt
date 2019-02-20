@@ -1,7 +1,7 @@
 graphviz==0.10.1
 scipy==1.2.1
 scikit-learn==0.20.2
-matplotlib
+matplotlib==3.0.2
 numpy
 GPy
 pylatex
