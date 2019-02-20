@@ -1,22 +1,13 @@
-import os
-import sys
-
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-top_path = os.path.abspath('..')
-if top_path not in sys.path:
-    print('Adding to sys.path %s' % top_path)
-    sys.path.append(top_path)
-
+from src.autoks.experiment import Experiment
+from src.autoks.grammar import EvolutionaryGrammar
+from src.autoks.kernel import get_all_1d_kernels
+from src.autoks.model import log_likelihood_normalized
 from src.evalg.genprog import SubtreeExchangeBinaryRecombinator, GrowMutator
 from src.evalg.selection import TruncationSelector, AllSelector
 from src.evalg.vary import CrossMutPopOperator, CrossoverVariator, MutationVariator
-
-from src.autoks.experiment import Experiment
-from src.autoks.kernel import get_all_1d_kernels
-from src.autoks.grammar import EvolutionaryGrammar
-from src.autoks.model import log_likelihood_normalized
 from src.experiments.util import synthetic_data
 
 # Set random seed for reproducibility.

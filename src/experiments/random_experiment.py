@@ -1,13 +1,5 @@
-import os
-import sys
-
 import numpy as np
 from sklearn.model_selection import train_test_split
-
-top_path = os.path.abspath('..')
-if top_path not in sys.path:
-    print('Adding to sys.path %s' % top_path)
-    sys.path.append(top_path)
 
 from src.autoks import model
 from src.autoks.experiment import Experiment
