@@ -1,5 +1,5 @@
 graphviz==0.10.1
-scipy
+scipy==1.2.1
 scikit-learn
 matplotlib
 numpy
