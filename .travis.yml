@@ -10,5 +10,6 @@ install:
 script:
   - pytest --cov=src/
 after_success:
+  - codecov
   - coveralls
   
