@@ -330,7 +330,7 @@ class SubtreeExchangeBinaryRecombinator(Recombinator):
         return False
 
     @staticmethod
-    def _select_token_ind(postfix_tokens_1: str, postfix_tokens_2: str):
+    def _select_token_ind(postfix_tokens_1: List[str], postfix_tokens_2: List[str]):
         """Select indices of parent postfix tokens
 
         :param postfix_tokens_1: The first list of tokens in post-order notation
