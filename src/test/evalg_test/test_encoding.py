@@ -83,18 +83,18 @@ class TestBinaryTree(TestCase):
         self.assertIsInstance(result, Digraph)
 
     def test_select_postorder(self):
-        l = self.root.add_left(20)
-        r = self.root.add_right(30)
-        ll = l.add_left(40)
-        lr = l.add_right(50)
-        rl = r.add_left(60)
-        rr = r.add_right(70)
+        left = self.root.add_left(20)
+        right = self.root.add_right(30)
+        ll = left.add_left(40)
+        lr = left.add_right(50)
+        rl = right.add_left(60)
+        rr = right.add_right(70)
         self.assertEqual(self.tree.select_postorder(0), ll)
         self.assertEqual(self.tree.select_postorder(1), lr)
-        self.assertEqual(self.tree.select_postorder(2), l)
+        self.assertEqual(self.tree.select_postorder(2), left)
         self.assertEqual(self.tree.select_postorder(3), rl)
         self.assertEqual(self.tree.select_postorder(4), rr)
-        self.assertEqual(self.tree.select_postorder(5), r)
+        self.assertEqual(self.tree.select_postorder(5), right)
         self.assertEqual(self.tree.select_postorder(6), self.root)
 
     def test_height(self):
@@ -104,30 +104,30 @@ class TestBinaryTree(TestCase):
         tree.root = BinaryTreeNode('*')
         self.assertEqual(tree.height(), 1)
 
-        l = tree.root.add_left(10)
+        left = tree.root.add_left(10)
         self.assertEqual(tree.height(), 2)
-        r = tree.root.add_right(20)
+        right = tree.root.add_right(20)
         self.assertEqual(tree.height(), 2)
 
-        ll = l.add_left(40)
+        ll = left.add_left(40)
         self.assertEqual(tree.height(), 3)
-        lr = l.add_right(50)
+        left.add_right(50)
         self.assertEqual(tree.height(), 3)
-        rl = r.add_left(60)
+        right.add_left(60)
         self.assertEqual(tree.height(), 3)
-        rr = r.add_right(70)
+        right.add_right(70)
         self.assertEqual(tree.height(), 3)
 
-        lll = ll.add_left(80)
+        ll.add_left(80)
         self.assertEqual(tree.height(), 4)
 
     def test_infix_tokens(self):
-        l = self.root.add_left('+')
-        r = self.root.add_right('+')
-        l.add_left('A')
-        l.add_right('B')
-        r.add_left('C')
-        r.add_right('D')
+        left = self.root.add_left('+')
+        right = self.root.add_right('+')
+        left.add_left('A')
+        left.add_right('B')
+        right.add_left('C')
+        right.add_right('D')
 
         tokens = ['(', '(', 'A', '+', 'B', ')', self.tree.root.label, '(', 'C', '+', 'D', ')', ')']
         result = self.tree.infix_tokens()
@@ -138,12 +138,12 @@ class TestBinaryTree(TestCase):
         root = BinaryTreeNode('*')
         tree.root = root
 
-        l = root.add_left('+')
-        r = root.add_right('+')
-        l.add_left('A')
-        l.add_right('B')
-        r.add_left('C')
-        r.add_right('D')
+        left = root.add_left('+')
+        right = root.add_right('+')
+        left.add_left('A')
+        left.add_right('B')
+        right.add_left('C')
+        right.add_right('D')
 
         tokens = ['A', 'B', 'C', tree.root.label, '+', 'D', '+']
         result = tree.postfix_tokens()
@@ -153,12 +153,12 @@ class TestBinaryTree(TestCase):
         root = BinaryTreeNode('+')
         tree.root = root
 
-        l = root.add_left('+')
-        r = root.add_right('+')
-        l.add_left('A')
-        l.add_right('B')
-        r.add_left('C')
-        r.add_right('D')
+        left = root.add_left('+')
+        right = root.add_right('+')
+        left.add_left('A')
+        left.add_right('B')
+        right.add_left('C')
+        right.add_right('D')
 
         tokens = ['A', 'B', '+', 'C', '+', 'D', '+']
         result = tree.postfix_tokens()
