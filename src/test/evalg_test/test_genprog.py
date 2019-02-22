@@ -66,6 +66,7 @@ class TestTreeMutator(TestCase):
         self.assertRaises(TypeError, TreeMutator.mutate, 1)
         self.assertRaises(TypeError, TreeMutator.mutate, True)
 
+
 class TestTreePointMutator(TestCase):
 
     def setUp(self):
@@ -113,7 +114,7 @@ class TestSubTreeExchangeMutator(TestCase):
 
     def test__swap_mut_subtree(self):
         random_tree = BinaryTree()
-        l = random_tree.root = BinaryTreeNode('*')
+        left = random_tree.root = BinaryTreeNode('*')
         ll = random_tree.root.add_left('C')
         lr = random_tree.root.add_right('D')
 
@@ -121,7 +122,7 @@ class TestSubTreeExchangeMutator(TestCase):
         result = SubTreeExchangeMutator._swap_mut_subtree(self.tree, r, random_tree)
         self.assertIsInstance(result, BinaryTree)
         self.assertEqual(result.height(), 3)
-        self.assertEqual(self.tree.root.left, l)
+        self.assertEqual(self.tree.root.left, left)
         self.assertEqual(self.tree.root.left.left, ll)
         self.assertEqual(self.tree.root.left.right, lr)
 
