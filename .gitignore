@@ -103,5 +103,5 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-src/results/*.pdf
-src/results/*.tex
+src/experiments/results/*.pdf
+src/experiments/results/*.tex
