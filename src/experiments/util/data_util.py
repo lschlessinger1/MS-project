@@ -2,6 +2,7 @@ import os
 from abc import ABC
 
 import numpy as np
+from GPy.kern import RBF, RatQuad, StdPeriodic, Linear
 from sklearn.model_selection import train_test_split
 
 from src.autoks.experiment import Experiment
@@ -39,6 +40,39 @@ def run_experiments(ds_generators, grammar, objective, base_kernels=None, **kwar
         experiment.run(title='Random Experiment')
 
 
+def sample_gp(kernel, n_pts=500, noise_var=1):
+    """Sample paths from a GP"""
+    X = np.random.uniform(0., 1., (n_pts, kernel.input_dim))
+
+    # zero-mean
+    prior_mean = np.zeros(n_pts)
+    prior_cov = kernel.K(X)
+
+    # Generate a sample path
+    Z = np.random.multivariate_normal(prior_mean, prior_cov)
+
+    # additive Gaussian noise
+    noise = np.random.randn(n_pts, 1) * np.sqrt(noise_var)
+    y = Z.reshape(-1, 1) + noise
+
+    return X, y
+
+
+def cks_known_kernels():
+    """Duvenaud, et al., 2013 Table 1"""
+    se1 = RBF(1, active_dims=[0])
+    se2 = RBF(1, active_dims=[1])
+    se3 = RBF(1, active_dims=[2])
+    se4 = RBF(1, active_dims=[3])
+    rq1 = RatQuad(1, active_dims=[0])
+    rq2 = RatQuad(1, active_dims=[1])
+    per1 = StdPeriodic(1, active_dims=[0])
+    lin1 = Linear(1, active_dims=[0])
+
+    true_kernels = [se1 + rq1, lin1 * per1, se1 + rq2, se1 + se2 * per1 + se3,
+                    se1 * se2, se1 * se2 + se2 * se3, (se1 + se2) * (se3 + se4)]
+    return true_kernels
+
 class DatasetGenerator:
 
     def gen_dataset(self):
@@ -70,4 +104,16 @@ class FileDatasetGenerator(DatasetGenerator):
         data = np.genfromtxt(self.path, delimiter=',')
         # assume output dimension is 1
         X, y = data[:, :-1], data[:, -1]
+        return X, y
+
+
+class KnownGPGenerator(DatasetGenerator):
+
+    def __init__(self, kernel, noise_var, n_pts=100):
+        self.kernel = kernel
+        self.noise_var = noise_var
+        self.n_pts = n_pts
+
+    def gen_dataset(self):
+        X, y = sample_gp(self.kernel, self.n_pts, self.noise_var)
         return X, y
