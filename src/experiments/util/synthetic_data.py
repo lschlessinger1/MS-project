@@ -195,3 +195,33 @@ class RegressionGenerator(SyntheticDatasetGenerator):
         print('y = f(X) =', pretty_str)
 
         return X, y
+
+
+class BraninGenerator(SyntheticDatasetGenerator):
+
+    def __init__(self, n_samples: int = 25, input_dim: int = 2):
+        super().__init__(n_samples, input_dim)
+
+    @staticmethod
+    def branin(X):
+        """Branin function"""
+        y = (X[:, 1] - 5.1 / (4 * np.pi ** 2) * X[:, 0] ** 2 + 5 * X[:, 0] / np.pi - 6) ** 2
+        y += 10 * (1 - 1 / (8 * np.pi)) * np.cos(X[:, 0]) + 10
+        return y
+
+    def gen_dataset(self):
+        """
+        2-dimensional Branin function defined over [-5, 10] x [0, 15]
+        and a set of 25 observations.
+        """
+
+        # Training set defined as a 5 x 5 square:
+        xg1 = np.linspace(-5, 10, 5)
+        xg2 = np.linspace(0, 15, 5)
+        X = np.zeros((xg1.size * xg2.size, 2))
+        for i, x1 in enumerate(xg1):
+            for j, x2 in enumerate(xg2):
+                X[i + xg1.size * j, :] = [x1, x2]
+
+        y = self.branin(X)[:, None]
+        return X, y
