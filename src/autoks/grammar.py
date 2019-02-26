@@ -162,9 +162,13 @@ class BOMSGrammar(BaseGrammar):
             for k in aks_kernels:
                 k.pretty_print()
 
-        # TODO: perform exploitation and exploration for all kernels
-        # for now, just return a copy of the original kernels
-        new_kernels = aks_kernels.copy()
+        rw_kerns = BOMSGrammar.random_walk_kernels(n_dims, kernel_families)
+        best_kern = sorted(aks_kernels, key=lambda x: x.score, reverse=True)[0]
+        greedy_kerns = BOMSGrammar.greedy_kernels(best_kern, n_dims, kernel_families)
+        # for now, just return all candidates
+        new_kernels = rw_kerns + greedy_kerns
+        new_kernels = remove_duplicate_kernels(new_kernels)
+        new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
             print('Expanded kernels:')
@@ -181,6 +185,45 @@ class BOMSGrammar(BaseGrammar):
         """
         selector = TruncationSelector(self.n_parents)
         return selector.select(active_set, [k.score for k in active_set])
+
+    @staticmethod
+    def random_walk_kernels(n_dims: int, base_kernels: List[str], t_prob: float = 1 / 3., n_walks: int = 15):
+        """Geometric random walk kernels
+
+        :param n_dims:
+        :param base_kernels:
+        :param t_prob: termination probability
+        :param n_walks: number of random walks
+        :return:
+        """
+        # geometric random walk
+        n_steps = np.random.geometric(p=t_prob, size=n_walks)
+        rw_kernels = []
+        for n in n_steps:
+            # first expansion of empty kernel is all 1d kernels
+            kernels = get_all_1d_kernels(base_kernels, n_dims)
+            random_kernel = np.random.choice(kernels)
+            for i in range(1, n):
+                grammar = CKSGrammar(1)
+                kernels = grammar.expand_full_kernel(random_kernel, n_dims, base_kernels)
+                random_kernel = np.random.choice(kernels)
+                rw_kernels.append(random_kernel)
+
+        return rw_kernels
+
+    @staticmethod
+    def greedy_kernels(best_kernel: AKSKernel, n_dims, base_kernels):
+        """
+
+        :param best_kernel:
+        :param n_dims:
+        :param base_kernels:
+        :return:
+        """
+        grammar = CKSGrammar(1)
+        new_kernels = grammar.expand_full_kernel(best_kernel.kernel, n_dims, base_kernels)
+
+        return new_kernels
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
