@@ -37,8 +37,8 @@ class Experiment:
     n_restarts_optimizer: int
 
     def __init__(self, grammar, objective, kernel_families, X_train, y_train, X_test, y_test, standardize_X=True,
-                 standardize_y=True, eval_budget=50, max_depth=10, gp_model=None, debug=False, verbose=False,
-                 optimizer=None, n_restarts_optimizer=10):
+                 standardize_y=True, eval_budget=50, max_depth=10, gp_model=None, additive_form=False, debug=False,
+                 verbose=False, optimizer=None, n_restarts_optimizer=10):
         self.grammar = grammar
         self.objective = objective
         self.kernel_families = kernel_families
@@ -62,6 +62,7 @@ class Experiment:
         self.eval_budget = eval_budget  # number of model evaluations (budget)
         self.max_depth = max_depth
         self.n_evals = 0
+        self.additive_form = additive_form
         self.debug = debug
         self.verbose = verbose
         self.optimizer = optimizer
@@ -100,6 +101,9 @@ class Experiment:
         t_init = time()
         # initialize models
         kernels = self.grammar.initialize(self.kernel_families, n_kernels=self.n_init_kernels, n_dims=self.n_dims)
+        if self.additive_form:
+            for aks_kernel in kernels:
+                aks_kernel.to_additive_form()
 
         self.opt_and_eval_kernels(kernels)
 
@@ -128,6 +132,9 @@ class Experiment:
 
             t0_exp = time()
             new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose)
+            if self.additive_form:
+                for aks_kernel in kernels:
+                    aks_kernel.to_additive_form()
             self.total_expansion_time += time() - t0_exp
 
             kernels += new_kernels

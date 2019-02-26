@@ -40,6 +40,9 @@ class AKSKernel:
         tree = src.evalg.encoding.postfix_tokens_to_binexp_tree(postfix_tokens)
         return tree
 
+    def to_additive_form(self):
+        self.kernel = additive_form(self.kernel)
+
     def pretty_print(self):
         print(str(self))
 
