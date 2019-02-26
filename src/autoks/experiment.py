@@ -31,6 +31,7 @@ class Experiment:
     eval_budget: int
     max_depth: int
     gp_model: GP
+    additive_form: bool
     debug: bool
     verbose: bool
     optimizer: str
