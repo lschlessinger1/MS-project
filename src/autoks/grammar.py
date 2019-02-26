@@ -101,7 +101,9 @@ class EvolutionaryGrammar(BaseGrammar):
 
         # Convert Trees back to GPy kernels, then to AKSKernels
         kernels = [tree_to_kernel(tree) for tree in offspring]
-        new_kernels = [AKSKernel(kernel) for kernel in kernels]
+
+        new_kernels = remove_duplicate_kernels(kernels)
+        new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
             print('Expanded kernels:')
