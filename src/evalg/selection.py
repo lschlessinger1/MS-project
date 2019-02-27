@@ -164,7 +164,7 @@ class TruncationSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population, fitness_list):
+    def select(self, population: np.array, fitness_list: np.array):
         return self._select_helper(population, fitness_list)
 
     def arg_select(self, population: np.array, fitness_list: np.array):
