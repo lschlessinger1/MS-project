@@ -9,6 +9,9 @@ class Selector:
         self.n_individuals = n_individuals
 
     def _select_helper(self, population: np.array, fitness_list: np.array):
+        if population.shape != fitness_list.shape:
+            raise ValueError('population and fitness list must have same shape')
+
         # Select entire population if k > population size
         pop_size = population.shape[0]
         if self.n_individuals >= pop_size:
