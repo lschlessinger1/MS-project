@@ -20,6 +20,9 @@ class QueryStrategy:
     def select(self, kernels: List[AKSKernel], X_train: np.array, y_train: np.array):
         raise NotImplementedError('Method must be implemented in a child class')
 
+    def score_kernels(self, kernels: List[AKSKernel]):
+        return [self.scoring_func(kernel) for kernel in kernels]
+
 
 class NaiveQueryStrategy(QueryStrategy):
 
@@ -36,7 +39,7 @@ class NaiveQueryStrategy(QueryStrategy):
         :param y_train:
         :return:
         """
-        scores = [self.scoring_func(kernel) for kernel in kernels]
+        scores = self.score_kernels(kernels)
         return kernels, scores
 
 
@@ -53,7 +56,7 @@ class BestScoreStrategy(QueryStrategy):
         :param y_train:
         :return:
         """
-        scores = [self.scoring_func(kernel) for kernel in kernels]
+        scores = self.score_kernels(kernels)
         x_star = kernels[int(np.argmax(scores))]
         return x_star, scores
 
