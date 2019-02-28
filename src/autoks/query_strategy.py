@@ -1,64 +1,58 @@
+from abc import ABC
 from typing import Callable, List
 
 import numpy as np
 
 from src.autoks.kernel import AKSKernel
+from src.evalg.selection import Selector, AllSelector
 
 
 # Query Strategies
 
-class QueryStrategy:
+class QueryStrategy(Selector, ABC):
     """Propose a model to evaluate
 
     Given a list of un-evaluated models, a scoring function, and training data
     we return x_star (chosen)
     """
 
-    def __init__(self, scoring_func: Callable):
+    def __init__(self, n_individuals: int, scoring_func: Callable):
+        super().__init__(n_individuals)
         self.scoring_func = scoring_func
 
-    def select(self, kernels: List[AKSKernel], X_train: np.array, y_train: np.array):
-        raise NotImplementedError('Method must be implemented in a child class')
+    def query(self, kernels: List[AKSKernel], X_train: np.array, y_train: np.array):
+        scores = self.score_kernels(kernels)
+        ind = self.arg_select(np.array(kernels), scores)
+        return ind, scores
 
     def score_kernels(self, kernels: List[AKSKernel]):
         return [self.scoring_func(kernel) for kernel in kernels]
 
 
-class NaiveQueryStrategy(QueryStrategy):
+class NaiveQueryStrategy(QueryStrategy, AllSelector):
 
-    def __init__(self, scoring_func: Callable = None):
+    def __init__(self, n_individuals: int = 1, scoring_func: Callable = None):
         if scoring_func is None:
             scoring_func = score_all_same
-        super().__init__(scoring_func)
-
-    def select(self, kernels: List[AKSKernel], X_train: np.array, y_train: np.array):
-        """Select all kernels
-
-        :param kernels:
-        :param X_train:
-        :param y_train:
-        :return:
-        """
-        scores = self.score_kernels(kernels)
-        return kernels, scores
+        super().__init__(n_individuals, scoring_func)
 
 
 class BestScoreStrategy(QueryStrategy):
 
-    def __init__(self, scoring_func: Callable):
-        super().__init__(scoring_func)
+    def __init__(self, scoring_func: Callable, n_individuals: int = 1):
+        super().__init__(n_individuals, scoring_func)
 
-    def select(self, kernels: List[AKSKernel], X_train: np.array, y_train: np.array):
-        """Select best kernel according to scoring func
+    def select(self, population: np.array, scores: np.array):
+        return self._select_helper(population, scores)
 
-        :param kernels:
-        :param X_train:
-        :param y_train:
+    def arg_select(self, population: np.array, scores: np.array):
+        """Select best kernel according to scoring function
+
+        :param population:
+        :param scores:
         :return:
         """
-        scores = self.score_kernels(kernels)
-        x_star = kernels[int(np.argmax(scores))]
-        return x_star, scores
+        return int(np.argmax(scores))
 
 
 # Scoring Functions
