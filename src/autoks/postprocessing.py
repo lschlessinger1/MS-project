@@ -64,7 +64,8 @@ class ExperimentReportGenerator:
         self.X_test = X_test
         self.y_test = y_test
 
-        sorted_aks_kernels = sorted(self.aks_kernels, key=lambda x: x.score, reverse=True)
+        scored_kernels = [kernel for kernel in self.aks_kernels if kernel.scored]
+        sorted_aks_kernels = sorted(scored_kernels, key=lambda k: k.score, reverse=True)
         self.best_aks_kernel = sorted_aks_kernels[0]
         self.best_kernel = self.best_aks_kernel.kernel
         self.best_model = self.experiment.gp_model.__class__(self.X_train, self.y_train, kernel=self.best_kernel)
