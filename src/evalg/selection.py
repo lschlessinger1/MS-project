@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 
 
@@ -5,10 +7,16 @@ class Selector:
 
     def __init__(self, n_individuals: int):
         if n_individuals < 0:
-            raise ValueError('The number of individuals must be nonnegative.')
+            raise ValueError('The number of individuals must be non-negative.')
         self.n_individuals = n_individuals
 
-    def _select_helper(self, population: np.array, fitness_list: np.array):
+    def _select_helper(self, population: np.array, fitness_list: Union[np.array, None]) -> np.array:
+        """Helper function to select from population using a fitness list.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         if fitness_list is not None and len(population) != len(fitness_list):
             raise ValueError('population and fitness list must have same shape')
 
@@ -19,10 +27,22 @@ class Selector:
 
         return population[self.arg_select(population, fitness_list)]
 
-    def select(self, population: np.array, fitness_list: np.array):
+    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Select from population.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         raise NotImplementedError("Implement select in a child class")
 
-    def arg_select(self, population: np.array, fitness_list: np.array):
+    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Select indices from population.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         raise NotImplementedError("Implement arg_select in a child class")
 
     def __repr__(self):
@@ -34,10 +54,22 @@ class AllSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list=None):
+    def select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+        """Select all.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list=None):
+    def arg_select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+        """Select all indices.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return np.arange(population.shape[0])
 
     def __repr__(self):
@@ -49,11 +81,17 @@ class UniformSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list=None):
+    def select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+        """Uniform stochastic selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list=None):
-        """Uniform Stochastic Selection
+    def arg_select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+        """Uniform stochastic selection of indices.
 
         Select the arguments of k individuals
         with replacement from the population uniformly
@@ -72,11 +110,21 @@ class StochasticUnivSampSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list=None):
+    def select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+        """Stochastic universal sampling selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list=None):
-        """ Stochastic Universal Sampling
+    def arg_select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+        """Stochastic universal sampling selection of indices.
+
+        :param population:
+        :param fitness_list:
+        :return:
         """
         raise NotImplementedError("Stochastic Universal Sampling selection is not yet implemented.")
 
@@ -91,11 +139,21 @@ class BoltzmannSelector(Selector):
         self.temperature = temperature
         self.prev_pop_avg = prev_pop_avg
 
-    def select(self, population: np.array, fitness_list=None):
+    def select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+        """Boltzmann selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list=None):
-        """Boltzmann Selection
+    def arg_select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+        """Boltzmann Selection of indices.
+
+        :param population:
+        :param fitness_list:
+        :return:
         """
         raise NotImplementedError("Boltzmann selection is not yet implemented.")
 
@@ -109,11 +167,17 @@ class FitnessProportionalSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: np.array):
+    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Fitness-proportional selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array):
-        """Fitness-Proportional Selection
+    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Fitness-proportional selection of indices.
 
         Select k individuals with replacement from the population
         uniformly at random proportional to the fitness of
@@ -134,11 +198,21 @@ class SigmaScalingSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: np.array):
+    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Sigma scaling selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array):
-        """Sigma scaling selection
+    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Sigma scaling selection of indices.
+
+        :param population:
+        :param fitness_list:
+        :return:
         """
         pop_size = population.shape[0]
         sigma = np.std(fitness_list)
@@ -167,15 +241,19 @@ class TruncationSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: np.array):
+    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Truncation selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array):
-        """Truncation selection
+    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Truncation selection of indices.
 
-        Select k best from population according to fitness_list.
-
-        k: number of individuals
+        Select k best from population according to `fitness_list`.
         """
         ind = np.argpartition(fitness_list, -self.n_individuals)[-self.n_individuals:]
         return ind
@@ -189,11 +267,17 @@ class LinearRankingSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: np.array):
+    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Linear ranking selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array):
-        """Linear Ranking Selection
+    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Linear ranking selection of indices.
 
         Select k individuals with replacement from the population
         uniformly at random proportional to the relative fitness
@@ -219,11 +303,21 @@ class ExponentialRankingSelector(Selector):
             raise ValueError("0 < c < 1 must hold")
         self.c = c
 
-    def select(self, population: np.array, fitness_list: np.array):
+    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Exponential ranking selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array):
-        """Exponential Ranking Selection
+    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Exponential ranking selection of indices.
+
+        :param population:
+        :param fitness_list:
+        :return:
         """
         pop_size = population.shape[0]
         rankings_asc = np.argsort(np.argsort(fitness_list))
@@ -245,11 +339,18 @@ class TournamentSelector(Selector):
             raise ValueError("The number of competitors in the tournament must be greater than 1.")
         self.n_way = n_way
 
-    def select(self, population: np.array, fitness_list: np.array):
+    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Tournament selection.
+
+        :param population:
+        :param fitness_list:
+        :return:
+        """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array):
-        """Tournament Selection
+    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+        """Tournament selection of indices.
+
         Uniformly at random select `n_way` individuals from the
         population then selecting the best (or worst) individual
         from the `n_way` competitors as the winner (or loser). There
