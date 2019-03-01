@@ -1,14 +1,12 @@
-from typing import List
+from typing import List, Type, Union
 
 import numpy as np
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
+from scipy.special import comb
 
 import src.evalg.encoding
 from src.autoks.util import remove_duplicates, argsort
-
-
-# from evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree
 
 
 class AKSKernel:
@@ -34,19 +32,35 @@ class AKSKernel:
         # Update scored as well
         self.scored = True
 
-    def to_binary_tree(self):
+    def to_binary_tree(self) -> src.evalg.encoding.BinaryTree:
+        """Get the binary tree representation of the kernel
+
+        :return:
+        """
         infix_tokens = kernel_to_infix_tokens(self.kernel)
         postfix_tokens = src.evalg.encoding.infix_tokens_to_postfix_tokens(infix_tokens)
         tree = src.evalg.encoding.postfix_tokens_to_binexp_tree(postfix_tokens)
         return tree
 
-    def to_additive_form(self):
+    def to_additive_form(self) -> None:
+        """Convert the kernel to additive form.
+
+        :return:
+        """
         self.kernel = additive_form(self.kernel)
 
-    def pretty_print(self):
+    def pretty_print(self) -> None:
+        """Pretty print the kernel.
+
+        :return:
+        """
         print(str(self))
 
-    def print_full(self):
+    def print_full(self) -> None:
+        """Print the verbose version of the kernel.
+
+        :return:
+        """
         print(kernel_to_infix(self.kernel, show_params=True))
 
     def __str__(self):
@@ -57,20 +71,32 @@ class AKSKernel:
             f'{self.score!r}) '
 
 
-def get_kernel_mapping():
+def get_kernel_mapping() -> dict:
+    """Get the map from allowable kernels to the corresponding class.
+
+    :return:
+    """
     return dict(zip(get_allowable_kernels(), get_matching_kernels()))
 
 
-def get_allowable_kernels():
+def get_allowable_kernels() -> List[str]:
+    """Get all allowable kernel families.
+
+    :return:
+    """
     return ['SE', 'RQ', 'LIN', 'PER']
 
 
-def get_matching_kernels():
+def get_matching_kernels() -> List[Type[Kern]]:
+    """Get all allowable kernel family classes.
+
+    :return:
+    """
     return [RBF, RatQuad, Linear, StdPeriodic]
 
 
-def get_all_1d_kernels(base_kernels: List[str], n_dims: int):
-    """
+def get_all_1d_kernels(base_kernels: List[str], n_dims: int) -> List[Kern]:
+    """Get all possible 1-D kernels.
 
     :param base_kernels:
     :param n_dims: number of dimensions
@@ -88,7 +114,15 @@ def get_all_1d_kernels(base_kernels: List[str], n_dims: int):
     return models
 
 
-def create_1d_kernel(kernel_family: str, active_dim: int, kernel_mapping: dict = None, kernel_map=None):
+def create_1d_kernel(kernel_family: str, active_dim: int, kernel_mapping: dict = None, kernel_map=None) -> Kern:
+    """Create a 1D kernel.
+
+    :param kernel_family:
+    :param active_dim:
+    :param kernel_mapping:
+    :param kernel_map:
+    :return:
+    """
     if not kernel_mapping:
         kernel_mapping = get_kernel_mapping()
         if not kernel_map:
@@ -96,7 +130,13 @@ def create_1d_kernel(kernel_family: str, active_dim: int, kernel_mapping: dict =
     return kernel_map(input_dim=1, active_dims=[active_dim])
 
 
-def subkernel_expression(kernel: Kern, show_params: bool = False):
+def subkernel_expression(kernel: Kern, show_params: bool = False) -> str:
+    """Construct a subkernel expression
+
+    :param kernel:
+    :param show_params:
+    :return:
+    """
     kernel_families = get_allowable_kernels()
     kernel_mapping = get_kernel_mapping()
     matching_base_kerns = [kern_fam for kern_fam in kernel_families if isinstance(kernel, kernel_mapping[kern_fam])]
@@ -113,7 +153,13 @@ def subkernel_expression(kernel: Kern, show_params: bool = False):
     return kern_str
 
 
-def in_order(root: Kern, tokens: list = []):
+def in_order(root: Kern, tokens: list = []) -> List[str]:
+    """In-order traversal of a kernel tree.
+
+    :param root:
+    :param tokens:
+    :return:
+    """
     if root is not None:
         if isinstance(root, CombinationKernel):
 
@@ -146,6 +192,11 @@ def in_order(root: Kern, tokens: list = []):
 
 
 def tokenize(list_nd: list):
+    """Tokenize a list.
+
+    :param list_nd:
+    :return:
+    """
     if not list_nd:
         return []
     if isinstance(list_nd, list):
@@ -153,11 +204,21 @@ def tokenize(list_nd: list):
     return list_nd
 
 
-def flatten(list_nd: list):
+def flatten(list_nd: list) -> list:
+    """Flatten a list.
+
+    :param list_nd:
+    :return:
+    """
     return [list_nd] if not isinstance(list_nd, list) else [x for X in list_nd for x in flatten(X)]
 
 
-def remove_outer_parens(list_nd: list):
+def remove_outer_parens(list_nd: list) -> list:
+    """Remove outer parentheses from a list of tokens
+
+    :param list_nd:
+    :return:
+    """
     if len(list_nd) >= 2:
         if list_nd[0] == '(' and list_nd[-1] == ')':
             return list_nd[1:-1]
@@ -167,7 +228,13 @@ def remove_outer_parens(list_nd: list):
         raise ValueError('List must have length >= 2')
 
 
-def join_operands(operands, operator):
+def join_operands(operands: list, operator: list) -> list:
+    """Join operands using operators
+
+    :param operands:
+    :param operator:
+    :return:
+    """
     joined = []
     for i, operand in enumerate(operands):
         joined += [operand]
@@ -176,7 +243,12 @@ def join_operands(operands, operator):
     return joined
 
 
-def kernel_to_infix_tokens(kernel: Kern):
+def kernel_to_infix_tokens(kernel: Kern) -> List[str]:
+    """Convert kernel to a list of infix tokens.
+
+    :param kernel:
+    :return:
+    """
     in_order_traversal = in_order(kernel, tokens=[])
     infix_tokens = flatten(tokenize(in_order_traversal))
     # for readability, remove outer parentheses
@@ -184,7 +256,13 @@ def kernel_to_infix_tokens(kernel: Kern):
     return infix_tokens
 
 
-def tokens_to_str(tokens: list, show_params: bool = False):
+def tokens_to_str(tokens: list, show_params: bool = False) -> str:
+    """Convert a list of kernel tokens to a string
+
+    :param tokens:
+    :param show_params:
+    :return:
+    """
     token_string = ''
     for i, token in enumerate(tokens):
         if isinstance(token, Kern):
@@ -198,11 +276,24 @@ def tokens_to_str(tokens: list, show_params: bool = False):
     return token_string
 
 
-def kernel_to_infix(kernel: Kern, show_params: bool = False):
+def kernel_to_infix(kernel: Kern, show_params: bool = False) -> str:
+    """Get the infix string of a kernel.
+
+    :param kernel:
+    :param show_params:
+    :return:
+    """
     return tokens_to_str(kernel_to_infix_tokens(kernel), show_params=show_params)
 
 
-def apply_op(left: Kern, right: Kern, operator: str):
+def apply_op(left: Kern, right: Kern, operator: str) -> Kern:
+    """Apply binary operator to two kernels.
+
+    :param left:
+    :param right:
+    :param operator:
+    :return:
+    """
     if operator == '+':
         return left + right
     elif operator == '*':
@@ -211,7 +302,12 @@ def apply_op(left: Kern, right: Kern, operator: str):
         raise ValueError(f'Unknown operator {operator}')
 
 
-def eval_binexp_tree(root: src.evalg.encoding.BinaryTreeNode):
+def eval_binexp_tree(root: src.evalg.encoding.BinaryTreeNode) -> Kern:
+    """Evaluate a binary expression tree.
+
+    :param root:
+    :return:
+    """
     if root is not None:
         if isinstance(root.value, Kern):
             return root.value
@@ -224,12 +320,21 @@ def eval_binexp_tree(root: src.evalg.encoding.BinaryTreeNode):
         return apply_op(left_node, right_node, operator)
 
 
-def tree_to_kernel(tree: src.evalg.encoding.BinaryTree):
+def tree_to_kernel(tree: src.evalg.encoding.BinaryTree) -> Kern:
+    """Convert a binary tree to a kernel.
+
+    :param tree:
+    :return:
+    """
     return eval_binexp_tree(tree.root)
 
 
-def n_base_kernels(kernel: Kern):
-    """Count the number of base kernels."""
+def n_base_kernels(kernel: Kern) -> int:
+    """Count the number of base kernels.
+
+    :param kernel:
+    :return:
+    """
     count = [0]
 
     def count_base_kernels(kern):
@@ -241,8 +346,13 @@ def n_base_kernels(kernel: Kern):
     return count[0]
 
 
-def covariance_distance(kernels: list, X: np.array):
-    """Euclidean distance of all pairs kernels"""
+def covariance_distance(kernels: list, X: np.array) -> np.array:
+    """Euclidean distance of all pairs kernels.
+
+    :param kernels:
+    :param X:
+    :return:
+    """
     # For each pair of kernel matrices, compute Euclidean distance
     n_kernels = len(kernels)
     dists = np.zeros((n_kernels, n_kernels))
@@ -254,16 +364,23 @@ def covariance_distance(kernels: list, X: np.array):
     return dists
 
 
-def kernel_l2_dist(kernel_1: Kern, kernel_2: Kern, X: np.array):
-    """Compute Euclidean distance between two kernel matrices."""
-    dist = np.linalg.norm(kernel_1.K(X) - kernel_2.K(X))
-    return dist
+def kernel_l2_dist(kernel_1: Kern, kernel_2: Kern, X: np.array) -> float:
+    """Euclidean distance between two kernel matrices.
 
-
-def sort_kernel(kernel: Kern):
-    """ Sorts kernel tree
+    :param kernel_1:
+    :param kernel_2:
+    :param X:
+    :return:
     """
+    return np.linalg.norm(kernel_1.K(X, X) - kernel_2.K(X, X))
 
+
+def sort_kernel(kernel: Kern) -> Union[Kern, None]:
+    """Sorts kernel tree.
+
+    :param kernel:
+    :return:
+    """
     if not isinstance(kernel, CombinationKernel):
         return kernel
     elif isinstance(kernel, Kern):
@@ -284,8 +401,12 @@ def sort_kernel(kernel: Kern):
             return k_sorted
 
 
-def sort_combination_kernel(kernel: Kern, new_ops):
-    """ Helper function to sort a combination kernel
+def sort_combination_kernel(kernel: Kern, new_ops: list) -> Kern:
+    """Helper function to sort a combination kernel.
+
+    :param kernel:
+    :param new_ops:
+    :return:
     """
     # first sort by kernel name, then by active dim
     kmap = get_kernel_mapping()
@@ -308,19 +429,30 @@ def sort_combination_kernel(kernel: Kern, new_ops):
     return kernel.__class__(sorted_ops)
 
 
-def remove_duplicate_kernels(kernels: List[Kern]):
-    """ Remove duplicate kernels
+def remove_duplicate_kernels(kernels: List[Kern]) -> List[Kern]:
+    """Remove duplicate kernels.
+
+    :param kernels:
+    :return:
     """
     return remove_duplicates([kernel_to_infix(k) for k in kernels], kernels)
 
 
-def remove_duplicate_aks_kernels(aks_kernels: List[AKSKernel]):
-    """ Remove duplicate AKSKernel's
+def remove_duplicate_aks_kernels(aks_kernels: List[AKSKernel]) -> List[AKSKernel]:
+    """Remove duplicate AKSKernel's.
+
+    :param aks_kernels:
+    :return:
     """
     return remove_duplicates([kernel_to_infix(aks_kernel.kernel) for aks_kernel in aks_kernels], aks_kernels)
 
 
-def additive_form(kernel: Kern):
+def additive_form(kernel: Kern) -> Kern:
+    """Get the additive form of a kernel.
+
+    :param kernel:
+    :return:
+    """
     if isinstance(kernel, Prod):
         # Distribute kernel parts if necessary
         additive_ops = [additive_form(part) for part in kernel.parts]
@@ -350,10 +482,17 @@ def additive_form(kernel: Kern):
         raise TypeError('%s is not a subclass of %s' % (kernel.__class__.__name__, Kern.__name__))
 
 
-def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: int):
-    # convert product into vector
-    # ex: k1 * k1 * k2 * k4 ---> [2, 1, 0, 1]
+def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: int) -> np.array:
+    """Get the vector encoding of an additive part.
 
+    Convert product into vector
+    ex: k1 * k1 * k2 * k4 ---> [2, 1, 0, 1]
+
+    :param additive_part:
+    :param base_kernels:
+    :param n_dims:
+    :return:
+    """
     if isinstance(additive_part, Add):
         raise TypeError('additive_part cannot be a sum')
 
@@ -380,9 +519,13 @@ def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: i
     return vec
 
 
-def kernel_vec_avg_dist(kvecs1: List[np.array], kvecs2: List[np.array]):
-    """Average Euclidean distance between two lists of vectors."""
+def kernel_vec_avg_dist(kvecs1: List[np.array], kvecs2: List[np.array]) -> float:
+    """Average Euclidean distance between two lists of vectors.
 
+    :param kvecs1:
+    :param kvecs2:
+    :return:
+    """
     total_dist = 0
     for kv1 in kvecs1:
         for kv2 in kvecs2:
@@ -395,12 +538,15 @@ def kernel_vec_avg_dist(kvecs1: List[np.array], kvecs2: List[np.array]):
     return avg_dist
 
 
-def all_pairs_avg_dist(kernels: List[Kern], base_kernels: List[str], n_dims: int):
-    """ Calculates the mean distance between all pairs of kernels
+def all_pairs_avg_dist(kernels: List[Kern], base_kernels: List[str], n_dims: int) -> float:
+    """Mean distance between all pairs of kernels.
 
     Can be thought of as a diversity score of a population of kernels
+    :param kernels:
+    :param base_kernels:
+    :param n_dims:
+    :return:
     """
-    from scipy.special import comb
     # first change each kernel into additive form
     additive_kernels = [additive_form(kernel) for kernel in kernels]
 
