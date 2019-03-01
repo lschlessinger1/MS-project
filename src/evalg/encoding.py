@@ -1,13 +1,19 @@
-from typing import List
+from typing import List, Union
 
 from GPy.kern.src.kern import Kern
+from graphviz import Digraph
 
 import src.autoks.kernel
 
 operators = ['+', '*']
 
 
-def val_to_label(value):
+def val_to_label(value) -> str:
+    """Convert value to a string a label.
+
+    :param value:
+    :return:
+    """
     if isinstance(value, Kern):
         return src.autoks.kernel.subkernel_expression(value)
     else:
@@ -15,6 +21,8 @@ def val_to_label(value):
 
 
 class TreeNode:
+    label: str
+
     def __init__(self, value, parent=None):
         self._value = value
         self.label = val_to_label(value)
@@ -46,17 +54,31 @@ class BinaryTreeNode(TreeNode):
         self.right = None
 
     def add_left(self, val):
+        """Add left node.
+
+        :param val:
+        :return:
+        """
         self.left = BinaryTreeNode(val, self)
         return self.left
 
     def add_right(self, val):
+        """Add right node.
+
+        :param val:
+        :return:
+        """
         self.right = BinaryTreeNode(val, self)
         return self.right
 
-    def create_graph(self, graph=None):
+    def create_graph(self, graph: Union[None, Digraph] = None) -> Digraph:
+        """Create a graphviz graph of the binary tree node.
+
+        :param graph:
+        :return:
+        """
         root = self
         if not graph:
-            from graphviz import Digraph
             graph = Digraph()
 
         if root is not None:
@@ -93,11 +115,18 @@ class BinaryTree:
             raise TypeError('root must be a {}'.format(BinaryTreeNode.__name__))
         self.root = root
 
-    def create_graph(self):
+    def create_graph(self) -> Digraph:
+        """Create a graphviz graph of the binary tree.
+
+        :return:
+        """
         return self.root.create_graph()
 
-    def select_postorder(self, node_idx: int):
-        """ Select node from binary tree given postorder index
+    def select_postorder(self, node_idx: int) -> Union[BinaryTreeNode, None]:
+        """Select node from binary tree given postorder index.
+
+        :param node_idx:
+        :return:
         """
         node = self.root
         stack = []
@@ -119,19 +148,41 @@ class BinaryTree:
 
         return None
 
-    def infix(self):
+    def infix(self) -> str:
+        """In-order string representation of the binary tree.
+
+        :return:
+        """
         return self._infix_helper(self.root)
 
-    def height(self):
+    def height(self) -> int:
+        """Height of the tree.
+
+        :return:
+        """
         return self._height_helper(self.root)
 
-    def infix_tokens(self):
+    def infix_tokens(self) -> list:
+        """Infix tokens of the binary tree.
+
+        :return:
+        """
         return self._infix_tokens_helper(self.root)
 
-    def postfix_tokens(self):
+    def postfix_tokens(self) -> list:
+        """Postfix tokens of the binary tree.
+
+        :return:
+        """
         return infix_tokens_to_postfix_tokens(self.infix_tokens())
 
-    def _infix_helper(self, root: BinaryTreeNode, expression=None):
+    def _infix_helper(self, root: BinaryTreeNode, expression: Union[str, None] = None) -> str:
+        """Helper function to get the infix string of a binary tree node.
+
+        :param root:
+        :param expression:
+        :return:
+        """
         if expression is None:
             expression = ''
 
@@ -148,7 +199,13 @@ class BinaryTree:
 
         return expression
 
-    def _infix_tokens_helper(self, root: BinaryTreeNode, tokens=None):
+    def _infix_tokens_helper(self, root: BinaryTreeNode, tokens: list = None) -> list:
+        """Helper function to get the infix tokens of a binary tree node.
+
+        :param root:
+        :param tokens:
+        :return:
+        """
         if tokens is None:
             tokens = []
 
@@ -165,7 +222,12 @@ class BinaryTree:
 
         return tokens
 
-    def _height_helper(self, node: BinaryTreeNode):
+    def _height_helper(self, node: BinaryTreeNode) -> int:
+        """Helper function to get the height of a binary tree node.
+
+        :param node:
+        :return:
+        """
         if node is None:
             return 0
 
@@ -182,7 +244,12 @@ class BinaryTree:
         return f'{self.__class__.__name__}('f'root={self.root!r})'
 
 
-def postfix_tokens_to_binexp_tree(postfix_tokens: List[str]):
+def postfix_tokens_to_binexp_tree(postfix_tokens: List[str]) -> BinaryTree:
+    """Convert postfix tokens to a binary tree.
+
+    :param postfix_tokens:
+    :return:
+    """
     tree = BinaryTree()
 
     root = BinaryTreeNode(postfix_tokens[-1])
@@ -203,7 +270,12 @@ def postfix_tokens_to_binexp_tree(postfix_tokens: List[str]):
     return tree
 
 
-def infix_tokens_to_postfix_tokens(infix_tokens: List[str]):
+def infix_tokens_to_postfix_tokens(infix_tokens: List[str]) -> list:
+    """Convert infix tokens to postfix tokens.
+
+    :param infix_tokens:
+    :return:
+    """
     pemdas = {}
     pemdas["*"] = 3
     pemdas["+"] = 1
