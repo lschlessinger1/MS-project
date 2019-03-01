@@ -1,6 +1,6 @@
 import warnings
 from time import time
-from typing import Callable, List
+from typing import Callable, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -108,8 +108,8 @@ class Experiment:
         else:
             self.query_strat = NaiveQueryStrategy()
 
-    def kernel_search(self):
-        """ Perform automated kernel search
+    def kernel_search(self) -> List[AKSKernel]:
+        """Perform automated kernel search
 
         :return: list of kernels
         """
@@ -152,7 +152,14 @@ class Experiment:
 
         return kernels
 
-    def query_kernels(self, kernels, query_strategy: QueryStrategy):
+    def query_kernels(self, kernels: List[AKSKernel], query_strategy: QueryStrategy) -> Tuple[List[AKSKernel],
+                                                                                              List[int], List[float]]:
+        """Select kernels using the acquisition function of the query strategy.
+
+        :param kernels:
+        :param query_strategy:
+        :return:
+        """
         unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
         ind, acq_scores = query_strategy.query(unscored_kernels, self.X_train, self.y_train)
         selected_kernels = query_strategy.select(np.array(unscored_kernels), acq_scores)
@@ -168,8 +175,12 @@ class Experiment:
 
         return selected_kernels, ind, acq_scores
 
-    def select_parents(self, kernels):
-        # Get next round of kernels
+    def select_parents(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+        """Choose parents to later expand.
+
+        :param kernels:
+        :return:
+        """
         scored_kernels = [kernel for kernel in kernels if kernel.scored]
         parents = self.grammar.select_parents(np.array(scored_kernels)).tolist()
         # Print parent (seed) kernels
@@ -185,7 +196,12 @@ class Experiment:
 
         return parents
 
-    def propose_new_kernels(self, parents):
+    def propose_new_kernels(self, parents: List[AKSKernel]) -> List[AKSKernel]:
+        """Propose new kernels using the grammar given a list of parent kernels.
+
+        :param parents:
+        :return:
+        """
         t0_exp = time()
         new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose)
         self.total_expansion_time += time() - t0_exp
@@ -196,12 +212,19 @@ class Experiment:
 
         return new_kernels
 
-    def prune_kernels(self, kernels, acq_scores, ind):
-        # Prune un-evaluated kernels if necessary
-        # acquisition scores of un-scored kernels
-        acq_scores_unevaluated = [s for i, s in enumerate(acq_scores) if i not in ind]
+    def prune_kernels(self, kernels: List[AKSKernel], acq_scores: List[float], ind: List[int]) -> List[AKSKernel]:
+        """Remove un-evaluated kernels if necessary.
+
+        :param kernels:
+        :param acq_scores:
+        :param ind:
+        :return:
+        """
         scored_kernels = [kernel for kernel in kernels if kernel.scored]
         unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
+
+        # acquisition scores of un-scored kernels
+        acq_scores_unevaluated = [s for i, s in enumerate(acq_scores) if i not in ind]
 
         pruned_candidates = self.grammar.prune_candidates(np.array(unscored_kernels),
                                                           acq_scores_unevaluated).tolist()
@@ -214,8 +237,12 @@ class Experiment:
 
         return kernels
 
-    def select_offspring(self, kernels):
-        # Select next round of kernels
+    def select_offspring(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+        """Select next round of kernels.
+
+        :param kernels:
+        :return:
+        """
         offspring = self.grammar.select_offspring(np.array(kernels)).tolist()
 
         if self.verbose:
@@ -223,13 +250,12 @@ class Experiment:
 
         return offspring
 
-    def opt_and_eval_kernels(self, kernels: List[AKSKernel]):
-        """ Optimize and evaluate kernels
+    def opt_and_eval_kernels(self, kernels: List[AKSKernel]) -> None:
+        """Optimize and evaluate all kernels
 
         :param kernels:
         :return:
         """
-        # kernels = self.remove_nan_scored_kernels(kernels)
 
         for aks_kernel in kernels:
             t0 = time()
@@ -252,7 +278,12 @@ class Experiment:
             for k in sorted(kernels, key=lambda x: (x.score is not None, x.score), reverse=True):
                 print(str(k), 'score:', k.score)
 
-    def optimize_kernel(self, aks_kernel: AKSKernel):
+    def optimize_kernel(self, aks_kernel: AKSKernel) -> None:
+        """Optimize the hyperparameters of the kernel
+
+        :param aks_kernel:
+        :return:
+        """
         if not aks_kernel.scored:
             try:
                 kernel = aks_kernel.kernel
@@ -281,7 +312,12 @@ class Experiment:
             except LinAlgError:
                 warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
 
-    def evaluate_kernel(self, aks_kernel: AKSKernel):
+    def evaluate_kernel(self, aks_kernel: AKSKernel) -> None:
+        """Evaluate a given kernel using the objective function
+
+        :param aks_kernel:
+        :return:
+        """
         if not aks_kernel.scored:
             set_model_kern(self.gp_model, aks_kernel.kernel)
 
@@ -297,10 +333,20 @@ class Experiment:
                 # also count a nan-scored kernel as an evaluation
                 self.n_evals += 1
 
-    def remove_nan_scored_kernels(self, aks_kernels: List[AKSKernel]):
+    def remove_nan_scored_kernels(self, aks_kernels: List[AKSKernel]) -> List[AKSKernel]:
+        """Remove all kernels that have NaN scores.
+
+        :param aks_kernels:
+        :return:
+        """
         return [aks_kernel for aks_kernel in aks_kernels if not aks_kernel.nan_scored]
 
-    def summarize(self, aks_kernels: List[AKSKernel]):
+    def summarize(self, aks_kernels: List[AKSKernel]) -> None:
+        """Summarize the experiment.
+
+        :param aks_kernels:
+        :return:
+        """
         scored_kernels = [kernel for kernel in aks_kernels if kernel.scored]
         sorted_aks_kernels = sorted(scored_kernels, key=lambda x: x.score, reverse=True)
         best_aks_kernel = sorted_aks_kernels[0]
@@ -360,7 +406,14 @@ class Experiment:
         print('RMSE RBF = %.3f' % se_rmse)
         print('RMSE k-NN = %.3f' % knn_rmse)
 
-    def run(self, summarize: bool = True, create_report: bool = True, **kwargs):
+    def run(self, summarize: bool = True, create_report: bool = True, **kwargs) -> List[AKSKernel]:
+        """Run the kernel search and optionally summarize and create a report
+
+        :param summarize:
+        :param create_report:
+        :param kwargs:
+        :return:
+        """
         aks_kernels = self.kernel_search()
         if summarize:
             self.summarize(aks_kernels)
@@ -374,24 +427,24 @@ class Experiment:
 
         return aks_kernels
 
-    def plot_best_scores(self):
-        """ Plot the best models scores
+    def plot_best_scores(self) -> None:
+        """Plot the best models scores
 
         :return:
         """
         plot_best_so_far(self.best_scores)
         plt.show()
 
-    def plot_score_summary(self):
-        """ Plot a summary of model scores
+    def plot_score_summary(self) -> None:
+        """Plot a summary of model scores
 
         :return:
         """
         plot_distribution(self.mean_scores, self.std_scores, self.best_scores)
         plt.show()
 
-    def plot_n_hyperparams_summary(self):
-        """ Plot a summary of the number of hyperparameters
+    def plot_n_hyperparams_summary(self) -> None:
+        """Plot a summary of the number of hyperparameters
 
         :return:
         """
@@ -399,8 +452,8 @@ class Experiment:
                           value_name='median', metric_name='# Hyperparameters')
         plt.show()
 
-    def plot_n_operands_summary(self):
-        """ Plot a summary of the number of operands
+    def plot_n_operands_summary(self) -> None:
+        """Plot a summary of the number of operands
 
         :return:
         """
@@ -408,17 +461,27 @@ class Experiment:
                           metric_name='# Operands')
         plt.show()
 
-    def plot_cov_dist_summary(self):
-        """Plot a summary of the homogeneity of models over each generation."""
+    def plot_cov_dist_summary(self) -> None:
+        """Plot a summary of the homogeneity of models over each generation.
+
+        :return:
+        """
         plot_distribution(self.mean_cov_dists, self.std_cov_dists, metric_name='covariance distance')
         plt.show()
 
-    def plot_kernel_diversity_summary(self):
-        """Plot a summary of the diversity of models over each generation."""
+    def plot_kernel_diversity_summary(self) -> None:
+        """Plot a summary of the diversity of models over each generation.
+
+        :return:
+        """
         plot_distribution(self.diversity_scores, metric_name='diversity', value_name='population')
         plt.show()
 
-    def get_timing_report(self):
+    def get_timing_report(self) -> Tuple[List[str], np.array, np.array]:
+        """Get the runtime report of the kernel search.
+
+        :return:
+        """
         eval_time = self.total_eval_time
         opt_time = self.total_optimization_time
         expansion_time = self.total_expansion_time
@@ -431,15 +494,18 @@ class Experiment:
 
         return labels, x, x_pct
 
-    def timing_report(self):
-        """Print a runtime report of the kernel search."""
+    def timing_report(self) -> None:
+        """Print a runtime report of the kernel search.
+
+        :return:
+        """
         labels, x, x_pct = self.get_timing_report()
         print('Runtimes:')
         for pct, sec, label in sorted(zip(x_pct, x, labels), key=lambda v: v[1], reverse=True):
             print('%s: %0.2f%% (%0.2fs)' % (label, pct, sec))
 
-    def update_stats(self, kernels: List[AKSKernel]):
-        """ Update kernel population statistics
+    def update_stats(self, kernels: List[AKSKernel]) -> None:
+        """Update kernel population statistics
 
         :param kernels:
         :return:
