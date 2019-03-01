@@ -1,11 +1,16 @@
-from typing import List
+from typing import List, Callable, Tuple
 
 import numpy as np
 
 
 # Decorators
 
-def check_gte_two_parents(f):
+def check_gte_two_parents(f: Callable) -> Callable:
+    """Check for at least two parents.
+
+    :param f:
+    :return:
+    """
     def wrapper(self, parents):
         if len(parents) < 2:
             raise ValueError('At least two parents are required.')
@@ -14,7 +19,12 @@ def check_gte_two_parents(f):
     return wrapper
 
 
-def check_two_parents(f):
+def check_two_parents(f: Callable) -> Callable:
+    """Check for exactly two parents.
+
+    :param f:
+    :return:
+    """
     def wrapper(self, parents):
         if len(parents) != 2:
             raise ValueError('Exactly two parents are required.')
@@ -26,15 +36,24 @@ def check_two_parents(f):
 class Recombinator:
 
     @check_gte_two_parents
-    def crossover(self, parents: list):
+    def crossover(self, parents: list) -> list:
+        """Crossover all parents.
+
+        :param parents:
+        :return:
+        """
         raise NotImplementedError("crossover must be implemented in a child class")
 
 
 class OnePointBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents: List[np.array]):
-        """One-point crossover."""
+    def crossover(self, parents: List[np.array]) -> Tuple[np.array, np.array]:
+        """One-point crossover.
+
+        :param parents:
+        :return:
+        """
         parent_1 = parents[0]
         parent_2 = parents[1]
         gene_size = parent_1.size
@@ -49,8 +68,12 @@ class OnePointBinaryRecombinator(Recombinator):
 class TwoPointBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents: List[np.array]):
-        """Two-point crossover."""
+    def crossover(self, parents: List[np.array]) -> List[np.array]:
+        """Two-point crossover.
+
+        :param parents:
+        :return:
+        """
         recombinator = NPointBinaryRecombinator(n_points=2)
         return recombinator.crossover(parents)
 
@@ -63,8 +86,12 @@ class NPointBinaryRecombinator(Recombinator):
         self.n_points = n_points
 
     @check_two_parents
-    def crossover(self, parents: List[np.array]):
-        """n-point crossover"""
+    def crossover(self, parents: List[np.array]) -> Tuple[np.array, np.array]:
+        """n-point crossover.
+
+        :param parents:
+        :return:
+        """
         # TODO: use np.where instead
         parent_1 = parents[0]
         parent_2 = parents[1]
@@ -92,6 +119,10 @@ class NPointBinaryRecombinator(Recombinator):
 class UniformBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents: List[np.array]):
-        """Uniform crossover."""
+    def crossover(self, parents: List[np.array]) -> Tuple[np.array, np.array]:
+        """Uniform crossover.
+
+        :param parents:
+        :return:
+        """
         raise NotImplementedError("crossover_uniform not yet implemented")
