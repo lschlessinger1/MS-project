@@ -43,11 +43,13 @@ class TestBaseGrammar(TestCase):
 
     def setUp(self):
         self.k = 4
-        self.grammar = BaseGrammar(self.k)
+        self.max_candidates = 100
+        self.max_offspring = 1000
+        self.grammar = BaseGrammar(self.k, self.max_candidates, self.max_offspring)
 
     def test_initialize(self):
         with self.assertRaises(NotImplementedError):
-            self.grammar.initialize('', '', '')
+            self.grammar.initialize(['SE', 'RQ'], 10, 1)
 
     def test_expand(self):
         with self.assertRaises(NotImplementedError):
@@ -66,7 +68,8 @@ class TestCKSGrammar(TestCase):
 
     def setUp(self):
         self.k = 4
-        self.grammar = CKSGrammar(self.k)
+        self.operators = ['+', '*']
+        self.grammar = CKSGrammar(self.k, 100, 1000)
         self.se0 = RBF(1, active_dims=[0])
         self.se1 = RBF(1, active_dims=[1])
         self.rq0 = RatQuad(1, active_dims=[0])
@@ -75,7 +78,7 @@ class TestCKSGrammar(TestCase):
     def test_expand_single_kernel(self):
         # first, test 1d expansion of base kernel
         k = self.se0
-        result = self.grammar.expand_single_kernel(k, 2, ['SE', 'RQ'])
+        result = self.grammar.expand_single_kernel(k, 2, ['SE', 'RQ'], self.operators)
 
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
                         self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
@@ -87,7 +90,7 @@ class TestCKSGrammar(TestCase):
 
         # test combination kernel expansion
         k = self.se1 * self.rq1
-        result = self.grammar.expand_single_kernel(k, 2, ['SE', 'RQ'])
+        result = self.grammar.expand_single_kernel(k, 2, ['SE', 'RQ'], self.operators)
 
         kernel_types = [self.se1 * self.rq1 + self.se0, self.se1 * self.rq1 + self.rq0,
                         self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,
@@ -101,7 +104,7 @@ class TestCKSGrammar(TestCase):
     def test_expand_full_kernel(self):
         # first, test 1d expansion of base kernel
         k = self.se0
-        result = self.grammar.expand_full_kernel(k, 2, ['SE', 'RQ'])
+        result = self.grammar.expand_full_kernel(k, 2, ['SE', 'RQ'], self.operators)
 
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
                         self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
@@ -113,7 +116,7 @@ class TestCKSGrammar(TestCase):
 
         # test combination kernel expansion
         k = self.se1 * self.rq1
-        result = self.grammar.expand_full_kernel(k, 2, ['SE', 'RQ'])
+        result = self.grammar.expand_full_kernel(k, 2, ['SE', 'RQ'], self.operators)
 
         kernel_types = [self.se1 * self.rq1 + self.se0, self.se1 * self.rq1 + self.rq0,
                         self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,

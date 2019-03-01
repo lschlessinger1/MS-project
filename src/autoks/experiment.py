@@ -15,6 +15,7 @@ from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplic
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
+from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy
 from src.evalg.plotting import plot_best_so_far, plot_distribution
 
 
@@ -30,6 +31,8 @@ class Experiment:
     standardize_y: bool
     eval_budget: int
     max_depth: int
+    init_query_strat: QueryStrategy
+    query_strat: QueryStrategy
     gp_model: GP
     additive_form: bool
     debug: bool
@@ -38,8 +41,9 @@ class Experiment:
     n_restarts_optimizer: int
 
     def __init__(self, grammar, objective, kernel_families, X_train, y_train, X_test, y_test, standardize_X=True,
-                 standardize_y=True, eval_budget=50, max_depth=10, gp_model=None, additive_form=False, debug=False,
-                 verbose=False, optimizer=None, n_restarts_optimizer=10):
+                 standardize_y=True, eval_budget=50, max_depth=10, gp_model=None, init_query_strat=None,
+                 query_strat=None, additive_form=False, debug=False, verbose=False, optimizer=None,
+                 n_restarts_optimizer=10):
         self.grammar = grammar
         self.objective = objective
         self.kernel_families = kernel_families
@@ -94,19 +98,33 @@ class Experiment:
             # default model is GP Regression
             self.gp_model = GPRegression(self.X_train, self.y_train)
 
+        if init_query_strat is not None:
+            self.init_query_strat = init_query_strat
+        else:
+            self.init_query_strat = NaiveQueryStrategy()
+
+        if query_strat is not None:
+            self.query_strat = query_strat
+        else:
+            self.query_strat = NaiveQueryStrategy()
+
     def kernel_search(self):
         """ Perform automated kernel search
 
         :return: list of kernels
         """
         t_init = time()
+
         # initialize models
         kernels = self.grammar.initialize(self.kernel_families, n_kernels=self.n_init_kernels, n_dims=self.n_dims)
+
+        # convert to additive form if necessary
         if self.additive_form:
             for aks_kernel in kernels:
                 aks_kernel.to_additive_form()
 
-        self.opt_and_eval_kernels(kernels)
+        selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat)
+        self.opt_and_eval_kernels(selected_kernels)
 
         depth = 0
         while self.n_evals < self.eval_budget:
@@ -117,46 +135,93 @@ class Experiment:
                 print('Starting iteration %d/%d' % (depth, self.max_depth))
                 print('Evaluated %d/%d kernels' % (self.n_evals, self.eval_budget))
 
-            # Get next round of kernels
-            parents = self.grammar.select_parents(np.array(kernels)).tolist()
-
-            # Print parent (seed) kernels
-            if self.debug:
-                n_parents = len(parents)
-                print('Best (%d) kernel%s:' % (n_parents, 's' if n_parents > 1 else ''))
-                for parent in parents:
-                    parent.pretty_print()
-
-            # Fix each parent before expansion for use in optimization, skipping nan-scored kernels
-            for parent in self.remove_nan_scored_kernels(parents):
-                parent.kernel.fix()
-
-            t0_exp = time()
-            new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose)
-            if self.additive_form:
-                for aks_kernel in kernels:
-                    aks_kernel.to_additive_form()
-            self.total_expansion_time += time() - t0_exp
-
+            new_kernels = self.propose_new_kernels(self.select_parents(kernels))
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
             kernels = remove_duplicate_aks_kernels(kernels)
 
-            self.opt_and_eval_kernels(kernels)
+            selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat)
+            self.opt_and_eval_kernels(selected_kernels)
 
-            if self.verbose:
-                print('Printing all results')
-                for k in sorted(kernels, key=lambda x: x.score, reverse=True):
-                    print(str(k), 'score:', k.score)
-
-            # Select next round of kernels
-            kernels = self.grammar.select_offspring(np.array(kernels)).tolist()
-
+            kernels = self.prune_kernels(kernels, acq_scores, ind)
+            kernels = self.select_offspring(kernels)
             depth += 1
 
         self.total_kernel_search_time += time() - t_init
+
         return kernels
+
+    def query_kernels(self, kernels, query_strategy: QueryStrategy):
+        unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
+        ind, acq_scores = query_strategy.query(unscored_kernels, self.X_train, self.y_train)
+        selected_kernels = query_strategy.select(np.array(unscored_kernels), acq_scores)
+
+        if self.verbose:
+            n_selected = len(ind)
+            plural_suffix = 's' if n_selected > 1 or n_selected == 0 else None
+            print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')
+
+            acq_scores_selected = [s for i, s in enumerate(acq_scores) if i in ind]
+            for kern, score in zip(selected_kernels, acq_scores_selected):
+                print(str(kern), 'score:', score)
+
+        return selected_kernels, ind, acq_scores
+
+    def select_parents(self, kernels):
+        # Get next round of kernels
+        scored_kernels = [kernel for kernel in kernels if kernel.scored]
+        parents = self.grammar.select_parents(np.array(scored_kernels)).tolist()
+        # Print parent (seed) kernels
+        if self.debug:
+            n_parents = len(parents)
+            print('Parent (%d) kernel%s:' % (n_parents, 's' if n_parents > 1 else ''))
+            for parent in parents:
+                parent.pretty_print()
+
+        # Fix each parent before expansion for use in optimization, skipping nan-scored kernels
+        for parent in self.remove_nan_scored_kernels(parents):
+            parent.kernel.fix()
+
+        return parents
+
+    def propose_new_kernels(self, parents):
+        t0_exp = time()
+        new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose)
+        self.total_expansion_time += time() - t0_exp
+
+        if self.additive_form:
+            for aks_kernel in new_kernels:
+                aks_kernel.to_additive_form()
+
+        return new_kernels
+
+    def prune_kernels(self, kernels, acq_scores, ind):
+        # Prune un-evaluated kernels if necessary
+        # acquisition scores of un-scored kernels
+        acq_scores_unevaluated = [s for i, s in enumerate(acq_scores) if i not in ind]
+        scored_kernels = [kernel for kernel in kernels if kernel.scored]
+        unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
+
+        pruned_candidates = self.grammar.prune_candidates(np.array(unscored_kernels),
+                                                          acq_scores_unevaluated).tolist()
+        kernels = scored_kernels + pruned_candidates
+
+        if self.verbose:
+            n_before_prune = len(unscored_kernels)
+            n_pruned = n_before_prune - len(pruned_candidates)
+            print(f'Grammar pruner removed {n_pruned}/{n_before_prune} un-evaluated kernels')
+
+        return kernels
+
+    def select_offspring(self, kernels):
+        # Select next round of kernels
+        offspring = self.grammar.select_offspring(np.array(kernels)).tolist()
+
+        if self.verbose:
+            print(f'Offspring selector kept {len(kernels)}/{len(offspring)} kernels')
+
+        return offspring
 
     def opt_and_eval_kernels(self, kernels: List[AKSKernel]):
         """ Optimize and evaluate kernels
@@ -180,6 +245,12 @@ class Experiment:
 
         kernels = self.remove_nan_scored_kernels(kernels)
         self.update_stats(kernels)
+
+        if self.verbose:
+            print('Printing all results')
+            # Sort kernels by scores with un-scored kernels last
+            for k in sorted(kernels, key=lambda x: (x.score is not None, x.score), reverse=True):
+                print(str(k), 'score:', k.score)
 
     def optimize_kernel(self, aks_kernel: AKSKernel):
         if not aks_kernel.scored:
@@ -230,7 +301,8 @@ class Experiment:
         return [aks_kernel for aks_kernel in aks_kernels if not aks_kernel.nan_scored]
 
     def summarize(self, aks_kernels: List[AKSKernel]):
-        sorted_aks_kernels = sorted(aks_kernels, key=lambda x: x.score, reverse=True)
+        scored_kernels = [kernel for kernel in aks_kernels if kernel.scored]
+        sorted_aks_kernels = sorted(scored_kernels, key=lambda x: x.score, reverse=True)
         best_aks_kernel = sorted_aks_kernels[0]
         best_kernel = best_aks_kernel.kernel
         best_model = self.gp_model.__class__(self.X_train, self.y_train, kernel=best_kernel)
@@ -373,26 +445,28 @@ class Experiment:
         :return:
         """
         if len(kernels) > 0:
-            model_scores = np.array([k.score for k in kernels])
+            scored_kernels = [kernel for kernel in kernels if kernel.scored]
+            model_scores = np.array([k.score for k in scored_kernels])
             score_argmax = np.argmax(model_scores)
             self.best_scores.append(model_scores[score_argmax])
             self.mean_scores.append(np.mean(model_scores))
             self.std_scores.append(np.std(model_scores))
 
-            n_params = np.array([aks_kernel.kernel.param_array.size for aks_kernel in kernels])
+            n_params = np.array([aks_kernel.kernel.param_array.size for aks_kernel in scored_kernels])
             self.median_n_hyperparameters.append(np.median(n_params))
             self.std_n_hyperparameters.append(np.std(n_params))
             self.best_n_hyperparameters.append(n_params[score_argmax])
 
-            n_operands = np.array([n_base_kernels(aks_kernel.kernel) for aks_kernel in kernels])
+            n_operands = np.array([n_base_kernels(aks_kernel.kernel) for aks_kernel in scored_kernels])
             self.median_n_operands.append(np.median(n_operands))
             self.std_n_operands.append(np.std(n_operands))
             self.best_n_operands.append(n_operands[score_argmax])
 
-            cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in kernels], self.X_train)
+            cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in scored_kernels], self.X_train)
             self.mean_cov_dists.append(np.mean(cov_dists))
             self.std_cov_dists.append(np.std(cov_dists))
 
-            diversity_score = all_pairs_avg_dist([aks_kernel.kernel for aks_kernel in kernels], self.kernel_families,
-                                                 self.n_dims)
-            self.diversity_scores.append(diversity_score)
+            if len(scored_kernels) > 1:
+                diversity_score = all_pairs_avg_dist([aks_kernel.kernel for aks_kernel in scored_kernels],
+                                                     self.kernel_families, self.n_dims)
+                self.diversity_scores.append(diversity_score)

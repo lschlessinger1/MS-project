@@ -10,10 +10,13 @@ from src.evalg.vary import PopulationOperator
 
 
 class BaseGrammar:
+    DEFAULT_OPERATORS = ['+', '*']
 
-    def __init__(self, n_parents: int):
-        self.n_parents = n_parents
-        self.operators = ['+', '*']
+    def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
+        self.n_parents = n_parents  # number of parents to expand each round
+        self.max_candidates = max_candidates  # Max. number of un-evaluated models to keep each round
+        self.max_offspring = max_offspring  # Max. number of models to keep each round
+        self.operators = BaseGrammar.DEFAULT_OPERATORS
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         """ Initialize kernels
@@ -43,7 +46,7 @@ class BaseGrammar:
         :return:
         """
         selector = TruncationSelector(self.n_parents)
-        return selector.select(kernels, [k.score for k in kernels])
+        return selector.select(kernels, np.array([k.score for k in kernels]))
 
     def select_offspring(self, kernels: List[AKSKernel]):
         """ Select next round of models (default is select all)
@@ -51,7 +54,18 @@ class BaseGrammar:
         :param kernels:
         :return:
         """
-        selector = AllSelector(self.n_parents)
+        selector = AllSelector(self.max_offspring)
+        return selector.select(kernels)
+
+    def prune_candidates(self, kernels: List[AKSKernel], acq_scores):
+        """
+
+        :param kernels:
+        :param acq_scores:
+        :return:
+        """
+        # by default, we have no pruning
+        selector = AllSelector(self.max_candidates)
         return selector.select(kernels)
 
     def __repr__(self):
@@ -60,9 +74,9 @@ class BaseGrammar:
 
 class EvolutionaryGrammar(BaseGrammar):
 
-    def __init__(self, n_parents: int, population_operator: PopulationOperator, parent_selector: Selector,
-                 offspring_selector: Selector):
-        super().__init__(n_parents)
+    def __init__(self, n_parents: int, max_candidates: int, max_offspring: int, population_operator: PopulationOperator,
+                 parent_selector: Selector, offspring_selector: Selector):
+        super().__init__(n_parents, max_candidates, max_offspring)
         self.population_operator = population_operator
         self.parent_selector = parent_selector
         self.offspring_selector = offspring_selector
@@ -106,7 +120,7 @@ class EvolutionaryGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            print('Expanded kernels:')
+            print(f'{len(new_kernels)} Newly expanded kernels:')
             for k in new_kernels:
                 k.pretty_print()
 
@@ -127,8 +141,8 @@ class BOMSGrammar(BaseGrammar):
     Bayesian optimization for automated model selection (Malkomes et al., 2016)
     """
 
-    def __init__(self, n_parents: int = 600):
-        super().__init__(n_parents)
+    def __init__(self, n_parents: int = 1, max_candidates: int = 600, max_offspring: int = 1000):
+        super().__init__(n_parents, max_candidates, max_offspring)
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         """ Initialize kernels according to number of dimensions
@@ -163,15 +177,18 @@ class BOMSGrammar(BaseGrammar):
                 k.pretty_print()
 
         rw_kerns = BOMSGrammar.random_walk_kernels(n_dims, kernel_families)
-        best_kern = sorted(aks_kernels, key=lambda x: x.score, reverse=True)[0]
+
+        scored_kernels = [kernel for kernel in aks_kernels if kernel.scored]
+        best_kern = sorted(scored_kernels, key=lambda x: x.score, reverse=True)[0]
         greedy_kerns = BOMSGrammar.greedy_kernels(best_kern, n_dims, kernel_families)
+
         # for now, just return all candidates
         new_kernels = rw_kerns + greedy_kerns
         new_kernels = remove_duplicate_kernels(new_kernels)
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            print('Expanded kernels:')
+            print(f'{len(new_kernels)} Newly expanded kernels:')
             for k in new_kernels:
                 k.pretty_print()
 
@@ -183,8 +200,14 @@ class BOMSGrammar(BaseGrammar):
         :param active_set:
         :return:
         """
-        selector = TruncationSelector(self.n_parents)
-        return selector.select(active_set, [k.score for k in active_set])
+        selector = TruncationSelector(self.max_offspring)
+        # prioritize keeping scored models
+        augmented_scores = [k.score if k.scored and not k.nan_scored else -np.inf for k in active_set]
+        return selector.select(active_set, augmented_scores)
+
+    def prune_candidates(self, kernels: List[AKSKernel], acq_scores):
+        selector = TruncationSelector(self.max_candidates)
+        return selector.select(kernels, np.array(acq_scores))
 
     @staticmethod
     def random_walk_kernels(n_dims: int, base_kernels: List[str], t_prob: float = 1 / 3., n_walks: int = 15):
@@ -204,8 +227,8 @@ class BOMSGrammar(BaseGrammar):
             kernels = get_all_1d_kernels(base_kernels, n_dims)
             random_kernel = np.random.choice(kernels)
             for i in range(1, n):
-                grammar = CKSGrammar(1)
-                kernels = grammar.expand_full_kernel(random_kernel, n_dims, base_kernels)
+                kernels = CKSGrammar.expand_full_kernel(random_kernel, n_dims, base_kernels,
+                                                        BaseGrammar.DEFAULT_OPERATORS)
                 random_kernel = np.random.choice(kernels)
                 rw_kernels.append(random_kernel)
 
@@ -220,8 +243,8 @@ class BOMSGrammar(BaseGrammar):
         :param base_kernels:
         :return:
         """
-        grammar = CKSGrammar(1)
-        new_kernels = grammar.expand_full_kernel(best_kernel.kernel, n_dims, base_kernels)
+        new_kernels = CKSGrammar.expand_full_kernel(best_kernel.kernel, n_dims, base_kernels,
+                                                    CKSGrammar.DEFAULT_OPERATORS)
 
         return new_kernels
 
@@ -234,8 +257,8 @@ class CKSGrammar(BaseGrammar):
     Structure Discovery in Nonparametric Regression through Compositional Kernel Search (Duvenaud et al., 2013)
     """
 
-    def __init__(self, n_parents: int):
-        super().__init__(n_parents)
+    def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
+        super().__init__(n_parents, max_candidates, max_offspring)
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         """ Initialize with all base kernel families applied to all input dimensions
@@ -271,20 +294,21 @@ class CKSGrammar(BaseGrammar):
         new_kernels = []
         for aks_kernel in aks_kernels:
             kernel = aks_kernel.kernel
-            kernels_expanded = self.expand_full_kernel(kernel, n_dims, kernel_families)
+            kernels_expanded = CKSGrammar.expand_full_kernel(kernel, n_dims, kernel_families, self.operators)
             new_kernels += kernels_expanded
 
         new_kernels = remove_duplicate_kernels(new_kernels)
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            print('Expanded kernels:')
+            print(f'{len(new_kernels)} Newly expanded kernels:')
             for k in new_kernels:
                 k.pretty_print()
 
         return new_kernels
 
-    def expand_single_kernel(self, kernel: Kern, n_dims: int, base_kernels: List[str]):
+    @staticmethod
+    def expand_single_kernel(kernel: Kern, n_dims: int, base_kernels: List[str], operators: List[str]):
         is_kernel = isinstance(kernel, Kern)
         if not is_kernel:
             raise TypeError(f'Unknown kernel type {kernel.__class__.__name__}')
@@ -294,7 +318,7 @@ class CKSGrammar(BaseGrammar):
         is_combo_kernel = isinstance(kernel, CombinationKernel)
         is_base_kernel = is_kernel and not is_combo_kernel
 
-        for op in self.operators:
+        for op in operators:
             for d in range(n_dims):
                 for base_kernel_name in base_kernels:
                     if op == '+':
@@ -308,13 +332,14 @@ class CKSGrammar(BaseGrammar):
                 kernels.append(create_1d_kernel(base_kernel_name, kernel.active_dims[0]))
         return kernels
 
-    def expand_full_kernel(self, kernel: Kern, n_dims: int, base_kernels: List[str]):
-        result = self.expand_single_kernel(kernel, n_dims, base_kernels)
+    @staticmethod
+    def expand_full_kernel(kernel: Kern, n_dims: int, base_kernels: List[str], operators: List[str]):
+        result = CKSGrammar.expand_single_kernel(kernel, n_dims, base_kernels, operators)
         if kernel is None:
             pass
         elif isinstance(kernel, CombinationKernel):
             for i, operand in enumerate(kernel.parts):
-                for e in self.expand_full_kernel(operand, n_dims, base_kernels):
+                for e in CKSGrammar.expand_full_kernel(operand, n_dims, base_kernels, operators):
                     new_operands = kernel.parts[:i] + [e] + kernel.parts[i + 1:]
                     new_operands = [op.copy() for op in new_operands]
                     if isinstance(kernel, Prod):
@@ -336,8 +361,9 @@ class CKSGrammar(BaseGrammar):
 
 class RandomGrammar(BaseGrammar):
 
-    def __init__(self, n_parents: int):
-        super().__init__(n_parents)
+    def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
+
+        super().__init__(n_parents, max_candidates, max_offspring)
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
         # use same initialization as CKS and BOMS
@@ -374,7 +400,7 @@ class RandomGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            print('Expanded kernels:')
+            print(f'{len(new_kernels)} Newly expanded kernels:')
             for k in new_kernels:
                 k.pretty_print()
 
