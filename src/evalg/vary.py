@@ -11,7 +11,12 @@ class Variator:
     def __init__(self, operator: Union[Mutator, Recombinator]):
         self.operator = operator
 
-    def vary(self, parents: list):
+    def vary(self, parents: list) -> list:
+        """Vary all parents.
+
+        :param parents:
+        :return:
+        """
         raise NotImplementedError('vary must be implemented in a child class')
 
     def __repr__(self):
@@ -33,7 +38,7 @@ class CrossoverVariator(Variator):
         self.n_way = n_way
         self.c_prob = c_prob
 
-    def crossover_all(self, parents: list):
+    def crossover_all(self, parents: list) -> list:
         """Crossover applied to all parents.
 
         :param parents: the members of the population
@@ -54,7 +59,12 @@ class CrossoverVariator(Variator):
 
         return offspring
 
-    def vary(self, parents: list):
+    def vary(self, parents: list) -> list:
+        """Crossover all parents.
+
+        :param parents:
+        :return:
+        """
         return self.crossover_all(parents)
 
     def __repr__(self):
@@ -73,7 +83,7 @@ class MutationVariator(Variator):
         super().__init__(operator)
         self.m_prob = m_prob
 
-    def mutate_all(self, individuals: list):
+    def mutate_all(self, individuals: list) -> list:
         """Mutation applied to all offspring.
 
         :param individuals: the members of the population
@@ -100,9 +110,7 @@ class MutationVariator(Variator):
 
 
 class PopulationOperator:
-    """ Collection of variators
-
-    """
+    """Collection of variators."""
 
     def __init__(self, variators: List[Variator]):
         if len(variators) == 0:
@@ -111,7 +119,12 @@ class PopulationOperator:
             raise TypeError(f'All items must be of type {Variator.__name__}')
         self.variators = variators
 
-    def create_offspring(self, population: list):
+    def create_offspring(self, population: list) -> list:
+        """Create offspring by varying all population.
+
+        :param population:
+        :return:
+        """
         offspring = population
         for variator in self.variators:
             offspring = variator.vary(offspring)
@@ -119,7 +132,7 @@ class PopulationOperator:
 
 
 class CrossMutPopOperator(PopulationOperator):
-    """Perform both crossover then mutation to all individuals"""
+    """Perform both crossover then mutation to all individuals."""
 
     def __init__(self, variators: List[Union[CrossoverVariator, MutationVariator]]):
         super().__init__(variators)
