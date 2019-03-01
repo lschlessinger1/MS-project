@@ -1,11 +1,13 @@
+from typing import Any, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
 
 def plot_best_so_far(best_so_far: np.array, title: str = 'Best-So-Far Curve', x_label: str = 'Generation',
-                     y_label: str = 'Fitness Best So Far'):
-    """ Display the maximum fitness value at each generation
+                     y_label: str = 'Fitness Best So Far') -> Any:
+    """Display the maximum fitness value at each generation
 
     :param best_so_far:
     :param title:
@@ -19,7 +21,14 @@ def plot_best_so_far(best_so_far: np.array, title: str = 'Best-So-Far Curve', x_
     return plt.plot(best_so_far)
 
 
-def setup_plot(x_label: str, y_label: str, title: str):
+def setup_plot(x_label: str, y_label: str, title: str) -> Figure:
+    """Set up plot.
+
+    :param x_label:
+    :param y_label:
+    :param title:
+    :return:
+    """
     fig, ax = plt.subplots(1)
 
     ax.set_title(title)
@@ -29,7 +38,14 @@ def setup_plot(x_label: str, y_label: str, title: str):
     return fig
 
 
-def setup_values(fig: Figure, values: np.array, value_label: str):
+def setup_values(fig: Figure, values: np.array, value_label: str) -> Tuple[Figure, np.array, np.array]:
+    """Set up values.
+
+    :param fig:
+    :param values:
+    :param value_label:
+    :return:
+    """
     ax = fig.axes[0]
 
     x = np.arange(len(values)) + 1
@@ -39,7 +55,17 @@ def setup_values(fig: Figure, values: np.array, value_label: str):
     return fig, x, y
 
 
-def setup_stds(fig: Figure, stds: np.array, mu: np.array, t: np.array, std_label: str = 'Confidence'):
+def setup_stds(fig: Figure, stds: np.array, mu: np.array, t: np.array, std_label: str = 'Confidence') -> \
+        Tuple[Figure, np.array]:
+    """Set up standard deviations.
+
+    :param fig:
+    :param stds:
+    :param mu:
+    :param t:
+    :param std_label:
+    :return:
+    """
     ax = fig.axes[0]
 
     sigma = np.array(stds)
@@ -48,14 +74,33 @@ def setup_stds(fig: Figure, stds: np.array, mu: np.array, t: np.array, std_label
     return fig, sigma
 
 
-def setup_optima(fig: Figure, x: np.array, optima: np.array, optima_label: str):
+def setup_optima(fig: Figure, x: np.array, optima: np.array, optima_label: str) -> Figure:
+    """Set up optima.
+
+    :param fig:
+    :param x:
+    :param optima:
+    :param optima_label:
+    :return:
+    """
     ax = fig.axes[0]
     ax.plot(x, optima, lw=2, label=optima_label)
     return fig
 
 
 def plot_distribution(values: np.array, stds: np.array = None, optima: np.array = None, x_label: str = 'generation',
-                      value_name: str = 'average', metric_name: str = 'fitness', optima_name: str = 'best'):
+                      value_name: str = 'average', metric_name: str = 'fitness', optima_name: str = 'best') -> Figure:
+    """Plot distribution of values.
+
+    :param values:
+    :param stds:
+    :param optima:
+    :param x_label:
+    :param value_name:
+    :param metric_name:
+    :param optima_name:
+    :return:
+    """
     x_name = x_label.capitalize()
     y_name = metric_name.capitalize()
     value_label = ('%s %s' % (value_name, metric_name)).capitalize()
