@@ -18,8 +18,8 @@ class BaseGrammar:
         self.max_offspring = max_offspring  # Max. number of models to keep each round
         self.operators = BaseGrammar.DEFAULT_OPERATORS
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
-        """ Initialize kernels
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+        """Initialize kernels.
 
         :param kernel_families:
         :param n_kernels:
@@ -28,8 +28,9 @@ class BaseGrammar:
         """
         raise NotImplementedError('initialize must implemented in a subclass')
 
-    def expand(self, kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
-        """ Get next round of candidate kernels from current kernels
+    def expand(self, kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
+            List[AKSKernel]:
+        """Get next round of candidate kernels from current kernels.
 
         :param kernels:
         :param kernel_families:
@@ -39,8 +40,8 @@ class BaseGrammar:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
 
-    def select_parents(self, kernels: List[AKSKernel]):
-        """ Select next round of models (default is top k kernels by objective)
+    def select_parents(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+        """Select parent kernels (default is top k kernels by objective).
 
         :param kernels:
         :return:
@@ -48,8 +49,8 @@ class BaseGrammar:
         selector = TruncationSelector(self.n_parents)
         return selector.select(kernels, np.array([k.score for k in kernels]))
 
-    def select_offspring(self, kernels: List[AKSKernel]):
-        """ Select next round of models (default is select all)
+    def select_offspring(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+        """Select next round of kernels (default is select all).
 
         :param kernels:
         :return:
@@ -57,8 +58,8 @@ class BaseGrammar:
         selector = AllSelector(self.max_offspring)
         return selector.select(kernels)
 
-    def prune_candidates(self, kernels: List[AKSKernel], acq_scores):
-        """
+    def prune_candidates(self, kernels: List[AKSKernel], acq_scores) -> List[AKSKernel]:
+        """Remove candidates from kernel list (by default remove none).
 
         :param kernels:
         :param acq_scores:
@@ -81,8 +82,8 @@ class EvolutionaryGrammar(BaseGrammar):
         self.parent_selector = parent_selector
         self.offspring_selector = offspring_selector
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
-        """Naive initialization of all SE_i and RQ_i (for every dimension)
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+        """Naive initialization of all SE_i and RQ_i (for every dimension).
 
         :param kernel_families:
         :param n_kernels:
@@ -93,8 +94,9 @@ class EvolutionaryGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
-        """ Perform crossover and mutation
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
+            List[AKSKernel]:
+        """Perform crossover and mutation.
 
         :param aks_kernels: list of AKSKernels
         :param kernel_families: base kernels
@@ -126,10 +128,20 @@ class EvolutionaryGrammar(BaseGrammar):
 
         return new_kernels
 
-    def select_parents(self, kernels: List[AKSKernel]):
+    def select_parents(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+        """See parent docstring.
+
+        :param kernels:
+        :return:
+        """
         return self.parent_selector.select(kernels, [k.score for k in kernels])
 
-    def select_offspring(self, kernels: List[AKSKernel]):
+    def select_offspring(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+        """See parent docstring.
+
+        :param kernels:
+        :return:
+        """
         return self.offspring_selector.select(kernels, [k.score for k in kernels])
 
     def __repr__(self):
@@ -144,8 +156,8 @@ class BOMSGrammar(BaseGrammar):
     def __init__(self, n_parents: int = 1, max_candidates: int = 600, max_offspring: int = 1000):
         super().__init__(n_parents, max_candidates, max_offspring)
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
-        """ Initialize kernels according to number of dimensions
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+        """Initialize kernels according to number of dimensions.
 
         :param kernel_families:
         :param n_kernels:
@@ -158,8 +170,9 @@ class BOMSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
-        """ Greedy and exploratory expansion of kernels
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
+            List[AKSKernel]:
+        """Greedy and exploratory expansion of kernels.
 
         :param aks_kernels: list of AKSKernels
         :param kernel_families:
@@ -194,24 +207,22 @@ class BOMSGrammar(BaseGrammar):
 
         return new_kernels
 
-    def select_offspring(self, active_set: List[AKSKernel]):
-        """ Select top `n_parents` kernels according to expected improvement
+    def prune_candidates(self, active_set: List[AKSKernel], acq_scores) -> List[AKSKernel]:
+        """Select best kernels according to expected improvement.
 
         :param active_set:
+        :param acq_scores:
         :return:
         """
-        selector = TruncationSelector(self.max_offspring)
+        selector = TruncationSelector(self.max_candidates)
         # prioritize keeping scored models
         augmented_scores = [k.score if k.scored and not k.nan_scored else -np.inf for k in active_set]
-        return selector.select(active_set, augmented_scores)
-
-    def prune_candidates(self, kernels: List[AKSKernel], acq_scores):
-        selector = TruncationSelector(self.max_candidates)
-        return selector.select(kernels, np.array(acq_scores))
+        return selector.select(active_set, np.array(augmented_scores))
 
     @staticmethod
-    def random_walk_kernels(n_dims: int, base_kernels: List[str], t_prob: float = 1 / 3., n_walks: int = 15):
-        """Geometric random walk kernels
+    def random_walk_kernels(n_dims: int, base_kernels: List[str], t_prob: float = 1 / 3., n_walks: int = 15) -> \
+            List[AKSKernel]:
+        """Geometric random walk kernels.
 
         :param n_dims:
         :param base_kernels:
@@ -235,8 +246,8 @@ class BOMSGrammar(BaseGrammar):
         return rw_kernels
 
     @staticmethod
-    def greedy_kernels(best_kernel: AKSKernel, n_dims, base_kernels):
-        """
+    def greedy_kernels(best_kernel: AKSKernel, n_dims, base_kernels) -> List[AKSKernel]:
+        """Single expansion of CKS Grammar.
 
         :param best_kernel:
         :param n_dims:
@@ -260,8 +271,8 @@ class CKSGrammar(BaseGrammar):
     def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
         super().__init__(n_parents, max_candidates, max_offspring)
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
-        """ Initialize with all base kernel families applied to all input dimensions
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+        """Initialize with all base kernel families applied to all input dimensions.
 
         :param kernel_families:
         :param n_kernels:
@@ -272,8 +283,9 @@ class CKSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
-        """ Greedy expansion of nodes
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
+            List[AKSKernel]:
+        """Greedy expansion of nodes.
 
         :param aks_kernels:
         :param kernel_families:
@@ -308,7 +320,16 @@ class CKSGrammar(BaseGrammar):
         return new_kernels
 
     @staticmethod
-    def expand_single_kernel(kernel: Kern, n_dims: int, base_kernels: List[str], operators: List[str]):
+    def expand_single_kernel(kernel: Kern, n_dims: int, base_kernels: List[str], operators: List[str]) -> \
+            List[Kern]:
+        """Expand a single kernel.
+
+        :param kernel:
+        :param n_dims:
+        :param base_kernels:
+        :param operators:
+        :return:
+        """
         is_kernel = isinstance(kernel, Kern)
         if not is_kernel:
             raise TypeError(f'Unknown kernel type {kernel.__class__.__name__}')
@@ -333,7 +354,15 @@ class CKSGrammar(BaseGrammar):
         return kernels
 
     @staticmethod
-    def expand_full_kernel(kernel: Kern, n_dims: int, base_kernels: List[str], operators: List[str]):
+    def expand_full_kernel(kernel: Kern, n_dims: int, base_kernels: List[str], operators: List[str]) -> List[Kern]:
+        """Expand full kernel.
+
+        :param kernel:
+        :param n_dims:
+        :param base_kernels:
+        :param operators:
+        :return:
+        """
         result = CKSGrammar.expand_single_kernel(kernel, n_dims, base_kernels, operators)
         if kernel is None:
             pass
@@ -360,20 +389,36 @@ class CKSGrammar(BaseGrammar):
 
 
 class RandomGrammar(BaseGrammar):
+    """Random grammar randomly expands nodes
+
+    """
 
     def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
 
         super().__init__(n_parents, max_candidates, max_offspring)
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int):
-        # use same initialization as CKS and BOMS
+    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+        """Same initialization as CKS and BOMS
+
+        :param kernel_families:
+        :param n_kernels:
+        :param n_dims:
+        :return:
+        """
         kernels = get_all_1d_kernels(kernel_families, n_dims)
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False):
-        """Random expansion of nodes."""
+    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
+            List[AKSKernel]:
+        """Random expansion of nodes.
 
+        :param aks_kernels:
+        :param kernel_families:
+        :param n_dims:
+        :param verbose:
+        :return:
+        """
         if verbose:
             print('Seed kernels:')
             for k in aks_kernels:
