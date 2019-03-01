@@ -1,5 +1,8 @@
-def argsort(unsorted_list: list):
-    """Argument-sort a list
+from typing import List
+
+
+def argsort(unsorted_list: list) -> list:
+    """Argument-sort a list.
 
     :param unsorted_list: a list of unsorted items
     :return:
@@ -7,7 +10,7 @@ def argsort(unsorted_list: list):
     return [i[0] for i in sorted(enumerate(unsorted_list), key=lambda x: x[1])]
 
 
-def argunique(data: list):
+def arg_unique(data: list) -> List[int]:
     """Get the indices of the unique elements in a list.
 
     :param data:
@@ -24,7 +27,7 @@ def argunique(data: list):
     return unique_ind
 
 
-def remove_duplicates(data: list, values: list):
+def remove_duplicates(data: list, values: list) -> list:
     """Remove duplicates of data and replace with values.
 
     :param data:
@@ -34,5 +37,5 @@ def remove_duplicates(data: list, values: list):
     if len(data) != len(values):
         raise ValueError('The length of data must be be equal to the length of values')
 
-    unique_ind = argunique(data)
+    unique_ind = arg_unique(data)
     return [values[i] for i in unique_ind]
