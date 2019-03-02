@@ -32,10 +32,10 @@ mut_variator = MutationVariator(mutator)
 variators = [cx_variator, mut_variator]
 pop_operator = CrossMutPopOperator(variators)
 grammar = EvolutionaryGrammar(n_parents=4, parent_selector=parent_selector, offspring_selector=offspring_selector,
-                              population_operator=pop_operator)
+                              population_operator=pop_operator, max_candidates=0, max_offspring=1000)
 
 objective = log_likelihood_normalized
 
 experiment = Experiment(grammar, objective, base_kernels, X_train, y_train, X_train, y_train, eval_budget=50,
-                        debug=True, verbose=True)
+                        additive_form=True, debug=True, verbose=True)
 experiment.run(title='Simple Evolutionary Experiment')

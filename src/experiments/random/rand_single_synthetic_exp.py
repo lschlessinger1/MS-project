@@ -17,7 +17,7 @@ if X.shape[1] > 1:
     base_kernels = ['SE', 'RQ']
 else:
     base_kernels = ['SE', 'RQ', 'LIN', 'PER']
-grammar = RandomGrammar(n_parents=4)
+grammar = RandomGrammar(n_parents=4, max_candidates=0, max_offspring=1000)
 
 
 def negative_BIC(m):

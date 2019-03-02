@@ -19,7 +19,7 @@ if X.shape[1] > 1:
     base_kernels = ['SE', 'RQ']
 else:
     base_kernels = ['SE', 'RQ', 'LIN', 'PER']
-grammar = CKSGrammar(n_parents=1)
+grammar = CKSGrammar(n_parents=1, max_candidates=0, max_offspring=1000)
 
 
 def negative_BIC(m):

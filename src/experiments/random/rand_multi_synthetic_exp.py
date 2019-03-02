@@ -8,7 +8,7 @@ from src.experiments.util.synthetic_data import Sinosoid1Generator, Sinosoid2Gen
 # Set random seed for reproducibility.
 np.random.seed(4096)
 
-grammar = RandomGrammar(n_parents=4)
+grammar = RandomGrammar(n_parents=4, max_candidates=0, max_offspring=1000)
 
 
 def negative_BIC(m):

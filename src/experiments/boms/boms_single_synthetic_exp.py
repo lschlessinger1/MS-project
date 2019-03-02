@@ -17,7 +17,7 @@ if X.shape[1] > 1:
     base_kernels = ['SE', 'RQ']
 else:
     base_kernels = ['SE', 'RQ', 'LIN', 'PER']
-grammar = BOMSGrammar(n_parents=4)
+grammar = BOMSGrammar()
 
 objective = log_likelihood_normalized
 

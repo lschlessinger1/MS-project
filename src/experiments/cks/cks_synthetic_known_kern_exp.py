@@ -7,7 +7,7 @@ from src.experiments.util.data_util import KnownGPGenerator, cks_known_kernels, 
 # Set random seed for reproducibility.
 np.random.seed(4096)
 
-grammar = CKSGrammar(n_parents=1)
+grammar = CKSGrammar(n_parents=1, max_candidates=0, max_offspring=1000)
 
 
 def negative_BIC(m):
