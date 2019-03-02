@@ -6,6 +6,7 @@ from GPy.kern import RBF, RatQuad, StdPeriodic, Linear
 from sklearn.model_selection import train_test_split
 
 from src.autoks.experiment import Experiment
+from src.autoks.grammar import CKSGrammar
 
 
 def gen_dataset_paths(data_dir: str, file_suffix: str = '.csv'):
@@ -29,10 +30,7 @@ def run_experiments(ds_generators, grammar, objective, base_kernels=None, **kwar
         X, y = generator.gen_dataset()
 
         if base_kernels is None:
-            if X.shape[1] > 1:
-                base_kernels = ['SE', 'RQ']
-            else:
-                base_kernels = ['SE', 'RQ', 'LIN', 'PER']
+            base_kernels = CKSGrammar.get_base_kernels(X.shape[1])
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
