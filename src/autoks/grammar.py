@@ -271,6 +271,13 @@ class CKSGrammar(BaseGrammar):
     def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
         super().__init__(n_parents, max_candidates, max_offspring)
 
+    @staticmethod
+    def get_base_kernels(n_dims):
+        if n_dims > 1:
+            return ['SE', 'RQ']
+        else:
+            return ['SE', 'RQ', 'LIN', 'PER']
+
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
         """Initialize with all base kernel families applied to all input dimensions.
 

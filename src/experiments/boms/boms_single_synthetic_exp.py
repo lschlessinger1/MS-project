@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from src.autoks.experiment import Experiment
-from src.autoks.grammar import BOMSGrammar
+from src.autoks.grammar import BOMSGrammar, CKSGrammar
 from src.autoks.model import log_likelihood_normalized
 from src.experiments.util.synthetic_data import RegressionGenerator
 
@@ -13,10 +13,7 @@ generator = RegressionGenerator()
 X, y = generator.gen_dataset()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-if X.shape[1] > 1:
-    base_kernels = ['SE', 'RQ']
-else:
-    base_kernels = ['SE', 'RQ', 'LIN', 'PER']
+base_kernels = CKSGrammar.get_base_kernels(X.shape[1])
 grammar = BOMSGrammar()
 
 objective = log_likelihood_normalized

@@ -15,10 +15,7 @@ X, y = generator.gen_dataset()
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-if X.shape[1] > 1:
-    base_kernels = ['SE', 'RQ']
-else:
-    base_kernels = ['SE', 'RQ', 'LIN', 'PER']
+base_kernels = CKSGrammar.get_base_kernels(X.shape[1])
 grammar = CKSGrammar(n_parents=1, max_candidates=0, max_offspring=1000)
 
 

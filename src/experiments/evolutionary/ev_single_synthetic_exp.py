@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from src.autoks.experiment import Experiment
-from src.autoks.grammar import EvolutionaryGrammar
+from src.autoks.grammar import EvolutionaryGrammar, CKSGrammar
 from src.autoks.kernel import get_all_1d_kernels
 from src.autoks.model import log_likelihood_normalized
 from src.evalg.genprog import SubtreeExchangeBinaryRecombinator, GrowMutator
@@ -17,10 +17,7 @@ generator = RegressionGenerator(n_samples=100)
 X, y = generator.gen_dataset()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-if X.shape[1] > 1:
-    base_kernels = ['SE', 'RQ']
-else:
-    base_kernels = ['SE', 'RQ', 'LIN', 'PER']
+base_kernels = CKSGrammar.get_base_kernels(X.shape[1])
 
 parent_selector = TruncationSelector(10)
 offspring_selector = AllSelector(1)
