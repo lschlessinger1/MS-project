@@ -206,7 +206,7 @@ class BOMSGrammar(BaseGrammar):
 
         return new_kernels
 
-    def prune_candidates(self, active_set: List[AKSKernel], acq_scores) -> List[AKSKernel]:
+    def prune_candidates(self, active_set: List[AKSKernel], acq_scores: List[float]) -> List[AKSKernel]:
         """Select best kernels according to expected improvement.
 
         :param active_set:
@@ -245,7 +245,7 @@ class BOMSGrammar(BaseGrammar):
         return rw_kernels
 
     @staticmethod
-    def greedy_kernels(best_kernel: AKSKernel, n_dims, base_kernels) -> List[AKSKernel]:
+    def greedy_kernels(best_kernel: AKSKernel, n_dims: int, base_kernels: List[str]) -> List[AKSKernel]:
         """Single expansion of CKS Grammar.
 
         :param best_kernel:
@@ -271,7 +271,7 @@ class CKSGrammar(BaseGrammar):
         super().__init__(n_parents, max_candidates, max_offspring)
 
     @staticmethod
-    def get_base_kernels(n_dims):
+    def get_base_kernels(n_dims: int):
         if n_dims > 1:
             return ['SE', 'RQ']
         else:
