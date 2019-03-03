@@ -1,4 +1,4 @@
-from typing import List, Iterable
+from typing import List, Iterable, Sequence, TypeVar
 
 
 def arg_sort(unsorted_iterable: Iterable) -> List[int]:
@@ -27,12 +27,15 @@ def arg_unique(data: Iterable) -> List[int]:
     return unique_ind
 
 
-def remove_duplicates(data: list, values: list) -> list:
+T = TypeVar('T')
+
+
+def remove_duplicates(data: Sequence, values: Sequence[T]) -> List[T]:
     """Remove duplicates of data and replace with values.
 
-    :param data:
-    :param values:
-    :return:
+    :param data: A sequence of data items.
+    :param values: A sequence of values.
+    :return: A list of values without duplicates.
     """
     if len(data) != len(values):
         raise ValueError('The length of data must be be equal to the length of values')
