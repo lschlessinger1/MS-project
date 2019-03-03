@@ -6,7 +6,7 @@ from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.special import comb
 
 import src.evalg.encoding
-from src.autoks.util import remove_duplicates, argsort
+from src.autoks.util import remove_duplicates, arg_sort
 
 
 class AKSKernel:
@@ -423,7 +423,7 @@ def sort_combination_kernel(kernel: Kern, new_ops: list) -> Kern:
             unsorted_kernel_names.append((kmap_inv[operand.__class__] + param_str))
         elif isinstance(operand, Kern):
             unsorted_kernel_names.append((kmap_inv[operand.__class__] + str(operand.active_dims[0])))
-    ind = argsort(unsorted_kernel_names)
+    ind = arg_sort(unsorted_kernel_names)
     sorted_ops = [new_ops[i] for i in ind]
 
     return kernel.__class__(sorted_ops)

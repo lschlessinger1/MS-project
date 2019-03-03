@@ -1,13 +1,13 @@
-from typing import List
+from typing import List, Iterable
 
 
-def argsort(unsorted_list: list) -> list:
-    """Argument-sort a list.
+def arg_sort(unsorted_iterable: Iterable) -> List[int]:
+    """Argument-sort an iterable.
 
-    :param unsorted_list: a list of unsorted items
-    :return:
+    :param unsorted_iterable: An iterable of unsorted items.
+    :return: A list of sorted items' indices.
     """
-    return [i[0] for i in sorted(enumerate(unsorted_list), key=lambda x: x[1])]
+    return [i[0] for i in sorted(enumerate(unsorted_iterable), key=lambda x: x[1])]
 
 
 def arg_unique(data: list) -> List[int]:
