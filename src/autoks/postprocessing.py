@@ -19,7 +19,8 @@ from src.autoks.model import AIC, BIC, pl2, log_likelihood_normalized
 from src.evalg.plotting import plot_distribution, plot_best_so_far
 
 
-def compute_skmodel_rmse(model, X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array) -> float:
+def compute_skmodel_rmse(model, X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> \
+        float:
     """RMSE of a scikit-learn model.
 
     :param model:
@@ -34,7 +35,7 @@ def compute_skmodel_rmse(model, X_train: np.array, y_train: np.array, X_test: np
     return np.sqrt(mean_squared_error(y_test, y_pred))
 
 
-def compute_gpy_model_rmse(model: GP, X_test: np.array, y_test: np.array) -> float:
+def compute_gpy_model_rmse(model: GP, X_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a GPy model.
 
     :param model:
@@ -47,7 +48,7 @@ def compute_gpy_model_rmse(model: GP, X_test: np.array, y_test: np.array) -> flo
     return np.sqrt(mean_squared_error(y_test, y_pred))
 
 
-def rmse_rbf(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array) -> float:
+def rmse_rbf(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a GPy RBF kernel.
 
     :param X_train:
@@ -60,7 +61,7 @@ def rmse_rbf(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.
     return compute_gpy_model_rmse(model, X_test, y_test)
 
 
-def rmse_svr(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array) -> float:
+def rmse_svr(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a Support Vector Machine for regression.
 
     :param X_train:
@@ -72,7 +73,7 @@ def rmse_svr(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.
     return compute_skmodel_rmse(SVR(kernel='rbf'), X_train, y_train, X_test, y_test)
 
 
-def rmse_lin_reg(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array) -> float:
+def rmse_lin_reg(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a linear regression model.
 
     :param X_train:
@@ -84,7 +85,7 @@ def rmse_lin_reg(X_train: np.array, y_train: np.array, X_test: np.array, y_test:
     return compute_skmodel_rmse(LinearRegression(), X_train, y_train, X_test, y_test)
 
 
-def rmse_knn(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.array) -> float:
+def rmse_knn(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a k-nearest neighbors regressor.
 
     :param X_train:
@@ -98,8 +99,8 @@ def rmse_knn(X_train: np.array, y_train: np.array, X_test: np.array, y_test: np.
 
 class ExperimentReportGenerator:
     aks_kernels: List[AKSKernel]
-    X_test: np.array
-    y_test: np.array
+    X_test: np.ndarray
+    y_test: np.ndarray
     results_dir_name: str
 
     def __init__(self, experiment, aks_kernels, X_test, y_test, results_dir_name='results'):

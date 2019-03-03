@@ -11,7 +11,7 @@ from src.evalg.selection import Selector, AllSelector
 
 class AcquisitionFunction:
 
-    def score(self, kernel: AKSKernel, X_train: np.array, y_train: np.array, hyperpriors=None) -> int:
+    def score(self, kernel: AKSKernel, X_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
         """Acquisition function score.
 
         :param kernel:
@@ -25,7 +25,7 @@ class AcquisitionFunction:
 
 class UniformScorer(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel, X_train: np.array, y_train: np.array, hyperpriors=None) -> int:
+    def score(self, kernel: AKSKernel, X_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
         """Same score for all kernels.
 
         :param kernel:
@@ -39,7 +39,7 @@ class UniformScorer(AcquisitionFunction):
 
 class ExpectedImprovement(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel, X_train: np.array, y_train: np.array, hyperpriors=None) -> int:
+    def score(self, kernel: AKSKernel, X_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
         """Expected improvement (EI) acquisition function
 
         This acquisition function takes a model (kernel and hyperpriors) and computes expected improvement using
@@ -67,8 +67,8 @@ class QueryStrategy(Selector, ABC):
         super().__init__(n_individuals)
         self.scoring_func = scoring_func
 
-    def query(self, kernels: List[AKSKernel], X_train: np.array, y_train: np.array, hyperpriors=None) -> \
-            Tuple[np.array, List[float]]:
+    def query(self, kernels: List[AKSKernel], X_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> \
+            Tuple[np.ndarray, List[float]]:
         """Query the next round of kernels using the acquisition function.
 
         :param kernels:
@@ -81,7 +81,7 @@ class QueryStrategy(Selector, ABC):
         ind = self.arg_select(np.array(kernels), scores)
         return ind, scores
 
-    def score_kernels(self, kernels: List[AKSKernel], X_train: np.array, y_train: np.array, hyperpriors=None) -> \
+    def score_kernels(self, kernels: List[AKSKernel], X_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> \
             List[float]:
         """Score all kernels using the scoring function.
 
@@ -107,7 +107,7 @@ class BestScoreStrategy(QueryStrategy):
     def __init__(self, scoring_func: AcquisitionFunction, n_individuals: int = 1):
         super().__init__(n_individuals, scoring_func)
 
-    def select(self, population: np.array, scores: np.array) -> list:
+    def select(self, population: np.ndarray, scores: np.ndarray) -> list:
         """See parent docstring.
 
         :param population:
@@ -116,7 +116,7 @@ class BestScoreStrategy(QueryStrategy):
         """
         return self._select_helper(population, scores)
 
-    def arg_select(self, population: np.array, scores: np.array) -> List[int]:
+    def arg_select(self, population: np.ndarray, scores: np.ndarray) -> List[int]:
         """Select best kernel according to scoring function.
 
         :param population:

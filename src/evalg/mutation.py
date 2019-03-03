@@ -19,7 +19,7 @@ class BitFlipMutator(Mutator):
     def __init__(self, gene_mut_prob: float = None):
         self.gene_mut_prob = gene_mut_prob
 
-    def mutate(self, individual: np.array) -> np.array:
+    def mutate(self, individual: np.ndarray) -> np.ndarray:
         """Bit-flip mutation
 
         :param individual:
@@ -40,7 +40,7 @@ class BitFlipMutator(Mutator):
 
 class InterchangeMutator(Mutator):
 
-    def mutate(self, individual: np.array) -> np.array:
+    def mutate(self, individual: np.ndarray) -> np.ndarray:
         """Interchange mutation.
 
         :param individual:
@@ -56,7 +56,7 @@ class InterchangeMutator(Mutator):
 
 class ReverseMutator(Mutator):
 
-    def mutate(self, individual: np.array) -> np.array:
+    def mutate(self, individual: np.ndarray) -> np.ndarray:
         """Reverse mutation.
 
         :param individual:
@@ -71,7 +71,7 @@ class ReverseMutator(Mutator):
 
 class GaussianMutator(Mutator):
 
-    def mutate(self, individual: np.array) -> np.array:
+    def mutate(self, individual: np.ndarray) -> np.ndarray:
         """Gaussian mutation.
 
         :param individual:
@@ -82,7 +82,7 @@ class GaussianMutator(Mutator):
 
 class BoundaryMutator(Mutator):
 
-    def mutate(self, individual: np.array) -> np.array:
+    def mutate(self, individual: np.ndarray) -> np.ndarray:
         """Boundary mutation.
 
         :param individual:
@@ -93,7 +93,7 @@ class BoundaryMutator(Mutator):
 
 class UniformMutator(Mutator):
 
-    def mutate(self, individual: np.array) -> np.array:
+    def mutate(self, individual: np.ndarray) -> np.ndarray:
         """Uniform mutation.
 
         :param individual:
@@ -104,7 +104,7 @@ class UniformMutator(Mutator):
 
 class NonuniformMutator(Mutator):
 
-    def mutate(self, individual: np.array) -> np.array:
+    def mutate(self, individual: np.ndarray) -> np.ndarray:
         """Non-Uniform mutation.
 
         :param individual:
@@ -115,7 +115,7 @@ class NonuniformMutator(Mutator):
 
 class ShrinkMutator(Mutator):
 
-    def mutate(self, individual: np.array) -> np.array:
+    def mutate(self, individual: np.ndarray) -> np.ndarray:
         """Shrink mutation.
 
         :param individual:

@@ -346,7 +346,7 @@ def n_base_kernels(kernel: Kern) -> int:
     return count[0]
 
 
-def covariance_distance(kernels: list, X: np.array) -> np.array:
+def covariance_distance(kernels: list, X: np.ndarray) -> np.ndarray:
     """Euclidean distance of all pairs kernels.
 
     :param kernels:
@@ -364,7 +364,7 @@ def covariance_distance(kernels: list, X: np.array) -> np.array:
     return dists
 
 
-def kernel_l2_dist(kernel_1: Kern, kernel_2: Kern, X: np.array) -> float:
+def kernel_l2_dist(kernel_1: Kern, kernel_2: Kern, X: np.ndarray) -> float:
     """Euclidean distance between two kernel matrices.
 
     :param kernel_1:
@@ -482,7 +482,7 @@ def additive_form(kernel: Kern) -> Kern:
         raise TypeError('%s is not a subclass of %s' % (kernel.__class__.__name__, Kern.__name__))
 
 
-def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: int) -> np.array:
+def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: int) -> np.ndarray:
     """Get the vector encoding of an additive part.
 
     Convert product into vector
@@ -519,7 +519,7 @@ def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: i
     return vec
 
 
-def kernel_vec_avg_dist(kvecs1: List[np.array], kvecs2: List[np.array]) -> float:
+def kernel_vec_avg_dist(kvecs1: List[np.ndarray], kvecs2: List[np.ndarray]) -> float:
     """Average Euclidean distance between two lists of vectors.
 
     :param kvecs1:

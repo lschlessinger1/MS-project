@@ -23,10 +23,10 @@ class Experiment:
     grammar: BaseGrammar
     objective: Callable
     kernel_families: List[str]
-    X_train: np.array
-    y_train: np.array
-    X_test: np.array
-    y_test: np.array
+    X_train: np.ndarray
+    y_train: np.ndarray
+    X_test: np.ndarray
+    y_test: np.ndarray
     standardize_X: bool
     standardize_y: bool
     eval_budget: int
@@ -477,7 +477,7 @@ class Experiment:
         plot_distribution(self.diversity_scores, metric_name='diversity', value_name='population')
         plt.show()
 
-    def get_timing_report(self) -> Tuple[List[str], np.array, np.array]:
+    def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
         """Get the runtime report of the kernel search.
 
         :return:

@@ -48,7 +48,7 @@ class Recombinator:
 class OnePointBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents: List[np.array]) -> Tuple[np.array, np.array]:
+    def crossover(self, parents: List[np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
         """One-point crossover.
 
         :param parents:
@@ -68,7 +68,7 @@ class OnePointBinaryRecombinator(Recombinator):
 class TwoPointBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents: List[np.array]) -> List[np.array]:
+    def crossover(self, parents: List[np.ndarray]) -> List[np.ndarray]:
         """Two-point crossover.
 
         :param parents:
@@ -86,7 +86,7 @@ class NPointBinaryRecombinator(Recombinator):
         self.n_points = n_points
 
     @check_two_parents
-    def crossover(self, parents: List[np.array]) -> Tuple[np.array, np.array]:
+    def crossover(self, parents: List[np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
         """n-point crossover.
 
         :param parents:
@@ -119,7 +119,7 @@ class NPointBinaryRecombinator(Recombinator):
 class UniformBinaryRecombinator(Recombinator):
 
     @check_two_parents
-    def crossover(self, parents: List[np.array]) -> Tuple[np.array, np.array]:
+    def crossover(self, parents: List[np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
         """Uniform crossover.
 
         :param parents:

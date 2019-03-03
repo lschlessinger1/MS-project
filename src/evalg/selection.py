@@ -54,7 +54,7 @@ class AllSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
         """Select all.
 
         :param population:
@@ -63,7 +63,7 @@ class AllSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
         """Select all indices.
 
         :param population:
@@ -81,7 +81,7 @@ class UniformSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
         """Uniform stochastic selection.
 
         :param population:
@@ -90,7 +90,7 @@ class UniformSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
         """Uniform stochastic selection of indices.
 
         Select the arguments of k individuals
@@ -110,7 +110,7 @@ class StochasticUnivSampSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
         """Stochastic universal sampling selection.
 
         :param population:
@@ -119,7 +119,7 @@ class StochasticUnivSampSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
         """Stochastic universal sampling selection of indices.
 
         :param population:
@@ -139,7 +139,7 @@ class BoltzmannSelector(Selector):
         self.temperature = temperature
         self.prev_pop_avg = prev_pop_avg
 
-    def select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
         """Boltzmann selection.
 
         :param population:
@@ -148,7 +148,7 @@ class BoltzmannSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: Union[np.array, None] = None) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
         """Boltzmann Selection of indices.
 
         :param population:
@@ -167,7 +167,7 @@ class FitnessProportionalSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Fitness-proportional selection.
 
         :param population:
@@ -176,7 +176,7 @@ class FitnessProportionalSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Fitness-proportional selection of indices.
 
         Select k individuals with replacement from the population
@@ -198,7 +198,7 @@ class SigmaScalingSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Sigma scaling selection.
 
         :param population:
@@ -207,7 +207,7 @@ class SigmaScalingSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Sigma scaling selection of indices.
 
         :param population:
@@ -241,7 +241,7 @@ class TruncationSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Truncation selection.
 
         :param population:
@@ -250,7 +250,7 @@ class TruncationSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Truncation selection of indices.
 
         Select k best from population according to `fitness_list`.
@@ -267,7 +267,7 @@ class LinearRankingSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Linear ranking selection.
 
         :param population:
@@ -276,7 +276,7 @@ class LinearRankingSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Linear ranking selection of indices.
 
         Select k individuals with replacement from the population
@@ -303,7 +303,7 @@ class ExponentialRankingSelector(Selector):
             raise ValueError("0 < c < 1 must hold")
         self.c = c
 
-    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Exponential ranking selection.
 
         :param population:
@@ -312,7 +312,7 @@ class ExponentialRankingSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Exponential ranking selection of indices.
 
         :param population:
@@ -339,7 +339,7 @@ class TournamentSelector(Selector):
             raise ValueError("The number of competitors in the tournament must be greater than 1.")
         self.n_way = n_way
 
-    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Tournament selection.
 
         :param population:
@@ -348,7 +348,7 @@ class TournamentSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Tournament selection of indices.
 
         Uniformly at random select `n_way` individuals from the
