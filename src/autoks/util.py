@@ -10,11 +10,11 @@ def arg_sort(unsorted_iterable: Iterable) -> List[int]:
     return [i[0] for i in sorted(enumerate(unsorted_iterable), key=lambda x: x[1])]
 
 
-def arg_unique(data: list) -> List[int]:
-    """Get the indices of the unique elements in a list.
+def arg_unique(data: Iterable) -> List[int]:
+    """Get the indices of the unique elements in an iterable.
 
-    :param data:
-    :return:
+    :param data: An iterable for which to find unique values.
+    :return: The indices of unique items of the iterable.
     """
     unique_vals = set()
     unique_ind = []
