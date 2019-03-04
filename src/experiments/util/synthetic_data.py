@@ -203,7 +203,7 @@ class BraninGenerator(SyntheticDatasetGenerator):
         super().__init__(n_samples, input_dim)
 
     @staticmethod
-    def branin(X):
+    def branin(X: np.ndarray) -> np.ndarray:
         """Branin function"""
         y = (X[:, 1] - 5.1 / (4 * np.pi ** 2) * X[:, 0] ** 2 + 5 * X[:, 0] / np.pi - 6) ** 2
         y += 10 * (1 - 1 / (8 * np.pi)) * np.cos(X[:, 0]) + 10
