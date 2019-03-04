@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional
 
 import numpy as np
 
@@ -10,7 +10,7 @@ class Selector:
             raise ValueError('The number of individuals must be non-negative.')
         self.n_individuals = n_individuals
 
-    def _select_helper(self, population: np.ndarray, fitness_list: Union[np.ndarray, None]) -> np.ndarray:
+    def _select_helper(self, population: np.ndarray, fitness_list: Optional[np.ndarray]) -> np.ndarray:
         """Helper function to select from population using a fitness list.
 
         :param population:
@@ -54,7 +54,7 @@ class AllSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
+    def select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Select all.
 
         :param population:
@@ -63,7 +63,7 @@ class AllSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
+    def arg_select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Select all indices.
 
         :param population:
@@ -81,7 +81,7 @@ class UniformSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
+    def select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Uniform stochastic selection.
 
         :param population:
@@ -90,7 +90,7 @@ class UniformSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
+    def arg_select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Uniform stochastic selection of indices.
 
         Select the arguments of k individuals
@@ -110,7 +110,7 @@ class StochasticUnivSampSelector(Selector):
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
 
-    def select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
+    def select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Stochastic universal sampling selection.
 
         :param population:
@@ -119,7 +119,7 @@ class StochasticUnivSampSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
+    def arg_select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Stochastic universal sampling selection of indices.
 
         :param population:
@@ -139,7 +139,7 @@ class BoltzmannSelector(Selector):
         self.temperature = temperature
         self.prev_pop_avg = prev_pop_avg
 
-    def select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
+    def select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Boltzmann selection.
 
         :param population:
@@ -148,7 +148,7 @@ class BoltzmannSelector(Selector):
         """
         return self._select_helper(population, fitness_list)
 
-    def arg_select(self, population: np.ndarray, fitness_list: Union[np.ndarray, None] = None) -> np.ndarray:
+    def arg_select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Boltzmann Selection of indices.
 
         :param population:

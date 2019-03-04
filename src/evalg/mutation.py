@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 
 from src.evalg.util import swap
@@ -16,7 +18,7 @@ class Mutator:
 
 class BitFlipMutator(Mutator):
 
-    def __init__(self, gene_mut_prob: float = None):
+    def __init__(self, gene_mut_prob: Optional[float] = None):
         self.gene_mut_prob = gene_mut_prob
 
     def mutate(self, individual: np.ndarray) -> np.ndarray:

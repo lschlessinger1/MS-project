@@ -1,6 +1,6 @@
 import warnings
 from time import time
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,13 +31,13 @@ class Experiment:
     standardize_y: bool
     eval_budget: int
     max_depth: int
-    init_query_strat: QueryStrategy
-    query_strat: QueryStrategy
-    gp_model: GP
+    init_query_strat: Optional[QueryStrategy]
+    query_strat: Optional[QueryStrategy]
+    gp_model: Optional[GP]
     additive_form: bool
     debug: bool
     verbose: bool
-    optimizer: str
+    optimizer: Optional[str]
     n_restarts_optimizer: int
 
     def __init__(self, grammar, objective, kernel_families, X_train, y_train, X_test, y_test, standardize_X=True,

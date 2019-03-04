@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, TypeVar
 
 import numpy as np
 
@@ -11,7 +11,9 @@ class Variator:
     def __init__(self, operator: Union[Mutator, Recombinator]):
         self.operator = operator
 
-    def vary(self, parents: list) -> list:
+    T = TypeVar('T')
+
+    def vary(self, parents: List[T]) -> List[T]:
         """Vary all parents.
 
         :param parents:
@@ -38,7 +40,9 @@ class CrossoverVariator(Variator):
         self.n_way = n_way
         self.c_prob = c_prob
 
-    def crossover_all(self, parents: list) -> list:
+    T = TypeVar('T')
+
+    def crossover_all(self, parents: List[T]) -> List[T]:
         """Crossover applied to all parents.
 
         :param parents: the members of the population
@@ -59,7 +63,7 @@ class CrossoverVariator(Variator):
 
         return offspring
 
-    def vary(self, parents: list) -> list:
+    def vary(self, parents: List[T]) -> List[T]:
         """Crossover all parents.
 
         :param parents:
@@ -83,7 +87,9 @@ class MutationVariator(Variator):
         super().__init__(operator)
         self.m_prob = m_prob
 
-    def mutate_all(self, individuals: list) -> list:
+    T = TypeVar('T')
+
+    def mutate_all(self, individuals: List[T]) -> List[T]:
         """Mutation applied to all offspring.
 
         :param individuals: the members of the population
@@ -102,7 +108,7 @@ class MutationVariator(Variator):
 
         return offspring_mut
 
-    def vary(self, parents: list):
+    def vary(self, parents: List[T]) -> List[T]:
         return self.mutate_all(parents)
 
     def __repr__(self):
@@ -119,7 +125,9 @@ class PopulationOperator:
             raise TypeError(f'All items must be of type {Variator.__name__}')
         self.variators = variators
 
-    def create_offspring(self, population: list) -> list:
+    T = TypeVar('T')
+
+    def create_offspring(self, population: List[T]) -> List[T]:
         """Create offspring by varying all population.
 
         :param population:

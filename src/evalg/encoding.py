@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional
 
 from GPy.kern.src.kern import Kern
 from graphviz import Digraph
@@ -22,6 +22,7 @@ def val_to_label(value) -> str:
 
 class TreeNode:
     label: str
+    parent: Optional
 
     def __init__(self, value, parent=None):
         self._value = value
@@ -50,8 +51,8 @@ class BinaryTreeNode(TreeNode):
     def __init__(self, value, parent=None):
         super().__init__(value, parent)
 
-        self.left = None
-        self.right = None
+        self.left: Optional = None
+        self.right: Optional = None
 
     def add_left(self, val):
         """Add left node.
@@ -71,7 +72,7 @@ class BinaryTreeNode(TreeNode):
         self.right = BinaryTreeNode(val, self)
         return self.right
 
-    def create_graph(self, graph: Union[None, Digraph] = None) -> Digraph:
+    def create_graph(self, graph: Optional[Digraph] = None) -> Digraph:
         """Create a graphviz graph of the binary tree node.
 
         :param graph:
@@ -109,6 +110,7 @@ class BinaryTreeNode(TreeNode):
 
 
 class BinaryTree:
+    root: Optional[BinaryTreeNode]
 
     def __init__(self, root: BinaryTreeNode = None):
         if root is not None and not isinstance(root, BinaryTreeNode):
@@ -122,7 +124,7 @@ class BinaryTree:
         """
         return self.root.create_graph()
 
-    def select_postorder(self, node_idx: int) -> Union[BinaryTreeNode, None]:
+    def select_postorder(self, node_idx: int) -> Optional[BinaryTreeNode]:
         """Select node from binary tree given postorder index.
 
         :param node_idx:
@@ -176,7 +178,7 @@ class BinaryTree:
         """
         return infix_tokens_to_postfix_tokens(self.infix_tokens())
 
-    def _infix_helper(self, root: BinaryTreeNode, expression: Union[str, None] = None) -> str:
+    def _infix_helper(self, root: BinaryTreeNode, expression: Optional[str] = None) -> str:
         """Helper function to get the infix string of a binary tree node.
 
         :param root:
@@ -199,7 +201,7 @@ class BinaryTree:
 
         return expression
 
-    def _infix_tokens_helper(self, root: BinaryTreeNode, tokens: list = None) -> list:
+    def _infix_tokens_helper(self, root: BinaryTreeNode, tokens: Optional[list] = None) -> list:
         """Helper function to get the infix tokens of a binary tree node.
 
         :param root:
@@ -222,7 +224,7 @@ class BinaryTree:
 
         return tokens
 
-    def _height_helper(self, node: BinaryTreeNode) -> int:
+    def _height_helper(self, node: Optional[BinaryTreeNode]) -> int:
         """Helper function to get the height of a binary tree node.
 
         :param node:

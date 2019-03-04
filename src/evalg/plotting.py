@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -88,9 +88,9 @@ def setup_optima(fig: Figure, x: np.ndarray, optima: np.ndarray, optima_label: s
     return fig
 
 
-def plot_distribution(values: np.ndarray, stds: np.ndarray = None, optima: np.ndarray = None,
-                      x_label: str = 'generation',
-                      value_name: str = 'average', metric_name: str = 'fitness', optima_name: str = 'best') -> Figure:
+def plot_distribution(values: np.ndarray, stds: Optional[np.ndarray] = None, optima: Optional[np.ndarray] = None,
+                      x_label: str = 'generation', value_name: str = 'average', metric_name: str = 'fitness',
+                      optima_name: str = 'best') -> Figure:
     """Plot distribution of values.
 
     :param values:

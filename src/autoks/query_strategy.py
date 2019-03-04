@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import numpy as np
 
@@ -62,8 +62,10 @@ class QueryStrategy(Selector, ABC):
     Given a list of un-evaluated models, a scoring function, and training data
     we return x_star (chosen)
     """
+    n_individuals: int
+    scoring_func: AcquisitionFunction
 
-    def __init__(self, n_individuals: int, scoring_func: AcquisitionFunction):
+    def __init__(self, n_individuals, scoring_func):
         super().__init__(n_individuals)
         self.scoring_func = scoring_func
 
@@ -95,8 +97,9 @@ class QueryStrategy(Selector, ABC):
 
 
 class NaiveQueryStrategy(QueryStrategy, AllSelector):
+    scoring_func: Optional[AcquisitionFunction]
 
-    def __init__(self, n_individuals: int = 1, scoring_func: AcquisitionFunction = None):
+    def __init__(self, n_individuals=1, scoring_func=None):
         if scoring_func is None:
             scoring_func = UniformScorer()
         super().__init__(n_individuals, scoring_func)
@@ -104,7 +107,7 @@ class NaiveQueryStrategy(QueryStrategy, AllSelector):
 
 class BestScoreStrategy(QueryStrategy):
 
-    def __init__(self, scoring_func: AcquisitionFunction, n_individuals: int = 1):
+    def __init__(self, scoring_func, n_individuals=1):
         super().__init__(n_individuals, scoring_func)
 
     def select(self, population: np.ndarray, scores: np.ndarray) -> list:
