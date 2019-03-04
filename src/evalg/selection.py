@@ -10,7 +10,7 @@ class Selector:
             raise ValueError('The number of individuals must be non-negative.')
         self.n_individuals = n_individuals
 
-    def _select_helper(self, population: np.array, fitness_list: Union[np.array, None]) -> np.array:
+    def _select_helper(self, population: np.ndarray, fitness_list: Union[np.ndarray, None]) -> np.ndarray:
         """Helper function to select from population using a fitness list.
 
         :param population:
@@ -27,7 +27,7 @@ class Selector:
 
         return population[self.arg_select(population, fitness_list)]
 
-    def select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Select from population.
 
         :param population:
@@ -36,7 +36,7 @@ class Selector:
         """
         raise NotImplementedError("Implement select in a child class")
 
-    def arg_select(self, population: np.array, fitness_list: np.array) -> np.array:
+    def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Select indices from population.
 
         :param population:
