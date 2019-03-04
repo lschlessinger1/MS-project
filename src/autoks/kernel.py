@@ -1,4 +1,4 @@
-from typing import List, Type, Union
+from typing import List, Type, Union, Optional, Dict, TypeVar
 
 import numpy as np
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
@@ -23,7 +23,7 @@ class AKSKernel:
         self._score = None
 
     @property
-    def score(self):
+    def score(self) -> Optional[float]:
         return self._score
 
     @score.setter
@@ -71,7 +71,7 @@ class AKSKernel:
             f'{self.score!r}) '
 
 
-def get_kernel_mapping() -> dict:
+def get_kernel_mapping() -> Dict[str, Type[Kern]]:
     """Get the map from allowable kernels to the corresponding class.
 
     :return:
@@ -114,7 +114,8 @@ def get_all_1d_kernels(base_kernels: List[str], n_dims: int) -> List[Kern]:
     return models
 
 
-def create_1d_kernel(kernel_family: str, active_dim: int, kernel_mapping: dict = None, kernel_map=None) -> Kern:
+def create_1d_kernel(kernel_family: str, active_dim: int, kernel_mapping: Dict[str, Type[Kern]] = None,
+                     kernel_map: Type[Kern] = None) -> Kern:
     """Create a 1D kernel.
 
     :param kernel_family:
@@ -191,7 +192,7 @@ def in_order(root: Kern, tokens: list = []) -> List[str]:
     return tokens
 
 
-def tokenize(list_nd: list):
+def tokenize(list_nd: list) -> list:
     """Tokenize a list.
 
     :param list_nd:
@@ -213,8 +214,11 @@ def flatten(list_nd: list) -> list:
     return [list_nd] if not isinstance(list_nd, list) else [x for X in list_nd for x in flatten(X)]
 
 
-def remove_outer_parens(list_nd: list) -> list:
-    """Remove outer parentheses from a list of tokens
+T = TypeVar('T')
+
+
+def remove_outer_parens(list_nd: List[T]) -> List[T]:
+    """Remove outer parentheses from a list of tokens.
 
     :param list_nd:
     :return:
@@ -228,7 +232,7 @@ def remove_outer_parens(list_nd: list) -> list:
         raise ValueError('List must have length >= 2')
 
 
-def join_operands(operands: list, operator: list) -> list:
+def join_operands(operands: list, operator: str) -> list:
     """Join operands using operators
 
     :param operands:
@@ -346,7 +350,7 @@ def n_base_kernels(kernel: Kern) -> int:
     return count[0]
 
 
-def covariance_distance(kernels: list, X: np.ndarray) -> np.ndarray:
+def covariance_distance(kernels: List[Kern], X: np.ndarray) -> np.ndarray:
     """Euclidean distance of all pairs kernels.
 
     :param kernels:
@@ -401,7 +405,7 @@ def sort_kernel(kernel: Kern) -> Union[Kern, None]:
             return k_sorted
 
 
-def sort_combination_kernel(kernel: Kern, new_ops: list) -> Kern:
+def sort_combination_kernel(kernel: Kern, new_ops: List[Kern]) -> Kern:
     """Helper function to sort a combination kernel.
 
     :param kernel:
