@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Optional, Tuple
 
 import numpy as np
+from GPy import Model
 from GPy.core import GP
 from GPy.kern import Kern
 
@@ -37,6 +38,30 @@ def model_to_binexptree(model: GP) -> BinaryTree:
     postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
     tree = postfix_tokens_to_binexp_tree(postfix_tokens)
     return tree
+
+
+def save_model(m: Model, output_file_name: str, compress: bool = False, save_data: bool = False) -> None:
+    """Save a GPy model.
+
+    :param m: The GPy model to save.
+    :param output_file_name: The path of the file to save.
+    :param compress: if true, save a ZIp, otherwise save a JSON file.
+    :param save_data: A flag indicating whether or not to save the data.
+    :return:
+    """
+    # GPy.model.Model.save_model is broken! Must use hidden function _save_model for now...
+    # noinspection PyProtectedMember
+    m._save_model(output_file_name, compress=compress, save_data=save_data)
+
+
+def load_model(output_file_name: str, data: Optional[Tuple[np.ndarray, np.ndarray]]) -> Model:
+    """Load a GPy model.
+
+    :param output_file_name: The path of the file containing the saved model.
+    :param data: A tuple containing X and Y arrays. data = (x, y).
+    :return: The GPy model.
+    """
+    return Model.load_model(output_file_name, data=data)
 
 
 def set_model_kern(model: GP, new_kern: Kern) -> None:
