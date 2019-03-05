@@ -110,6 +110,7 @@ def BIC(model: GP) -> float:
     # len(model.x) is the number of data points.
     # model._size_transformed() is the number of optimisation parameters.
     n = len(model.X)
+    # noinspection PyProtectedMember
     k = model._size_transformed()
     return np.log(n) * k - 2 * model.log_likelihood()
 
@@ -125,6 +126,7 @@ def AIC(model: GP) -> float:
     """
     # model.log_likelihood() is the natural logarithm of the marginal likelihood of the Gaussian process.
     # model._size_transformed() is the number of optimisation parameters.
+    # noinspection PyProtectedMember
     k = model._size_transformed()
     return 2 * k - 2 * model.log_likelihood()
 
@@ -137,6 +139,7 @@ def pl2(model: GP) -> float:
     :return:
     """
     n = len(model.X)
+    # noinspection PyProtectedMember
     k = model._size_transformed()
     nll = -model.log_likelihood()
     return nll / n + k / (2 * n)
