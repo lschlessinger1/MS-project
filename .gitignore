@@ -103,5 +103,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# Misc.
 src/experiments/results/*.pdf
 src/experiments/results/*.tex
+# for PyCharm LaTeX compiler
+auxil/
+out/
