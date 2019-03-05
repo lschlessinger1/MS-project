@@ -30,7 +30,7 @@ class Experiment:
     standardize_x: bool
     standardize_y: bool
     eval_budget: int
-    max_depth: int
+    max_depth: Optional[int]
     init_query_strat: Optional[QueryStrategy]
     query_strat: Optional[QueryStrategy]
     gp_model: Optional[GP]
@@ -41,7 +41,7 @@ class Experiment:
     n_restarts_optimizer: int
 
     def __init__(self, grammar, objective, kernel_families, x_train, y_train, x_test, y_test, standardize_x=True,
-                 standardize_y=True, eval_budget=50, max_depth=10, gp_model=None, init_query_strat=None,
+                 standardize_y=True, eval_budget=50, max_depth=None, gp_model=None, init_query_strat=None,
                  query_strat=None, additive_form=False, debug=False, verbose=False, optimizer=None,
                  n_restarts_optimizer=10):
         self.grammar = grammar
@@ -65,7 +65,13 @@ class Experiment:
         self.n_dims = self.x_train.shape[1]
 
         self.eval_budget = eval_budget  # number of model evaluations (budget)
-        self.max_depth = max_depth
+
+        if max_depth is None:
+            # By default, the model search is terminated only when the evaluation budget is expended.
+            self.max_depth = np.inf
+        else:
+            self.max_depth = max_depth
+
         self.n_evals = 0
         self.additive_form = additive_form
         self.debug = debug
@@ -132,7 +138,8 @@ class Experiment:
                 break
 
             if self.debug and depth % 2 == 0:
-                print('Starting iteration %d/%d' % (depth, self.max_depth))
+                if self.max_depth < np.inf:
+                    print('Starting iteration %d/%d' % (depth, self.max_depth))
                 print('Evaluated %d/%d kernels' % (self.n_evals, self.eval_budget))
 
             new_kernels = self.propose_new_kernels(self.select_parents(kernels))

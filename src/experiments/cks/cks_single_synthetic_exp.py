@@ -30,6 +30,6 @@ objective = negative_BIC
 # use conjugate gradient descent for CKS
 optimizer = 'scg'
 
-experiment = Experiment(grammar, objective, base_kernels, x_train, y_train, x_test, y_test, eval_budget=50, debug=True,
-                        verbose=True, optimizer=optimizer)
+experiment = Experiment(grammar, objective, base_kernels, x_train, y_train, x_test, y_test, eval_budget=50,
+                        max_depth=10, debug=True, verbose=True, optimizer=optimizer)
 experiment.run(title='Simple CKS Experiment')
