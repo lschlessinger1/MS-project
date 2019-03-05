@@ -82,7 +82,7 @@ def BIC(model: GP) -> float:
     BIC = ln(n)k - 2ln(L^)
     """
     # model.log_likelihood() is the natural logarithm of the marginal likelihood of the Gaussian process.
-    # len(model.X) is the number of data points.
+    # len(model.x) is the number of data points.
     # model._size_transformed() is the number of optimisation parameters.
     n = len(model.X)
     k = model._size_transformed()

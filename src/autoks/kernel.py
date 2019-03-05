@@ -350,11 +350,11 @@ def n_base_kernels(kernel: Kern) -> int:
     return count[0]
 
 
-def covariance_distance(kernels: List[Kern], X: np.ndarray) -> np.ndarray:
+def covariance_distance(kernels: List[Kern], x: np.ndarray) -> np.ndarray:
     """Euclidean distance of all pairs kernels.
 
     :param kernels:
-    :param X:
+    :param x:
     :return:
     """
     # For each pair of kernel matrices, compute Euclidean distance
@@ -362,21 +362,21 @@ def covariance_distance(kernels: List[Kern], X: np.ndarray) -> np.ndarray:
     dists = np.zeros((n_kernels, n_kernels))
     for i in range(n_kernels):
         for j in range(i + 1, n_kernels):
-            dists[i, j] = kernel_l2_dist(kernels[i], kernels[j], X)
+            dists[i, j] = kernel_l2_dist(kernels[i], kernels[j], x)
     # Make symmetric
     dists = (dists + dists.T) / 2.
     return dists
 
 
-def kernel_l2_dist(kernel_1: Kern, kernel_2: Kern, X: np.ndarray) -> float:
+def kernel_l2_dist(kernel_1: Kern, kernel_2: Kern, x: np.ndarray) -> float:
     """Euclidean distance between two kernel matrices.
 
     :param kernel_1:
     :param kernel_2:
-    :param X:
+    :param x:
     :return:
     """
-    return np.linalg.norm(kernel_1.K(X, X) - kernel_2.K(X, X))
+    return np.linalg.norm(kernel_1.K(x, x) - kernel_2.K(x, x))
 
 
 def sort_kernel(kernel: Kern) -> Union[Kern, None]:

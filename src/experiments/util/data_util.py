@@ -43,8 +43,8 @@ class FileDatasetGenerator(DatasetGenerator):
     def gen_dataset(self) -> Tuple[np.ndarray, np.ndarray]:
         data = np.genfromtxt(self.path, delimiter=',')
         # assume output dimension is 1
-        X, y = data[:, :-1], data[:, -1]
-        return X, y
+        x, y = data[:, :-1], data[:, -1]
+        return x, y
 
 
 class KnownGPGenerator(DatasetGenerator):
@@ -58,8 +58,8 @@ class KnownGPGenerator(DatasetGenerator):
         self.n_pts = n_pts
 
     def gen_dataset(self) -> Tuple[np.ndarray, np.ndarray]:
-        X, y = sample_gp(self.kernel, self.n_pts, self.noise_var)
-        return X, y
+        x, y = sample_gp(self.kernel, self.n_pts, self.noise_var)
+        return x, y
 
 
 def gen_dataset_paths(data_dir: str, file_suffix: str = '.csv') -> List[str]:
@@ -81,24 +81,24 @@ def run_experiments(ds_generators: Iterable[DatasetGenerator], grammar: BaseGram
                     base_kernels: Optional[List[str]] = None, **kwargs) -> None:
     for generator in ds_generators:
         print(f'Performing experiment on {generator.path}')
-        X, y = generator.gen_dataset()
+        x, y = generator.gen_dataset()
 
         if base_kernels is None:
-            base_kernels = CKSGrammar.get_base_kernels(X.shape[1])
+            base_kernels = CKSGrammar.get_base_kernels(x.shape[1])
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
-        experiment = Experiment(grammar, objective, base_kernels, X_train, y_train, X_test, y_test, **kwargs)
+        experiment = Experiment(grammar, objective, base_kernels, x_train, y_train, x_test, y_test, **kwargs)
         experiment.run(title='Random Experiment')
 
 
 def sample_gp(kernel: Kern, n_pts: int = 500, noise_var: float = 1) -> Tuple[np.ndarray, np.ndarray]:
     """Sample paths from a GP"""
-    X = np.random.uniform(0., 1., (n_pts, kernel.input_dim))
+    x = np.random.uniform(0., 1., (n_pts, kernel.input_dim))
 
     # zero-mean
     prior_mean = np.zeros(n_pts)
-    prior_cov = kernel.K(X)
+    prior_cov = kernel.K(x)
 
     # Generate a sample path
     Z = np.random.multivariate_normal(prior_mean, prior_cov)
@@ -107,7 +107,7 @@ def sample_gp(kernel: Kern, n_pts: int = 500, noise_var: float = 1) -> Tuple[np.
     noise = np.random.randn(n_pts, 1) * np.sqrt(noise_var)
     y = Z.reshape(-1, 1) + noise
 
-    return X, y
+    return x, y
 
 
 def cks_known_kernels() -> List[Kern]:

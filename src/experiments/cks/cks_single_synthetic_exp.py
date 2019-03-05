@@ -11,11 +11,11 @@ np.random.seed(4096)
 
 # Create synthetic dataset
 generator = Sinosoid2Generator(n_samples=100, input_dim=1)
-X, y = generator.gen_dataset()
+x, y = generator.gen_dataset()
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
-base_kernels = CKSGrammar.get_base_kernels(X.shape[1])
+base_kernels = CKSGrammar.get_base_kernels(x.shape[1])
 grammar = CKSGrammar(n_parents=1, max_candidates=0, max_offspring=1000)
 
 
@@ -30,6 +30,6 @@ objective = negative_BIC
 # use conjugate gradient descent for CKS
 optimizer = 'scg'
 
-experiment = Experiment(grammar, objective, base_kernels, X_train, y_train, X_test, y_test, eval_budget=50, debug=True,
+experiment = Experiment(grammar, objective, base_kernels, x_train, y_train, x_test, y_test, eval_budget=50, debug=True,
                         verbose=True, optimizer=optimizer)
 experiment.run(title='Simple CKS Experiment')

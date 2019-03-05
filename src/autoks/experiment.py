@@ -23,11 +23,11 @@ class Experiment:
     grammar: BaseGrammar
     objective: Callable
     kernel_families: List[str]
-    X_train: np.ndarray
+    x_train: np.ndarray
     y_train: np.ndarray
-    X_test: np.ndarray
+    x_test: np.ndarray
     y_test: np.ndarray
-    standardize_X: bool
+    standardize_x: bool
     standardize_y: bool
     eval_budget: int
     max_depth: int
@@ -40,7 +40,7 @@ class Experiment:
     optimizer: Optional[str]
     n_restarts_optimizer: int
 
-    def __init__(self, grammar, objective, kernel_families, X_train, y_train, X_test, y_test, standardize_X=True,
+    def __init__(self, grammar, objective, kernel_families, x_train, y_train, x_test, y_test, standardize_x=True,
                  standardize_y=True, eval_budget=50, max_depth=10, gp_model=None, init_query_strat=None,
                  query_strat=None, additive_form=False, debug=False, verbose=False, optimizer=None,
                  n_restarts_optimizer=10):
@@ -48,21 +48,21 @@ class Experiment:
         self.objective = objective
         self.kernel_families = kernel_families
 
-        self.X_train = X_train
-        self.X_test = X_test
+        self.x_train = x_train
+        self.x_test = x_test
         # Make y >= 2-dimensional
         self.y_train = y_train.reshape(-1, 1) if y_train.ndim == 1 else y_train
         self.y_test = y_test.reshape(-1, 1) if y_test.ndim == 1 else y_test
         # only save scaled version of data
-        if standardize_X or standardize_y:
+        if standardize_x or standardize_y:
             scaler = StandardScaler()
-            if standardize_X:
-                self.X_train = scaler.fit_transform(self.X_train)
-                self.X_test = scaler.transform(self.X_test)
+            if standardize_x:
+                self.x_train = scaler.fit_transform(self.x_train)
+                self.x_test = scaler.transform(self.x_test)
             if standardize_y:
                 self.y_train = scaler.fit_transform(self.y_train)
-                self.X_test = scaler.transform(self.y_test)
-        self.n_dims = self.X_train.shape[1]
+                self.x_test = scaler.transform(self.y_test)
+        self.n_dims = self.x_train.shape[1]
 
         self.eval_budget = eval_budget  # number of model evaluations (budget)
         self.max_depth = max_depth
@@ -96,7 +96,7 @@ class Experiment:
             self.gp_model = gp_model
         else:
             # default model is GP Regression
-            self.gp_model = GPRegression(self.X_train, self.y_train)
+            self.gp_model = GPRegression(self.x_train, self.y_train)
 
         if init_query_strat is not None:
             self.init_query_strat = init_query_strat
@@ -161,7 +161,7 @@ class Experiment:
         :return:
         """
         unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
-        ind, acq_scores = query_strategy.query(unscored_kernels, self.X_train, self.y_train)
+        ind, acq_scores = query_strategy.query(unscored_kernels, self.x_train, self.y_train)
         selected_kernels = query_strategy.select(np.array(unscored_kernels), acq_scores)
 
         if self.verbose:
@@ -351,7 +351,7 @@ class Experiment:
         sorted_aks_kernels = sorted(scored_kernels, key=lambda x: x.score, reverse=True)
         best_aks_kernel = sorted_aks_kernels[0]
         best_kernel = best_aks_kernel.kernel
-        best_model = self.gp_model.__class__(self.X_train, self.y_train, kernel=best_kernel)
+        best_model = self.gp_model.__class__(self.x_train, self.y_train, kernel=best_kernel)
 
         # If training data is 1D, show a plot.
         if best_model.input_dim == 1:
@@ -380,7 +380,7 @@ class Experiment:
         # Summarize model
         nll = -best_model.log_likelihood()
         nll_norm = log_likelihood_normalized(best_model)
-        mean_nlpd = np.mean(-best_model.log_predictive_density(self.X_test, self.y_test))
+        mean_nlpd = np.mean(-best_model.log_predictive_density(self.x_test, self.y_test))
         aic = AIC(best_model)
         bic = BIC(best_model)
         pl2_score = pl2(best_model)
@@ -394,11 +394,11 @@ class Experiment:
         print('')
 
         # Compare RMSE of best model to other models
-        best_model_rmse = compute_gpy_model_rmse(best_model, self.X_test, self.y_test)
-        svm_rmse = rmse_svr(self.X_train, self.y_train, self.X_test, self.y_test)
-        lr_rmse = rmse_lin_reg(self.X_train, self.y_train, self.X_test, self.y_test)
-        se_rmse = rmse_rbf(self.X_train, self.y_train, self.X_test, self.y_test)
-        knn_rmse = rmse_knn(self.X_train, self.y_train, self.X_test, self.y_test)
+        best_model_rmse = compute_gpy_model_rmse(best_model, self.x_test, self.y_test)
+        svm_rmse = rmse_svr(self.x_train, self.y_train, self.x_test, self.y_test)
+        lr_rmse = rmse_lin_reg(self.x_train, self.y_train, self.x_test, self.y_test)
+        se_rmse = rmse_rbf(self.x_train, self.y_train, self.x_test, self.y_test)
+        knn_rmse = rmse_knn(self.x_train, self.y_train, self.x_test, self.y_test)
 
         print('RMSE Best Model = %.3f' % best_model_rmse)
         print('RMSE Linear Regression = %.3f' % lr_rmse)
@@ -422,7 +422,7 @@ class Experiment:
             if self.verbose:
                 print('')
                 print('Creating report...')
-            report_gen = ExperimentReportGenerator(self, aks_kernels, self.X_test, self.y_test)
+            report_gen = ExperimentReportGenerator(self, aks_kernels, self.x_test, self.y_test)
             report_gen.summarize_experiment(**kwargs)
 
         return aks_kernels
@@ -528,7 +528,7 @@ class Experiment:
             self.std_n_operands.append(np.std(n_operands))
             self.best_n_operands.append(n_operands[score_argmax])
 
-            cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in scored_kernels], self.X_train)
+            cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in scored_kernels], self.x_train)
             self.mean_cov_dists.append(np.mean(cov_dists))
             self.std_cov_dists.append(np.std(cov_dists))
 

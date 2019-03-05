@@ -19,105 +19,105 @@ from src.autoks.model import AIC, BIC, pl2, log_likelihood_normalized
 from src.evalg.plotting import plot_distribution, plot_best_so_far
 
 
-def compute_skmodel_rmse(model, X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> \
+def compute_skmodel_rmse(model, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray) -> \
         float:
     """RMSE of a scikit-learn model.
 
     :param model:
-    :param X_train:
+    :param x_train:
     :param y_train:
-    :param X_test:
+    :param x_test:
     :param y_test:
     :return:
     """
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
     return np.sqrt(mean_squared_error(y_test, y_pred))
 
 
-def compute_gpy_model_rmse(model: GP, X_test: np.ndarray, y_test: np.ndarray) -> float:
+def compute_gpy_model_rmse(model: GP, x_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a GPy model.
 
     :param model:
-    :param X_test:
+    :param x_test:
     :param y_test:
     :return:
     """
-    mean, var = model.predict(X_test)
+    mean, var = model.predict(x_test)
     y_pred = mean
     return np.sqrt(mean_squared_error(y_test, y_pred))
 
 
-def rmse_rbf(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> float:
+def rmse_rbf(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a GPy RBF kernel.
 
-    :param X_train:
+    :param x_train:
     :param y_train:
-    :param X_test:
+    :param x_test:
     :param y_test:
     :return:
     """
-    model = GPRegression(X_train, y_train, kernel=RBF(input_dim=X_train.shape[1]))
-    return compute_gpy_model_rmse(model, X_test, y_test)
+    model = GPRegression(x_train, y_train, kernel=RBF(input_dim=x_train.shape[1]))
+    return compute_gpy_model_rmse(model, x_test, y_test)
 
 
-def rmse_svr(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> float:
+def rmse_svr(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a Support Vector Machine for regression.
 
-    :param X_train:
+    :param x_train:
     :param y_train:
-    :param X_test:
+    :param x_test:
     :param y_test:
     :return:
     """
-    return compute_skmodel_rmse(SVR(kernel='rbf'), X_train, y_train, X_test, y_test)
+    return compute_skmodel_rmse(SVR(kernel='rbf'), x_train, y_train, x_test, y_test)
 
 
-def rmse_lin_reg(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> float:
+def rmse_lin_reg(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a linear regression model.
 
-    :param X_train:
+    :param x_train:
     :param y_train:
-    :param X_test:
+    :param x_test:
     :param y_test:
     :return:
     """
-    return compute_skmodel_rmse(LinearRegression(), X_train, y_train, X_test, y_test)
+    return compute_skmodel_rmse(LinearRegression(), x_train, y_train, x_test, y_test)
 
 
-def rmse_knn(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> float:
+def rmse_knn(x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray) -> float:
     """RMSE of a k-nearest neighbors regressor.
 
-    :param X_train:
+    :param x_train:
     :param y_train:
-    :param X_test:
+    :param x_test:
     :param y_test:
     :return:
     """
-    return compute_skmodel_rmse(KNeighborsRegressor(), X_train, y_train, X_test, y_test)
+    return compute_skmodel_rmse(KNeighborsRegressor(), x_train, y_train, x_test, y_test)
 
 
 class ExperimentReportGenerator:
     aks_kernels: List[AKSKernel]
-    X_test: np.ndarray
+    x_test: np.ndarray
     y_test: np.ndarray
     results_dir_name: str
 
-    def __init__(self, experiment, aks_kernels, X_test, y_test, results_dir_name='results'):
+    def __init__(self, experiment, aks_kernels, x_test, y_test, results_dir_name='results'):
         self.experiment = experiment
         self.aks_kernels = aks_kernels
         self.results_dir_name = results_dir_name
 
-        self.X_train = self.experiment.X_train
+        self.x_train = self.experiment.x_train
         self.y_train = self.experiment.y_train
-        self.X_test = X_test
+        self.x_test = x_test
         self.y_test = y_test
 
         scored_kernels = [kernel for kernel in self.aks_kernels if kernel.scored]
         sorted_aks_kernels = sorted(scored_kernels, key=lambda k: k.score, reverse=True)
         self.best_aks_kernel = sorted_aks_kernels[0]
         self.best_kernel = self.best_aks_kernel.kernel
-        self.best_model = self.experiment.gp_model.__class__(self.X_train, self.y_train, kernel=self.best_kernel)
+        self.best_model = self.experiment.gp_model.__class__(self.x_train, self.y_train, kernel=self.best_kernel)
 
         self.width = r'1\textwidth'
         self.dpi = 300
@@ -294,7 +294,7 @@ class ExperimentReportGenerator:
         with doc.create(Section(title)):
             doc.append('Here is a summary of the execution time of various parts of the algorithm.')
             with doc.create(Center()) as centered:
-                with centered.create(Tabu("X[r] X[r] X[r]", to="4in")) as data_table:
+                with centered.create(Tabu("x[r] x[r] x[r]", to="4in")) as data_table:
                     header_row = ["Section", "Time Taken (s)", "Time Taken Percentage"]
                     data_table.add_row(header_row, mapper=[bold])
                     data_table.add_hline()
@@ -324,7 +324,7 @@ class ExperimentReportGenerator:
 
                     nll = -self.best_model.log_likelihood()
                     nll_norm = log_likelihood_normalized(self.best_model)
-                    mean_nlpd = np.mean(-self.best_model.log_predictive_density(self.X_test, self.y_test))
+                    mean_nlpd = np.mean(-self.best_model.log_predictive_density(self.x_test, self.y_test))
                     aic = AIC(self.best_model)
                     bic = BIC(self.best_model)
                     pl2_score = pl2(self.best_model)
@@ -352,11 +352,11 @@ class ExperimentReportGenerator:
                     data_table.add_row(header_row, mapper=[bold])
                     data_table.add_hline()
 
-                    rmse_best_model = compute_gpy_model_rmse(self.best_model, self.X_test, self.y_test)
-                    rmse_lr = rmse_lin_reg(self.X_train, self.y_train, self.X_test, self.y_test)
-                    rmse_svm = rmse_svr(self.X_train, self.y_train, self.X_test, self.y_test)
-                    se_rmse = rmse_rbf(self.X_train, self.y_train, self.X_test, self.y_test)
-                    knn_rmse = rmse_knn(self.X_train, self.y_train, self.X_test, self.y_test)
+                    rmse_best_model = compute_gpy_model_rmse(self.best_model, self.x_test, self.y_test)
+                    rmse_lr = rmse_lin_reg(self.x_train, self.y_train, self.x_test, self.y_test)
+                    rmse_svm = rmse_svr(self.x_train, self.y_train, self.x_test, self.y_test)
+                    se_rmse = rmse_rbf(self.x_train, self.y_train, self.x_test, self.y_test)
+                    knn_rmse = rmse_knn(self.x_train, self.y_train, self.x_test, self.y_test)
 
                     row = ('%0.3f %0.3f %0.3f %0.3f %0.3f' %
                            (rmse_best_model, rmse_lr, rmse_svm, se_rmse, knn_rmse)).split(' ')
