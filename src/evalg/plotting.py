@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib.figure import Figure
 
 
-def plot_best_so_far(best_so_far: np.ndarray, title: str = 'Best-So-Far Curve', x_label: str = 'Generation',
+def plot_best_so_far(best_so_far: List[float], title: str = 'Best-So-Far Curve', x_label: str = 'Generation',
                      y_label: str = 'Fitness Best So Far') -> Any:
     """Display the maximum fitness value at each generation
 
