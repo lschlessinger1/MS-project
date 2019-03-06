@@ -10,13 +10,14 @@ from src.autoks.experiment import Experiment
 from src.autoks.grammar import CKSGrammar, BaseGrammar
 
 
-class DatasetGenerator:
+class Dataset:
+    """Simple abstract class for datasets."""
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         raise NotImplementedError('Must be implemented in a child class')
 
 
-class SyntheticDatasetGenerator(DatasetGenerator, ABC):
+class SyntheticDataset(Dataset, ABC):
     n_samples: int
     input_dim: int
 
@@ -25,7 +26,7 @@ class SyntheticDatasetGenerator(DatasetGenerator, ABC):
         self.input_dim = input_dim
 
 
-class Input1DSynthGenerator(SyntheticDatasetGenerator, ABC):
+class Input1DSyntheticDataset(SyntheticDataset, ABC):
 
     def __init__(self, n_samples, input_dim):
         super().__init__(n_samples, input_dim)
@@ -33,21 +34,21 @@ class Input1DSynthGenerator(SyntheticDatasetGenerator, ABC):
             raise ValueError('Input dimension must be 1')
 
 
-class FileDatasetGenerator(DatasetGenerator):
+class FileDataset(Dataset):
     file_path: str
 
     def __init__(self, file_path):
         # assume file type of CSV
         self.path = file_path
 
-    def gen_dataset(self) -> Tuple[np.ndarray, np.ndarray]:
+    def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
         data = np.genfromtxt(self.path, delimiter=',')
         # assume output dimension is 1
         x, y = data[:, :-1], data[:, -1]
         return x, y
 
 
-class KnownGPGenerator(DatasetGenerator):
+class KnownGPDataset(Dataset):
     kernel: Kern
     noise_var: float
     n_pts: int
@@ -57,7 +58,7 @@ class KnownGPGenerator(DatasetGenerator):
         self.noise_var = noise_var
         self.n_pts = n_pts
 
-    def gen_dataset(self) -> Tuple[np.ndarray, np.ndarray]:
+    def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
         x, y = sample_gp(self.kernel, self.n_pts, self.noise_var)
         return x, y
 
@@ -77,11 +78,11 @@ def gen_dataset_paths(data_dir: str, file_suffix: str = '.csv') -> List[str]:
     return file_paths
 
 
-def run_experiments(ds_generators: Iterable[DatasetGenerator], grammar: BaseGrammar, objective: Callable,
+def run_experiments(ds_generators: Iterable[Dataset], grammar: BaseGrammar, objective: Callable,
                     base_kernels: Optional[List[str]] = None, **kwargs) -> None:
     for generator in ds_generators:
         print(f'Performing experiment on {generator.path}')
-        x, y = generator.gen_dataset()
+        x, y = generator.load_or_generate_data()
 
         if base_kernels is None:
             base_kernels = CKSGrammar.get_base_kernels(x.shape[1])

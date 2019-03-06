@@ -3,15 +3,15 @@ import numpy as np
 
 # the following were mostly taken or modified from:
 # https://gpy.readthedocs.io/en/deploy/_modules/GPy/examples/regression.html
-from src.experiments.util.data_util import SyntheticDatasetGenerator, Input1DSynthGenerator
+from src.experiments.util.data_util import SyntheticDataset, Input1DSyntheticDataset
 
 
-class Sinosoid1Generator(SyntheticDatasetGenerator):
+class Sinosoid1Dataset(SyntheticDataset):
 
     def __init__(self, n_samples: int = 50, input_dim: int = 1):
         super().__init__(n_samples, input_dim)
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         # build a design matrix with a column of integers indicating the output
         x = np.random.rand(self.n_samples, self.input_dim) * 8
 
@@ -21,12 +21,12 @@ class Sinosoid1Generator(SyntheticDatasetGenerator):
         return x, y
 
 
-class Sinosoid2Generator(SyntheticDatasetGenerator):
+class Sinosoid2Dataset(SyntheticDataset):
 
     def __init__(self, n_samples: int = 30, input_dim: int = 1):
         super().__init__(n_samples, input_dim)
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         # build a design matrix with a column of integers indicating the output
         x = np.random.rand(self.n_samples, self.input_dim) * 5
 
@@ -36,12 +36,12 @@ class Sinosoid2Generator(SyntheticDatasetGenerator):
         return x, y
 
 
-class SimplePeriodic1dGenerator(Input1DSynthGenerator):
+class SimplePeriodic1dDataset(Input1DSyntheticDataset):
 
     def __init__(self, n_samples: int = 100, input_dim: int = 1):
         super().__init__(n_samples, input_dim)
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         """1-D simple periodic data."""
         x = np.linspace(0, 10, self.n_samples).reshape(-1, 1)
         y_sin = np.sin(x * 1.5)
@@ -50,12 +50,12 @@ class SimplePeriodic1dGenerator(Input1DSynthGenerator):
         return x, y
 
 
-class PeriodicTrend1dGenerator(Input1DSynthGenerator):
+class PeriodicTrend1dDataset(Input1DSyntheticDataset):
 
     def __init__(self, n_samples: int = 100, input_dim: int = 1):
         super().__init__(n_samples, input_dim)
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         """1-D periodic trend"""
         x = np.linspace(0, 10, self.n_samples).reshape(-1, 1)
         y_sin = np.sin(x * 1.5)
@@ -64,12 +64,12 @@ class PeriodicTrend1dGenerator(Input1DSynthGenerator):
         return x, y
 
 
-class LinearTrend1dGenerator(Input1DSynthGenerator):
+class LinearTrend1dDataset(Input1DSyntheticDataset):
 
     def __init__(self, n_samples: int = 100, input_dim: int = 1):
         super().__init__(n_samples, input_dim)
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         """1-D linear data."""
         x = np.linspace(0, 10, self.n_samples).reshape(-1, 1)
         noise = np.random.randn(*x.shape)
@@ -77,24 +77,24 @@ class LinearTrend1dGenerator(Input1DSynthGenerator):
         return x, y
 
 
-class RBF1dGenerator(Input1DSynthGenerator):
+class RBF1dDataset(Input1DSyntheticDataset):
 
     def __init__(self, n_samples: int = 100, input_dim: int = 1):
         super().__init__(n_samples, input_dim)
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         x = np.linspace(0, 10, self.n_samples).reshape(-1, 1)
         f_true = np.random.multivariate_normal(np.zeros(self.n_samples), GPy.kern.RBF(1).K(x))
         y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:, None]
         return x, y
 
 
-class CubicSine1dGenerator(Input1DSynthGenerator):
+class CubicSine1dDataset(Input1DSyntheticDataset):
 
     def __init__(self, n_samples: int = 151, input_dim: int = 1):
         super().__init__(n_samples, input_dim)
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         x = (2 * np.pi) * np.random.random(self.n_samples) - np.pi
         y = np.sin(x) + np.random.normal(0, 0.2, self.n_samples)
         y = np.array([np.power(abs(y), float(1) / 3) * (1, -1)[y < 0] for y in y])
@@ -103,12 +103,12 @@ class CubicSine1dGenerator(Input1DSynthGenerator):
         return x, y
 
 
-class ToyARD4dGenerator(SyntheticDatasetGenerator):
+class ToyARD4dDataset(SyntheticDataset):
 
     def __init__(self, n_samples: int = 300, input_dim: int = 4):
         super().__init__(n_samples, input_dim)
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         # Create an artificial dataset where the values in the targets (Y)
         # only depend in dimensions 1 and 3 of the inputs (x). Run ARD to
         # see if this dependency can be recovered
@@ -129,7 +129,7 @@ class ToyARD4dGenerator(SyntheticDatasetGenerator):
         return x, y
 
 
-class RegressionGenerator(SyntheticDatasetGenerator):
+class SyntheticRegressionDataset(SyntheticDataset):
 
     def __init__(self, n_samples: int = 100, input_dim: int = 1, min_terms: int = 2, max_terms: int = 10,
                  periodic: bool = False):
@@ -138,7 +138,7 @@ class RegressionGenerator(SyntheticDatasetGenerator):
         self.max_terms = max_terms
         self.periodic = periodic
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         """Create regression problem."""
         import itertools
 
@@ -197,7 +197,7 @@ class RegressionGenerator(SyntheticDatasetGenerator):
         return x, y
 
 
-class BraninGenerator(SyntheticDatasetGenerator):
+class BraninGenerator(SyntheticDataset):
 
     def __init__(self, n_samples: int = 25, input_dim: int = 2):
         super().__init__(n_samples, input_dim)
@@ -209,7 +209,7 @@ class BraninGenerator(SyntheticDatasetGenerator):
         y += 10 * (1 - 1 / (8 * np.pi)) * np.cos(x[:, 0]) + 10
         return y
 
-    def gen_dataset(self):
+    def load_or_generate_data(self):
         """
         2-dimensional Branin function defined over [-5, 10] x [0, 15]
         and a set of 25 observations.

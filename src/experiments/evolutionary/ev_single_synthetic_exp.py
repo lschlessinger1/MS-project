@@ -8,13 +8,13 @@ from src.autoks.model import log_likelihood_normalized
 from src.evalg.genprog import SubtreeExchangeBinaryRecombinator, GrowMutator
 from src.evalg.selection import TruncationSelector, AllSelector
 from src.evalg.vary import CrossMutPopOperator, CrossoverVariator, MutationVariator
-from src.experiments.util.synthetic_data import RegressionGenerator
+from src.experiments.util.synthetic_data import SyntheticRegressionDataset
 
 # Set random seed for reproducibility.
 np.random.seed(4096)
 
-generator = RegressionGenerator(n_samples=100)
-x, y = generator.gen_dataset()
+generator = SyntheticRegressionDataset(n_samples=100)
+x, y = generator.load_or_generate_data()
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
 base_kernels = CKSGrammar.get_base_kernels(x.shape[1])

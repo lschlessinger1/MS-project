@@ -2,7 +2,7 @@ import numpy as np
 
 from src.autoks.grammar import RandomGrammar
 from src.autoks.model import BIC
-from src.experiments.util.data_util import gen_dataset_paths, FileDatasetGenerator, run_experiments
+from src.experiments.util.data_util import gen_dataset_paths, FileDataset, run_experiments
 
 # Set random seed for reproducibility.
 np.random.seed(4096)
@@ -22,7 +22,7 @@ objective = negative_BIC
 optimizer = 'scg'
 
 data_paths = gen_dataset_paths(data_dir='../data')
-generators = [FileDatasetGenerator(path) for path in data_paths]
+generators = [FileDataset(path) for path in data_paths]
 
 run_experiments(generators, grammar, objective, base_kernels=None, eval_budget=50, debug=True, verbose=True,
                 optimizer=optimizer)
