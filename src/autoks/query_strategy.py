@@ -3,58 +3,10 @@ from typing import List, Tuple, Optional
 
 import numpy as np
 
+from src.autoks.acquisition_function import AcquisitionFunction, UniformScorer
 from src.autoks.kernel import AKSKernel
 from src.evalg.selection import Selector, AllSelector
 
-
-# Acquisition Functions
-
-class AcquisitionFunction:
-
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
-        """Acquisition function score.
-
-        :param kernel:
-        :param x_train:
-        :param y_train:
-        :param hyperpriors:
-        :return:
-        """
-        raise NotImplementedError('Must be implemented in a child class')
-
-
-class UniformScorer(AcquisitionFunction):
-
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
-        """Same score for all kernels.
-
-        :param kernel:
-        :param x_train:
-        :param y_train:
-        :param hyperpriors:
-        :return:
-        """
-        return 1
-
-
-class ExpectedImprovement(AcquisitionFunction):
-
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
-        """Expected improvement (EI) acquisition function
-
-        This acquisition function takes a model (kernel and hyperpriors) and computes expected improvement using
-        the posterior Hellinger squared exponential covariance between models conditioned on the training data
-
-        :param kernel:
-        :param x_train:
-        :param y_train:
-        :param hyperpriors:
-        :return:
-        """
-        pass
-
-
-# Query Strategies
 
 class QueryStrategy(Selector, ABC):
     """Propose a model to evaluate
@@ -94,6 +46,9 @@ class QueryStrategy(Selector, ABC):
         :return:
         """
         return [self.scoring_func.score(kernel, x_train, y_train, hyperpriors) for kernel in kernels]
+
+
+# Query Strategies
 
 
 class NaiveQueryStrategy(QueryStrategy, AllSelector):
