@@ -51,7 +51,10 @@ class Selector:
 
 class AllSelector(Selector):
 
-    def __init__(self, n_individuals: int):
+    def __init__(self, n_individuals: Optional[int] = None):
+        if n_individuals is None:
+            # Set number of individuals to dummy value.
+            n_individuals = 0
         super().__init__(n_individuals)
 
     def select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
