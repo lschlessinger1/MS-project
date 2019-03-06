@@ -65,7 +65,7 @@ class BestScoreStrategy(QueryStrategy):
     def __init__(self, scoring_func, n_individuals=1):
         super().__init__(n_individuals, scoring_func)
 
-    def select(self, population: np.ndarray, scores: np.ndarray) -> list:
+    def select(self, population: np.ndarray, scores: np.ndarray) -> np.ndarray:
         """See parent docstring.
 
         :param population:
