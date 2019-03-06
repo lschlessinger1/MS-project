@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Optional
+from typing import Any, Tuple, Optional, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,7 +38,7 @@ def setup_plot(x_label: str, y_label: str, title: str) -> Figure:
     return fig
 
 
-def setup_values(fig: Figure, values: np.ndarray, value_label: str) -> Tuple[Figure, np.ndarray, np.ndarray]:
+def setup_values(fig: Figure, values: List[float], value_label: str) -> Tuple[Figure, np.ndarray, np.ndarray]:
     """Set up values.
 
     :param fig:
@@ -55,7 +55,7 @@ def setup_values(fig: Figure, values: np.ndarray, value_label: str) -> Tuple[Fig
     return fig, x, y
 
 
-def setup_stds(fig: Figure, stds: np.ndarray, mu: np.ndarray, t: np.ndarray, std_label: str = 'Confidence') -> \
+def setup_stds(fig: Figure, stds: List[float], mu: np.ndarray, t: np.ndarray, std_label: str = 'Confidence') -> \
         Tuple[Figure, np.ndarray]:
     """Set up standard deviations.
 
@@ -74,7 +74,7 @@ def setup_stds(fig: Figure, stds: np.ndarray, mu: np.ndarray, t: np.ndarray, std
     return fig, sigma
 
 
-def setup_optima(fig: Figure, x: np.ndarray, optima: np.ndarray, optima_label: str) -> Figure:
+def setup_optima(fig: Figure, x: np.ndarray, optima: List[float], optima_label: str) -> Figure:
     """Set up optima.
 
     :param fig:
@@ -88,7 +88,7 @@ def setup_optima(fig: Figure, x: np.ndarray, optima: np.ndarray, optima_label: s
     return fig
 
 
-def plot_distribution(values: np.ndarray, stds: Optional[np.ndarray] = None, optima: Optional[np.ndarray] = None,
+def plot_distribution(values: List[float], stds: Optional[List[float]] = None, optima: Optional[List[float]] = None,
                       x_label: str = 'generation', value_name: str = 'average', metric_name: str = 'fitness',
                       optima_name: str = 'best') -> Figure:
     """Plot distribution of values.
