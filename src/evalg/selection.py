@@ -161,8 +161,8 @@ class BoltzmannSelector(Selector):
         raise NotImplementedError("Boltzmann selection is not yet implemented.")
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, temperature={self.temperature!r}, ' \
-            f'prev_pop_avg={self.prev_pop_avg!r})'
+        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, temperature={self.temperature!r},' \
+            f' prev_pop_avg={self.prev_pop_avg!r})'
 
 
 class FitnessProportionalSelector(Selector):
