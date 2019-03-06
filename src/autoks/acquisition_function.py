@@ -6,7 +6,7 @@ from src.autoks.kernel import AKSKernel
 class AcquisitionFunction:
     """Abstract base class for all acquisition functions."""
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
+    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
         """Acquisition function score.
 
         :param kernel:
@@ -22,7 +22,7 @@ class AcquisitionFunction:
 
 class UniformScorer(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
+    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
         """Same score for all kernels.
 
         :param kernel:
@@ -36,7 +36,7 @@ class UniformScorer(AcquisitionFunction):
 
 class ExpectedImprovement(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> int:
+    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
         """Expected improvement (EI) acquisition function
 
         This acquisition function takes a model (kernel and hyperpriors) and computes expected improvement using
