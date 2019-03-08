@@ -12,7 +12,7 @@ from src.autoks.query_strategy import QueryStrategy, NaiveQueryStrategy, BestSco
 class TestQueryStrategy(TestCase):
 
     def setUp(self):
-        self.kernels = [AKSKernel(RBF(1), RBF(1))]
+        self.kernels = [AKSKernel(RBF(1)), AKSKernel(RBF(1))]
         self.x_train = np.array([[1, 2, 3], [4, 5, 6]])
         self.y_train = np.array([[5], [10]])
 
