@@ -72,7 +72,7 @@ class BestScoreStrategy(QueryStrategy):
         :param scores:
         :return:
         """
-        return self._select_helper(population, scores)
+        return self._select(population, scores)
 
     def arg_select(self, population: np.ndarray, scores: np.ndarray) -> List[int]:
         """Select best kernel according to scoring function.
