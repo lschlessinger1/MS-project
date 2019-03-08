@@ -34,7 +34,7 @@ class Selector:
         :param fitness_list:
         :return:
         """
-        raise NotImplementedError("Implement select in a child class")
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Select indices from population.
