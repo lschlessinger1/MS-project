@@ -10,7 +10,7 @@ class Selector:
             raise ValueError('The number of individuals must be non-negative.')
         self.n_individuals = n_individuals
 
-    def _select_helper(self, population: np.ndarray, fitness_list: Optional[np.ndarray]) -> np.ndarray:
+    def _select(self, population: np.ndarray, fitness_list: Optional[np.ndarray]) -> np.ndarray:
         """Helper function to select from population using a fitness list.
 
         :param population:
@@ -64,7 +64,7 @@ class AllSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Select all indices.
@@ -91,7 +91,7 @@ class UniformSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Uniform stochastic selection of indices.
@@ -120,7 +120,7 @@ class StochasticUnivSampSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Stochastic universal sampling selection of indices.
@@ -149,7 +149,7 @@ class BoltzmannSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
         """Boltzmann Selection of indices.
@@ -177,7 +177,7 @@ class FitnessProportionalSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Fitness-proportional selection of indices.
@@ -208,7 +208,7 @@ class SigmaScalingSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Sigma scaling selection of indices.
@@ -251,7 +251,7 @@ class TruncationSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Truncation selection of indices.
@@ -277,7 +277,7 @@ class LinearRankingSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Linear ranking selection of indices.
@@ -313,7 +313,7 @@ class ExponentialRankingSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Exponential ranking selection of indices.
@@ -349,7 +349,7 @@ class TournamentSelector(Selector):
         :param fitness_list:
         :return:
         """
-        return self._select_helper(population, fitness_list)
+        return self._select(population, fitness_list)
 
     def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Tournament selection of indices.
