@@ -7,12 +7,9 @@ from src.evalg.selection import Selector, TruncationSelector, AllSelector
 
 
 class KernelSelector:
-    n_parents: int  # Number of parents to expand each round
-    max_offspring: int  # Max. number of models to keep each round
-    max_candidates: int  # Max. number of un-evaluated models to keep each round
-    _parent_selector: Selector
-    _offspring_selector: Selector
-    _kernel_pruner: Selector
+    parent_selector: Selector
+    offspring_selector: Selector
+    kernel_pruner: Selector
 
     def __init__(self, parent_selector, offspring_selector, kernel_pruner):
         self.parent_selector = parent_selector
@@ -59,6 +56,12 @@ class KernelSelector:
 
 
 def BOMS_kernel_selector(n_parents: int = 1, max_candidates: int = 600):
+    """Construct a default BOMS kernel selector.
+
+    :param n_parents: Number of parents to expand each round
+    :param max_candidates: Max. number of un-evaluated models to keep each round
+    :return:
+    """
     parent_selector = TruncationSelector(n_parents)
     offspring_selector = AllSelector()
     kernel_pruner = TruncationSelector(max_candidates)
@@ -66,6 +69,11 @@ def BOMS_kernel_selector(n_parents: int = 1, max_candidates: int = 600):
 
 
 def CKS_kernel_selector(n_parents: int = 1):
+    """Construct a default CKS kernel selector.
+
+    :param n_parents: Number of parents to expand each round
+    :return:
+    """
     parent_selector = TruncationSelector(n_parents)
     offspring_selector = AllSelector()
     kernel_pruner = AllSelector()
@@ -73,6 +81,12 @@ def CKS_kernel_selector(n_parents: int = 1):
 
 
 def evolutionary_kernel_selector(n_parents: int = 1, max_offspring: int = 1000):
+    """Construct a default evolutionary kernel selector.
+
+    :param n_parents: Number of parents to expand each round
+    :param max_offspring: Max. number of models to keep each round
+    :return:
+    """
     parent_selector = TruncationSelector(n_parents)
     offspring_selector = TruncationSelector(max_offspring)
     kernel_pruner = AllSelector()
