@@ -50,3 +50,19 @@ class ExpectedImprovement(AcquisitionFunction):
         :return:
         """
         pass
+
+
+class RandomScorer(AcquisitionFunction):
+
+    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
+        """Random acquisition function
+
+        This acquisition function returns a random score in the half-open interval [0.0, 1.0).
+
+        :param kernel:
+        :param x_train:
+        :param y_train:
+        :param hyperpriors:
+        :return:
+        """
+        return np.random.random()
