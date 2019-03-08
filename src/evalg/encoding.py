@@ -290,9 +290,9 @@ def infix_tokens_to_postfix_tokens(infix_tokens: List[str]) -> list:
             while len(operator_stack) is not 0 and pemdas[operator_stack[-1]] >= pemdas[token]:
                 postfix_tokens.append(operator_stack.pop())
             operator_stack.append(token)
-        elif token == '(':
+        elif token == '(':  # nosec
             operator_stack.append(token)
-        elif token == ')':
+        elif token == ')':  # nosec
             top_token = operator_stack.pop()
             while top_token != '(':
                 postfix_tokens.append(top_token)
