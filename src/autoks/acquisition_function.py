@@ -21,6 +21,7 @@ class AcquisitionFunction:
 # Acquisition Functions
 
 class UniformScorer(AcquisitionFunction):
+    CONST_SCORE = 1
 
     def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
         """Same score for all kernels.
@@ -31,7 +32,7 @@ class UniformScorer(AcquisitionFunction):
         :param hyperpriors:
         :return:
         """
-        return 1
+        return self.CONST_SCORE
 
 
 class ExpectedImprovement(AcquisitionFunction):
