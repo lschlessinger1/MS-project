@@ -51,7 +51,7 @@ class TestNaiveQueryStrategy(TestCase):
         self.assertEqual(len(set(result[1])), 1)  # assert all items equal
 
     def test_select(self):
-        result = self.qs.select(np.array(self.kernels), np.array([[1, 2]]))
+        result = self.qs.select(np.array(self.kernels), np.array([1, 2]))
         self.assertListEqual(list(result.tolist()), self.kernels)
 
     def test_arg_select(self):
