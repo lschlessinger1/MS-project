@@ -82,7 +82,10 @@ def gen_dataset_paths(data_dir: str, file_suffix: str = '.csv') -> List[str]:
 def run_experiments(datasets: Iterable[Dataset], grammar: BaseGrammar, kernel_selector: KernelSelector,
                     objective: Callable, base_kernels: Optional[List[str]] = None, **kwargs) -> None:
     for dataset in datasets:
-        print(f'Performing experiment on {dataset.path}')
+        if isinstance(dataset, FileDataset):
+            print(f'Performing experiment on {dataset.path}')
+        elif isinstance(dataset, Dataset):
+            print(f'Performing experiment')
         x, y = dataset.load_or_generate_data()
 
         if base_kernels is None:
@@ -101,14 +104,14 @@ def sample_gp(kernel: Kern, n_pts: int = 500, noise_var: float = 1) -> Tuple[np.
 
     # zero-mean
     prior_mean = np.zeros(n_pts)
-    prior_cov = kernel.K(x)
+    prior_cov = kernel.K(x, x)
 
     # Generate a sample path
-    Z = np.random.multivariate_normal(prior_mean, prior_cov)
+    z = np.random.multivariate_normal(prior_mean, prior_cov)
 
     # additive Gaussian noise
     noise = np.random.randn(n_pts, 1) * np.sqrt(noise_var)
-    y = Z.reshape(-1, 1) + noise
+    y = z.reshape(-1, 1) + noise
 
     return x, y
 
