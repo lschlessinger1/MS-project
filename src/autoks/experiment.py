@@ -186,7 +186,7 @@ class Experiment:
 
         if self.verbose:
             n_selected = len(ind)
-            plural_suffix = 's' if n_selected > 1 or n_selected == 0 else None
+            plural_suffix = '' if n_selected == 1 else 's'
             print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')
 
             acq_scores_selected = [s for i, s in enumerate(acq_scores) if i in ind]
