@@ -1,4 +1,7 @@
+from typing import Optional, List
+
 import numpy as np
+from GPy.core.parameterization.priors import Prior
 
 from src.autoks.kernel import AKSKernel
 
@@ -6,7 +9,8 @@ from src.autoks.kernel import AKSKernel
 class AcquisitionFunction:
     """Abstract base class for all acquisition functions."""
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
+    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> float:
         """Acquisition function score.
 
         :param kernel:
@@ -23,7 +27,8 @@ class AcquisitionFunction:
 class UniformScorer(AcquisitionFunction):
     CONST_SCORE = 1
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
+    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> float:
         """Same score for all kernels.
 
         :param kernel:
@@ -37,7 +42,8 @@ class UniformScorer(AcquisitionFunction):
 
 class ExpectedImprovement(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
+    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> float:
         """Expected improvement (EI) acquisition function
 
         This acquisition function takes a model (kernel and hyperpriors) and computes expected improvement using
@@ -54,7 +60,8 @@ class ExpectedImprovement(AcquisitionFunction):
 
 class RandomScorer(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> float:
+    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> float:
         """Random acquisition function
 
         This acquisition function returns a random score in the half-open interval [0.0, 1.0).

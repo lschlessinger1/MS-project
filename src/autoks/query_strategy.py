@@ -2,6 +2,7 @@ from abc import ABC
 from typing import List, Tuple, Optional
 
 import numpy as np
+from GPy.core.parameterization.priors import Prior
 
 from src.autoks.acquisition_function import AcquisitionFunction, UniformScorer
 from src.autoks.kernel import AKSKernel
@@ -14,14 +15,15 @@ class QueryStrategy(Selector, ABC):
     Given a list of un-evaluated models, a scoring function, and training data
     we return x_star (chosen)
     """
-    n_individuals: int
+    n_individuals: Optional[int]
     scoring_func: AcquisitionFunction
 
     def __init__(self, n_individuals, scoring_func):
         super().__init__(n_individuals)
         self.scoring_func = scoring_func
 
-    def query(self, kernels: List[AKSKernel], x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> \
+    def query(self, kernels: List[AKSKernel], x_train: np.ndarray, y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> \
             Tuple[np.ndarray, List[float]]:
         """Query the next round of kernels using the acquisition function.
 
@@ -35,7 +37,8 @@ class QueryStrategy(Selector, ABC):
         ind = self.arg_select(np.array(kernels), scores)
         return ind, scores
 
-    def score_kernels(self, kernels: List[AKSKernel], x_train: np.ndarray, y_train: np.ndarray, hyperpriors=None) -> \
+    def score_kernels(self, kernels: List[AKSKernel], x_train: np.ndarray, y_train: np.ndarray,
+                      hyperpriors: Optional[List[Prior]] = None) -> \
             List[float]:
         """Score all kernels using the scoring function.
 
@@ -54,7 +57,7 @@ class QueryStrategy(Selector, ABC):
 class NaiveQueryStrategy(QueryStrategy, AllSelector):
     scoring_func: Optional[AcquisitionFunction]
 
-    def __init__(self, n_individuals=1, scoring_func=None):
+    def __init__(self, n_individuals=None, scoring_func=None):
         if scoring_func is None:
             scoring_func = UniformScorer()
         super().__init__(n_individuals, scoring_func)
