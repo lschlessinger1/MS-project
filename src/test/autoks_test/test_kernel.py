@@ -2,7 +2,7 @@ import unittest
 
 from GPy.kern import RBF, Add, RatQuad, Prod
 
-from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels
+from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel
 from src.autoks.util import remove_duplicates
 from src.evalg.encoding import BinaryTree
 from src.test.autoks_test.support.util import has_combo_kernel_type
@@ -91,6 +91,15 @@ class TestKernel(unittest.TestCase):
         self.assertEqual(len(result), len(kernel_types))
         k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
         self.assertTrue(all(k_types_exist))
+
+    def test_create_1d_kernel(self):
+        result = create_1d_kernel(active_dim=0, kernel_family='SE')
+        self.assertIsInstance(result, RBF)
+        self.assertEqual(result.active_dims[0], 0)
+
+        result = create_1d_kernel(active_dim=1, kernel_family='RQ')
+        self.assertIsInstance(result, RatQuad)
+        self.assertEqual(result.active_dims[0], 1)
 
 
 class TestAKSKernel(unittest.TestCase):
