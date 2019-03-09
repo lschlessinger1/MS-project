@@ -163,8 +163,10 @@ class StochasticUnivSampSelector(Selector):
 
 
 class BoltzmannSelector(Selector):
+    temperature: float
+    prev_pop_avg: float
 
-    def __init__(self, n_individuals: int, temperature: float, prev_pop_avg: float):
+    def __init__(self, n_individuals: int, temperature, prev_pop_avg):
         super().__init__(n_individuals)
         self.temperature = temperature
         self.prev_pop_avg = prev_pop_avg
