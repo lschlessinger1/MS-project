@@ -1,8 +1,6 @@
 language: python
-dist: xenial # for python 3.7
 python:
   - "3.6"
-  - "3.7"
 before_install:
   - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
 install:
