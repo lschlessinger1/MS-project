@@ -11,8 +11,8 @@ from src.experiments.util.synthetic_data import Sinosoid2Dataset
 np.random.seed(4096)
 
 # Create synthetic dataset
-generator = Sinosoid2Dataset(n_samples=100, input_dim=1)
-x, y = generator.load_or_generate_data()
+dataset = Sinosoid2Dataset(n_samples=100, input_dim=1)
+x, y = dataset.load_or_generate_data()
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 

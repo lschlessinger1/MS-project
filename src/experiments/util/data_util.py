@@ -79,11 +79,11 @@ def gen_dataset_paths(data_dir: str, file_suffix: str = '.csv') -> List[str]:
     return file_paths
 
 
-def run_experiments(ds_generators: Iterable[Dataset], grammar: BaseGrammar, kernel_selector: KernelSelector,
+def run_experiments(datasets: Iterable[Dataset], grammar: BaseGrammar, kernel_selector: KernelSelector,
                     objective: Callable, base_kernels: Optional[List[str]] = None, **kwargs) -> None:
-    for generator in ds_generators:
-        print(f'Performing experiment on {generator.path}')
-        x, y = generator.load_or_generate_data()
+    for dataset in datasets:
+        print(f'Performing experiment on {dataset.path}')
+        x, y = dataset.load_or_generate_data()
 
         if base_kernels is None:
             base_kernels = CKSGrammar.get_base_kernels(x.shape[1])

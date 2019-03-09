@@ -24,7 +24,7 @@ objective = negative_BIC
 optimizer = 'scg'
 
 data_paths = gen_dataset_paths(data_dir='../data')
-generators = [FileDataset(path) for path in data_paths]
+datasets = [FileDataset(path) for path in data_paths]
 
-run_experiments(generators, grammar, kernel_selector, objective, base_kernels=None, eval_budget=50, debug=True,
+run_experiments(datasets, grammar, kernel_selector, objective, base_kernels=None, eval_budget=50, debug=True,
                 verbose=True, optimizer=optimizer)

@@ -25,7 +25,7 @@ optimizer = 'scg'
 
 # Create synthetic dataset generators
 noise_vars = [10 ** i for i in range(-1, 2)]
-generators = [KnownGPDataset(kernel, var, 100) for var in noise_vars for kernel in cks_known_kernels()]
+datasets = [KnownGPDataset(kernel, var, 100) for var in noise_vars for kernel in cks_known_kernels()]
 
-run_experiments(generators, grammar, kernel_selector, objective, base_kernels=None, eval_budget=50, max_depth=10,
+run_experiments(datasets, grammar, kernel_selector, objective, base_kernels=None, eval_budget=50, max_depth=10,
                 debug=True, verbose=True, optimizer=optimizer)

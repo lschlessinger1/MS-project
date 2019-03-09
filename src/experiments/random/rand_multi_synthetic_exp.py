@@ -23,7 +23,7 @@ objective = negative_BIC
 # use conjugate gradient descent
 optimizer = 'scg'
 
-generators = [Sinosoid1Dataset(), Sinosoid2Dataset(), SimplePeriodic1dDataset()]
+datasets = [Sinosoid1Dataset(), Sinosoid2Dataset(), SimplePeriodic1dDataset()]
 
-run_experiments(generators, grammar, kernel_selector, objective, base_kernels=None, eval_budget=50, debug=True,
+run_experiments(datasets, grammar, kernel_selector, objective, base_kernels=None, eval_budget=50, debug=True,
                 verbose=True, optimizer=optimizer)
