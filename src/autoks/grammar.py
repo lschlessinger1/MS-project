@@ -154,17 +154,6 @@ class BOMSGrammar(BaseGrammar):
 
         return new_kernels
 
-    # def prune_candidates(self, active_set: List[AKSKernel], acq_scores: List[float]) -> List[AKSKernel]:
-    #     """Select best kernels according to expected improvement.
-    #
-    #     :param active_set:
-    #     :param acq_scores:
-    #     :return:
-    #     """
-    #     selector = TruncationSelector(self.max_candidates)
-    #     # prioritize keeping scored models
-    #     augmented_scores = [k.score if k.scored and not k.nan_scored else -np.inf for k in active_set]
-    #     return selector.select(active_set, np.array(augmented_scores))
 
     @staticmethod
     def random_walk_kernels(n_dims: int, base_kernels: List[str], t_prob: float = 1 / 3., n_walks: int = 15) -> \
