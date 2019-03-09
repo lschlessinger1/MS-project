@@ -43,7 +43,7 @@ class TestBaseGrammar(TestCase):
 
     def test_initialize(self):
         with self.assertRaises(NotImplementedError):
-            self.grammar.initialize(['SE', 'RQ'], 10, 1)
+            self.grammar.initialize(['SE', 'RQ'], 1)
 
     def test_expand(self):
         with self.assertRaises(NotImplementedError):

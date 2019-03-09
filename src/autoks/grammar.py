@@ -14,11 +14,10 @@ class BaseGrammar:
     def __init__(self):
         self.operators = BaseGrammar.DEFAULT_OPERATORS
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
         """Initialize kernels.
 
         :param kernel_families:
-        :param n_kernels:
         :param n_dims:
         :return:
         """
@@ -46,11 +45,10 @@ class EvolutionaryGrammar(BaseGrammar):
         super().__init__()
         self.population_operator = population_operator
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
         """Naive initialization of all SE_i and RQ_i (for every dimension).
 
         :param kernel_families:
-        :param n_kernels:
         :param n_dims:
         :return:
         """
@@ -104,11 +102,10 @@ class BOMSGrammar(BaseGrammar):
     def __init__(self):
         super().__init__()
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
         """Initialize kernels according to number of dimensions.
 
         :param kernel_families:
-        :param n_kernels:
         :param n_dims:
         :return:
         """
@@ -214,11 +211,10 @@ class CKSGrammar(BaseGrammar):
         else:
             return ['SE', 'RQ', 'LIN', 'PER']
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
         """Initialize with all base kernel families applied to all input dimensions.
 
         :param kernel_families:
-        :param n_kernels:
         :param n_dims:
         :return:
         """
@@ -339,11 +335,10 @@ class RandomGrammar(BaseGrammar):
     def __init__(self):
         super().__init__()
 
-    def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
+    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
         """Same initialization as CKS and BOMS
 
         :param kernel_families:
-        :param n_kernels:
         :param n_dims:
         :return:
         """
