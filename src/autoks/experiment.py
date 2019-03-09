@@ -131,6 +131,7 @@ class Experiment:
             for aks_kernel in kernels:
                 aks_kernel.to_additive_form()
 
+        # Select kernels by acquisition function to be evaluated
         selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat)
         unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
         unselected_kernels = [unscored_kernels[i] for i in range(len(unscored_kernels)) if i not in ind]
@@ -155,8 +156,8 @@ class Experiment:
             # evaluate, prune, and optimize kernels
             kernels = remove_duplicate_aks_kernels(kernels)
 
+            # Select kernels by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat)
-            # remove selected kernel from kernels
             unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
             unselected_kernels = [unscored_kernels[i] for i in range(len(unscored_kernels)) if i not in ind]
             evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
