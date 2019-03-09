@@ -51,11 +51,11 @@ class Experiment:
         self.objective = objective
         self.kernel_families = kernel_families
 
-        self.x_train = x_train
-        self.x_test = x_test
+        self.x_train = np.atleast_2d(x_train)
+        self.x_test = np.atleast_2d(x_test)
         # Make y >= 2-dimensional
-        self.y_train = y_train.reshape(-1, 1) if y_train.ndim == 1 else y_train
-        self.y_test = y_test.reshape(-1, 1) if y_test.ndim == 1 else y_test
+        self.y_train = np.atleast_2d(y_train)
+        self.y_test = np.atleast_2d(y_test)
         # only save scaled version of data
         if standardize_x or standardize_y:
             scaler = StandardScaler()
