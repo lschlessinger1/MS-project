@@ -22,9 +22,11 @@ class QueryStrategy(Selector, ABC):
         super().__init__(n_individuals)
         self.scoring_func = scoring_func
 
-    def query(self, kernels: List[AKSKernel], x_train: np.ndarray, y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> \
-            Tuple[np.ndarray, List[float]]:
+    def query(self,
+              kernels: List[AKSKernel],
+              x_train: np.ndarray,
+              y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> Tuple[np.ndarray, List[float]]:
         """Query the next round of kernels using the acquisition function.
 
         :param kernels:
@@ -37,9 +39,11 @@ class QueryStrategy(Selector, ABC):
         ind = self.arg_select(np.array(kernels), scores)
         return ind, scores
 
-    def score_kernels(self, kernels: List[AKSKernel], x_train: np.ndarray, y_train: np.ndarray,
-                      hyperpriors: Optional[List[Prior]] = None) -> \
-            List[float]:
+    def score_kernels(self,
+                      kernels: List[AKSKernel],
+                      x_train: np.ndarray,
+                      y_train: np.ndarray,
+                      hyperpriors: Optional[List[Prior]] = None) -> List[float]:
         """Score all kernels using the scoring function.
 
         :param kernels:
@@ -68,7 +72,9 @@ class BestScoreStrategy(QueryStrategy):
     def __init__(self, scoring_func, n_individuals=1):
         super().__init__(n_individuals, scoring_func)
 
-    def select(self, population: np.ndarray, scores: np.ndarray) -> np.ndarray:
+    def select(self,
+               population: np.ndarray,
+               scores: np.ndarray) -> np.ndarray:
         """See parent docstring.
 
         :param population:
@@ -77,7 +83,9 @@ class BestScoreStrategy(QueryStrategy):
         """
         return self._select(population, scores)
 
-    def arg_select(self, population: np.ndarray, scores: np.ndarray) -> List[int]:
+    def arg_select(self,
+                   population: np.ndarray,
+                   scores: np.ndarray) -> List[int]:
         """Select best kernel according to scoring function.
 
         :param population:

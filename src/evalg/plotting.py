@@ -5,7 +5,9 @@ import numpy as np
 from matplotlib.figure import Figure
 
 
-def plot_best_so_far(best_so_far: List[float], title: str = 'Best-So-Far Curve', x_label: str = 'Generation',
+def plot_best_so_far(best_so_far: List[float],
+                     title: str = 'Best-So-Far Curve',
+                     x_label: str = 'Generation',
                      y_label: str = 'Fitness Best So Far') -> Any:
     """Display the maximum fitness value at each generation
 
@@ -21,7 +23,9 @@ def plot_best_so_far(best_so_far: List[float], title: str = 'Best-So-Far Curve',
     return plt.plot(best_so_far)
 
 
-def setup_plot(x_label: str, y_label: str, title: str) -> Figure:
+def setup_plot(x_label: str,
+               y_label: str,
+               title: str) -> Figure:
     """Set up plot.
 
     :param x_label:
@@ -38,7 +42,9 @@ def setup_plot(x_label: str, y_label: str, title: str) -> Figure:
     return fig
 
 
-def setup_values(fig: Figure, values: List[float], value_label: str) -> Tuple[Figure, np.ndarray, np.ndarray]:
+def setup_values(fig: Figure,
+                 values: List[float],
+                 value_label: str) -> Tuple[Figure, np.ndarray, np.ndarray]:
     """Set up values.
 
     :param fig:
@@ -55,7 +61,11 @@ def setup_values(fig: Figure, values: List[float], value_label: str) -> Tuple[Fi
     return fig, x, y
 
 
-def setup_stds(fig: Figure, stds: List[float], mu: np.ndarray, t: np.ndarray, std_label: str = 'Confidence') -> \
+def setup_stds(fig: Figure,
+               stds: List[float],
+               mu: np.ndarray,
+               t: np.ndarray,
+               std_label: str = 'Confidence') -> \
         Tuple[Figure, np.ndarray]:
     """Set up standard deviations.
 
@@ -74,7 +84,10 @@ def setup_stds(fig: Figure, stds: List[float], mu: np.ndarray, t: np.ndarray, st
     return fig, sigma
 
 
-def setup_optima(fig: Figure, x: np.ndarray, optima: List[float], optima_label: str) -> Figure:
+def setup_optima(fig: Figure,
+                 x: np.ndarray,
+                 optima: List[float],
+                 optima_label: str) -> Figure:
     """Set up optima.
 
     :param fig:
@@ -88,8 +101,12 @@ def setup_optima(fig: Figure, x: np.ndarray, optima: List[float], optima_label: 
     return fig
 
 
-def plot_distribution(values: List[float], stds: Optional[List[float]] = None, optima: Optional[List[float]] = None,
-                      x_label: str = 'generation', value_name: str = 'average', metric_name: str = 'fitness',
+def plot_distribution(values: List[float],
+                      stds: Optional[List[float]] = None,
+                      optima: Optional[List[float]] = None,
+                      x_label: str = 'generation',
+                      value_name: str = 'average',
+                      metric_name: str = 'fitness',
                       optima_name: str = 'best') -> Figure:
     """Plot distribution of values.
 

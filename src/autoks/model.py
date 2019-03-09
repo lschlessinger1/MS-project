@@ -40,7 +40,10 @@ def model_to_binexptree(model: GP) -> BinaryTree:
     return tree
 
 
-def save_model(m: Model, output_file_name: str, compress: bool = False, save_data: bool = False) -> None:
+def save_model(m: Model,
+               output_file_name: str,
+               compress: bool = False,
+               save_data: bool = False) -> None:
     """Save a GPy model.
 
     :param m: The GPy model to save.
@@ -54,7 +57,8 @@ def save_model(m: Model, output_file_name: str, compress: bool = False, save_dat
     m._save_model(output_file_name, compress=compress, save_data=save_data)
 
 
-def load_model(output_file_name: str, data: Optional[Tuple[np.ndarray, np.ndarray]]) -> Model:
+def load_model(output_file_name: str,
+               data: Optional[Tuple[np.ndarray, np.ndarray]]) -> Model:
     """Load a GPy model.
 
     :param output_file_name: The path of the file containing the saved model.
@@ -64,7 +68,8 @@ def load_model(output_file_name: str, data: Optional[Tuple[np.ndarray, np.ndarra
     return Model.load_model(output_file_name, data=data)
 
 
-def set_model_kern(model: GP, new_kern: Kern) -> None:
+def set_model_kern(model: GP,
+                   new_kern: Kern) -> None:
     """Set the kernel of a model.
 
     :param model:
@@ -147,7 +152,8 @@ def pl2(model: GP) -> float:
 
 # Model comparison scores
 
-def bayes_factor(model_1: GP, model_2: GP) -> float:
+def bayes_factor(model_1: GP,
+                 model_2: GP) -> float:
     """Compute the Bayes factor between two models.
     https://en.wikipedia.org/wiki/Bayes_factor
 

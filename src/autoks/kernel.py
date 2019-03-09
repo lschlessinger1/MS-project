@@ -95,7 +95,8 @@ def get_matching_kernels() -> List[Type[Kern]]:
     return [RBF, RatQuad, Linear, StdPeriodic]
 
 
-def get_all_1d_kernels(base_kernels: List[str], n_dims: int) -> List[Kern]:
+def get_all_1d_kernels(base_kernels: List[str],
+                       n_dims: int) -> List[Kern]:
     """Get all possible 1-D kernels.
 
     :param base_kernels:
@@ -114,7 +115,9 @@ def get_all_1d_kernels(base_kernels: List[str], n_dims: int) -> List[Kern]:
     return models
 
 
-def create_1d_kernel(kernel_family: str, active_dim: int, kernel_mapping: Dict[str, Type[Kern]] = None,
+def create_1d_kernel(kernel_family: str,
+                     active_dim: int,
+                     kernel_mapping: Dict[str, Type[Kern]] = None,
                      kernel_map: Type[Kern] = None) -> Kern:
     """Create a 1D kernel.
 
@@ -131,7 +134,8 @@ def create_1d_kernel(kernel_family: str, active_dim: int, kernel_mapping: Dict[s
     return kernel_map(input_dim=1, active_dims=[active_dim])
 
 
-def subkernel_expression(kernel: Kern, show_params: bool = False) -> str:
+def subkernel_expression(kernel: Kern,
+                         show_params: bool = False) -> str:
     """Construct a subkernel expression
 
     :param kernel:
@@ -154,7 +158,8 @@ def subkernel_expression(kernel: Kern, show_params: bool = False) -> str:
     return kern_str
 
 
-def in_order(root: Kern, tokens: list = []) -> List[str]:
+def in_order(root: Kern,
+             tokens: list = []) -> List[str]:
     """In-order traversal of a kernel tree.
 
     :param root:
@@ -232,7 +237,8 @@ def remove_outer_parens(list_nd: List[T]) -> List[T]:
         raise ValueError('List must have length >= 2')
 
 
-def join_operands(operands: list, operator: str) -> list:
+def join_operands(operands: list,
+                  operator: str) -> list:
     """Join operands using operators
 
     :param operands:
@@ -260,7 +266,8 @@ def kernel_to_infix_tokens(kernel: Kern) -> List[str]:
     return infix_tokens
 
 
-def tokens_to_str(tokens: list, show_params: bool = False) -> str:
+def tokens_to_str(tokens: list,
+                  show_params: bool = False) -> str:
     """Convert a list of kernel tokens to a string
 
     :param tokens:
@@ -280,7 +287,8 @@ def tokens_to_str(tokens: list, show_params: bool = False) -> str:
     return token_string
 
 
-def kernel_to_infix(kernel: Kern, show_params: bool = False) -> str:
+def kernel_to_infix(kernel: Kern,
+                    show_params: bool = False) -> str:
     """Get the infix string of a kernel.
 
     :param kernel:
@@ -290,7 +298,9 @@ def kernel_to_infix(kernel: Kern, show_params: bool = False) -> str:
     return tokens_to_str(kernel_to_infix_tokens(kernel), show_params=show_params)
 
 
-def apply_op(left: Kern, right: Kern, operator: str) -> Kern:
+def apply_op(left: Kern,
+             right: Kern,
+             operator: str) -> Kern:
     """Apply binary operator to two kernels.
 
     :param left:
@@ -350,7 +360,8 @@ def n_base_kernels(kernel: Kern) -> int:
     return count[0]
 
 
-def covariance_distance(kernels: List[Kern], x: np.ndarray) -> np.ndarray:
+def covariance_distance(kernels: List[Kern],
+                        x: np.ndarray) -> np.ndarray:
     """Euclidean distance of all pairs kernels.
 
     :param kernels:
@@ -368,7 +379,9 @@ def covariance_distance(kernels: List[Kern], x: np.ndarray) -> np.ndarray:
     return dists
 
 
-def kernel_l2_dist(kernel_1: Kern, kernel_2: Kern, x: np.ndarray) -> float:
+def kernel_l2_dist(kernel_1: Kern,
+                   kernel_2: Kern,
+                   x: np.ndarray) -> float:
     """Euclidean distance between two kernel matrices.
 
     :param kernel_1:
@@ -405,7 +418,8 @@ def sort_kernel(kernel: Kern) -> Union[Kern, None]:
             return k_sorted
 
 
-def sort_combination_kernel(kernel: Kern, new_ops: List[Kern]) -> Kern:
+def sort_combination_kernel(kernel: Kern,
+                            new_ops: List[Kern]) -> Kern:
     """Helper function to sort a combination kernel.
 
     :param kernel:
@@ -486,7 +500,9 @@ def additive_form(kernel: Kern) -> Kern:
         raise TypeError('%s is not a subclass of %s' % (kernel.__class__.__name__, Kern.__name__))
 
 
-def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: int) -> np.ndarray:
+def additive_part_to_vec(additive_part: Kern,
+                         base_kernels: List[str],
+                         n_dims: int) -> np.ndarray:
     """Get the vector encoding of an additive part.
 
     Convert product into vector
@@ -523,7 +539,8 @@ def additive_part_to_vec(additive_part: Kern, base_kernels: List[str], n_dims: i
     return vec
 
 
-def kernel_vec_avg_dist(kvecs1: List[np.ndarray], kvecs2: List[np.ndarray]) -> float:
+def kernel_vec_avg_dist(kvecs1: List[np.ndarray],
+                        kvecs2: List[np.ndarray]) -> float:
     """Average Euclidean distance between two lists of vectors.
 
     :param kvecs1:
@@ -542,7 +559,9 @@ def kernel_vec_avg_dist(kvecs1: List[np.ndarray], kvecs2: List[np.ndarray]) -> f
     return avg_dist
 
 
-def all_pairs_avg_dist(kernels: List[Kern], base_kernels: List[str], n_dims: int) -> float:
+def all_pairs_avg_dist(kernels: List[Kern],
+                       base_kernels: List[str],
+                       n_dims: int) -> float:
     """Mean distance between all pairs of kernels.
 
     Can be thought of as a diversity score of a population of kernels

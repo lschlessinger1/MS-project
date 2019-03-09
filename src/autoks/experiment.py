@@ -172,8 +172,9 @@ class Experiment:
 
         return kernels
 
-    def query_kernels(self, kernels: List[AKSKernel], query_strategy: QueryStrategy) -> Tuple[List[AKSKernel],
-                                                                                              List[int], List[float]]:
+    def query_kernels(self,
+                      kernels: List[AKSKernel],
+                      query_strategy: QueryStrategy) -> Tuple[List[AKSKernel], List[int], List[float]]:
         """Select kernels using the acquisition function of the query strategy.
 
         :param kernels:
@@ -233,7 +234,10 @@ class Experiment:
 
         return new_kernels
 
-    def prune_kernels(self, kernels: List[AKSKernel], acq_scores: List[float], ind: List[int]) -> List[AKSKernel]:
+    def prune_kernels(self,
+                      kernels: List[AKSKernel],
+                      acq_scores: List[float],
+                      ind: List[int]) -> List[AKSKernel]:
         """Remove un-evaluated kernels if necessary.
 
         :param kernels:
@@ -438,7 +442,10 @@ class Experiment:
         print('RMSE RBF = %.3f' % se_rmse)
         print('RMSE k-NN = %.3f' % knn_rmse)
 
-    def run(self, summarize: bool = True, create_report: bool = True, **kwargs) -> List[AKSKernel]:
+    def run(self,
+            summarize: bool = True,
+            create_report: bool = True,
+            **kwargs) -> List[AKSKernel]:
         """Run the kernel search and optionally summarize and create a report
 
         :param summarize:

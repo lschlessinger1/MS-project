@@ -30,7 +30,8 @@ def arg_unique(data: Iterable) -> List[int]:
 T = TypeVar('T')
 
 
-def remove_duplicates(data: Sequence, values: Sequence[T]) -> List[T]:
+def remove_duplicates(data: Sequence,
+                      values: Sequence[T]) -> List[T]:
     """Remove duplicates of data and replace with values.
 
     :param data: A sequence of data items.

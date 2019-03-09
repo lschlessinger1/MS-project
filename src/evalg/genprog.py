@@ -219,7 +219,8 @@ class SubTreeExchangeMutator(TreeMutator, ABC):
         self.max_depth = max_depth
 
     @staticmethod
-    def _mutate_subtree_exchange(tree: BinaryTree, tree_generator: BinaryTreeGenerator) -> BinaryTree:
+    def _mutate_subtree_exchange(tree: BinaryTree,
+                                 tree_generator: BinaryTreeGenerator) -> BinaryTree:
         """Mutate sub-tree exchange.
 
         :param tree:
@@ -236,7 +237,9 @@ class SubTreeExchangeMutator(TreeMutator, ABC):
         return new_tree
 
     @staticmethod
-    def _swap_mut_subtree(tree: BinaryTree, r: int, random_tree: BinaryTree) -> BinaryTree:
+    def _swap_mut_subtree(tree: BinaryTree,
+                          r: int,
+                          random_tree: BinaryTree) -> BinaryTree:
         """Add mutated subtree to original tree.
 
         :param tree:
@@ -330,7 +333,8 @@ class SubtreeExchangeBinaryRecombinator(Recombinator):
         return tree_1, tree_2
 
     @staticmethod
-    def _swap_subtrees(node_1: BinaryTreeNode, node_2: BinaryTreeNode) -> Tuple[BinaryTreeNode, BinaryTreeNode]:
+    def _swap_subtrees(node_1: BinaryTreeNode,
+                       node_2: BinaryTreeNode) -> Tuple[BinaryTreeNode, BinaryTreeNode]:
         """Swap parents and children of nodes.
 
         :param node_1:
@@ -362,7 +366,8 @@ class SubtreeExchangeBinaryRecombinator(Recombinator):
         return node_1, node_2
 
     @staticmethod
-    def _valid_pair(postfix_token_1: str, postfix_token_2: str) -> bool:
+    def _valid_pair(postfix_token_1: str,
+                    postfix_token_2: str) -> bool:
         """Checks if postfix token pair is valid.
 
         :param postfix_token_1: The first token in post-order notation
@@ -377,7 +382,8 @@ class SubtreeExchangeBinaryRecombinator(Recombinator):
         return False
 
     @staticmethod
-    def _select_token_ind(postfix_tokens_1: List[str], postfix_tokens_2: List[str]) -> Tuple[int, int]:
+    def _select_token_ind(postfix_tokens_1: List[str],
+                          postfix_tokens_2: List[str]) -> Tuple[int, int]:
         """Select indices of parent postfix tokens.
 
         :param postfix_tokens_1: The first list of tokens in post-order notation

@@ -15,7 +15,9 @@ class BaseGrammar:
     def __init__(self):
         self.operators = BaseGrammar.DEFAULT_OPERATORS
 
-    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
+    def initialize(self,
+                   kernel_families: List[str],
+                   n_dims: int) -> List[AKSKernel]:
         """Initialize kernels.
 
         :param kernel_families:
@@ -24,8 +26,11 @@ class BaseGrammar:
         """
         raise NotImplementedError('initialize must implemented in a subclass')
 
-    def expand(self, kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
-            List[AKSKernel]:
+    def expand(self,
+               kernels: List[AKSKernel],
+               kernel_families: List[str],
+               n_dims: int,
+               verbose: bool = False) -> List[AKSKernel]:
         """Get next round of candidate kernels from current kernels.
 
         :param kernels:
@@ -47,7 +52,9 @@ class EvolutionaryGrammar(BaseGrammar):
         super().__init__()
         self.population_operator = population_operator
 
-    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
+    def initialize(self,
+                   kernel_families: List[str],
+                   n_dims: int) -> List[AKSKernel]:
         """Naive initialization of all SE_i and RQ_i (for every dimension).
 
         :param kernel_families:
@@ -58,8 +65,12 @@ class EvolutionaryGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
-            List[AKSKernel]:
+    def expand(self,
+               aks_kernels:
+               List[AKSKernel],
+               kernel_families: List[str],
+               n_dims: int,
+               verbose: bool = False) -> List[AKSKernel]:
         """Perform crossover and mutation.
 
         :param aks_kernels: list of AKSKernels
@@ -104,7 +115,9 @@ class BOMSGrammar(BaseGrammar):
     def __init__(self):
         super().__init__()
 
-    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
+    def initialize(self,
+                   kernel_families: List[str],
+                   n_dims: int) -> List[AKSKernel]:
         """Initialize kernels according to number of dimensions.
 
         :param kernel_families:
@@ -117,8 +130,11 @@ class BOMSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
-            List[AKSKernel]:
+    def expand(self,
+               aks_kernels: List[AKSKernel],
+               kernel_families: List[str],
+               n_dims: int,
+               verbose: bool = False) -> List[AKSKernel]:
         """Greedy and exploratory expansion of kernels.
 
         :param aks_kernels: list of AKSKernels
@@ -154,8 +170,10 @@ class BOMSGrammar(BaseGrammar):
         return new_kernels
 
     @staticmethod
-    def random_walk_kernels(n_dims: int, base_kernels: List[str], t_prob: float = 1 / 3., n_walks: int = 15) -> \
-            List[AKSKernel]:
+    def random_walk_kernels(n_dims: int,
+                            base_kernels: List[str],
+                            t_prob: float = 1 / 3.,
+                            n_walks: int = 15) -> List[AKSKernel]:
         """Geometric random walk kernels.
 
         :param n_dims:
@@ -180,7 +198,9 @@ class BOMSGrammar(BaseGrammar):
         return rw_kernels
 
     @staticmethod
-    def greedy_kernels(best_kernel: AKSKernel, n_dims: int, base_kernels: List[str]) -> List[AKSKernel]:
+    def greedy_kernels(best_kernel: AKSKernel,
+                       n_dims: int,
+                       base_kernels: List[str]) -> List[AKSKernel]:
         """Single expansion of CKS Grammar.
 
         :param best_kernel:
@@ -212,7 +232,9 @@ class CKSGrammar(BaseGrammar):
         else:
             return ['SE', 'RQ', 'LIN', 'PER']
 
-    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
+    def initialize(self,
+                   kernel_families: List[str],
+                   n_dims: int) -> List[AKSKernel]:
         """Initialize with all base kernel families applied to all input dimensions.
 
         :param kernel_families:
@@ -223,8 +245,11 @@ class CKSGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
-            List[AKSKernel]:
+    def expand(self,
+               aks_kernels: List[AKSKernel],
+               kernel_families: List[str],
+               n_dims: int,
+               verbose: bool = False) -> List[AKSKernel]:
         """Greedy expansion of nodes.
 
         :param aks_kernels:
@@ -260,8 +285,10 @@ class CKSGrammar(BaseGrammar):
         return new_kernels
 
     @staticmethod
-    def expand_single_kernel(kernel: Kern, n_dims: int, base_kernels: List[str], operators: List[str]) -> \
-            List[Kern]:
+    def expand_single_kernel(kernel: Kern,
+                             n_dims: int,
+                             base_kernels: List[str],
+                             operators: List[str]) -> List[Kern]:
         """Expand a single kernel.
 
         :param kernel:
@@ -294,7 +321,10 @@ class CKSGrammar(BaseGrammar):
         return kernels
 
     @staticmethod
-    def expand_full_kernel(kernel: Kern, n_dims: int, base_kernels: List[str], operators: List[str]) -> List[Kern]:
+    def expand_full_kernel(kernel: Kern,
+                           n_dims: int,
+                           base_kernels: List[str],
+                           operators: List[str]) -> List[Kern]:
         """Expand full kernel.
 
         :param kernel:
@@ -336,7 +366,9 @@ class RandomGrammar(BaseGrammar):
     def __init__(self):
         super().__init__()
 
-    def initialize(self, kernel_families: List[str], n_dims: int) -> List[AKSKernel]:
+    def initialize(self,
+                   kernel_families: List[str],
+                   n_dims: int) -> List[AKSKernel]:
         """Same initialization as CKS and BOMS
 
         :param kernel_families:
@@ -347,8 +379,11 @@ class RandomGrammar(BaseGrammar):
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
 
-    def expand(self, aks_kernels: List[AKSKernel], kernel_families: List[str], n_dims: int, verbose: bool = False) -> \
-            List[AKSKernel]:
+    def expand(self,
+               aks_kernels: List[AKSKernel],
+               kernel_families: List[str],
+               n_dims: int,
+               verbose: bool = False) -> List[AKSKernel]:
         """Random expansion of nodes.
 
         :param aks_kernels:

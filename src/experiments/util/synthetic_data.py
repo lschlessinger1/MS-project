@@ -134,8 +134,7 @@ class SyntheticRegressionDataset(SyntheticDataset):
     max_terms: int
     periodic: bool
 
-    def __init__(self, n_samples=100, input_dim=1, min_terms=2, max_terms=10,
-                 periodic=False):
+    def __init__(self, n_samples=100, input_dim=1, min_terms=2, max_terms=10, periodic=False):
         super().__init__(n_samples, input_dim)
         self.min_terms = min_terms
         self.max_terms = max_terms

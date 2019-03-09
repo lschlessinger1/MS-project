@@ -26,7 +26,9 @@ class TreeNode:
     parent: Optional
     _value: T
 
-    def __init__(self, value: T, parent=None):
+    def __init__(self,
+                 value: T,
+                 parent=None):
         self._value = value
         self.label = val_to_label(value)
         self.parent = parent
@@ -190,7 +192,9 @@ class BinaryTree:
         """
         return infix_tokens_to_postfix_tokens(self.infix_tokens())
 
-    def _infix_helper(self, root: BinaryTreeNode, expression: Optional[str] = None) -> str:
+    def _infix_helper(self,
+                      root: BinaryTreeNode,
+                      expression: Optional[str] = None) -> str:
         """Helper function to get the infix string of a binary tree node.
 
         :param root:
@@ -213,7 +217,9 @@ class BinaryTree:
 
         return expression
 
-    def _infix_tokens_helper(self, root: BinaryTreeNode, tokens: Optional[list] = None) -> list:
+    def _infix_tokens_helper(self,
+                             root: BinaryTreeNode,
+                             tokens: Optional[list] = None) -> list:
         """Helper function to get the infix tokens of a binary tree node.
 
         :param root:

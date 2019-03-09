@@ -64,7 +64,8 @@ class KnownGPDataset(Dataset):
         return x, y
 
 
-def gen_dataset_paths(data_dir: str, file_suffix: str = '.csv') -> List[str]:
+def gen_dataset_paths(data_dir: str,
+                      file_suffix: str = '.csv') -> List[str]:
     """Return a list of dataset file paths.
 
     Assume that all data files are CSVs
@@ -79,8 +80,12 @@ def gen_dataset_paths(data_dir: str, file_suffix: str = '.csv') -> List[str]:
     return file_paths
 
 
-def run_experiments(datasets: Iterable[Dataset], grammar: BaseGrammar, kernel_selector: KernelSelector,
-                    objective: Callable, base_kernels: Optional[List[str]] = None, **kwargs) -> None:
+def run_experiments(datasets: Iterable[Dataset],
+                    grammar: BaseGrammar,
+                    kernel_selector: KernelSelector,
+                    objective: Callable,
+                    base_kernels: Optional[List[str]] = None,
+                    **kwargs) -> None:
     for dataset in datasets:
         if isinstance(dataset, FileDataset):
             print(f'Performing experiment on {dataset.path}')
@@ -98,7 +103,9 @@ def run_experiments(datasets: Iterable[Dataset], grammar: BaseGrammar, kernel_se
         experiment.run(title='Random Experiment')
 
 
-def sample_gp(kernel: Kern, n_pts: int = 500, noise_var: float = 1) -> Tuple[np.ndarray, np.ndarray]:
+def sample_gp(kernel: Kern,
+              n_pts: int = 500,
+              noise_var: float = 1) -> Tuple[np.ndarray, np.ndarray]:
     """Sample paths from a GP"""
     x = np.random.uniform(0., 1., (n_pts, kernel.input_dim))
 

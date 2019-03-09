@@ -9,7 +9,10 @@ from src.autoks.kernel import AKSKernel
 class AcquisitionFunction:
     """Abstract base class for all acquisition functions."""
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+    def score(self,
+              kernel: AKSKernel,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
         """Acquisition function score.
 
@@ -27,7 +30,10 @@ class AcquisitionFunction:
 class UniformScorer(AcquisitionFunction):
     CONST_SCORE: float = 1
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+    def score(self,
+              kernel: AKSKernel,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
         """Same score for all kernels.
 
@@ -42,7 +48,10 @@ class UniformScorer(AcquisitionFunction):
 
 class ExpectedImprovement(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+    def score(self,
+              kernel: AKSKernel,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
         """Expected improvement (EI) acquisition function
 
@@ -60,7 +69,10 @@ class ExpectedImprovement(AcquisitionFunction):
 
 class RandomScorer(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+    def score(self,
+              kernel: AKSKernel,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
         """Random acquisition function
 
