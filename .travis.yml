@@ -8,10 +8,8 @@ install:
   - pip install pytest-cov
   - pip install coveralls
   - pip install codecov
-  - pip install bandit
 script:
   - pytest --cov=src/
-  - bandit -r src
 after_success:
   - codecov
   - coveralls
