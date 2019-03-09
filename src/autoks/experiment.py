@@ -23,7 +23,7 @@ from src.evalg.plotting import plot_best_so_far, plot_distribution
 class Experiment:
     grammar: BaseGrammar
     kernel_selector: KernelSelector
-    objective: Callable
+    objective: Callable[[GP], float]
     kernel_families: List[str]
     x_train: np.ndarray
     y_train: np.ndarray
