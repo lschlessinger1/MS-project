@@ -85,3 +85,20 @@ class RandomScorer(AcquisitionFunction):
         :return:
         """
         return np.random.random()
+
+
+class ParamProportionalScorer(AcquisitionFunction):
+
+    def score(self, kernel: AKSKernel,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> float:
+        """Score proportional to number of kernel hyperparameters.
+
+        :param kernel:
+        :param x_train:
+        :param y_train:
+        :param hyperpriors:
+        :return:
+        """
+        return -kernel.kernel.num_params  # return the negative because we want to minimize this
