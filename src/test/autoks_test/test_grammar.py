@@ -3,6 +3,7 @@ from unittest import TestCase
 from GPy.kern import RBF, RatQuad, Add
 
 from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels
+from src.autoks.kernel import AKSKernel
 from src.test.autoks_test.support.util import has_combo_kernel_type
 
 
@@ -60,6 +61,42 @@ class TestCKSGrammar(TestCase):
         self.rq0 = RatQuad(1, active_dims=[0])
         self.rq1 = RatQuad(1, active_dims=[1])
 
+    def test_initialize(self):
+        result = self.grammar.initialize(['SE', 'RQ'], n_dims=2)
+        self.assertIsInstance(result, list)
+
+        kernel_types = [self.se0, self.se1, self.rq0, self.rq1]
+        self.assertEqual(len(result), len(kernel_types))
+        kernels = [k.kernel for k in result]
+        k_types_exist = [has_combo_kernel_type(kernels, k_type) for k_type in kernel_types]
+        self.assertTrue(all(k_types_exist))
+
+        scored = [k.scored for k in result]
+        self.assertFalse(all(scored))
+        nan_scored = [k.nan_scored for k in result]
+        self.assertFalse(all(nan_scored))
+
+        result = self.grammar.initialize(['SE', 'RQ'], n_dims=1)
+        self.assertIsInstance(result, list)
+
+        kernel_types = [self.se0, self.rq0]
+        self.assertEqual(len(result), len(kernel_types))
+        kernels = [k.kernel for k in result]
+        k_types_exist = [has_combo_kernel_type(kernels, k_type) for k_type in kernel_types]
+        self.assertTrue(all(k_types_exist))
+
+        scored = [k.scored for k in result]
+        self.assertFalse(all(scored))
+        nan_scored = [k.nan_scored for k in result]
+        self.assertFalse(all(nan_scored))
+
+    def test_expand(self):
+        scored_kernel = AKSKernel(self.se0)
+        scored_kernel.score = 1
+        result = self.grammar.expand([scored_kernel], ['SE', 'RQ'], 2)
+        self.assertIsInstance(result, list)
+        # TODO: test that expand_full_kernel is called with each kernel
+
     def test_expand_single_kernel(self):
         # first, test 1d expansion of base kernel
         k = self.se0
@@ -68,9 +105,9 @@ class TestCKSGrammar(TestCase):
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
                         self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
                         self.se0, self.rq0]
-        ktypes_exist = [has_combo_kernel_type(result, ktype) for ktype in kernel_types]
+        k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
 
-        self.assertTrue(all(ktypes_exist))
+        self.assertTrue(all(k_types_exist))
         self.assertEqual(len(result), len(kernel_types))
 
         # test combination kernel expansion
@@ -81,9 +118,9 @@ class TestCKSGrammar(TestCase):
                         self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,
                         self.se1 * self.rq1 * self.se0, self.se1 * self.rq1 * self.rq0,
                         self.se1 * self.rq1 * self.se1, self.se1 * self.rq1 * self.rq1]
-        ktypes_exist = [has_combo_kernel_type(result, ktype) for ktype in kernel_types]
+        k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
 
-        self.assertTrue(all(ktypes_exist))
+        self.assertTrue(all(k_types_exist))
         self.assertEqual(len(result), len(kernel_types))
 
     def test_expand_full_kernel(self):
@@ -94,9 +131,9 @@ class TestCKSGrammar(TestCase):
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
                         self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
                         self.se0, self.rq0]
-        ktypes_exist = [has_combo_kernel_type(result, ktype) for ktype in kernel_types]
+        k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
 
-        self.assertTrue(all(ktypes_exist))
+        self.assertTrue(all(k_types_exist))
         self.assertEqual(len(result), len(kernel_types))
 
         # test combination kernel expansion
@@ -117,7 +154,7 @@ class TestCKSGrammar(TestCase):
                         self.se1 * (self.rq1 * self.se0), self.se1 * (self.rq1 * self.rq0),
                         self.se1 * (self.rq1 * self.se1), self.se1 * (self.rq1 * self.rq1),
                         self.se1 * self.se1, self.se1 * self.rq1]
-        ktypes_exist = [has_combo_kernel_type(result, ktype) for ktype in kernel_types]
+        k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
 
-        self.assertTrue(all(ktypes_exist))
+        self.assertTrue(all(k_types_exist))
         self.assertEqual(len(result), len(kernel_types))
