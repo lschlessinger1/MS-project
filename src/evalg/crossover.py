@@ -79,11 +79,20 @@ class TwoPointBinaryRecombinator(Recombinator):
 
 
 class NPointBinaryRecombinator(Recombinator):
+    _n_points: int
 
     def __init__(self, n_points: int):
+        self._n_points = n_points
+
+    @property
+    def n_points(self) -> int:
+        return self._n_points
+
+    @n_points.setter
+    def n_points(self, n_points: int) -> None:
         if n_points < 1:
             raise ValueError('n_points must be at least 1')
-        self.n_points = n_points
+        self._n_points = n_points
 
     @check_two_parents
     def crossover(self, parents: List[np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:

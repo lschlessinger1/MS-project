@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TypeVar
 
 import numpy as np
 
@@ -6,8 +6,9 @@ from src.evalg.util import swap
 
 
 class Mutator:
+    T = TypeVar('T')
 
-    def mutate(self, individual):
+    def mutate(self, individual: T) -> T:
         """Mutate individual.
 
         :param individual:
@@ -17,8 +18,9 @@ class Mutator:
 
 
 class BitFlipMutator(Mutator):
+    gene_mut_prob: Optional[float]
 
-    def __init__(self, gene_mut_prob: Optional[float] = None):
+    def __init__(self, gene_mut_prob=None):
         self.gene_mut_prob = gene_mut_prob
 
     def mutate(self, individual: np.ndarray) -> np.ndarray:

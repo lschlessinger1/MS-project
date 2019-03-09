@@ -49,12 +49,14 @@ class TreeNode:
 
 
 class BinaryTreeNode(TreeNode):
+    left: Optional
+    right: Optional
 
     def __init__(self, value, parent=None):
         super().__init__(value, parent)
 
-        self.left: Optional = None
-        self.right: Optional = None
+        self.left = None
+        self.right = None
 
     def add_left(self, value: T):
         """Add left node.
@@ -112,12 +114,20 @@ class BinaryTreeNode(TreeNode):
 
 
 class BinaryTree:
-    root: Optional[BinaryTreeNode]
+    _root: Optional[BinaryTreeNode]
 
-    def __init__(self, root: BinaryTreeNode = None):
+    def __init__(self, root: Optional[BinaryTreeNode] = None):
+        self._root = root
+
+    @property
+    def root(self) -> Optional[BinaryTreeNode]:
+        return self._root
+
+    @root.setter
+    def root(self, root: Optional[BinaryTreeNode]) -> None:
         if root is not None and not isinstance(root, BinaryTreeNode):
             raise TypeError('root must be a {}'.format(BinaryTreeNode.__name__))
-        self.root = root
+        self._root = root
 
     def create_graph(self) -> Digraph:
         """Create a graphviz graph of the binary tree.

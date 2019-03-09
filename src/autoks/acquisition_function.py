@@ -25,7 +25,7 @@ class AcquisitionFunction:
 # Acquisition Functions
 
 class UniformScorer(AcquisitionFunction):
-    CONST_SCORE = 1
+    CONST_SCORE: float = 1
 
     def score(self, kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:

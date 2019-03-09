@@ -9,7 +9,8 @@ from src.evalg.vary import PopulationOperator
 
 
 class BaseGrammar:
-    DEFAULT_OPERATORS = ['+', '*']
+    DEFAULT_OPERATORS: List[str] = ['+', '*']
+    operators: List[str]
 
     def __init__(self):
         self.operators = BaseGrammar.DEFAULT_OPERATORS
@@ -40,8 +41,9 @@ class BaseGrammar:
 
 
 class EvolutionaryGrammar(BaseGrammar):
+    population_operator: PopulationOperator
 
-    def __init__(self, population_operator: PopulationOperator):
+    def __init__(self, population_operator):
         super().__init__()
         self.population_operator = population_operator
 

@@ -7,8 +7,9 @@ from src.evalg.mutation import Mutator
 
 
 class Variator:
+    operator: Union[Mutator, Recombinator]
 
-    def __init__(self, operator: Union[Mutator, Recombinator]):
+    def __init__(self, operator):
         self.operator = operator
 
     T = TypeVar('T')
@@ -26,8 +27,12 @@ class Variator:
 
 
 class CrossoverVariator(Variator):
+    operator: Recombinator
+    n_offspring: int
+    n_way: int
+    c_prob: float
 
-    def __init__(self, operator: Recombinator, n_offspring: int, n_way: int = 2, c_prob: float = 1.):
+    def __init__(self, operator, n_offspring, n_way=2, c_prob=1.):
         """
 
         :param operator: the recombinator containing the crossover operator
@@ -77,8 +82,10 @@ class CrossoverVariator(Variator):
 
 
 class MutationVariator(Variator):
+    operator: Mutator
+    m_prob: float
 
-    def __init__(self, operator: Mutator, m_prob: float = 1.):
+    def __init__(self, operator, m_prob=1.):
         """
 
         :param operator: the mutator
@@ -117,13 +124,22 @@ class MutationVariator(Variator):
 
 class PopulationOperator:
     """Collection of variators."""
+    _variators: List[Variator]
 
     def __init__(self, variators: List[Variator]):
+        self._variators = variators
+
+    @property
+    def variators(self) -> List[Variator]:
+        return self._variators
+
+    @variators.setter
+    def variators(self, variators: List[Variator]) -> None:
         if len(variators) == 0:
             raise ValueError('variators cannot be empty')
         if not all([isinstance(v, Variator) for v in variators]):
             raise TypeError(f'All items must be of type {Variator.__name__}')
-        self.variators = variators
+        self._variators = variators
 
     T = TypeVar('T')
 
@@ -141,43 +157,101 @@ class PopulationOperator:
 
 class CrossMutPopOperator(PopulationOperator):
     """Perform both crossover then mutation to all individuals."""
+    _variators: List[Union[CrossoverVariator, MutationVariator]]
+    _crossover_variator: CrossoverVariator
+    _mutation_variator: MutationVariator
 
     def __init__(self, variators: List[Union[CrossoverVariator, MutationVariator]]):
         super().__init__(variators)
-        if len(self.variators) != 2:
+
+    @property
+    def variators(self) -> List[Union[CrossoverVariator, MutationVariator]]:
+        return self._variators
+
+    @variators.setter
+    def variators(self, variators: List[Union[CrossoverVariator, MutationVariator]]) -> None:
+        if len(variators) != 2:
             raise ValueError('Must have exactly 2 variators')
+        self._variators = variators
+        self._crossover_variator = self.variators[0]
+        self._mutation_variator = self.variators[1]
 
-        if not isinstance(self.variators[0], CrossoverVariator):
-            raise TypeError('first variator must be of type %s' % CrossoverVariator.__name__)
+    @property
+    def crossover_variator(self) -> CrossoverVariator:
+        return self._crossover_variator
 
-        if not isinstance(self.variators[1], MutationVariator):
-            raise TypeError('second variator must be of type %s' % MutationVariator.__name__)
+    @crossover_variator.setter
+    def crossover_variator(self, crossover_variator: CrossoverVariator) -> None:
+        if not isinstance(crossover_variator, CrossoverVariator):
+            raise TypeError('Variator must be of type %s' % CrossoverVariator.__name__)
+        self._crossover_variator = crossover_variator
 
-        self.crossover_variator = self.variators[0]
-        self.mutation_variator = self.variators[1]
+    @property
+    def mutation_variator(self) -> MutationVariator:
+        return self._mutation_variator
+
+    @mutation_variator.setter
+    def mutation_variator(self, mutation_variator: MutationVariator) -> None:
+        if not isinstance(mutation_variator, MutationVariator):
+            raise TypeError('Variator must be of type %s' % MutationVariator.__name__)
+        self._mutation_variator = mutation_variator
 
 
 class CrossoverPopOperator(PopulationOperator):
+    _variators: List[CrossoverVariator]
+    _crossover_variator: CrossoverVariator
 
     def __init__(self, variators: List[CrossoverVariator]):
         super().__init__(variators)
+        self._crossover_variator = self.variators[0]
+
+    @property
+    def variators(self) -> List[CrossoverVariator]:
+        return self._variators
+
+    @variators.setter
+    def variators(self, variators: List[CrossoverVariator]) -> None:
         if len(self.variators) != 1:
             raise ValueError('Must have exactly 1 variator')
+        self._variators = variators
+        self._crossover_variator = self.variators[0]
 
-        if not isinstance(self.variators[0], CrossoverVariator):
-            raise TypeError('first variator must be of type %s' % CrossoverVariator.__name__)
+    @property
+    def crossover_variator(self) -> CrossoverVariator:
+        return self._crossover_variator
 
-        self.crossover_variator = self.variators[0]
+    @crossover_variator.setter
+    def crossover_variator(self, crossover_variator: CrossoverVariator) -> None:
+        if not isinstance(crossover_variator, CrossoverVariator):
+            raise TypeError('Variator must be of type %s' % CrossoverVariator.__name__)
+        self._crossover_variator = crossover_variator
 
 
 class MutationPopOperator(PopulationOperator):
+    _variators: List[MutationVariator]
+    _mutation_variator: MutationVariator
 
     def __init__(self, variators: List[MutationVariator]):
         super().__init__(variators)
+        self._mutation_variator = self.variators[0]
+
+    @property
+    def variators(self) -> List[MutationVariator]:
+        return self._variators
+
+    @variators.setter
+    def variators(self, variators: List[MutationVariator]) -> None:
         if len(self.variators) != 1:
             raise ValueError('Must have exactly 1 variator')
+        self._variators = variators
+        self._mutation_variator = self.variators[0]
 
-        if not isinstance(self.variators[0], MutationVariator):
+    @property
+    def mutation_variator(self) -> MutationVariator:
+        return self._mutation_variator
+
+    @mutation_variator.setter
+    def mutation_variator(self, mutation_variator: MutationVariator) -> None:
+        if not isinstance(mutation_variator, MutationVariator):
             raise TypeError('First variator must be of type %s' % MutationVariator.__name__)
-
-        self.mutation_variator = self.variators[0]
+        self._mutation_variator = mutation_variator

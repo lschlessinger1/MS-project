@@ -4,16 +4,17 @@ import numpy as np
 
 
 class Selector:
+    _n_individuals: Optional[int]
 
     def __init__(self, n_individuals: Optional[int] = None):
         self._n_individuals = n_individuals
 
     @property
-    def n_individuals(self) -> int:
+    def n_individuals(self) -> Optional[int]:
         return self._n_individuals
 
     @n_individuals.setter
-    def n_individuals(self, n_individuals: int) -> None:
+    def n_individuals(self, n_individuals: Optional[int]) -> None:
         if n_individuals is not None:
             if not isinstance(n_individuals, int):
                 raise TypeError('The number of individuals must be an integer.')
@@ -62,7 +63,7 @@ class Selector:
 
 class AllSelector(Selector):
 
-    def __init__(self, n_individuals: Optional[int] = None):
+    def __init__(self, n_individuals=None):
         super().__init__(n_individuals)
 
     def select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
@@ -306,13 +307,21 @@ class LinearRankingSelector(Selector):
 
 
 class ExponentialRankingSelector(Selector):
+    _c: float
 
     def __init__(self, n_individuals: int, c: float = 0.99):
         super().__init__(n_individuals)
+        self._c = c
 
+    @property
+    def c(self) -> float:
+        return self._c
+
+    @c.setter
+    def c(self, c: float) -> None:
         if c <= 0 or c >= 1:
             raise ValueError("0 < c < 1 must hold")
-        self.c = c
+        self._c = c
 
     def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Exponential ranking selection.
@@ -342,14 +351,22 @@ class ExponentialRankingSelector(Selector):
 
 
 class TournamentSelector(Selector):
-
+    _n_way: int
+    
     def __init__(self, n_individuals: int, n_way: int = 2):
         super().__init__(n_individuals)
+        self._n_way = n_way
 
+    @property
+    def n_way(self) -> int:
+        return self._n_way
+
+    @n_way.setter
+    def n_way(self, n_way: int) -> None:
         if n_way < 2:
             raise ValueError("The number of competitors in the tournament must be greater than 1.")
-        self.n_way = n_way
-
+        self._n_way = n_way
+        
     def select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
         """Tournament selection.
 

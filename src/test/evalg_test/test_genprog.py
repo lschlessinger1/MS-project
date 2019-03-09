@@ -16,7 +16,9 @@ class TestBinaryTreeGenerator(TestCase):
         self.generator = BinaryTreeGenerator(self.operators, self.operands, self.max_depth)
 
     def test_max_depth(self):
-        self.assertRaises(ValueError, BinaryTreeGenerator, self.operators, self.operands, max_depth=-2)
+        generator = BinaryTreeGenerator(self.operators, self.operands, max_depth=2)
+        with self.assertRaises(ValueError):
+            generator.max_depth = -2
 
     def test_generate(self):
         self.assertRaises(NotImplementedError, self.generator.generate)

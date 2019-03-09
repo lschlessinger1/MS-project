@@ -8,7 +8,7 @@ from src.experiments.util.data_util import SyntheticDataset, Input1DSyntheticDat
 
 class Sinosoid1Dataset(SyntheticDataset):
 
-    def __init__(self, n_samples: int = 50, input_dim: int = 1):
+    def __init__(self, n_samples=50, input_dim=1):
         super().__init__(n_samples, input_dim)
 
     def load_or_generate_data(self):
@@ -23,7 +23,7 @@ class Sinosoid1Dataset(SyntheticDataset):
 
 class Sinosoid2Dataset(SyntheticDataset):
 
-    def __init__(self, n_samples: int = 30, input_dim: int = 1):
+    def __init__(self, n_samples=30, input_dim=1):
         super().__init__(n_samples, input_dim)
 
     def load_or_generate_data(self):
@@ -38,7 +38,7 @@ class Sinosoid2Dataset(SyntheticDataset):
 
 class SimplePeriodic1dDataset(Input1DSyntheticDataset):
 
-    def __init__(self, n_samples: int = 100, input_dim: int = 1):
+    def __init__(self, n_samples=100, input_dim=1):
         super().__init__(n_samples, input_dim)
 
     def load_or_generate_data(self):
@@ -52,7 +52,7 @@ class SimplePeriodic1dDataset(Input1DSyntheticDataset):
 
 class PeriodicTrend1dDataset(Input1DSyntheticDataset):
 
-    def __init__(self, n_samples: int = 100, input_dim: int = 1):
+    def __init__(self, n_samples=100, input_dim=1):
         super().__init__(n_samples, input_dim)
 
     def load_or_generate_data(self):
@@ -66,7 +66,7 @@ class PeriodicTrend1dDataset(Input1DSyntheticDataset):
 
 class LinearTrend1dDataset(Input1DSyntheticDataset):
 
-    def __init__(self, n_samples: int = 100, input_dim: int = 1):
+    def __init__(self, n_samples=100, input_dim=1):
         super().__init__(n_samples, input_dim)
 
     def load_or_generate_data(self):
@@ -79,7 +79,7 @@ class LinearTrend1dDataset(Input1DSyntheticDataset):
 
 class RBF1dDataset(Input1DSyntheticDataset):
 
-    def __init__(self, n_samples: int = 100, input_dim: int = 1):
+    def __init__(self, n_samples=100, input_dim=1):
         super().__init__(n_samples, input_dim)
 
     def load_or_generate_data(self):
@@ -91,7 +91,7 @@ class RBF1dDataset(Input1DSyntheticDataset):
 
 class CubicSine1dDataset(Input1DSyntheticDataset):
 
-    def __init__(self, n_samples: int = 151, input_dim: int = 1):
+    def __init__(self, n_samples=151, input_dim=1):
         super().__init__(n_samples, input_dim)
 
     def load_or_generate_data(self):
@@ -105,7 +105,7 @@ class CubicSine1dDataset(Input1DSyntheticDataset):
 
 class ToyARD4dDataset(SyntheticDataset):
 
-    def __init__(self, n_samples: int = 300, input_dim: int = 4):
+    def __init__(self, n_samples=300, input_dim=4):
         super().__init__(n_samples, input_dim)
 
     def load_or_generate_data(self):
@@ -130,9 +130,12 @@ class ToyARD4dDataset(SyntheticDataset):
 
 
 class SyntheticRegressionDataset(SyntheticDataset):
+    min_terms: int
+    max_terms: int
+    periodic: bool
 
-    def __init__(self, n_samples: int = 100, input_dim: int = 1, min_terms: int = 2, max_terms: int = 10,
-                 periodic: bool = False):
+    def __init__(self, n_samples=100, input_dim=1, min_terms=2, max_terms=10,
+                 periodic=False):
         super().__init__(n_samples, input_dim)
         self.min_terms = min_terms
         self.max_terms = max_terms
@@ -199,7 +202,7 @@ class SyntheticRegressionDataset(SyntheticDataset):
 
 class BraninGenerator(SyntheticDataset):
 
-    def __init__(self, n_samples: int = 25, input_dim: int = 2):
+    def __init__(self, n_samples=25, input_dim=2):
         super().__init__(n_samples, input_dim)
 
     @staticmethod

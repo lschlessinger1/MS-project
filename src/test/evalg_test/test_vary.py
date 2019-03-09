@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 from src.evalg.crossover import Recombinator
 from src.evalg.mutation import Mutator
@@ -9,8 +10,12 @@ from src.evalg.vary import PopulationOperator, CrossMutPopOperator, CrossoverVar
 class TestPopulationOperator(TestCase):
 
     def test_variators(self):
-        self.assertRaises(ValueError, PopulationOperator, [])
-        self.assertRaises(TypeError, PopulationOperator, [3, 2, 3])
+        mock_variator = MagicMock()
+        operator = PopulationOperator([mock_variator])
+        with self.assertRaises(ValueError):
+            operator.variators = []
+        with self.assertRaises(TypeError):
+            operator.variators = [3, 2, 3]
 
 
 class TestCrossMutPopOperator(TestCase):
@@ -18,10 +23,15 @@ class TestCrossMutPopOperator(TestCase):
     def test_variators(self):
         cx_variator = CrossoverVariator(Recombinator(), 2)
         mut_variator = MutationVariator(Mutator())
-        self.assertRaises(ValueError, CrossMutPopOperator, [cx_variator, cx_variator, cx_variator])
-        self.assertRaises(TypeError, CrossMutPopOperator, [mut_variator, cx_variator])
-        self.assertRaises(TypeError, CrossMutPopOperator, [mut_variator, mut_variator])
-        self.assertRaises(ValueError, CrossMutPopOperator, [mut_variator])
+        operator = CrossMutPopOperator([cx_variator, mut_variator])
+        with self.assertRaises(ValueError):
+            operator.variators = [cx_variator, cx_variator, cx_variator]
+        with self.assertRaises(TypeError):
+            operator.mutation_variator = cx_variator
+        with self.assertRaises(TypeError):
+            operator.crossover_variator = mut_variator
+        with self.assertRaises(ValueError):
+            operator.variators = [mut_variator]
 
 
 class TestCrossoverPopOperator(TestCase):
@@ -29,8 +39,11 @@ class TestCrossoverPopOperator(TestCase):
     def test_variators(self):
         cx_variator = CrossoverVariator(Recombinator(), 2)
         mut_variator = MutationVariator(Mutator())
-        self.assertRaises(ValueError, CrossoverPopOperator, [cx_variator, mut_variator])
-        self.assertRaises(TypeError, CrossoverPopOperator, [mut_variator])
+        operator = CrossoverPopOperator([cx_variator, mut_variator])
+        with self.assertRaises(ValueError):
+            operator.variators = [cx_variator, mut_variator]
+        with self.assertRaises(TypeError):
+            operator.crossover_variator = mut_variator
 
 
 class TestMutationPopOperator(TestCase):
@@ -38,5 +51,9 @@ class TestMutationPopOperator(TestCase):
     def test_variators(self):
         cx_variator = CrossoverVariator(Recombinator(), 2)
         mut_variator = MutationVariator(Mutator())
-        self.assertRaises(ValueError, MutationPopOperator, [cx_variator, mut_variator])
-        self.assertRaises(TypeError, MutationPopOperator, [cx_variator])
+
+        operator = MutationPopOperator([cx_variator, mut_variator])
+        with self.assertRaises(ValueError):
+            operator.variators = [cx_variator, mut_variator]
+        with self.assertRaises(TypeError):
+            operator.mutation_variator = cx_variator

@@ -160,8 +160,11 @@ class TestExponentialRankingSelector(TestCase):
 
     def test_c_value(self):
         n = 1
-        self.assertRaises(ValueError, ExponentialRankingSelector, n, c=2)
-        self.assertRaises(ValueError, ExponentialRankingSelector, n, c=-1)
+        selector = ExponentialRankingSelector(n)
+        with self.assertRaises(ValueError):
+            selector.c = 2
+        with self.assertRaises(ValueError):
+            selector.c = -1
 
     def test_select(self):
         selector = ExponentialRankingSelector(self.n_indivs, self.c)
@@ -189,8 +192,9 @@ class TestTournamentSelector(TestCase):
 
     def test_n_way_value(self):
         n = 1
-        n_way = 1
-        self.assertRaises(ValueError, TournamentSelector, n, n_way=n_way)
+        selector = TournamentSelector(n)
+        with self.assertRaises(ValueError):
+            selector.n_way = 1
 
     def test_select(self):
         n_way = len(self.population) + 1

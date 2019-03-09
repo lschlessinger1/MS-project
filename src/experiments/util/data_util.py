@@ -29,7 +29,7 @@ class SyntheticDataset(Dataset, ABC):
 
 class Input1DSyntheticDataset(SyntheticDataset, ABC):
 
-    def __init__(self, n_samples, input_dim):
+    def __init__(self, n_samples, input_dim=1):
         super().__init__(n_samples, input_dim)
         if self.input_dim != 1:
             raise ValueError('Input dimension must be 1')

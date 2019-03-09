@@ -10,13 +10,24 @@ from src.evalg.mutation import Mutator
 
 
 class BinaryTreeGenerator:
+    binary_operators: List[str]
+    operands: list
+    _max_depth: int
 
-    def __init__(self, binary_operators: List[str], operands: list, max_depth: int):
+    def __init__(self, binary_operators, operands, max_depth: int):
         self.binary_operators = binary_operators
         self.operands = operands
+        self._max_depth = max_depth
+
+    @property
+    def max_depth(self) -> int:
+        return self._max_depth
+
+    @max_depth.setter
+    def max_depth(self, max_depth: int) -> None:
         if max_depth < 0:
             raise ValueError('max depth must be nonnegative')
-        self.max_depth = max_depth
+        self._max_depth = max_depth
 
     def generate(self) -> BinaryTree:
         """Generate a binary tree.
@@ -34,7 +45,7 @@ class BinaryTreeGenerator:
 
 class GrowGenerator(BinaryTreeGenerator):
 
-    def __init__(self, binary_operators: List[str], operands, max_depth: int):
+    def __init__(self, binary_operators, operands, max_depth: int):
         super().__init__(binary_operators, operands, max_depth)
 
     def generate(self) -> BinaryTree:
@@ -81,7 +92,7 @@ class GrowGenerator(BinaryTreeGenerator):
 
 class FullGenerator(BinaryTreeGenerator):
 
-    def __init__(self, binary_operators: List[str], operands, max_depth: int):
+    def __init__(self, binary_operators, operands, max_depth: int):
         super().__init__(binary_operators, operands, max_depth)
 
     def generate(self) -> BinaryTree:
@@ -127,6 +138,7 @@ class FullGenerator(BinaryTreeGenerator):
 
 
 class TreeMutator(Mutator, ABC):
+    operands: list
 
     def __init__(self, operands):
         """
@@ -193,8 +205,9 @@ class TreePointMutator(TreeMutator):
 
 
 class SubTreeExchangeMutator(TreeMutator, ABC):
+    max_depth: int
 
-    def __init__(self, operands: list, max_depth: int):
+    def __init__(self, operands, max_depth):
         """
 
         :param operands:
@@ -251,7 +264,7 @@ class SubTreeExchangeMutator(TreeMutator, ABC):
 
 class GrowMutator(SubTreeExchangeMutator):
 
-    def __init__(self, operands: list, max_depth: int = 2):
+    def __init__(self, operands, max_depth=2):
         super().__init__(operands, max_depth)
 
     def mutate(self, individual: BinaryTree) -> BinaryTree:
@@ -271,7 +284,7 @@ class GrowMutator(SubTreeExchangeMutator):
 
 class HalfAndHalfMutator(SubTreeExchangeMutator):
 
-    def __init__(self, operands, max_depth: int = 2):
+    def __init__(self, operands, max_depth=2):
         super().__init__(operands, max_depth)
 
     def mutate(self, individual: BinaryTree) -> BinaryTree:
