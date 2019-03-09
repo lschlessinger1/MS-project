@@ -5,10 +5,21 @@ import numpy as np
 
 class Selector:
 
-    def __init__(self, n_individuals: int):
-        if n_individuals < 0:
-            raise ValueError('The number of individuals must be non-negative.')
-        self.n_individuals = n_individuals
+    def __init__(self, n_individuals: Optional[int] = None):
+        self._n_individuals = n_individuals
+
+    @property
+    def n_individuals(self):
+        return self._n_individuals
+
+    @n_individuals.setter
+    def n_individuals(self, n_individuals):
+        if n_individuals is not None:
+            if not isinstance(n_individuals, int):
+                raise TypeError('The number of individuals must be an integer.')
+            if n_individuals < 0:
+                raise ValueError('The number of individuals must be non-negative.')
+        self._n_individuals = n_individuals
 
     def _select(self, population: np.ndarray, fitness_list: Optional[np.ndarray]) -> np.ndarray:
         """Helper function to select from population using a fitness list.
@@ -22,7 +33,7 @@ class Selector:
 
         # Select entire population if k > population size
         pop_size = population.shape[0]
-        if self.n_individuals >= pop_size:
+        if self.n_individuals is not None and self.n_individuals >= pop_size:
             return population
 
         return population[self.arg_select(population, fitness_list)]
@@ -52,9 +63,6 @@ class Selector:
 class AllSelector(Selector):
 
     def __init__(self, n_individuals: Optional[int] = None):
-        if n_individuals is None:
-            # Set number of individuals to dummy value.
-            n_individuals = 0
         super().__init__(n_individuals)
 
     def select(self, population: np.ndarray, fitness_list: Optional[np.ndarray] = None) -> np.ndarray:
