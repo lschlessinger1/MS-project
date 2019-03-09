@@ -81,7 +81,6 @@ class Experiment:
         self.verbose = verbose
         self.optimizer = optimizer
         self.n_restarts_optimizer = n_restarts_optimizer
-        self.n_init_kernels = 15
 
         # statistics used for plotting
         self.best_scores = []
@@ -125,7 +124,7 @@ class Experiment:
         t_init = time()
 
         # initialize models
-        kernels = self.grammar.initialize(self.kernel_families, n_kernels=self.n_init_kernels, n_dims=self.n_dims)
+        kernels = self.grammar.initialize(self.kernel_families, n_dims=self.n_dims)
 
         # convert to additive form if necessary
         if self.additive_form:
