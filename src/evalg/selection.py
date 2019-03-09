@@ -9,11 +9,11 @@ class Selector:
         self._n_individuals = n_individuals
 
     @property
-    def n_individuals(self):
+    def n_individuals(self) -> int:
         return self._n_individuals
 
     @n_individuals.setter
-    def n_individuals(self, n_individuals):
+    def n_individuals(self, n_individuals: int) -> None:
         if n_individuals is not None:
             if not isinstance(n_individuals, int):
                 raise TypeError('The number of individuals must be an integer.')

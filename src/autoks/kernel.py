@@ -27,7 +27,7 @@ class AKSKernel:
         return self._score
 
     @score.setter
-    def score(self, score: float):
+    def score(self, score: float) -> None:
         self._score = score
         # Update scored as well
         self.scored = True

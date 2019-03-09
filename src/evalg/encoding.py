@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, TypeVar
 
 from GPy.kern.src.kern import Kern
 from graphviz import Digraph
@@ -6,9 +6,10 @@ from graphviz import Digraph
 import src.autoks.kernel
 
 operators = ['+', '*']
+T = TypeVar('T')
 
 
-def val_to_label(value) -> str:
+def val_to_label(value: T) -> str:
     """Convert value to a string a label.
 
     :param value:
@@ -23,18 +24,19 @@ def val_to_label(value) -> str:
 class TreeNode:
     label: str
     parent: Optional
+    _value: T
 
-    def __init__(self, value, parent=None):
+    def __init__(self, value: T, parent=None):
         self._value = value
         self.label = val_to_label(value)
         self.parent = parent
 
     @property
-    def value(self):
+    def value(self) -> T:
         return self._value
 
     @value.setter
-    def value(self, value):
+    def value(self, value: T) -> None:
         self._value = value
         # update label as well
         self.label = val_to_label(value)
@@ -54,22 +56,22 @@ class BinaryTreeNode(TreeNode):
         self.left: Optional = None
         self.right: Optional = None
 
-    def add_left(self, val):
+    def add_left(self, value: T):
         """Add left node.
 
-        :param val:
+        :param value:
         :return:
         """
-        self.left = BinaryTreeNode(val, self)
+        self.left = BinaryTreeNode(value, self)
         return self.left
 
-    def add_right(self, val):
+    def add_right(self, value: T):
         """Add right node.
 
-        :param val:
+        :param value:
         :return:
         """
-        self.right = BinaryTreeNode(val, self)
+        self.right = BinaryTreeNode(value, self)
         return self.right
 
     def create_graph(self, graph: Optional[Digraph] = None) -> Digraph:
