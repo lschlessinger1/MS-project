@@ -151,7 +151,6 @@ class BOMSGrammar(BaseGrammar):
 
         return new_kernels
 
-
     @staticmethod
     def random_walk_kernels(n_dims: int, base_kernels: List[str], t_prob: float = 1 / 3., n_walks: int = 15) -> \
             List[AKSKernel]:
