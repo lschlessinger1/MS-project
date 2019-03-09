@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 
 from src.autoks.experiment import Experiment
 from src.autoks.grammar import CKSGrammar, BaseGrammar
+from src.autoks.kernel_selection import KernelSelector
 
 
 class Dataset:
@@ -78,8 +79,8 @@ def gen_dataset_paths(data_dir: str, file_suffix: str = '.csv') -> List[str]:
     return file_paths
 
 
-def run_experiments(ds_generators: Iterable[Dataset], grammar: BaseGrammar, objective: Callable,
-                    base_kernels: Optional[List[str]] = None, **kwargs) -> None:
+def run_experiments(ds_generators: Iterable[Dataset], grammar: BaseGrammar, kernel_selector: KernelSelector,
+                    objective: Callable, base_kernels: Optional[List[str]] = None, **kwargs) -> None:
     for generator in ds_generators:
         print(f'Performing experiment on {generator.path}')
         x, y = generator.load_or_generate_data()
@@ -89,7 +90,8 @@ def run_experiments(ds_generators: Iterable[Dataset], grammar: BaseGrammar, obje
 
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
-        experiment = Experiment(grammar, objective, base_kernels, x_train, y_train, x_test, y_test, **kwargs)
+        experiment = Experiment(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
+                                **kwargs)
         experiment.run(title='Random Experiment')
 
 

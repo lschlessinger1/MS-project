@@ -2,12 +2,14 @@ import numpy as np
 
 from src.autoks import model
 from src.autoks.grammar import CKSGrammar
+from src.autoks.kernel_selection import CKS_kernel_selector
 from src.experiments.util.data_util import KnownGPDataset, cks_known_kernels, run_experiments
 
 # Set random seed for reproducibility.
 np.random.seed(4096)
 
-grammar = CKSGrammar(n_parents=1, max_candidates=0, max_offspring=1000)
+grammar = CKSGrammar()
+kernel_selector = CKS_kernel_selector()
 
 
 def negative_BIC(m):
@@ -25,5 +27,5 @@ optimizer = 'scg'
 noise_vars = [10 ** i for i in range(-1, 2)]
 generators = [KnownGPDataset(kernel, var, 100) for var in noise_vars for kernel in cks_known_kernels()]
 
-run_experiments(generators, grammar, objective, base_kernels=None, eval_budget=50, max_depth=10,
+run_experiments(generators, grammar, kernel_selector, objective, base_kernels=None, eval_budget=50, max_depth=10,
                 debug=True, verbose=True, optimizer=optimizer)

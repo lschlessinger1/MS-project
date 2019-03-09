@@ -1,10 +1,8 @@
 from unittest import TestCase
 
-import numpy as np
 from GPy.kern import RBF, RatQuad, Add
 
 from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels
-from src.autoks.kernel import AKSKernel
 from src.test.autoks_test.support.util import has_combo_kernel_type
 
 
@@ -41,10 +39,7 @@ class TestGrammar(TestCase):
 class TestBaseGrammar(TestCase):
 
     def setUp(self):
-        self.k = 4
-        self.max_candidates = 100
-        self.max_offspring = 1000
-        self.grammar = BaseGrammar(self.k, self.max_candidates, self.max_offspring)
+        self.grammar = BaseGrammar()
 
     def test_initialize(self):
         with self.assertRaises(NotImplementedError):
@@ -54,21 +49,12 @@ class TestBaseGrammar(TestCase):
         with self.assertRaises(NotImplementedError):
             self.grammar.expand('', '', '', '')
 
-    def test_select_parents(self):
-        se0 = RBF(1, active_dims=[0])
-        kernels = [AKSKernel(se0) for i in range(5)]
-        for i, k in enumerate(kernels):
-            k.score = i
-        result = self.grammar.select_parents(np.array(kernels))
-        self.assertEqual(len(result), self.k)
-
 
 class TestCKSGrammar(TestCase):
 
     def setUp(self):
-        self.k = 4
         self.operators = ['+', '*']
-        self.grammar = CKSGrammar(self.k, 100, 1000)
+        self.grammar = CKSGrammar()
         self.se0 = RBF(1, active_dims=[0])
         self.se1 = RBF(1, active_dims=[1])
         self.rq0 = RatQuad(1, active_dims=[0])

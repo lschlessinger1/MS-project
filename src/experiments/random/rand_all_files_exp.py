@@ -1,13 +1,15 @@
 import numpy as np
 
 from src.autoks.grammar import RandomGrammar
+from src.autoks.kernel_selection import CKS_kernel_selector
 from src.autoks.model import BIC
 from src.experiments.util.data_util import gen_dataset_paths, FileDataset, run_experiments
 
 # Set random seed for reproducibility.
 np.random.seed(4096)
 
-grammar = RandomGrammar(n_parents=4, max_candidates=0, max_offspring=1000)
+grammar = RandomGrammar()
+kernel_selector = CKS_kernel_selector(n_parents=4)
 
 
 def negative_BIC(m):
@@ -24,5 +26,5 @@ optimizer = 'scg'
 data_paths = gen_dataset_paths(data_dir='../data')
 generators = [FileDataset(path) for path in data_paths]
 
-run_experiments(generators, grammar, objective, base_kernels=None, eval_budget=50, debug=True, verbose=True,
-                optimizer=optimizer)
+run_experiments(generators, grammar, kernel_selector, objective, base_kernels=None, eval_budget=50, debug=True,
+                verbose=True, optimizer=optimizer)

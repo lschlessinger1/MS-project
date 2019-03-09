@@ -5,17 +5,13 @@ from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, tree_to_kernel
-from src.evalg.selection import TruncationSelector, Selector, AllSelector
 from src.evalg.vary import PopulationOperator
 
 
 class BaseGrammar:
     DEFAULT_OPERATORS = ['+', '*']
 
-    def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
-        self.n_parents = n_parents  # number of parents to expand each round
-        self.max_candidates = max_candidates  # Max. number of un-evaluated models to keep each round
-        self.max_offspring = max_offspring  # Max. number of models to keep each round
+    def __init__(self):
         self.operators = BaseGrammar.DEFAULT_OPERATORS
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
@@ -40,47 +36,15 @@ class BaseGrammar:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
 
-    def select_parents(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
-        """Select parent kernels (default is top k kernels by objective).
-
-        :param kernels:
-        :return:
-        """
-        selector = TruncationSelector(self.n_parents)
-        return selector.select(kernels, np.array([k.score for k in kernels]))
-
-    def select_offspring(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
-        """Select next round of kernels (default is select all).
-
-        :param kernels:
-        :return:
-        """
-        selector = AllSelector(self.max_offspring)
-        return selector.select(kernels)
-
-    def prune_candidates(self, kernels: List[AKSKernel], acq_scores) -> List[AKSKernel]:
-        """Remove candidates from kernel list (by default remove none).
-
-        :param kernels:
-        :param acq_scores:
-        :return:
-        """
-        # by default, we have no pruning
-        selector = AllSelector(self.max_candidates)
-        return selector.select(kernels)
-
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
+        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
 
 
 class EvolutionaryGrammar(BaseGrammar):
 
-    def __init__(self, n_parents: int, max_candidates: int, max_offspring: int, population_operator: PopulationOperator,
-                 parent_selector: Selector, offspring_selector: Selector):
-        super().__init__(n_parents, max_candidates, max_offspring)
+    def __init__(self, population_operator: PopulationOperator):
+        super().__init__()
         self.population_operator = population_operator
-        self.parent_selector = parent_selector
-        self.offspring_selector = offspring_selector
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
         """Naive initialization of all SE_i and RQ_i (for every dimension).
@@ -128,24 +92,8 @@ class EvolutionaryGrammar(BaseGrammar):
 
         return new_kernels
 
-    def select_parents(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
-        """See parent docstring.
-
-        :param kernels:
-        :return:
-        """
-        return self.parent_selector.select(kernels, [k.score for k in kernels])
-
-    def select_offspring(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
-        """See parent docstring.
-
-        :param kernels:
-        :return:
-        """
-        return self.offspring_selector.select(kernels, [k.score for k in kernels])
-
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
+        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
 
 
 class BOMSGrammar(BaseGrammar):
@@ -153,8 +101,8 @@ class BOMSGrammar(BaseGrammar):
     Bayesian optimization for automated model selection (Malkomes et al., 2016)
     """
 
-    def __init__(self, n_parents: int = 1, max_candidates: int = 600, max_offspring: int = 1000):
-        super().__init__(n_parents, max_candidates, max_offspring)
+    def __init__(self):
+        super().__init__()
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
         """Initialize kernels according to number of dimensions.
@@ -206,17 +154,17 @@ class BOMSGrammar(BaseGrammar):
 
         return new_kernels
 
-    def prune_candidates(self, active_set: List[AKSKernel], acq_scores: List[float]) -> List[AKSKernel]:
-        """Select best kernels according to expected improvement.
-
-        :param active_set:
-        :param acq_scores:
-        :return:
-        """
-        selector = TruncationSelector(self.max_candidates)
-        # prioritize keeping scored models
-        augmented_scores = [k.score if k.scored and not k.nan_scored else -np.inf for k in active_set]
-        return selector.select(active_set, np.array(augmented_scores))
+    # def prune_candidates(self, active_set: List[AKSKernel], acq_scores: List[float]) -> List[AKSKernel]:
+    #     """Select best kernels according to expected improvement.
+    #
+    #     :param active_set:
+    #     :param acq_scores:
+    #     :return:
+    #     """
+    #     selector = TruncationSelector(self.max_candidates)
+    #     # prioritize keeping scored models
+    #     augmented_scores = [k.score if k.scored and not k.nan_scored else -np.inf for k in active_set]
+    #     return selector.select(active_set, np.array(augmented_scores))
 
     @staticmethod
     def random_walk_kernels(n_dims: int, base_kernels: List[str], t_prob: float = 1 / 3., n_walks: int = 15) -> \
@@ -259,7 +207,7 @@ class BOMSGrammar(BaseGrammar):
         return new_kernels
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
+        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
 
 
 class CKSGrammar(BaseGrammar):
@@ -267,8 +215,8 @@ class CKSGrammar(BaseGrammar):
     Structure Discovery in Nonparametric Regression through Compositional Kernel Search (Duvenaud et al., 2013)
     """
 
-    def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
-        super().__init__(n_parents, max_candidates, max_offspring)
+    def __init__(self):
+        super().__init__()
 
     @staticmethod
     def get_base_kernels(n_dims: int):
@@ -391,7 +339,7 @@ class CKSGrammar(BaseGrammar):
         return result
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
+        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
 
 
 class RandomGrammar(BaseGrammar):
@@ -399,9 +347,8 @@ class RandomGrammar(BaseGrammar):
 
     """
 
-    def __init__(self, n_parents: int, max_candidates: int, max_offspring: int):
-
-        super().__init__(n_parents, max_candidates, max_offspring)
+    def __init__(self):
+        super().__init__()
 
     def initialize(self, kernel_families: List[str], n_kernels: int, n_dims: int) -> List[AKSKernel]:
         """Same initialization as CKS and BOMS
@@ -458,4 +405,4 @@ class RandomGrammar(BaseGrammar):
         return new_kernels
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_parents={self.n_parents!r}, operators={self.operators!r})'
+        return f'{self.__class__.__name__}('f'operators={self.operators!r})'

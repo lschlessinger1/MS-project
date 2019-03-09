@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from src.autoks.grammar import BaseGrammar
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
     AKSKernel
+from src.autoks.kernel_selection import KernelSelector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
@@ -21,6 +22,7 @@ from src.evalg.plotting import plot_best_so_far, plot_distribution
 
 class Experiment:
     grammar: BaseGrammar
+    kernel_selector: KernelSelector
     objective: Callable
     kernel_families: List[str]
     x_train: np.ndarray
@@ -40,11 +42,12 @@ class Experiment:
     optimizer: Optional[str]
     n_restarts_optimizer: int
 
-    def __init__(self, grammar, objective, kernel_families, x_train, y_train, x_test, y_test, standardize_x=True,
-                 standardize_y=True, eval_budget=50, max_depth=None, gp_model=None, init_query_strat=None,
-                 query_strat=None, additive_form=False, debug=False, verbose=False, optimizer=None,
-                 n_restarts_optimizer=10):
+    def __init__(self, grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
+                 standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
+                 init_query_strat=None, query_strat=None, additive_form=False, debug=False, verbose=False,
+                 optimizer=None, n_restarts_optimizer=10):
         self.grammar = grammar
+        self.kernel_selector = kernel_selector
         self.objective = objective
         self.kernel_families = kernel_families
 
@@ -115,7 +118,7 @@ class Experiment:
             self.query_strat = NaiveQueryStrategy()
 
     def kernel_search(self) -> List[AKSKernel]:
-        """Perform automated kernel search
+        """Perform automated kernel search.
 
         :return: list of kernels
         """
@@ -130,7 +133,11 @@ class Experiment:
                 aks_kernel.to_additive_form()
 
         selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat)
-        self.opt_and_eval_kernels(selected_kernels)
+        unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
+        unselected_kernels = [unscored_kernels[i] for i in range(len(unscored_kernels)) if i not in ind]
+        evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
+        scored_kernels = [kernel for kernel in kernels if kernel.scored and kernel not in selected_kernels]
+        kernels = evaluated_kernels + unselected_kernels + scored_kernels
 
         depth = 0
         while self.n_evals < self.eval_budget:
@@ -142,14 +149,20 @@ class Experiment:
                     print('Starting iteration %d/%d' % (depth, self.max_depth))
                 print('Evaluated %d/%d kernels' % (self.n_evals, self.eval_budget))
 
-            new_kernels = self.propose_new_kernels(self.select_parents(kernels))
+            parents = self.select_parents(kernels)
+            new_kernels = self.propose_new_kernels(parents)
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
             kernels = remove_duplicate_aks_kernels(kernels)
 
             selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat)
-            self.opt_and_eval_kernels(selected_kernels)
+            # remove selected kernel from kernels
+            unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
+            unselected_kernels = [unscored_kernels[i] for i in range(len(unscored_kernels)) if i not in ind]
+            evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
+            scored_kernels = [kernel for kernel in kernels if kernel.scored and kernel not in selected_kernels]
+            kernels = evaluated_kernels + unselected_kernels + scored_kernels
 
             kernels = self.prune_kernels(kernels, acq_scores, ind)
             kernels = self.select_offspring(kernels)
@@ -189,7 +202,8 @@ class Experiment:
         :return:
         """
         scored_kernels = [kernel for kernel in kernels if kernel.scored]
-        parents = self.grammar.select_parents(np.array(scored_kernels)).tolist()
+        kernel_scores = [kernel.score for kernel in scored_kernels]
+        parents = self.kernel_selector.select_parents(scored_kernels, kernel_scores)
         # Print parent (seed) kernels
         if self.debug:
             n_parents = len(parents)
@@ -233,14 +247,13 @@ class Experiment:
         # acquisition scores of un-scored kernels
         acq_scores_unevaluated = [s for i, s in enumerate(acq_scores) if i not in ind]
 
-        pruned_candidates = self.grammar.prune_candidates(np.array(unscored_kernels),
-                                                          acq_scores_unevaluated).tolist()
+        pruned_candidates = self.kernel_selector.prune_candidates(unscored_kernels, acq_scores_unevaluated)
         kernels = scored_kernels + pruned_candidates
 
         if self.verbose:
             n_before_prune = len(unscored_kernels)
             n_pruned = n_before_prune - len(pruned_candidates)
-            print(f'Grammar pruner removed {n_pruned}/{n_before_prune} un-evaluated kernels')
+            print(f'Kernel pruner removed {n_pruned}/{n_before_prune} un-evaluated kernels')
 
         return kernels
 
@@ -250,42 +263,52 @@ class Experiment:
         :param kernels:
         :return:
         """
-        offspring = self.grammar.select_offspring(np.array(kernels)).tolist()
+        # scores = [kernel.score for kernel in kernels]
+
+        # Prioritize keeping scored models.
+        # TODO: Check correctness
+        augmented_scores = [k.score if k.scored and not k.nan_scored else -np.inf for k in kernels]
+
+        offspring = self.kernel_selector.select_offspring(kernels, augmented_scores)
 
         if self.verbose:
             print(f'Offspring selector kept {len(kernels)}/{len(offspring)} kernels')
 
         return offspring
 
-    def opt_and_eval_kernels(self, kernels: List[AKSKernel]) -> None:
+    def opt_and_eval_kernels(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
         """Optimize and evaluate all kernels
 
         :param kernels:
         :return:
         """
+        evaluated_kernels = []
 
         for aks_kernel in kernels:
             t0 = time()
 
-            self.optimize_kernel(aks_kernel)
+            optimized_kernel = self.optimize_kernel(aks_kernel)
 
             t1 = time()
             self.total_optimization_time += t1 - t0
 
-            self.evaluate_kernel(aks_kernel)
+            evaluated_kernel = self.evaluate_kernel(optimized_kernel)
 
             self.total_eval_time += time() - t1
+            evaluated_kernels.append(evaluated_kernel)
 
-        kernels = self.remove_nan_scored_kernels(kernels)
-        self.update_stats(kernels)
+        evaluated_kernels = self.remove_nan_scored_kernels(evaluated_kernels)
+        self.update_stats(evaluated_kernels)
 
         if self.verbose:
             print('Printing all results')
             # Sort kernels by scores with un-scored kernels last
-            for k in sorted(kernels, key=lambda x: (x.score is not None, x.score), reverse=True):
+            for k in sorted(evaluated_kernels, key=lambda x: (x.score is not None, x.score), reverse=True):
                 print(str(k), 'score:', k.score)
 
-    def optimize_kernel(self, aks_kernel: AKSKernel) -> None:
+        return evaluated_kernels
+
+    def optimize_kernel(self, aks_kernel: AKSKernel) -> AKSKernel:
         """Optimize the hyperparameters of the kernel
 
         :param aks_kernel:
@@ -318,8 +341,9 @@ class Experiment:
                 aks_kernel.kernel = self.gp_model.kern
             except LinAlgError:
                 warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
+        return aks_kernel
 
-    def evaluate_kernel(self, aks_kernel: AKSKernel) -> None:
+    def evaluate_kernel(self, aks_kernel: AKSKernel) -> AKSKernel:
         """Evaluate a given kernel using the objective function
 
         :param aks_kernel:
@@ -339,6 +363,7 @@ class Experiment:
                 aks_kernel.score = np.nan
                 # also count a nan-scored kernel as an evaluation
                 self.n_evals += 1
+        return aks_kernel
 
     def remove_nan_scored_kernels(self, aks_kernels: List[AKSKernel]) -> List[AKSKernel]:
         """Remove all kernels that have NaN scores.
