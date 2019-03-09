@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from src.evalg.selection import Selector, UniformSelector, FitnessProportionalSelector, SigmaScalingSelector, \
-    TruncationSelector, LinearRankingSelector, ExponentialRankingSelector, TournamentSelector
+    TruncationSelector, LinearRankingSelector, ExponentialRankingSelector, TournamentSelector, AllSelector
 
 
 class TestSelector(TestCase):
@@ -11,24 +11,38 @@ class TestSelector(TestCase):
     def setUp(self):
         self.population = np.array([1, 2, 3, 4, 5])
 
-    def test_select(self):
-        # n = len(self.population)
-        # selector = Selector(n_individuals=n)
-        # result = selector.select(self.population, fitness_list=None)
-        # self.assertCountEqual(result.tolist(), self.population.tolist())
-        #
-        # n = len(self.population) + 1
-        # selector = Selector(n_individuals=n)
-        # result = selector.select(self.population, fitness_list=None)
-        # self.assertCountEqual(result.tolist(), self.population.tolist())
+    def test_n_individuals(self):
+        selector = Selector()
+        with self.assertRaises(TypeError):
+            selector.n_individuals = 'bad type'
+        with self.assertRaises(ValueError):
+            selector.n_individuals = -1  # Test negative n
 
+    def test_select(self):
         n = min(1, len(self.population - 1))
         selector = Selector(n_individuals=n)
         self.assertRaises(NotImplementedError, selector.select, self.population, fitness_list=None)
+
+    def test_arg_select(self):
+        n = min(1, len(self.population - 1))
+        selector = Selector(n_individuals=n)
         self.assertRaises(NotImplementedError, selector.arg_select, self.population, fitness_list=None)
 
-        # Test negative n
-        self.assertRaises(ValueError, Selector, n_individuals=-1)
+
+class TestAllSelector(TestCase):
+
+    def setUp(self):
+        self.population = np.array([1, 2, 3, 4, 5])
+
+    def test_select(self):
+        selector = AllSelector()
+        result = selector.select(self.population)
+        self.assertCountEqual(result.tolist(), self.population.tolist())
+
+    def test_arg_select(self):
+        selector = AllSelector()
+        result = selector.arg_select(self.population)
+        self.assertCountEqual(result.tolist(), [i for i in range(self.population.size)])
 
 
 class TestUniformSelector(TestCase):
