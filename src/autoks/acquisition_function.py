@@ -9,8 +9,8 @@ from src.autoks.kernel import AKSKernel
 class AcquisitionFunction:
     """Abstract base class for all acquisition functions."""
 
-    def score(self,
-              kernel: AKSKernel,
+    @staticmethod
+    def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
@@ -30,8 +30,8 @@ class AcquisitionFunction:
 class UniformScorer(AcquisitionFunction):
     CONST_SCORE: float = 1
 
-    def score(self,
-              kernel: AKSKernel,
+    @staticmethod
+    def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
@@ -43,13 +43,13 @@ class UniformScorer(AcquisitionFunction):
         :param hyperpriors:
         :return:
         """
-        return self.CONST_SCORE
+        return UniformScorer.CONST_SCORE
 
 
 class ExpectedImprovement(AcquisitionFunction):
 
-    def score(self,
-              kernel: AKSKernel,
+    @staticmethod
+    def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
@@ -69,8 +69,8 @@ class ExpectedImprovement(AcquisitionFunction):
 
 class RandomScorer(AcquisitionFunction):
 
-    def score(self,
-              kernel: AKSKernel,
+    @staticmethod
+    def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
@@ -89,7 +89,8 @@ class RandomScorer(AcquisitionFunction):
 
 class ParamProportionalScorer(AcquisitionFunction):
 
-    def score(self, kernel: AKSKernel,
+    @staticmethod
+    def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
