@@ -118,4 +118,4 @@ class OperandProportionalScorer(AcquisitionFunction):
         :param hyperpriors:
         :return:
         """
-        return n_base_kernels(kernel.kernel)
+        return -n_base_kernels(kernel.kernel)  # return the negative because we want to minimize this
