@@ -119,3 +119,20 @@ class OperandProportionalScorer(AcquisitionFunction):
         :return:
         """
         return -n_base_kernels(kernel.kernel)  # return the negative because we want to minimize this
+
+
+class KernComplexityProportionalScorer(AcquisitionFunction):
+    @staticmethod
+    def score(kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> float:
+        """Score proportional to the complexity of a kernel
+
+        :param kernel:
+        :param x_train:
+        :param y_train:
+        :param hyperpriors:
+        :return:
+        """
+        param_score = ParamProportionalScorer.score(kernel, x_train, y_train, hyperpriors)
+        operand_score = OperandProportionalScorer.score(kernel, x_train, y_train, hyperpriors)
+        return param_score + operand_score
