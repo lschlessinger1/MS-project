@@ -3,7 +3,7 @@ from typing import Optional, List
 import numpy as np
 from GPy.core.parameterization.priors import Prior
 
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import AKSKernel, n_base_kernels
 
 
 class AcquisitionFunction:
@@ -103,3 +103,19 @@ class ParamProportionalScorer(AcquisitionFunction):
         :return:
         """
         return -kernel.kernel.num_params  # return the negative because we want to minimize this
+
+
+class OperandProportionalScorer(AcquisitionFunction):
+
+    @staticmethod
+    def score(kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+              hyperpriors: Optional[List[Prior]] = None) -> float:
+        """Score proportional to the number of 1D kernels (operands).
+
+        :param kernel:
+        :param x_train:
+        :param y_train:
+        :param hyperpriors:
+        :return:
+        """
+        return n_base_kernels(kernel.kernel)
