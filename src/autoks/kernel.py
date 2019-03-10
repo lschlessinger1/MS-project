@@ -107,9 +107,9 @@ def get_all_1d_kernels(base_kernels: List[str],
     models = []
 
     for kern_fam in base_kernels:
-        kern_map = kernel_mapping[kern_fam]
+        kern_cls = kernel_mapping[kern_fam]
         for d in range(n_dims):
-            kernel = create_1d_kernel(kern_fam, d, kernel_mapping=kernel_mapping, kernel_map=kern_map)
+            kernel = create_1d_kernel(kern_fam, d, kernel_mapping=kernel_mapping, kernel_cls=kern_cls)
             models.append(kernel)
 
     return models
@@ -118,20 +118,20 @@ def get_all_1d_kernels(base_kernels: List[str],
 def create_1d_kernel(kernel_family: str,
                      active_dim: int,
                      kernel_mapping: Dict[str, Type[Kern]] = None,
-                     kernel_map: Type[Kern] = None) -> Kern:
+                     kernel_cls: Type[Kern] = None) -> Kern:
     """Create a 1D kernel.
 
     :param kernel_family:
     :param active_dim:
     :param kernel_mapping:
-    :param kernel_map:
+    :param kernel_cls:
     :return:
     """
     if not kernel_mapping:
         kernel_mapping = get_kernel_mapping()
-        if not kernel_map:
-            kernel_map = kernel_mapping[kernel_family]
-    return kernel_map(input_dim=1, active_dims=[active_dim])
+        if not kernel_cls:
+            kernel_cls = kernel_mapping[kernel_family]
+    return kernel_cls(input_dim=1, active_dims=[active_dim])
 
 
 def subkernel_expression(kernel: Kern,
