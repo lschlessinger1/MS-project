@@ -134,11 +134,11 @@ class Experiment:
 
         # Select kernels by acquisition function to be evaluated
         selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat)
-        unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
-        unselected_kernels = [unscored_kernels[i] for i in range(len(unscored_kernels)) if i not in ind]
-        evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
-        scored_kernels = [kernel for kernel in kernels if kernel.scored and kernel not in selected_kernels]
-        kernels = evaluated_kernels + unselected_kernels + scored_kernels
+        unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
+        unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
+        newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
+        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
+        kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
 
         depth = 0
         while self.n_evals < self.eval_budget:
@@ -159,11 +159,11 @@ class Experiment:
 
             # Select kernels by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat)
-            unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
-            unselected_kernels = [unscored_kernels[i] for i in range(len(unscored_kernels)) if i not in ind]
-            evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
-            scored_kernels = [kernel for kernel in kernels if kernel.scored and kernel not in selected_kernels]
-            kernels = evaluated_kernels + unselected_kernels + scored_kernels
+            unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
+            unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
+            newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
+            evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
+            kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
 
             kernels = self.prune_kernels(kernels, acq_scores, ind)
             kernels = self.select_offspring(kernels)
@@ -183,9 +183,9 @@ class Experiment:
         :return:
         """
         t0 = time()
-        unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
-        ind, acq_scores = query_strategy.query(unscored_kernels, self.x_train, self.y_train)
-        selected_kernels = query_strategy.select(np.array(unscored_kernels), acq_scores)
+        unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
+        ind, acq_scores = query_strategy.query(unevaluated_kernels, self.x_train, self.y_train)
+        selected_kernels = query_strategy.select(np.array(unevaluated_kernels), acq_scores)
         self.total_query_time += time() - t0
 
         if self.verbose:
@@ -205,9 +205,9 @@ class Experiment:
         :param kernels:
         :return:
         """
-        scored_kernels = [kernel for kernel in kernels if kernel.scored]
-        kernel_scores = [kernel.score for kernel in scored_kernels]
-        parents = self.kernel_selector.select_parents(scored_kernels, kernel_scores)
+        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
+        kernel_scores = [kernel.score for kernel in evaluated_kernels]
+        parents = self.kernel_selector.select_parents(evaluated_kernels, kernel_scores)
         # Print parent (seed) kernels
         if self.debug:
             n_parents = len(parents)
@@ -215,7 +215,7 @@ class Experiment:
             for parent in parents:
                 parent.pretty_print()
 
-        # Fix each parent before expansion for use in optimization, skipping nan-scored kernels
+        # Fix each parent before expansion for use in optimization, skipping nan-evaluated kernels
         for parent in self.remove_nan_scored_kernels(parents):
             parent.kernel.fix()
 
@@ -248,17 +248,17 @@ class Experiment:
         :param ind:
         :return:
         """
-        scored_kernels = [kernel for kernel in kernels if kernel.scored]
-        unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
+        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
+        unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
 
-        # acquisition scores of un-scored kernels
+        # acquisition scores of un-evaluated kernels
         acq_scores_unevaluated = [s for i, s in enumerate(acq_scores) if i not in ind]
 
-        pruned_candidates = self.kernel_selector.prune_candidates(unscored_kernels, acq_scores_unevaluated)
-        kernels = scored_kernels + pruned_candidates
+        pruned_candidates = self.kernel_selector.prune_candidates(unevaluated_kernels, acq_scores_unevaluated)
+        kernels = evaluated_kernels + pruned_candidates
 
         if self.verbose:
-            n_before_prune = len(unscored_kernels)
+            n_before_prune = len(unevaluated_kernels)
             n_pruned = n_before_prune - len(pruned_candidates)
             print(f'Kernel pruner removed {n_pruned}/{n_before_prune} un-evaluated kernels')
 
@@ -272,9 +272,9 @@ class Experiment:
         """
         # scores = [kernel.score for kernel in kernels]
 
-        # Prioritize keeping scored models.
+        # Prioritize keeping evaluated models.
         # TODO: Check correctness
-        augmented_scores = [k.score if k.scored and not k.nan_scored else -np.inf for k in kernels]
+        augmented_scores = [k.score if k.evaluated and not k.nan_scored else -np.inf for k in kernels]
 
         offspring = self.kernel_selector.select_offspring(kernels, augmented_scores)
 
@@ -309,7 +309,7 @@ class Experiment:
 
         if self.verbose:
             print('Printing all results')
-            # Sort kernels by scores with un-scored kernels last
+            # Sort kernels by scores with un-evaluated kernels last
             for k in sorted(evaluated_kernels, key=lambda x: (x.score is not None, x.score), reverse=True):
                 print(str(k), 'score:', k.score)
 
@@ -321,7 +321,7 @@ class Experiment:
         :param aks_kernel:
         :return:
         """
-        if not aks_kernel.scored:
+        if not aks_kernel.evaluated:
             try:
                 kernel = aks_kernel.kernel
                 k_copy = kernel.copy()
@@ -356,7 +356,7 @@ class Experiment:
         :param aks_kernel:
         :return:
         """
-        if not aks_kernel.scored:
+        if not aks_kernel.evaluated:
             set_model_kern(self.gp_model, aks_kernel.kernel)
 
             # Check if parameters are well-defined:
@@ -364,11 +364,11 @@ class Experiment:
             if not aks_kernel.nan_scored:
                 score = self.objective(self.gp_model)
                 self.n_evals += 1
-                # aks_kernel.scored = True
+                # aks_kernel.evaluated = True
                 aks_kernel.score = score
             else:
                 aks_kernel.score = np.nan
-                # also count a nan-scored kernel as an evaluation
+                # also count a nan-evaluated kernel as an evaluation
                 self.n_evals += 1
         return aks_kernel
 
@@ -386,8 +386,8 @@ class Experiment:
         :param aks_kernels:
         :return:
         """
-        scored_kernels = [kernel for kernel in aks_kernels if kernel.scored]
-        sorted_aks_kernels = sorted(scored_kernels, key=lambda x: x.score, reverse=True)
+        evaluated_kernels = [kernel for kernel in aks_kernels if kernel.evaluated]
+        sorted_aks_kernels = sorted(evaluated_kernels, key=lambda x: x.score, reverse=True)
         best_aks_kernel = sorted_aks_kernels[0]
         best_kernel = best_aks_kernel.kernel
         best_model = self.gp_model.__class__(self.x_train, self.y_train, kernel=best_kernel)
@@ -554,28 +554,28 @@ class Experiment:
         :return:
         """
         if len(kernels) > 0:
-            scored_kernels = [kernel for kernel in kernels if kernel.scored]
-            model_scores = np.array([k.score for k in scored_kernels])
+            evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
+            model_scores = np.array([k.score for k in evaluated_kernels])
             score_argmax = np.argmax(model_scores)
             self.best_scores.append(model_scores[score_argmax])
             self.mean_scores.append(np.mean(model_scores))
             self.std_scores.append(np.std(model_scores))
 
-            n_params = np.array([aks_kernel.kernel.param_array.size for aks_kernel in scored_kernels])
+            n_params = np.array([aks_kernel.kernel.param_array.size for aks_kernel in evaluated_kernels])
             self.median_n_hyperparameters.append(np.median(n_params))
             self.std_n_hyperparameters.append(np.std(n_params))
             self.best_n_hyperparameters.append(n_params[score_argmax])
 
-            n_operands = np.array([n_base_kernels(aks_kernel.kernel) for aks_kernel in scored_kernels])
+            n_operands = np.array([n_base_kernels(aks_kernel.kernel) for aks_kernel in evaluated_kernels])
             self.median_n_operands.append(np.median(n_operands))
             self.std_n_operands.append(np.std(n_operands))
             self.best_n_operands.append(n_operands[score_argmax])
 
-            cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in scored_kernels], self.x_train)
+            cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in evaluated_kernels], self.x_train)
             self.mean_cov_dists.append(np.mean(cov_dists))
             self.std_cov_dists.append(np.std(cov_dists))
 
-            if len(scored_kernels) > 1:
-                diversity_score = all_pairs_avg_dist([aks_kernel.kernel for aks_kernel in scored_kernels],
+            if len(evaluated_kernels) > 1:
+                diversity_score = all_pairs_avg_dist([aks_kernel.kernel for aks_kernel in evaluated_kernels],
                                                      self.kernel_families, self.n_dims)
                 self.diversity_scores.append(diversity_score)

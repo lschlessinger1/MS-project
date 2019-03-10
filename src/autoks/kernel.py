@@ -13,12 +13,12 @@ class AKSKernel:
     """AKS kernel wrapper
     """
     kernel: Kern
-    scored: bool
+    evaluated: bool
     nan_scored: bool
 
-    def __init__(self, kernel, scored=False, nan_scored=False):
+    def __init__(self, kernel, evaluated=False, nan_scored=False):
         self.kernel = kernel
-        self.scored = scored
+        self.evaluated = evaluated
         self.nan_scored = nan_scored
         self._score = None
 
@@ -29,8 +29,8 @@ class AKSKernel:
     @score.setter
     def score(self, score: float) -> None:
         self._score = score
-        # Update scored as well
-        self.scored = True
+        # Update evaluated as well
+        self.evaluated = True
 
     def to_binary_tree(self) -> src.evalg.encoding.BinaryTree:
         """Get the binary tree representation of the kernel

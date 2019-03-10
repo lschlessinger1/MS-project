@@ -154,8 +154,8 @@ class BOMSGrammar(BaseGrammar):
 
         # Exploit:
         # Add all neighbors (according to CKS grammar) of the best model seen thus far to active set
-        scored_kernels = [kernel for kernel in aks_kernels if kernel.scored]
-        best_kern = sorted(scored_kernels, key=lambda x: x.score, reverse=True)[0]
+        evaluated_kernels = [kernel for kernel in aks_kernels if kernel.evaluated]
+        best_kern = sorted(evaluated_kernels, key=lambda x: x.score, reverse=True)[0]
         greedy_kerns = BOMSGrammar.greedy_kernels(best_kern, n_dims, kernel_families)
 
         new_kernels = rw_kerns + greedy_kerns

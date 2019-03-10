@@ -71,7 +71,7 @@ class TestCKSGrammar(TestCase):
         k_types_exist = [has_combo_kernel_type(kernels, k_type) for k_type in kernel_types]
         self.assertTrue(all(k_types_exist))
 
-        scored = [k.scored for k in result]
+        scored = [k.evaluated for k in result]
         self.assertFalse(all(scored))
         nan_scored = [k.nan_scored for k in result]
         self.assertFalse(all(nan_scored))
@@ -85,7 +85,7 @@ class TestCKSGrammar(TestCase):
         k_types_exist = [has_combo_kernel_type(kernels, k_type) for k_type in kernel_types]
         self.assertTrue(all(k_types_exist))
 
-        scored = [k.scored for k in result]
+        scored = [k.evaluated for k in result]
         self.assertFalse(all(scored))
         nan_scored = [k.nan_scored for k in result]
         self.assertFalse(all(nan_scored))

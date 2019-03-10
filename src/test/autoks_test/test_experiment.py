@@ -174,7 +174,7 @@ class TestExperiment(TestCase):
         self.exp.objective.assert_called_once_with(self.exp.gp_model)
         self.assertEqual(kern.score, score)
         self.assertFalse(kern.nan_scored)
-        self.assertTrue(kern.scored)
+        self.assertTrue(kern.evaluated)
 
     def test_remove_nan_scored_kernels(self):
         kernels = [AKSKernel(RatQuad(1), nan_scored=True), AKSKernel(RBF(1)), AKSKernel(RBF(1), nan_scored=True)]

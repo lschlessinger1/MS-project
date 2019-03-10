@@ -130,7 +130,7 @@ class ExperimentReportGenerator:
         self.x_test = x_test
         self.y_test = y_test
 
-        scored_kernels = [kernel for kernel in self.aks_kernels if kernel.scored]
+        scored_kernels = [kernel for kernel in self.aks_kernels if kernel.evaluated]
         sorted_aks_kernels = sorted(scored_kernels, key=lambda k: k.score, reverse=True)
         self.best_aks_kernel = sorted_aks_kernels[0]
         self.best_kernel = self.best_aks_kernel.kernel

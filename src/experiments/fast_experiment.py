@@ -29,4 +29,4 @@ objective = negative_BIC
 
 experiment = Experiment(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
                         eval_budget=8, debug=True, verbose=True)
-experiment.run(title='Random Experiment', summarize=False)
+experiment.run(title='Random Experiment', summarize=True)
