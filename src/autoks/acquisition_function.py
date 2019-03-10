@@ -108,7 +108,9 @@ class ParamProportionalScorer(AcquisitionFunction):
 class OperandProportionalScorer(AcquisitionFunction):
 
     @staticmethod
-    def score(kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+    def score(kernel: AKSKernel,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
         """Score proportional to the number of 1D kernels (operands).
 
@@ -123,7 +125,9 @@ class OperandProportionalScorer(AcquisitionFunction):
 
 class KernComplexityProportionalScorer(AcquisitionFunction):
     @staticmethod
-    def score(kernel: AKSKernel, x_train: np.ndarray, y_train: np.ndarray,
+    def score(kernel: AKSKernel,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
               hyperpriors: Optional[List[Prior]] = None) -> float:
         """Score proportional to the complexity of a kernel
 
