@@ -99,6 +99,7 @@ class Experiment:
         self.total_eval_time = 0
         self.total_expansion_time = 0
         self.total_kernel_search_time = 0
+        self.total_query_time = 0
 
         if gp_model is not None:
             self.gp_model = gp_model
@@ -181,9 +182,11 @@ class Experiment:
         :param query_strategy:
         :return:
         """
+        t0 = time()
         unscored_kernels = [kernel for kernel in kernels if not kernel.scored]
         ind, acq_scores = query_strategy.query(unscored_kernels, self.x_train, self.y_train)
         selected_kernels = query_strategy.select(np.array(unscored_kernels), acq_scores)
+        self.total_query_time += time() - t0
 
         if self.verbose:
             n_selected = len(ind)
@@ -524,11 +527,12 @@ class Experiment:
         eval_time = self.total_eval_time
         opt_time = self.total_optimization_time
         expansion_time = self.total_expansion_time
+        query_time = self.total_query_time
         total_time = self.total_kernel_search_time
-        other_time = total_time - eval_time - opt_time - expansion_time
+        other_time = total_time - eval_time - opt_time - expansion_time - query_time
 
-        labels = ['Evaluation', 'Optimization', 'Expansion', 'Other']
-        x = np.array([eval_time, opt_time, expansion_time, other_time])
+        labels = ['Evaluation', 'Optimization', 'Expansion', 'Query', 'Other']
+        x = np.array([eval_time, opt_time, expansion_time, query_time, other_time])
         x_pct = 100 * (x / total_time)
 
         return labels, x, x_pct
