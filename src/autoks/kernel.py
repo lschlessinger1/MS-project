@@ -164,7 +164,7 @@ def in_order(root: Kern,
 
     :param root:
     :param tokens:
-    :return:
+    :return: The infix expression produced by the in-order traversal.
     """
     if root is not None:
         if isinstance(root, CombinationKernel):
