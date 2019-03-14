@@ -41,11 +41,12 @@ class Experiment:
     verbose: bool
     optimizer: Optional[str]
     n_restarts_optimizer: int
+    x_axis_evals: bool
 
     def __init__(self, grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
                  init_query_strat=None, query_strat=None, additive_form=False, debug=False, verbose=False,
-                 optimizer=None, n_restarts_optimizer=10):
+                 optimizer=None, n_restarts_optimizer=10, x_axis_evals=True):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -117,6 +118,8 @@ class Experiment:
         else:
             self.query_strat = NaiveQueryStrategy()
 
+        self.x_axis_evals = x_axis_evals
+
     def kernel_search(self) -> List[AKSKernel]:
         """Perform automated kernel search.
 
@@ -152,6 +155,9 @@ class Experiment:
 
             parents = self.select_parents(kernels)
             new_kernels = self.propose_new_kernels(parents)
+            # check for repeated expansion
+            # if all(k.evaluated or k.nan_scored for k in kernels) and :
+            #     break
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
@@ -301,8 +307,13 @@ class Experiment:
             self.total_eval_time += time() - t1
             evaluated_kernels.append(evaluated_kernel)
 
+            if self.x_axis_evals:
+                if not evaluated_kernel.nan_scored:
+                    self.update_stats([evaluated_kernel])
+
         evaluated_kernels = self.remove_nan_scored_kernels(evaluated_kernels)
-        self.update_stats(evaluated_kernels)
+        if not self.x_axis_evals:
+            self.update_stats(evaluated_kernels)
 
         if self.verbose:
             print('Printing all results')
@@ -471,7 +482,8 @@ class Experiment:
 
         :return:
         """
-        plot_best_so_far(self.best_scores)
+        x_label = 'Evaluations' if self.x_axis_evals else 'Generation'
+        plot_best_so_far(self.best_scores, x_label=x_label)
         plt.show()
 
     def plot_score_summary(self) -> None:
@@ -479,7 +491,8 @@ class Experiment:
 
         :return:
         """
-        plot_distribution(self.mean_scores, self.std_scores, self.best_scores)
+        x_label = 'evaluations' if self.x_axis_evals else 'generation'
+        plot_distribution(self.mean_scores, self.std_scores, self.best_scores, x_label=x_label)
         plt.show()
 
     def plot_n_hyperparams_summary(self) -> None:
@@ -487,8 +500,9 @@ class Experiment:
 
         :return:
         """
+        x_label = 'evaluations' if self.x_axis_evals else 'generation'
         plot_distribution(self.median_n_hyperparameters, self.std_n_hyperparameters, self.best_n_hyperparameters,
-                          value_name='median', metric_name='# Hyperparameters')
+                          value_name='median', metric_name='# Hyperparameters', x_label=x_label)
         plt.show()
 
     def plot_n_operands_summary(self) -> None:
@@ -496,8 +510,9 @@ class Experiment:
 
         :return:
         """
+        x_label = 'evaluations' if self.x_axis_evals else 'generation'
         plot_distribution(self.median_n_operands, self.std_n_operands, self.best_n_operands, value_name='median',
-                          metric_name='# Operands')
+                          metric_name='# Operands', x_label=x_label)
         plt.show()
 
     def plot_cov_dist_summary(self) -> None:
@@ -505,7 +520,8 @@ class Experiment:
 
         :return:
         """
-        plot_distribution(self.mean_cov_dists, self.std_cov_dists, metric_name='covariance distance')
+        x_label = 'evaluations' if self.x_axis_evals else 'generation'
+        plot_distribution(self.mean_cov_dists, self.std_cov_dists, metric_name='covariance distance', x_label=x_label)
         plt.show()
 
     def plot_kernel_diversity_summary(self) -> None:
@@ -513,7 +529,8 @@ class Experiment:
 
         :return:
         """
-        plot_distribution(self.diversity_scores, metric_name='diversity', value_name='population')
+        x_label = 'evaluations' if self.x_axis_evals else 'generation'
+        plot_distribution(self.diversity_scores, metric_name='diversity', value_name='population', x_label=x_label)
         plt.show()
 
     def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
