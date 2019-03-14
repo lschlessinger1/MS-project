@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 
 from src.autoks.grammar import BaseGrammar
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
-    AKSKernel
+    AKSKernel, pretty_print_aks_kernels
 from src.autoks.kernel_selection import KernelSelector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
@@ -210,10 +210,7 @@ class Experiment:
         parents = self.kernel_selector.select_parents(evaluated_kernels, kernel_scores)
         # Print parent (seed) kernels
         if self.debug:
-            n_parents = len(parents)
-            print('Parent (%d) kernel%s:' % (n_parents, 's' if n_parents > 1 else ''))
-            for parent in parents:
-                parent.pretty_print()
+            pretty_print_aks_kernels(parents, 'Parent')
 
         # Fix each parent before expansion for use in optimization, skipping nan-evaluated kernels
         for parent in self.remove_nan_scored_kernels(parents):

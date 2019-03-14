@@ -71,6 +71,22 @@ class AKSKernel:
             f'{self.score!r}) '
 
 
+def pretty_print_aks_kernels(aks_kernels: List[AKSKernel],
+                             kernel_type_label: Optional[str] = None):
+    n_kernels = len(aks_kernels)
+
+    plural_suffix = 's' if n_kernels > 1 else ''
+    ending = f'kernel{plural_suffix}:'
+    if kernel_type_label is not None:
+        message = f'{n_kernels} {kernel_type_label} {ending}'
+    else:
+        message = f'{n_kernels} {ending}'
+    message = message.capitalize()
+    print(message)
+    for k in aks_kernels:
+        k.pretty_print()
+
+
 def get_kernel_mapping() -> Dict[str, Type[Kern]]:
     """Get the map from allowable kernels to the corresponding class.
 

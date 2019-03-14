@@ -4,7 +4,8 @@ import numpy as np
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
-from src.autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, tree_to_kernel
+from src.autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, tree_to_kernel, \
+    pretty_print_aks_kernels
 from src.evalg.vary import PopulationOperator
 
 
@@ -78,9 +79,7 @@ class EvolutionaryGrammar(BaseGrammar):
         :return:
         """
         if verbose:
-            print('Seed kernels:')
-            for k in aks_kernels:
-                k.pretty_print()
+            pretty_print_aks_kernels(aks_kernels, 'Seed')
 
         # Convert GPy kernels to BinaryTrees
         trees = [aks_kernel.to_binary_tree() for aks_kernel in aks_kernels]
@@ -95,9 +94,7 @@ class EvolutionaryGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            print(f'{len(new_kernels)} Newly expanded kernels:')
-            for k in new_kernels:
-                k.pretty_print()
+            pretty_print_aks_kernels(aks_kernels, 'Newly expanded')
 
         return new_kernels
 
@@ -138,9 +135,7 @@ class BOMSGrammar(BaseGrammar):
         :return:
         """
         if verbose:
-            print('Seed kernels:')
-            for k in aks_kernels:
-                k.pretty_print()
+            pretty_print_aks_kernels(aks_kernels, 'Seed')
 
         # Explore:
         # Add 15 random walks (geometric dist w/ prob 1/3) from empty kernel to active set
@@ -157,9 +152,7 @@ class BOMSGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            print(f'{len(new_kernels)} Newly expanded kernels:')
-            for k in new_kernels:
-                k.pretty_print()
+            pretty_print_aks_kernels(aks_kernels, 'Newly expanded')
 
         return new_kernels
 
@@ -262,9 +255,7 @@ class CKSGrammar(BaseGrammar):
         # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
         # 3) Any base kernel B may be replaced with any other base kernel family B'
         if verbose:
-            print('Seed kernels:')
-            for k in aks_kernels:
-                k.pretty_print()
+            pretty_print_aks_kernels(aks_kernels, 'Seed')
 
         new_kernels = []
         for aks_kernel in aks_kernels:
@@ -276,9 +267,7 @@ class CKSGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            print(f'{len(new_kernels)} Newly expanded kernels:')
-            for k in new_kernels:
-                k.pretty_print()
+            pretty_print_aks_kernels(aks_kernels, 'Newly expanded')
 
         return new_kernels
 
@@ -389,9 +378,7 @@ class RandomGrammar(BaseGrammar):
         :return:
         """
         if verbose:
-            print('Seed kernels:')
-            for k in aks_kernels:
-                k.pretty_print()
+            pretty_print_aks_kernels(aks_kernels, 'Seed')
 
         new_kernels = []
 
@@ -414,9 +401,7 @@ class RandomGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            print(f'{len(new_kernels)} Newly expanded kernels:')
-            for k in new_kernels:
-                k.pretty_print()
+            pretty_print_aks_kernels(aks_kernels, 'Newly expanded')
 
         return new_kernels
 
