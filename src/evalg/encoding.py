@@ -1,7 +1,13 @@
+import warnings
 from typing import List, Optional, TypeVar
 
 from GPy.kern.src.kern import Kern
-from graphviz import Digraph
+
+try:
+    from graphviz import Digraph
+except ImportError:
+    warnings.warn("graphviz.Digraph not available. Graphing will be disabled.", ImportWarning)
+
 
 import src.autoks.kernel
 
