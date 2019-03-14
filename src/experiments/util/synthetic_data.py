@@ -198,6 +198,10 @@ class SyntheticRegressionDataset(SyntheticDataset):
 
         return x, y
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n={self.n_samples!r}, d={self.input_dim!r}, ' \
+            f'min_terms={self.min_terms!r}, max_terms={self.max_terms!r}, periodic={self.periodic!r})'
+
 
 class BraninGenerator(SyntheticDataset):
 

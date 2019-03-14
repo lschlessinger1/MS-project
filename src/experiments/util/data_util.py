@@ -18,6 +18,9 @@ class Dataset:
     def load_or_generate_data(self):
         raise NotImplementedError('Must be implemented in a child class')
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}'
+
 
 class SyntheticDataset(Dataset, ABC):
     n_samples: int
@@ -27,6 +30,9 @@ class SyntheticDataset(Dataset, ABC):
         self.n_samples = n_samples
         self.input_dim = input_dim
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f' n={self.n_samples!r}, d={self.input_dim!r})'
+
 
 class Input1DSyntheticDataset(SyntheticDataset, ABC):
 
@@ -34,6 +40,9 @@ class Input1DSyntheticDataset(SyntheticDataset, ABC):
         super().__init__(n_samples, input_dim)
         if self.input_dim != 1:
             raise ValueError('Input dimension must be 1')
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'n={self.n_samples!r}, d={self.input_dim!r})'
 
 
 class FileDataset(Dataset):
@@ -49,6 +58,9 @@ class FileDataset(Dataset):
         x, y = data[:, :-1], data[:, -1]
         return x, y
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f' file_path={self.file_path!r}) '
+
 
 class KnownGPDataset(Dataset):
     kernel: Kern
@@ -63,6 +75,10 @@ class KnownGPDataset(Dataset):
     def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
         x, y = sample_gp(self.kernel, self.n_pts, self.noise_var)
         return x, y
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'kernel={kernel_to_infix(self.kernel, show_params=True)!r}, n=' \
+            f'{self.n_pts!r}, noise={self.noise_var!r})'
 
 
 def gen_dataset_paths(data_dir: str,
@@ -88,13 +104,7 @@ def run_experiments(datasets: Iterable[Dataset],
                     base_kernels: Optional[List[str]] = None,
                     **kwargs) -> None:
     for dataset in datasets:
-        if isinstance(dataset, FileDataset):
-            print(f'Performing experiment on {dataset.path}')
-        elif isinstance(dataset, KnownGPDataset):
-            simple_name = kernel_to_infix(dataset.kernel, show_params=True)
-            print(f'Performing experiment on \n {simple_name}')
-        elif isinstance(dataset, Dataset):
-            print(f'Performing experiment')
+        print(f'Performing experiment on \n {dataset}')
         x, y = dataset.load_or_generate_data()
 
         if base_kernels is None:
