@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 
 from src.autoks.experiment import Experiment
 from src.autoks.grammar import CKSGrammar, BaseGrammar
+from src.autoks.kernel import kernel_to_infix
 from src.autoks.kernel_selection import KernelSelector
 
 
@@ -89,6 +90,9 @@ def run_experiments(datasets: Iterable[Dataset],
     for dataset in datasets:
         if isinstance(dataset, FileDataset):
             print(f'Performing experiment on {dataset.path}')
+        elif isinstance(dataset, KnownGPDataset):
+            simple_name = kernel_to_infix(dataset.kernel, show_params=True)
+            print(f'Performing experiment on \n {simple_name}')
         elif isinstance(dataset, Dataset):
             print(f'Performing experiment')
         x, y = dataset.load_or_generate_data()
