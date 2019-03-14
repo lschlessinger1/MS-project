@@ -61,9 +61,7 @@ class EvolutionaryGrammar(BaseGrammar):
         :param n_dims:
         :return:
         """
-        kernels = get_all_1d_kernels(kernel_families, n_dims)
-        kernels = [AKSKernel(kernel) for kernel in kernels]
-        return kernels
+        return CKSGrammar.all_1d_aks_kernels(kernel_families, n_dims)
 
     def expand(self,
                aks_kernels:
@@ -124,11 +122,7 @@ class BOMSGrammar(BaseGrammar):
         :param n_dims:
         :return:
         """
-        # {SE, RQ, LIN, PER} if dataset is 1D
-        # {SE_i} + {RQ_i} otherwise
-        kernels = get_all_1d_kernels(kernel_families, n_dims)
-        kernels = [AKSKernel(kernel) for kernel in kernels]
-        return kernels
+        return CKSGrammar.all_1d_aks_kernels(kernel_families, n_dims)
 
     def expand(self,
                aks_kernels: List[AKSKernel],
@@ -232,6 +226,12 @@ class CKSGrammar(BaseGrammar):
         else:
             return ['SE', 'RQ', 'LIN', 'PER']
 
+    @staticmethod
+    def all_1d_aks_kernels(kernel_families, n_dims):
+        kernels = get_all_1d_kernels(kernel_families, n_dims)
+        kernels = [AKSKernel(kernel) for kernel in kernels]
+        return kernels
+
     def initialize(self,
                    kernel_families: List[str],
                    n_dims: int) -> List[AKSKernel]:
@@ -241,9 +241,7 @@ class CKSGrammar(BaseGrammar):
         :param n_dims:
         :return:
         """
-        kernels = get_all_1d_kernels(kernel_families, n_dims)
-        kernels = [AKSKernel(kernel) for kernel in kernels]
-        return kernels
+        return self.all_1d_aks_kernels(kernel_families, n_dims)
 
     def expand(self,
                aks_kernels: List[AKSKernel],
@@ -375,9 +373,7 @@ class RandomGrammar(BaseGrammar):
         :param n_dims:
         :return:
         """
-        kernels = get_all_1d_kernels(kernel_families, n_dims)
-        kernels = [AKSKernel(kernel) for kernel in kernels]
-        return kernels
+        return CKSGrammar.all_1d_aks_kernels(kernel_families, n_dims)
 
     def expand(self,
                aks_kernels: List[AKSKernel],
