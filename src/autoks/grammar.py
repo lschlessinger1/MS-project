@@ -94,7 +94,7 @@ class EvolutionaryGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            pretty_print_aks_kernels(aks_kernels, 'Newly expanded')
+            pretty_print_aks_kernels(new_kernels, 'Newly expanded')
 
         return new_kernels
 
@@ -152,7 +152,7 @@ class BOMSGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            pretty_print_aks_kernels(aks_kernels, 'Newly expanded')
+            pretty_print_aks_kernels(new_kernels, 'Newly expanded')
 
         return new_kernels
 
@@ -267,7 +267,7 @@ class CKSGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            pretty_print_aks_kernels(aks_kernels, 'Newly expanded')
+            pretty_print_aks_kernels(new_kernels, 'Newly expanded')
 
         return new_kernels
 
@@ -401,7 +401,7 @@ class RandomGrammar(BaseGrammar):
         new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
 
         if verbose:
-            pretty_print_aks_kernels(aks_kernels, 'Newly expanded')
+            pretty_print_aks_kernels(new_kernels, 'Newly expanded')
 
         return new_kernels
 
