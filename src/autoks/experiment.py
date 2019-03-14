@@ -154,12 +154,10 @@ class Experiment:
                 print('Evaluated %d/%d kernels' % (self.n_evals, self.eval_budget))
 
             parents = self.select_parents(kernels)
-
-            # Fix each parent before expansion for later use in optimization, skipping nan-evaluated kernels
-            for parent in self.remove_nan_scored_kernels(parents):
-                parent.kernel.fix()
-
             new_kernels = self.propose_new_kernels(parents)
+            # check for repeated expansion
+            # if all(k.evaluated or k.nan_scored for k in kernels) and :
+            #     break
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
@@ -219,6 +217,10 @@ class Experiment:
         # Print parent (seed) kernels
         if self.debug:
             pretty_print_aks_kernels(parents, 'Parent')
+
+        # Fix each parent before expansion for use in optimization, skipping nan-evaluated kernels
+        for parent in self.remove_nan_scored_kernels(parents):
+            parent.kernel.fix()
 
         return parents
 
