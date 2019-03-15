@@ -333,27 +333,27 @@ class Experiment:
         if not aks_kernel.evaluated:
             try:
                 kernel = aks_kernel.kernel
-                k_copy = kernel.copy()
-                k_copy.unfix()
+                k_unfixed = kernel.copy()
+                k_unfixed.unfix()
 
-                # Optimize k_copy (with all params unfixed)
-                set_model_kern(self.gp_model, k_copy)
+                # Optimize unfixed kernel (all params unfixed)
+                set_model_kern(self.gp_model, k_unfixed)
                 self.gp_model.optimize(ipython_notebook=False, optimizer=self.optimizer)
 
                 # Optimize (with restarts) the newly added parameters
-                k_new = kernel
+                k_fixed = kernel
 
-                # Set param values of k_new to the previously optimized ones of k_copy
-                new_params = k_copy.param_array
-                k_new[:] = new_params
+                # Set param values of fixed kernel to the previously optimized ones of unfixed kernel
+                new_params = k_unfixed.param_array
+                k_fixed[:] = new_params
 
-                set_model_kern(self.gp_model, k_new)
+                set_model_kern(self.gp_model, k_fixed)
                 self.gp_model.optimize_restarts(ipython_notebook=False, optimizer=self.optimizer,
                                                 num_restarts=self.n_restarts_optimizer, verbose=False)
 
                 # Unfix all params and set kernel
-                k_new.unfix()
-                set_model_kern(self.gp_model, k_new)
+                k_fixed.unfix()
+                set_model_kern(self.gp_model, k_fixed)
                 aks_kernel.kernel = self.gp_model.kern
             except LinAlgError:
                 warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
