@@ -120,7 +120,13 @@ def run_experiments(datasets: Iterable[Dataset],
 def sample_gp(kernel: Kern,
               n_pts: int = 500,
               noise_var: float = 1) -> Tuple[np.ndarray, np.ndarray]:
-    """Sample paths from a GP"""
+    """Sample paths from a GP.
+
+    :param kernel: the kernel from which to draw samples
+    :param n_pts: number of data points
+    :param noise_var: variance of additive gaussian noise
+    :return:
+    """
     x = np.random.uniform(0., 1., (n_pts, kernel.input_dim))
 
     # zero-mean
