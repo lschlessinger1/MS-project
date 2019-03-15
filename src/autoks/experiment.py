@@ -324,6 +324,9 @@ class Experiment:
     def optimize_kernel(self, aks_kernel: AKSKernel) -> AKSKernel:
         """Optimize the hyperparameters of the kernel
 
+        All of the parameters which were part of the previous parent parent kernel are initialized to their previous
+        values. All parameterized are then optimized, randomly restarting the newly introduced parameters.
+
         :param aks_kernel:
         :return:
         """
