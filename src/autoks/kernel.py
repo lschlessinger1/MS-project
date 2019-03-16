@@ -13,11 +13,13 @@ class AKSKernel:
     """AKS kernel wrapper
     """
     kernel: Kern
+    lik_params: Optional[np.ndarray]
     evaluated: bool
     nan_scored: bool
 
-    def __init__(self, kernel, evaluated=False, nan_scored=False):
+    def __init__(self, kernel, lik_params=None, evaluated=False, nan_scored=False):
         self.kernel = kernel
+        self.lik_params = lik_params
         self.evaluated = evaluated
         self.nan_scored = nan_scored
         self._score = None

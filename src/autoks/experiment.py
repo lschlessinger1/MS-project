@@ -355,6 +355,7 @@ class Experiment:
                 k_fixed.unfix()
                 set_model_kern(self.gp_model, k_fixed)
                 aks_kernel.kernel = self.gp_model.kern
+                aks_kernel.lik_params = self.gp_model.likelihood[:].copy()
             except LinAlgError:
                 warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
         return aks_kernel
@@ -367,6 +368,7 @@ class Experiment:
         """
         if not aks_kernel.evaluated:
             set_model_kern(self.gp_model, aks_kernel.kernel)
+            self.gp_model.likelihood[:] = aks_kernel.lik_params
 
             # Check if parameters are well-defined:
             aks_kernel.nan_scored = is_nan_model(self.gp_model)
@@ -400,6 +402,8 @@ class Experiment:
         best_aks_kernel = sorted_aks_kernels[0]
         best_kernel = best_aks_kernel.kernel
         best_model = self.gp_model.__class__(self.x_train, self.y_train, kernel=best_kernel)
+        # Set the likelihood parameters.
+        best_model.likelihood[:] = best_aks_kernel.lik_params
 
         # If training data is 1D, show a plot.
         if best_model.input_dim == 1:
