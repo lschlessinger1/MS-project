@@ -3,12 +3,12 @@ from abc import ABC
 from typing import Iterable, Callable, List, Optional, Tuple
 
 import numpy as np
-from GPy.kern import RBF, RatQuad, StdPeriodic, Linear, Kern
+from GPy.kern import Kern
 from sklearn.model_selection import train_test_split
 
 from src.autoks.experiment import Experiment
 from src.autoks.grammar import CKSGrammar, BaseGrammar
-from src.autoks.kernel import kernel_to_infix
+from src.autoks.kernel import kernel_to_infix, get_kernel_mapping
 from src.autoks.kernel_selection import KernelSelector
 
 
@@ -145,14 +145,20 @@ def sample_gp(kernel: Kern,
 
 def cks_known_kernels() -> List[Kern]:
     """Duvenaud, et al., 2013 Table 1"""
-    se1 = RBF(1, active_dims=[0])
-    se2 = RBF(1, active_dims=[1])
-    se3 = RBF(1, active_dims=[2])
-    se4 = RBF(1, active_dims=[3])
-    rq1 = RatQuad(1, active_dims=[0])
-    rq2 = RatQuad(1, active_dims=[1])
-    per1 = StdPeriodic(1, active_dims=[0])
-    lin1 = Linear(1, active_dims=[0])
+    kernel_mapping = get_kernel_mapping()
+    rbf = kernel_mapping['SE']
+    rq = kernel_mapping['RQ']
+    per = kernel_mapping['PER']
+    lin = kernel_mapping['LIN']
+
+    se1 = rbf(1, active_dims=[0])
+    se2 = rbf(1, active_dims=[1])
+    se3 = rbf(1, active_dims=[2])
+    se4 = rbf(1, active_dims=[3])
+    rq1 = rq(1, active_dims=[0])
+    rq2 = rq(1, active_dims=[1])
+    per1 = per(1, active_dims=[0])
+    lin1 = lin(1, active_dims=[0])
 
     true_kernels = [se1 + rq1, lin1 * per1, se1 + rq2, se1 + se2 * per1 + se3,
                     se1 * se2, se1 * se2 + se2 * se3, (se1 + se2) * (se3 + se4)]
