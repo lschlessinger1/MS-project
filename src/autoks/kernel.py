@@ -135,8 +135,8 @@ def get_all_1d_kernels(base_kernels: List[str],
 
 def create_1d_kernel(kernel_family: str,
                      active_dim: int,
-                     kernel_mapping: Dict[str, Type[Kern]] = None,
-                     kernel_cls: Type[Kern] = None) -> Kern:
+                     kernel_mapping: Optional[Dict[str, Type[Kern]]] = None,
+                     kernel_cls: Optional[Type[Kern]] = None) -> Kern:
     """Create a 1D kernel.
 
     :param kernel_family:
