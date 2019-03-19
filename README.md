@@ -12,3 +12,13 @@ Master's Project
 `autoks`: **Auto**mated **K**ernel **S**earch
 
 `evalg`: **Ev**olutionary **Alg**orithms
+
+### Adding Custom GPy kernels:
+
+1. Add `RationalQuadratic` to `GPy.kern.src.stationary`.
+2. Add `LinScaleShift` to `GPy.kern.src.linear`.
+3. Add `StandardPeriodic` to `GPy.kern.src.standard_periodic`.
+4. Update the `GPy.kern.src` file with newly defined kernels.
+5. Update `autoks.kernel.get_matching_kernels` to replace `RatQuad`, `Linear`, and `StdPeriodic` with new kernels.
+
+See the correspoinding notebooks with kernel definitions [here](https://github.com/lschlessinger1/MS-project/tree/master/src/playground/test%20custom%20kernels).
