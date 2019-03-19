@@ -1,6 +1,6 @@
 import warnings
 from time import time
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional, FrozenSet
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 
 from src.autoks.grammar import BaseGrammar
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
-    AKSKernel, pretty_print_aks_kernels
+    AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel
 from src.autoks.kernel_selection import KernelSelector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
@@ -143,6 +143,10 @@ class Experiment:
         evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
 
+        max_same_expansions = 3  # Maxiumuum number of same kernel proposal before terminating
+        max_null_queries = 3  # Maxiumum number of empty queries in a row allowed before terminating
+        prev_expansions = []
+        prev_n_queried = []
         depth = 0
         while self.n_evals < self.eval_budget:
             if depth > self.max_depth:
@@ -160,6 +164,16 @@ class Experiment:
                 parent.kernel.fix()
 
             new_kernels = self.propose_new_kernels(parents)
+
+            # Check for same expansions
+            if self.all_same_expansion(new_kernels, prev_expansions, max_same_expansions):
+                if self.verbose:
+                    print(f'Terminating kernel search. The last {max_same_expansions} expansions proposed the same '
+                          f'kernels.')
+                break
+            else:
+                prev_expansions = self.update_kernel_infix_set(new_kernels, prev_expansions, max_same_expansions)
+
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
@@ -167,6 +181,14 @@ class Experiment:
 
             # Select kernels by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat)
+
+            # Check for empty queries
+            prev_n_queried.append(len(ind))
+            if all([n == 0 for n in prev_n_queried[-max_null_queries:]]) and len(prev_n_queried) >= max_null_queries:
+                if self.verbose:
+                    print(f'Terminating kernel search. The last {max_null_queries} queries were empty.')
+                break
+
             unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
             unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
             newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
@@ -382,6 +404,28 @@ class Experiment:
                 # also count a nan-evaluated kernel as an evaluation
                 self.n_evals += 1
         return aks_kernel
+
+    def all_same_expansion(self, new_kernels: List[AKSKernel],
+                           prev_expansions: List[FrozenSet[str]],
+                           max_expansions: int) -> bool:
+        kernels_infix_new = self.kernel_to_infix_set(new_kernels)
+        all_same = all([s == kernels_infix_new for s in prev_expansions])
+        return all_same and len(prev_expansions) == max_expansions
+
+    def kernel_to_infix_set(self, aks_kernels: List[AKSKernel]) -> FrozenSet[str]:
+        kernels_sorted = [sort_kernel(aks_kernel.kernel) for aks_kernel in aks_kernels]
+        return frozenset([kernel_to_infix(kernel) for kernel in kernels_sorted])
+
+    def update_kernel_infix_set(self, new_kernels: List[AKSKernel],
+                                prev_expansions: List[FrozenSet[str]],
+                                max_expansions: int) -> List[FrozenSet[str]]:
+        expansions = prev_expansions.copy()
+        if len(prev_expansions) == max_expansions:
+            expansions = expansions[1:]
+        elif len(prev_expansions) < max_expansions:
+            expansions += [self.kernel_to_infix_set(new_kernels)]
+
+        return expansions
 
     def remove_nan_scored_kernels(self, aks_kernels: List[AKSKernel]) -> List[AKSKernel]:
         """Remove all kernels that have NaN scores.
