@@ -4,7 +4,7 @@ from GPy.kern import RBF, RatQuad, Add
 
 from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels
 from src.autoks.kernel import AKSKernel
-from src.test.autoks_test.support.util import has_combo_kernel_type
+from src.test.autoks.support.util import has_combo_kernel_type
 
 
 class TestGrammar(TestCase):

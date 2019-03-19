@@ -5,7 +5,7 @@ from GPy.kern import RBF, Add, RatQuad, Prod
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel
 from src.autoks.util import remove_duplicates
 from src.evalg.encoding import BinaryTree
-from src.test.autoks_test.support.util import has_combo_kernel_type
+from src.test.autoks.support.util import has_combo_kernel_type
 
 
 class TestKernel(unittest.TestCase):
