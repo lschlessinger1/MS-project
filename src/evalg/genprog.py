@@ -189,10 +189,13 @@ class TreePointMutator(TreeMutator):
         node = tree.select_postorder(r)
 
         # change node value to a different value
-        if node.value in self.operands:
-            new_val = np.random.choice(list(set(self.operands) - {node.value}))
-        elif node.value in operators:
+        is_operand_type = type(node.value) in [type(op) for op in self.operands]
+        if node.value in operators:
+            # Node is an operator.
             new_val = np.random.choice(list(set(operators) - {node.value}))
+        elif node.value in self.operands or is_operand_type:
+            # Node is an operand.
+            new_val = np.random.choice(list(set(self.operands) - {node.value}))
         else:
             raise TypeError('%s not in operands or operators' % node.label)
 
