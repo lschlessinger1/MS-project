@@ -1,7 +1,7 @@
 from typing import List, Type, Union, Optional, Dict, TypeVar
 
 import numpy as np
-from GPy.kern import RBF, RationalQuadratic, LinScaleShift, StandardPeriodic, Add, Prod
+from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.special import comb
 
@@ -110,7 +110,7 @@ def get_matching_kernels() -> List[Type[Kern]]:
 
     :return:
     """
-    return [RBF, RationalQuadratic, LinScaleShift, StandardPeriodic]
+    return [RBF, RatQuad, Linear, StdPeriodic]
 
 
 def get_all_1d_kernels(base_kernels: List[str],
