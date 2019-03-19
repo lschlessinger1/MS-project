@@ -3,6 +3,7 @@ from typing import Any, Tuple, Optional, List
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
+from matplotlib.ticker import MaxNLocator
 
 
 def plot_best_so_far(best_so_far: List[float],
@@ -20,7 +21,9 @@ def plot_best_so_far(best_so_far: List[float],
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    return plt.plot(best_so_far)
+    ax = plt.gca()
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))  # x-axis will have integer ticks
+    return plt.plot(best_so_far, marker='o', markerfacecolor='black')
 
 
 def setup_plot(x_label: str,
@@ -56,7 +59,8 @@ def setup_values(fig: Figure,
 
     x = np.arange(len(values)) + 1
     y = np.array(values)
-    ax.plot(x, y, lw=2, label=value_label)
+
+    ax.plot(x, y, lw=2, label=value_label, marker='o', markerfacecolor='black')
 
     return fig, x, y
 
@@ -97,7 +101,7 @@ def setup_optima(fig: Figure,
     :return:
     """
     ax = fig.axes[0]
-    ax.plot(x, optima, lw=2, label=optima_label)
+    ax.plot(x, optima, lw=2, label=optima_label, marker='x')
     return fig
 
 
@@ -138,6 +142,7 @@ def plot_distribution(values: List[float],
         fig = setup_optima(fig, x, optima, optima_label)
 
     ax = fig.axes[0]
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))  # x-axis will have integer ticks
 
     ax.legend()
 
