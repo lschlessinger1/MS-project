@@ -2,7 +2,7 @@ import unittest
 
 from GPy.kern import RBF, Add, RatQuad, Prod
 
-from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel
+from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, remove_duplicate_aks_kernels
 from src.autoks.util import remove_duplicates
 from src.evalg.encoding import BinaryTree
 from src.test.autoks.support.util import has_combo_kernel_type
@@ -76,6 +76,92 @@ class TestKernel(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             remove_duplicates([1, 2, 3], ['1', 2])
+
+    def test_remove_duplicate_aks_kernels(self):
+        k1 = AKSKernel(RBF(1))
+        k1.score = 10
+
+        k2 = AKSKernel(RBF(1))
+        k2.score = 9
+
+        k3 = AKSKernel(RBF(1))
+        k3.nan_scored = True
+
+        k4 = AKSKernel(RBF(1))
+        k4.nan_scored = True
+
+        k5 = AKSKernel(RBF(1))
+
+        k6 = AKSKernel(RBF(1, lengthscale=0.5))
+
+        k7 = AKSKernel(RatQuad(1))
+
+        # Always keep k1 then k2 then k3 etc.
+        result = remove_duplicate_aks_kernels([k1, k2, k3, k4, k5, k6, k7])
+        self.assertListEqual(result, [k1, k7])
+
+        result = remove_duplicate_aks_kernels([k1, k2, k3, k4, k5, k7])
+        self.assertListEqual(result, [k1, k7])
+
+        result = remove_duplicate_aks_kernels([k1, k2, k3, k4, k7])
+        self.assertListEqual(result, [k1, k7])
+
+        result = remove_duplicate_aks_kernels([k1, k2, k3, k7])
+        self.assertListEqual(result, [k1, k7])
+
+        result = remove_duplicate_aks_kernels([k1, k2, k7])
+        self.assertListEqual(result, [k1, k7])
+
+        result = remove_duplicate_aks_kernels([k1, k7])
+        self.assertListEqual(result, [k1, k7])
+
+        result = remove_duplicate_aks_kernels([k2, k3, k4, k5, k6, k7])
+        self.assertListEqual(result, [k2, k7])
+
+        result = remove_duplicate_aks_kernels([k2, k3, k4, k5, k7])
+        self.assertListEqual(result, [k2, k7])
+
+        result = remove_duplicate_aks_kernels([k2, k3, k4, k7])
+        self.assertListEqual(result, [k2, k7])
+
+        result = remove_duplicate_aks_kernels([k2, k3, k7])
+        self.assertListEqual(result, [k2, k7])
+
+        result = remove_duplicate_aks_kernels([k2, k7])
+        self.assertListEqual(result, [k2, k7])
+
+        result = remove_duplicate_aks_kernels([k3, k4, k5, k6, k7])
+        self.assertTrue(result == [k3, k7] or result == [k4, k7])
+
+        result = remove_duplicate_aks_kernels([k3, k4, k5, k7])
+        self.assertTrue(result == [k3, k7] or result == [k4, k7])
+
+        result = remove_duplicate_aks_kernels([k4, k3, k5, k6, k7])
+        self.assertTrue(result == [k3, k7] or result == [k4, k7])
+
+        result = remove_duplicate_aks_kernels([k4, k3, k5, k7])
+        self.assertTrue(result == [k3, k7] or result == [k4, k7])
+
+        result = remove_duplicate_aks_kernels([k3, k4, k5, k7])
+        self.assertTrue(result == [k3, k7] or result == [k4, k7])
+
+        result = remove_duplicate_aks_kernels([k3, k4, k7])
+        self.assertTrue(result == [k3, k7] or result == [k4, k7])
+
+        result = remove_duplicate_aks_kernels([k4, k3, k7])
+        self.assertTrue(result == [k3, k7] or result == [k4, k7])
+
+        result = remove_duplicate_aks_kernels([k3, k7])
+        self.assertListEqual(result, [k3, k7])
+
+        result = remove_duplicate_aks_kernels([k4, k7])
+        self.assertListEqual(result, [k4, k7])
+
+        result = remove_duplicate_aks_kernels([k5, k6, k7])
+        self.assertTrue(result == [k5, k7] or result == [k6, k7])
+
+        result = remove_duplicate_aks_kernels([k6, k5, k7])
+        self.assertTrue(result == [k5, k7] or result == [k6, k7])
 
     def test_get_all_1d_kernels(self):
         result = get_all_1d_kernels(['SE', 'RQ'], n_dims=2)

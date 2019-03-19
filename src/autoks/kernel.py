@@ -474,12 +474,26 @@ def remove_duplicate_kernels(kernels: List[Kern]) -> List[Kern]:
     return remove_duplicates([kernel_to_infix(k) for k in kernels], kernels)
 
 
-def remove_duplicate_aks_kernels(aks_kernels: List[AKSKernel]) -> List[AKSKernel]:
+def remove_duplicate_aks_kernels(kernels: List[AKSKernel]) -> List[AKSKernel]:
     """Remove duplicate AKSKernel's.
 
-    :param aks_kernels:
+    prioritizing when removing duplicates
+        1. highest score
+        2. not nan scored
+        3. evaluated
+
+    :param kernels:
     :return:
     """
+
+    unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated and not kernel.nan_scored]
+    evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
+    nan_scored_kernels = [kernel for kernel in kernels if kernel.nan_scored]
+    # Prioritize highest scoring kernel for duplicates
+    sorted_evaluated_kernels = sorted(evaluated_kernels, key=lambda k: k.score, reverse=True)
+
+    # Assume precedence by order.
+    aks_kernels = sorted_evaluated_kernels + nan_scored_kernels + unevaluated_kernels
     return remove_duplicates([kernel_to_infix(aks_kernel.kernel) for aks_kernel in aks_kernels], aks_kernels)
 
 

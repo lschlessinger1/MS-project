@@ -177,7 +177,11 @@ class Experiment:
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
+            n_before = len(kernels)
             kernels = remove_duplicate_aks_kernels(kernels)
+            if self.verbose:
+                n_removed = n_before - len(kernels)
+                print(f'Removed {n_removed} duplicate kernels.')
 
             # Select kernels by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat)
