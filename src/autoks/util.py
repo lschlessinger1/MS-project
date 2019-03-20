@@ -43,3 +43,59 @@ def remove_duplicates(data: Sequence,
 
     unique_ind = arg_unique(data)
     return [values[i] for i in unique_ind]
+
+
+def tokenize(list_nd: list) -> list:
+    """Tokenize a list.
+
+    :param list_nd:
+    :return:
+    """
+    if not list_nd:
+        return []
+    if isinstance(list_nd, list):
+        return ['('] + [tokenize(s) for s in list_nd] + [')']
+    return list_nd
+
+
+def flatten(list_nd: list) -> list:
+    """Flatten a list.
+
+    :param list_nd:
+    :return:
+    """
+    return [list_nd] if not isinstance(list_nd, list) else [x for X in list_nd for x in flatten(X)]
+
+
+T2 = TypeVar('T2')
+
+
+def remove_outer_parens(list_nd: List[T2]) -> List[T2]:
+    """Remove outer parentheses from a list of tokens.
+
+    :param list_nd:
+    :return:
+    """
+    if len(list_nd) >= 2:
+        if list_nd[0] == '(' and list_nd[-1] == ')':
+            return list_nd[1:-1]
+        else:
+            raise ValueError('List must start with \'(\' and end with \')\' ')
+    else:
+        raise ValueError('List must have length >= 2')
+
+
+def join_operands(operands: list,
+                  operator: str) -> list:
+    """Join operands using operators
+
+    :param operands:
+    :param operator:
+    :return:
+    """
+    joined = []
+    for i, operand in enumerate(operands):
+        joined += [operand]
+        if i < len(operands) - 1:
+            joined += [operator]
+    return joined

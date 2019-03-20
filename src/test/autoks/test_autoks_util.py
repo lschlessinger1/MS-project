@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from src.autoks.util import arg_sort, arg_unique, remove_duplicates
+from src.autoks.util import arg_sort, arg_unique, remove_duplicates, tokenize, flatten, remove_outer_parens, \
+    join_operands
 
 
 class TestUtil(TestCase):
@@ -23,3 +24,33 @@ class TestUtil(TestCase):
         result = remove_duplicates(data, values)
         self.assertIsInstance(result, list)
         self.assertListEqual(result, ['5', '2', '1', '3', '9'])
+
+    def test_tokenize(self):
+        result = tokenize([])
+        self.assertListEqual(result, [])
+        result = tokenize([1, 2, 3])
+        self.assertListEqual(result, ['(', 1, 2, 3, ')'])
+        result = tokenize([1, '+', [12, ['x'], 14], '+', 3])
+        self.assertListEqual(result, ['(', 1, '+', ['(', 12, ['(', 'x', ')'], 14, ')'], '+', 3, ')'])
+
+    def test_flatten(self):
+        result = flatten([])
+        self.assertListEqual(result, [])
+        result = flatten(['(', 1, 2, 3, ')'])
+        self.assertListEqual(result, ['(', 1, 2, 3, ')'])
+        result = flatten(['(', 1, '+', ['(', 12, ['(', 'x', ')'], 14, ')'], '+', 3, ')'])
+        self.assertListEqual(result, ['(', 1, '+', '(', 12, '(', 'x', ')', 14, ')', '+', 3, ')'])
+
+    def test_remove_outer_parens(self):
+        self.assertRaises(ValueError, remove_outer_parens, [])
+        self.assertRaises(ValueError, remove_outer_parens, ['(', 1, 2, 3])
+        self.assertRaises(ValueError, remove_outer_parens, [1, 2, 3, ')'])
+        self.assertRaises(ValueError, remove_outer_parens, [1, '(', 3, ')'])
+        result = remove_outer_parens(['(', 4, 5, 3, ')'])
+        self.assertListEqual(result, [4, 5, 3])
+
+    def test_join_operands(self):
+        result = join_operands([1, 2, 3], '+')
+        self.assertListEqual(result, [1, '+', 2, '+', 3])
+        result = join_operands([1, [44, 77], 3], '+')
+        self.assertListEqual(result, [1, '+', [44, 77], '+', 3])
