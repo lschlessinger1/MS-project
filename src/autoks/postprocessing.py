@@ -66,6 +66,7 @@ def rmse_rbf(x_train: np.ndarray,
     :return:
     """
     model = GPRegression(x_train, y_train, kernel=RBF(input_dim=x_train.shape[1]))
+    model.optimize()
     return compute_gpy_model_rmse(model, x_test, y_test)
 
 
