@@ -67,7 +67,7 @@ class Experiment:
                 self.x_test = scaler.transform(self.x_test)
             if standardize_y:
                 self.y_train = scaler.fit_transform(self.y_train)
-                self.x_test = scaler.transform(self.y_test)
+                self.y_test = scaler.transform(self.y_test)
         self.n_dims = self.x_train.shape[1]
 
         self.eval_budget = eval_budget  # number of model evaluations (budget)
