@@ -1,6 +1,9 @@
+import warnings
 from typing import List, Type, Union, Optional, Dict, TypeVar
 
 import numpy as np
+from GPy import Parameterized
+from GPy.core.parameterization.priors import Prior
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.special import comb
@@ -114,11 +117,13 @@ def get_matching_kernels() -> List[Type[Kern]]:
 
 
 def get_all_1d_kernels(base_kernels: List[str],
-                       n_dims: int) -> List[Kern]:
+                       n_dims: int,
+                       hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[Kern]:
     """Get all possible 1-D kernels.
 
     :param base_kernels:
     :param n_dims: number of dimensions
+    :param hyperpriors:
     :return: list of models of size len(base_kernels) * n_dims
     """
     kernel_mapping = get_kernel_mapping()
@@ -127,7 +132,9 @@ def get_all_1d_kernels(base_kernels: List[str],
     for kern_fam in base_kernels:
         kern_cls = kernel_mapping[kern_fam]
         for d in range(n_dims):
-            kernel = create_1d_kernel(kern_fam, d, kernel_mapping=kernel_mapping, kernel_cls=kern_cls)
+            hyperprior = None if hyperpriors is None else hyperpriors[kern_fam]
+            kernel = create_1d_kernel(kern_fam, d, kernel_mapping=kernel_mapping, kernel_cls=kern_cls,
+                                      hyperpriors=hyperprior)
             models.append(kernel)
 
     return models
@@ -136,20 +143,38 @@ def get_all_1d_kernels(base_kernels: List[str],
 def create_1d_kernel(kernel_family: str,
                      active_dim: int,
                      kernel_mapping: Optional[Dict[str, Type[Kern]]] = None,
-                     kernel_cls: Optional[Type[Kern]] = None) -> Kern:
+                     kernel_cls: Optional[Type[Kern]] = None,
+                     hyperpriors: Optional[Dict[str, Prior]] = None) -> Kern:
     """Create a 1D kernel.
 
     :param kernel_family:
     :param active_dim:
     :param kernel_mapping:
     :param kernel_cls:
+    :param hyperpriors:
     :return:
     """
     if not kernel_mapping:
         kernel_mapping = get_kernel_mapping()
         if not kernel_cls:
             kernel_cls = kernel_mapping[kernel_family]
-    return kernel_cls(input_dim=1, active_dims=[active_dim])
+
+    kernel = kernel_cls(input_dim=1, active_dims=[active_dim])
+
+    if hyperpriors is not None:
+        kernel = set_priors(kernel, hyperpriors)
+
+    return kernel
+
+
+def set_priors(param: Parameterized, priors: Dict[str, Prior]) -> Parameterized:
+    param_copy = param.copy()
+    for param_name in priors:
+        if param_name in param_copy.parameter_names():
+            param_copy[param_name].set_prior(priors[param_name], warning=False)
+        else:
+            warnings.warn(f'parameter {param_name} not found in {param.__class__.__name__}.')
+    return param_copy
 
 
 def subkernel_expression(kernel: Kern,

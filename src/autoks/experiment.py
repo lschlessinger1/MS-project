@@ -1,17 +1,18 @@
 import warnings
 from time import time
-from typing import Callable, List, Tuple, Optional, FrozenSet
+from typing import Callable, List, Tuple, Optional, FrozenSet, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
+from GPy.core.parameterization.priors import Prior
 from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
 from src.autoks.grammar import BaseGrammar
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
-    AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel
+    AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors
 from src.autoks.kernel_selection import KernelSelector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
@@ -33,6 +34,7 @@ class Experiment:
     standardize_y: bool
     eval_budget: int
     max_depth: Optional[int]
+    hyperpriors: Optional[Dict[str, Dict[str, Prior]]]
     init_query_strat: Optional[QueryStrategy]
     query_strat: Optional[QueryStrategy]
     gp_model: Optional[GP]
@@ -45,8 +47,8 @@ class Experiment:
 
     def __init__(self, grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
-                 init_query_strat=None, query_strat=None, additive_form=False, debug=False, verbose=False,
-                 optimizer=None, n_restarts_optimizer=10, x_axis_evals=True):
+                 init_query_strat=None, query_strat=None, hyperpriors=None, additive_form=False, debug=False,
+                 verbose=False, optimizer=None, n_restarts_optimizer=10, x_axis_evals=True):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -102,11 +104,20 @@ class Experiment:
         self.total_kernel_search_time = 0
         self.total_query_time = 0
 
+        self.hyperpriors = hyperpriors
+
         if gp_model is not None:
+            # do not use hyperpriors if gp model is given.
             self.gp_model = gp_model
         else:
             # default model is GP Regression
             self.gp_model = GPRegression(self.x_train, self.y_train)
+            if self.hyperpriors is not None:
+                # set likelihood hyperpriors
+                likelihood_priors = self.hyperpriors['GP']
+                self.gp_model.likelihood = set_priors(self.gp_model.likelihood, likelihood_priors)
+            # randomize likilihood
+            self.gp_model.likelihood.randomize()
 
         if init_query_strat is not None:
             self.init_query_strat = init_query_strat
@@ -128,7 +139,8 @@ class Experiment:
         t_init = time()
 
         # initialize models
-        kernels = self.grammar.initialize(self.kernel_families, n_dims=self.n_dims)
+        kernels = self.grammar.initialize(self.kernel_families, n_dims=self.n_dims, hyperpriors=self.hyperpriors)
+        kernels = self.randomize_kernels(kernels, verbose=self.verbose)
 
         # convert to additive form if necessary
         if self.additive_form:
@@ -136,15 +148,15 @@ class Experiment:
                 aks_kernel.to_additive_form()
 
         # Select kernels by acquisition function to be evaluated
-        selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat)
+        selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat, self.hyperpriors)
         unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
         unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
         newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
         evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
 
-        max_same_expansions = 3  # Maxiumuum number of same kernel proposal before terminating
-        max_null_queries = 3  # Maxiumum number of empty queries in a row allowed before terminating
+        max_same_expansions = 3  # Maximum number of same kernel proposal before terminating
+        max_null_queries = 3  # Maximum number of empty queries in a row allowed before terminating
         prev_expansions = []
         prev_n_queried = []
         depth = 0
@@ -159,12 +171,12 @@ class Experiment:
 
             parents = self.select_parents(kernels)
 
-            # Fix each parent before expansion for use in optimization, skipping nan-evaluated kernels
+            # Fix each parent before expansion for use in and initialization optimization, skipping nan-evaluated
+            # kernels
             for parent in self.remove_nan_scored_kernels(parents):
                 parent.kernel.fix()
 
             new_kernels = self.propose_new_kernels(parents)
-
             # Check for same expansions
             if self.all_same_expansion(new_kernels, prev_expansions, max_same_expansions):
                 if self.verbose:
@@ -174,6 +186,7 @@ class Experiment:
             else:
                 prev_expansions = self.update_kernel_infix_set(new_kernels, prev_expansions, max_same_expansions)
 
+            new_kernels = self.randomize_kernels(new_kernels, verbose=self.verbose)
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
@@ -184,7 +197,7 @@ class Experiment:
                 print(f'Removed {n_removed} duplicate kernels.')
 
             # Select kernels by acquisition function to be evaluated
-            selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat)
+            selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat, self.hyperpriors)
 
             # Check for empty queries
             prev_n_queried.append(len(ind))
@@ -209,16 +222,19 @@ class Experiment:
 
     def query_kernels(self,
                       kernels: List[AKSKernel],
-                      query_strategy: QueryStrategy) -> Tuple[List[AKSKernel], List[int], List[float]]:
+                      query_strategy: QueryStrategy,
+                      hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) \
+            -> Tuple[List[AKSKernel], List[int], List[float]]:
         """Select kernels using the acquisition function of the query strategy.
 
         :param kernels:
         :param query_strategy:
+        :param hyperpriors:
         :return:
         """
         t0 = time()
         unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
-        ind, acq_scores = query_strategy.query(unevaluated_kernels, self.x_train, self.y_train)
+        ind, acq_scores = query_strategy.query(unevaluated_kernels, self.x_train, self.y_train, hyperpriors)
         selected_kernels = query_strategy.select(np.array(unevaluated_kernels), acq_scores)
         self.total_query_time += time() - t0
 
@@ -255,7 +271,8 @@ class Experiment:
         :return:
         """
         t0_exp = time()
-        new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose)
+        new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose,
+                                          hyperpriors=self.hyperpriors)
         self.total_expansion_time += time() - t0_exp
 
         if self.additive_form:
@@ -430,6 +447,17 @@ class Experiment:
             expansions += [self.kernel_to_infix_set(new_kernels)]
 
         return expansions
+
+    @staticmethod
+    def randomize_kernels(aks_kernels: List[AKSKernel],
+                          verbose: bool = False) -> List[AKSKernel]:
+        if verbose:
+            print('Randomizing kernels')
+
+        for aks_kernel in aks_kernels:
+            aks_kernel.kernel.randomize()
+
+        return aks_kernels
 
     def remove_nan_scored_kernels(self, aks_kernels: List[AKSKernel]) -> List[AKSKernel]:
         """Remove all kernels that have NaN scores.

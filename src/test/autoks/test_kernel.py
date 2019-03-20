@@ -1,8 +1,10 @@
 import unittest
+from unittest.mock import MagicMock
 
 from GPy.kern import RBF, Add, RatQuad, Prod
 
-from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, remove_duplicate_aks_kernels
+from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
+    remove_duplicate_aks_kernels, set_priors
 from src.autoks.util import remove_duplicates
 from src.evalg.encoding import BinaryTree
 from src.test.autoks.support.util import has_combo_kernel_type
@@ -186,6 +188,14 @@ class TestKernel(unittest.TestCase):
         result = create_1d_kernel(active_dim=1, kernel_family='RQ')
         self.assertIsInstance(result, RatQuad)
         self.assertEqual(result.active_dims[0], 1)
+
+    def test_set_priors(self):
+        priors = dict()
+        param = RBF(1)
+        mock_prior = MagicMock()
+        priors['variance'] = mock_prior
+        result = set_priors(param, priors)
+        self.assertEqual(result['variance'].priors.properties()[0], mock_prior)
 
 
 class TestAKSKernel(unittest.TestCase):

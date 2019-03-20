@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 import numpy as np
 from GPy.core.parameterization.priors import Prior
@@ -26,7 +26,7 @@ class QueryStrategy(Selector, ABC):
               kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> Tuple[np.ndarray, List[float]]:
+              hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> Tuple[np.ndarray, List[float]]:
         """Query the next round of kernels using the acquisition function.
 
         :param kernels:
@@ -43,7 +43,7 @@ class QueryStrategy(Selector, ABC):
                       kernels: List[AKSKernel],
                       x_train: np.ndarray,
                       y_train: np.ndarray,
-                      hyperpriors: Optional[List[Prior]] = None) -> List[float]:
+                      hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[float]:
         """Score all kernels using the scoring function.
 
         :param kernels:
