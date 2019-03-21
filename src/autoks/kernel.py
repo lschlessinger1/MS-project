@@ -72,8 +72,9 @@ class AKSKernel:
         return kernel_to_infix(self.kernel)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'kernel={kernel_to_infix(self.kernel, show_params=True)!r}, score=' \
-            f'{self.score!r}) '
+        return f'{self.__class__.__name__}('f'kernel={kernel_to_infix(self.kernel, show_params=True)!r}, ' \
+            f'lik_params={self.lik_params!r}, evaluated={self.evaluated!r}, nan_scored={self.nan_scored!r}, ' \
+            f'score={self.score!r}) '
 
 
 def pretty_print_aks_kernels(aks_kernels: List[AKSKernel],
