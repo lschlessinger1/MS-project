@@ -275,7 +275,7 @@ class Experiment:
         :param kernels:
         :return:
         """
-        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
+        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and not kernel.expanded]
         kernel_scores = [kernel.score for kernel in evaluated_kernels]
         parents = self.kernel_selector.select_parents(evaluated_kernels, kernel_scores)
         # Print parent (seed) kernels
