@@ -103,14 +103,14 @@ class Experiment:
         stat_book_names = [evaluations_name, expansion_name, active_set_name]
         self.stat_book_collection = StatBookCollection(stat_book_names, shared_multi_stat_names, shared_stats)
 
-        sb_active_set = self.stat_book_collection.stat_books['active_set']
+        sb_active_set = self.stat_book_collection.stat_books[active_set_name]
         sb_active_set.add_raw_value_stat(score_name, get_model_scores)
         sb_active_set.add_raw_value_stat(cov_dists_name, get_cov_dists)
         sb_active_set.add_raw_value_stat(diversity_scores_name, get_diversity_scores)
         sb_active_set.multi_stats[n_hyperparams_name].add_statistic(Statistic(best_stat_name, get_best_n_hyperparams))
         sb_active_set.multi_stats[n_operands_name].add_statistic(Statistic(best_stat_name, get_best_n_operands))
 
-        sb_evals = self.stat_book_collection.stat_books['evaluations']
+        sb_evals = self.stat_book_collection.stat_books[evaluations_name]
         sb_evals.add_raw_value_stat(score_name, get_model_scores)
         # sb_evals.multi_stats[n_hyperparams_name].add_statistic(Statistic(best_stat_name, get_best_n_hyperparams))
         # sb_evals.multi_stats[n_operands_name].add_statistic(Statistic(best_stat_name, get_best_n_operands))
