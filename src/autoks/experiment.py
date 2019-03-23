@@ -18,6 +18,7 @@ from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normal
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
 from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy
+from src.autoks.statistics import StatBookCollection, Statistic, StatBook
 from src.evalg.plotting import plot_best_so_far, plot_distribution
 
 
@@ -43,12 +44,11 @@ class Experiment:
     verbose: bool
     optimizer: Optional[str]
     n_restarts_optimizer: int
-    x_axis_evals: bool
 
     def __init__(self, grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
                  init_query_strat=None, query_strat=None, hyperpriors=None, additive_form=False, debug=False,
-                 verbose=False, optimizer=None, n_restarts_optimizer=10, x_axis_evals=True):
+                 verbose=False, optimizer=None, n_restarts_optimizer=10):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -86,18 +86,35 @@ class Experiment:
         self.n_restarts_optimizer = n_restarts_optimizer
 
         # statistics used for plotting
-        self.best_scores = []
-        self.mean_scores = []
-        self.std_scores = []
-        self.median_n_hyperparameters = []
-        self.std_n_hyperparameters = []
-        self.best_n_hyperparameters = []
-        self.median_n_operands = []
-        self.std_n_operands = []
-        self.best_n_operands = []
-        self.mean_cov_dists = []
-        self.std_cov_dists = []
-        self.diversity_scores = []
+        n_hyperparams_name = 'n_hyperparameters'
+        n_operands_name = 'n_operands'
+        score_name = 'score'
+        cov_dists_name = 'cov_dists'
+        diversity_scores_name = 'diversity_scores'
+        best_stat_name = 'best'
+        shared_multi_stat_names = [n_hyperparams_name, n_operands_name]  # All stat books track these variables
+
+        # raw value statistics
+        shared_stats = [get_n_hyperparams, get_n_operands]
+
+        evaluations_name = 'evaluations'
+        active_set_name = 'active_set'
+        expansion_name = 'expansion'
+        stat_book_names = [evaluations_name, expansion_name, active_set_name]
+        self.stat_book_collection = StatBookCollection(stat_book_names, shared_multi_stat_names, shared_stats)
+
+        sb_active_set = self.stat_book_collection.stat_books['active_set']
+        sb_active_set.add_raw_value_stat(score_name, get_model_scores)
+        sb_active_set.add_raw_value_stat(cov_dists_name, get_cov_dists)
+        sb_active_set.add_raw_value_stat(diversity_scores_name, get_diversity_scores)
+        sb_active_set.multi_stats[n_hyperparams_name].add_statistic(Statistic(best_stat_name, get_best_n_hyperparams))
+        sb_active_set.multi_stats[n_operands_name].add_statistic(Statistic(best_stat_name, get_best_n_operands))
+
+        sb_evals = self.stat_book_collection.stat_books['evaluations']
+        sb_evals.add_raw_value_stat(score_name, get_model_scores)
+        # sb_evals.multi_stats[n_hyperparams_name].add_statistic(Statistic(best_stat_name, get_best_n_hyperparams))
+        # sb_evals.multi_stats[n_operands_name].add_statistic(Statistic(best_stat_name, get_best_n_operands))
+
         self.total_optimization_time = 0
         self.total_eval_time = 0
         self.total_expansion_time = 0
@@ -129,7 +146,7 @@ class Experiment:
         else:
             self.query_strat = NaiveQueryStrategy()
 
-        self.x_axis_evals = x_axis_evals
+        # self.x_axis_evals = x_axis_evals
 
     def kernel_search(self) -> List[AKSKernel]:
         """Perform automated kernel search.
@@ -154,6 +171,7 @@ class Experiment:
         newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
         evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
+        self.update_stat_book(self.stat_book_collection.stat_books['active_set'], kernels)
 
         max_same_expansions = 3  # Maximum number of same kernel proposal before terminating
         max_null_queries = 3  # Maximum number of empty queries in a row allowed before terminating
@@ -177,6 +195,7 @@ class Experiment:
                 parent.kernel.fix()
 
             new_kernels = self.propose_new_kernels(parents)
+            self.update_stat_book(self.stat_book_collection.stat_books['expansion'], new_kernels)
             # Check for same expansions
             if self.all_same_expansion(new_kernels, prev_expansions, max_same_expansions):
                 if self.verbose:
@@ -214,6 +233,7 @@ class Experiment:
 
             kernels = self.prune_kernels(kernels, acq_scores, ind)
             kernels = self.select_offspring(kernels)
+            self.update_stat_book(self.stat_book_collection.stat_books['active_set'], kernels)
             depth += 1
 
         self.total_kernel_search_time += time() - t_init
@@ -348,13 +368,10 @@ class Experiment:
             self.total_eval_time += time() - t1
             evaluated_kernels.append(evaluated_kernel)
 
-            if self.x_axis_evals:
-                if not evaluated_kernel.nan_scored:
-                    self.update_stats([evaluated_kernel])
+            if not evaluated_kernel.nan_scored:
+                self.update_stat_book(self.stat_book_collection.stat_books['evaluations'], [evaluated_kernel])
 
         evaluated_kernels = self.remove_nan_scored_kernels(evaluated_kernels)
-        if not self.x_axis_evals:
-            self.update_stats(evaluated_kernels)
 
         if self.verbose:
             print('Printing all results')
@@ -487,12 +504,8 @@ class Experiment:
             plt.show()
 
         # View results of experiment
-        self.plot_best_scores()
-        self.plot_score_summary()
-        self.plot_n_hyperparams_summary()
-        self.plot_n_operands_summary()
-        self.plot_cov_dist_summary()
-        self.plot_kernel_diversity_summary()
+        for stat_book in self.stat_book_collection.stat_book_list():
+            self.plot_stat_book(stat_book)
 
         print('')
         self.timing_report()
@@ -558,60 +571,107 @@ class Experiment:
 
         return aks_kernels
 
-    def plot_best_scores(self) -> None:
+    def plot_stat_book(self, stat_book: StatBook):
+        ms = stat_book.multi_stats
+        if 'score' in ms:
+            self.plot_best_scores(stat_book)
+            self.plot_score_summary(stat_book)
+        if 'n_hyperparameters' in ms:
+            self.plot_n_hyperparams_summary(stat_book)
+        if 'n_operands' in ms:
+            self.plot_n_operands_summary(stat_book)
+        if 'cov_dists' in ms:
+            self.plot_cov_dist_summary(stat_book)
+        if 'diversity_scores' in ms:
+            self.plot_kernel_diversity_summary(stat_book)
+
+    def plot_best_scores(self, stat_book: StatBook) -> None:
         """Plot the best models scores
 
         :return:
         """
-        x_label = 'Evaluations' if self.x_axis_evals else 'Generation'
-        plot_best_so_far(self.best_scores, x_label=x_label)
+        if stat_book.name == 'evaluations':
+            best_scores = stat_book.running_max('score')
+            x_label = ' evaluations'
+        else:
+            best_scores = stat_book.maximum('score')
+            x_label = 'generation'
+
+        plot_best_so_far(best_scores, x_label=x_label)
         plt.show()
 
-    def plot_score_summary(self) -> None:
+    def plot_score_summary(self, stat_book: StatBook) -> None:
         """Plot a summary of model scores
 
         :return:
         """
-        x_label = 'evaluations' if self.x_axis_evals else 'generation'
-        plot_distribution(self.mean_scores, self.std_scores, self.best_scores, x_label=x_label)
+        if stat_book.name == 'evaluations':
+            best_scores = stat_book.running_max('score')
+            mean_scores = stat_book.running_mean('score')
+            std_scores = stat_book.running_std('score')
+            x_label = 'evaluations'
+        else:
+            best_scores = stat_book.maximum('score')
+            mean_scores = stat_book.mean('score')
+            std_scores = stat_book.std('score')
+            x_label = 'generation'
+
+        plot_distribution(mean_scores, std_scores, best_scores, x_label=x_label)
         plt.show()
 
-    def plot_n_hyperparams_summary(self) -> None:
+    def plot_n_hyperparams_summary(self, stat_book: StatBook) -> None:
         """Plot a summary of the number of hyperparameters
 
         :return:
         """
-        x_label = 'evaluations' if self.x_axis_evals else 'generation'
-        plot_distribution(self.median_n_hyperparameters, self.std_n_hyperparameters, self.best_n_hyperparameters,
-                          value_name='median', metric_name='# Hyperparameters', x_label=x_label)
+        x_label = 'evaluations' if stat_book.name == 'evaluations' else 'generation'
+        if 'best' in stat_book.multi_stats['n_hyperparameters'].stats:
+            best_n_hyperparameters = stat_book.multi_stats['n_hyperparameters'].stats['best'].data
+        else:
+            best_n_hyperparameters = None
+        median_n_hyperparameters = stat_book.median('n_hyperparameters')
+        std_n_hyperparameters = stat_book.std('n_hyperparameters')
+        plot_distribution(median_n_hyperparameters, std_n_hyperparameters, best_n_hyperparameters,
+                          value_name='median', metric_name=stat_book.name+'# Hyperparameters', x_label=x_label)
         plt.show()
 
-    def plot_n_operands_summary(self) -> None:
+    def plot_n_operands_summary(self, stat_book: StatBook) -> None:
         """Plot a summary of the number of operands
 
         :return:
         """
-        x_label = 'evaluations' if self.x_axis_evals else 'generation'
-        plot_distribution(self.median_n_operands, self.std_n_operands, self.best_n_operands, value_name='median',
+        x_label = 'evaluations' if stat_book.name == 'evaluations' else 'generation'
+        if 'best' in stat_book.multi_stats['n_operands'].stats:
+            best_n_operands = stat_book.multi_stats['n_operands'].stats['best'].data
+        else:
+            best_n_operands = None
+        median_n_operands = stat_book.median('n_operands')
+        std_n_operands = stat_book.std('n_operands')
+        plot_distribution(median_n_operands, std_n_operands, best_n_operands, value_name='median',
                           metric_name='# Operands', x_label=x_label)
         plt.show()
 
-    def plot_cov_dist_summary(self) -> None:
+    def plot_cov_dist_summary(self, stat_book: StatBook) -> None:
         """Plot a summary of the homogeneity of models over each generation.
 
         :return:
         """
-        x_label = 'evaluations' if self.x_axis_evals else 'generation'
-        plot_distribution(self.mean_cov_dists, self.std_cov_dists, metric_name='covariance distance', x_label=x_label)
+        x_label = 'evaluations' if stat_book.name == 'evaluations' else 'generation'
+        mean_cov_dists = stat_book.mean('cov_dists')
+        std_cov_dists = stat_book.std('cov_dists')
+        plot_distribution(mean_cov_dists, std_cov_dists, metric_name='covariance distance', x_label=x_label)
         plt.show()
 
-    def plot_kernel_diversity_summary(self) -> None:
+    def plot_kernel_diversity_summary(self, stat_book: StatBook) -> None:
         """Plot a summary of the diversity of models over each generation.
 
         :return:
         """
-        x_label = 'evaluations' if self.x_axis_evals else 'generation'
-        plot_distribution(self.diversity_scores, metric_name='diversity', value_name='population', x_label=x_label)
+        x_label = 'evaluations' if stat_book.name == 'evaluations' else 'generation'
+        mean_diversity_scores = stat_book.mean('diversity_scores')
+        std_diversity_scores = stat_book.std('diversity_scores')
+        plot_distribution(mean_diversity_scores, std_diversity_scores, metric_name='diversity',
+                          value_name='population', x_label=x_label)
         plt.show()
 
     def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
@@ -642,35 +702,58 @@ class Experiment:
         for pct, sec, label in sorted(zip(x_pct, x, labels), key=lambda v: v[1], reverse=True):
             print('%s: %0.2f%% (%0.2fs)' % (label, pct, sec))
 
-    def update_stats(self, kernels: List[AKSKernel]) -> None:
-        """Update kernel population statistics
+    def update_stat_book(self, stat_book: StatBook, aks_kernels: List[AKSKernel]) -> None:
+        """Update kernel population statistics.
 
-        :param kernels:
+        :param stat_book:
+        :param aks_kernels:
         :return:
         """
-        if len(kernels) > 0:
-            evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
-            model_scores = np.array([k.score for k in evaluated_kernels])
-            score_argmax = np.argmax(model_scores)
-            self.best_scores.append(model_scores[score_argmax])
-            self.mean_scores.append(np.mean(model_scores))
-            self.std_scores.append(np.std(model_scores))
+        stat_book.update_stat_book(data=aks_kernels, x=self.x_train, base_kernels=self.kernel_families,
+                                   n_dims=self.n_dims)
 
-            n_params = np.array([aks_kernel.kernel.param_array.size for aks_kernel in evaluated_kernels])
-            self.median_n_hyperparameters.append(np.median(n_params))
-            self.std_n_hyperparameters.append(np.std(n_params))
-            self.best_n_hyperparameters.append(n_params[score_argmax])
 
-            n_operands = np.array([n_base_kernels(aks_kernel.kernel) for aks_kernel in evaluated_kernels])
-            self.median_n_operands.append(np.median(n_operands))
-            self.std_n_operands.append(np.std(n_operands))
-            self.best_n_operands.append(n_operands[score_argmax])
+# stats functions
+def get_model_scores(aks_kernels: List[AKSKernel], *args, **kwargs):
+    return [aks_kernel.score for aks_kernel in aks_kernels if aks_kernel.evaluated]
 
-            cov_dists = covariance_distance([aks_kernel.kernel for aks_kernel in evaluated_kernels], self.x_train)
-            self.mean_cov_dists.append(np.mean(cov_dists))
-            self.std_cov_dists.append(np.std(cov_dists))
 
-            if len(evaluated_kernels) > 1:
-                diversity_score = all_pairs_avg_dist([aks_kernel.kernel for aks_kernel in evaluated_kernels],
-                                                     self.kernel_families, self.n_dims)
-                self.diversity_scores.append(diversity_score)
+def get_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs):
+    return [n_base_kernels(aks_kernel.kernel) for aks_kernel in aks_kernels]
+
+
+def get_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs):
+    return [aks_kernel.kernel.param_array.size for aks_kernel in aks_kernels]
+
+
+def get_cov_dists(aks_kernels: List[AKSKernel], *args, **kwargs):
+    kernels = [aks_kernel.kernel for aks_kernel in aks_kernels]
+    if len(kernels) >= 2:
+        x = kwargs.get('x')
+        return covariance_distance(kernels, x)
+    else:
+        return [0] * len(aks_kernels)
+
+
+def get_diversity_scores(aks_kernels: List[AKSKernel], *args, **kwargs):
+    kernels = [aks_kernel.kernel for aks_kernel in aks_kernels]
+    if len(kernels) >= 2:
+        base_kernels = kwargs.get('base_kernels')
+        n_dims = kwargs.get('n_dims')
+        return all_pairs_avg_dist(kernels, base_kernels, n_dims)
+    else:
+        return [0] * len(aks_kernels)
+
+
+def get_best_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs):
+    model_scores = get_model_scores(aks_kernels, *args, **kwargs)
+    n_operands = get_n_operands(aks_kernels)
+    score_arg_max = int(np.argmax(model_scores))
+    return [n_operands[score_arg_max]]
+
+
+def get_best_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs):
+    model_scores = get_model_scores(aks_kernels, *args, **kwargs)
+    n_hyperparams = get_n_hyperparams(aks_kernels, *args, **kwargs)
+    score_arg_max = int(np.argmax(model_scores))
+    return [n_hyperparams[score_arg_max]]
