@@ -94,7 +94,8 @@ class MultiStat:
 
     def running_mean(self) -> List[float]:
         means = [np.mean(value) for value in self.get_raw_values()]
-        return np.cumsum(means) / np.arange(1, len(means) + 1)
+        mean_so_far = np.cumsum(means) / np.arange(1, len(means) + 1)
+        return list(mean_so_far.tolist())
 
     def running_std(self) -> List[float]:
         values = np.array(self.get_raw_values())
