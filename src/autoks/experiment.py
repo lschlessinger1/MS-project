@@ -500,7 +500,7 @@ class Experiment:
 
         # If training data is 1D, show a plot.
         if best_model.input_dim == 1:
-            best_model.plot(plot_density=True)
+            best_model.plot(plot_density=True, title='Best Model')
             plt.show()
 
         # View results of experiment
