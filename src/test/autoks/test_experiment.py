@@ -73,7 +73,7 @@ class TestExperiment(TestCase):
         self.exp.query_strat = qs
 
         def first_kernel(kernels: List[AKSKernel], _):
-            return [kernels[0]]
+            return [] if len(kernels) == 0 else [kernels[0]]
 
         def all_but_first(kernels: List[AKSKernel], _):
             return kernels[1:]
