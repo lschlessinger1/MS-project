@@ -290,6 +290,10 @@ class Experiment:
         :param parents:
         :return:
         """
+        # set kernels to expanded
+        for parent in parents:
+            parent.expanded = True
+
         t0_exp = time()
         new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose,
                                           hyperpriors=self.hyperpriors)

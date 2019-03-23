@@ -19,12 +19,14 @@ class AKSKernel:
     lik_params: Optional[np.ndarray]
     evaluated: bool
     nan_scored: bool
+    expanded: bool
 
-    def __init__(self, kernel, lik_params=None, evaluated=False, nan_scored=False):
+    def __init__(self, kernel, lik_params=None, evaluated=False, nan_scored=False, expanded=False):
         self.kernel = kernel
         self.lik_params = lik_params
         self.evaluated = evaluated
         self.nan_scored = nan_scored
+        self.expanded = expanded
         self._score = None
 
     @property
@@ -74,7 +76,7 @@ class AKSKernel:
     def __repr__(self):
         return f'{self.__class__.__name__}('f'kernel={kernel_to_infix(self.kernel, show_params=True)!r}, ' \
             f'lik_params={self.lik_params!r}, evaluated={self.evaluated!r}, nan_scored={self.nan_scored!r}, ' \
-            f'score={self.score!r}) '
+            f'expanded={self.expanded!r}, score={self.score!r}) '
 
 
 def pretty_print_aks_kernels(aks_kernels: List[AKSKernel],
