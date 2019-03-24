@@ -58,6 +58,9 @@ class GrowGenerator(BinaryTreeGenerator):
     def grow(self, depth: int) -> BinaryTreeNode:
         """Grow a random binary tree node.
 
+        Generate trees of different sizes and shapes. Nodes are chosen from the primitive set until the maximum tree
+        depth is reached. Greater than that depth, terminals are selected.
+
         :param depth: the level of the current tree
         :return:
         """
@@ -105,6 +108,9 @@ class FullGenerator(BinaryTreeGenerator):
 
     def full(self, depth: int) -> BinaryTreeNode:
         """Grow a random tree.
+
+         Generates full trees, i.e. all leaves having the same depth. Nodes are chosen uniformly at random from the
+         internals until the maximum tree depth is reached. Greater than that depth, terminals are selected.
 
         :param depth:
         :return:
