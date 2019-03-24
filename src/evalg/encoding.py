@@ -138,8 +138,8 @@ class BinaryTreeNode(TreeNode):
         return self.label
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'label={self.label!r}, value={self.value!r}, parent={self.parent!r}, ' \
-            f'left={self.left!r}, right={self.right!r})'
+        return f'{self.__class__.__name__}('f'label={self.label!r}, value={self.value!r}, left={self.left!r}, ' \
+            f'right={self.right!r})'
 
 
 class BinaryTree:
