@@ -673,8 +673,8 @@ class Experiment:
         :return:
         """
         x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
-        mean_diversity_scores = stat_book.mean(self.diversity_scores_name)
-        std_diversity_scores = stat_book.std(self.diversity_scores_name)
+        mean_diversity_scores = stat_book.running_mean(self.diversity_scores_name)
+        std_diversity_scores = stat_book.running_std(self.diversity_scores_name)
         plot_distribution(mean_diversity_scores, std_diversity_scores, metric_name='diversity',
                           value_name='population', x_label=x_label)
         plt.show()
