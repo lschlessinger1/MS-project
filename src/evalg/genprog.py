@@ -69,7 +69,8 @@ class GrowGenerator(BinaryTreeGenerator):
         # 2 children for binary trees
         n_children = 2
         if depth < self.max_depth:
-            node = BinaryTreeNode(np.random.choice(terminals + internals))
+            primitives = terminals + internals
+            node = BinaryTreeNode(np.random.choice(primitives))
 
             if node.value in internals:
                 for i in range(0, n_children):
