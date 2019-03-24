@@ -1,12 +1,16 @@
-from typing import Callable, Optional, List, Dict, Iterable
+from typing import Callable, Optional, List, Dict, Iterable, Union, Any
 import numpy as np
+
+DataType = Union[float, List[float]]
+DataList = List[DataType]
+Function = Callable[..., float]
 
 
 class Statistic:
-    data: List[float]
+    data: DataList
 
     def __init__(self, name: str,
-                 function: Optional[Callable[..., float]] = None):
+                 function: Optional[Function] = None):
         self.name = name  # the name of the statistic e.g. arithmetic mean
         self.data = []
 
@@ -15,7 +19,7 @@ class Statistic:
         else:
             self.function = function
 
-    def record(self, data, *args, **kwargs) -> None:
+    def record(self, data: Any, *args, **kwargs) -> None:
         value = self.function(data, *args, **kwargs)
         self.data.append(value)
 
@@ -53,11 +57,11 @@ class MultiStat:
     def add_statistic(self, statistic: Statistic):
         self.stats[statistic.name] = statistic
 
-    def add_raw_value_stat(self, function: Optional[Callable[..., float]] = None):
+    def add_raw_value_stat(self, function: Optional[Function] = None):
         raw_value_stat = Statistic(self.RAW_VALUE_STAT_NAME, function)
         self.add_statistic(raw_value_stat)
 
-    def get_raw_values(self):
+    def get_raw_values(self) -> Optional[DataList]:
         if self.RAW_VALUE_STAT_NAME in self.stats:
             return self.stats[self.RAW_VALUE_STAT_NAME].data
 
@@ -68,22 +72,22 @@ class MultiStat:
         return list(self.stats.values())
 
     # convenience methods for raw values
-    def mean(self) -> List[float]:
+    def mean(self) -> DataList:
         return [float(np.mean(value)) for value in self.get_raw_values()]
 
-    def median(self) -> List[float]:
+    def median(self) -> DataList:
         return [float(np.median(value)) for value in self.get_raw_values()]
 
-    def maximum(self) -> List[float]:
+    def maximum(self) -> DataList:
         return [float(np.max(value)) for value in self.get_raw_values()]
 
-    def std(self) -> List[float]:
+    def std(self) -> DataList:
         return [float(np.std(value)) for value in self.get_raw_values()]
 
-    def var(self) -> List[float]:
+    def var(self) -> DataList:
         return [float(np.var(value)) for value in self.get_raw_values()]
 
-    def running_max(self) -> List[float]:
+    def running_max(self) -> DataList:
         max_so_far = []
         for data_point in self.get_raw_values():
             max_data_point = np.max(data_point)
@@ -92,12 +96,12 @@ class MultiStat:
             max_so_far.append(max_data_point)
         return max_so_far
 
-    def running_mean(self) -> List[float]:
+    def running_mean(self) -> DataList:
         means = [np.mean(value) for value in self.get_raw_values()]
         mean_so_far = np.cumsum(means) / np.arange(1, len(means) + 1)
         return list(mean_so_far.tolist())
 
-    def running_std(self) -> List[float]:
+    def running_std(self) -> DataList:
         values = np.array(self.get_raw_values())
         rollling_std = np.zeros(values.size)
         for i in range(rollling_std.size):
@@ -132,37 +136,37 @@ class StatBook:
         self.multi_stats[multi_stat.name] = multi_stat
 
     def add_raw_value_stat(self, multi_stat_name: str,
-                           function: Optional[Callable[..., float]] = None):
+                           function: Optional[Function] = None):
         self.add_multi_stat(MultiStat(multi_stat_name))
         multi_stat = self.multi_stats[multi_stat_name]
         multi_stat.add_raw_value_stat(function=function)
 
-    def get_raw_values(self, multi_stat_name: str):
+    def get_raw_values(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].get_raw_values()
 
     # wrappers for conveinvicen methods
-    def mean(self, multi_stat_name: str) -> List[float]:
+    def mean(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].mean()
 
-    def median(self, multi_stat_name: str) -> List[float]:
+    def median(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].median()
 
-    def maximum(self, multi_stat_name: str) -> List[float]:
+    def maximum(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].maximum()
 
-    def std(self, multi_stat_name: str) -> List[float]:
+    def std(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].std()
 
-    def var(self, multi_stat_name: str) -> List[float]:
+    def var(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].var()
 
-    def running_max(self, multi_stat_name: str) -> List[float]:
+    def running_max(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].running_max()
 
-    def running_mean(self, multi_stat_name: str) -> List[float]:
+    def running_mean(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].running_mean()
 
-    def running_std(self, multi_stat_name: str) -> List[float]:
+    def running_std(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].running_std()
 
     def multi_stats_names(self) -> List[str]:
@@ -171,7 +175,7 @@ class StatBook:
     def multi_stats_list(self) -> List[MultiStat]:
         return list(self.multi_stats.values())
 
-    def update_stat_book(self, data, *args, **kwargs):
+    def update_stat_book(self, data: Any, *args, **kwargs):
         for multi_stat in self.multi_stats_list():
             for stat in multi_stat.stats_list():
                 stat.record(data, *args, **kwargs)
@@ -191,7 +195,7 @@ class StatBookCollection:
 
     def __init__(self, stat_book_names: Iterable[str],
                  multi_stat_names: Iterable[str],
-                 raw_value_functions: Optional[Iterable[Callable[..., float]]] = None):
+                 raw_value_functions: Optional[Iterable[Function]] = None):
         # TODO:  make raw value functions map to mutli-stats
         self.stat_books = dict()
         for sb_name in stat_book_names:
