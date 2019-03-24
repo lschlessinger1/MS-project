@@ -315,6 +315,37 @@ class FullMutator(SubTreeExchangeMutator):
         return f'{self.__class__.__name__}('f'{self.operands!r}, max_depth={self.max_depth!r})'
 
 
+class HalfAndHalfMutator(SubTreeExchangeMutator):
+    """Ramped half-and-half method
+
+    Koza, John R., and John R. Koza. Genetic programming: on the programming of computers by means of natural
+    selection. Vol. 1. MIT press, 1992.
+    """
+
+    def __init__(self, operands, max_depth=2):
+        super().__init__(operands, max_depth)
+
+    def mutate(self, individual: BinaryTree) -> BinaryTree:
+        """Half and half mutation applied to a binary tree.
+
+        Half of the time, the tree is generated using the grow method, and the other half of the time is generated
+        using the full method.
+
+        :param individual:
+        :return:
+        """
+        tree = individual
+        if np.random.rand() > 0.5:
+            tree_generator = FullGenerator(operators, self.operands, self.max_depth)
+        else:
+            tree_generator = GrowGenerator(operators, self.operands, self.max_depth)
+        tree = self._mutate_subtree_exchange(tree, tree_generator)
+        return tree
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'{self.operands!r}, max_depth={self.max_depth!r})'
+
+
 # Binary tree recombinators
 
 class SubtreeExchangeBinaryRecombinator(Recombinator):
