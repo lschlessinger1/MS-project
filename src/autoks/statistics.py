@@ -144,7 +144,7 @@ class StatBook:
     def get_raw_values(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].get_raw_values()
 
-    # wrappers for conveinvicen methods
+    # wrappers for convenience methods
     def mean(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].mean()
 
