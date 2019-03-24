@@ -136,7 +136,7 @@ class Experiment:
                 # set likelihood hyperpriors
                 likelihood_priors = self.hyperpriors['GP']
                 self.gp_model.likelihood = set_priors(self.gp_model.likelihood, likelihood_priors)
-            # randomize likilihood
+            # randomize likelihood
             self.gp_model.likelihood.randomize()
 
         if init_query_strat is not None:
