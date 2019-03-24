@@ -53,6 +53,9 @@ class CrossoverVariator(Variator):
         :param parents: the members of the population
         :return:
         """
+        if len(parents) == 0:
+            return []
+
         recombinator = self.operator
 
         offspring = []
