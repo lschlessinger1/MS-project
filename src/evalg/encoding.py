@@ -107,6 +107,33 @@ class BinaryTreeNode(TreeNode):
 
         return graph
 
+    def height(self) -> int:
+        """Return the height of the this node
+
+        The height of a node is the number of edges on the longest path between that node and a descendant leaf.
+
+        :return:
+        """
+        return self._height_helper(self)
+
+    def _height_helper(self, node: Optional) -> int:
+        """Helper function to get the height of a binary tree node.
+
+        :param node:
+        :return:
+        """
+        if node is None:
+            return 0
+
+        # Get the depth of each sub-tree
+        left_depth = self._height_helper(node.left)
+        right_depth = self._height_helper(node.right)
+
+        if left_depth > right_depth:
+            return left_depth + 1
+        else:
+            return right_depth + 1
+
     def __str__(self):
         return self.label
 
@@ -172,11 +199,11 @@ class BinaryTree:
         return self._infix_helper(self.root)
 
     def height(self) -> int:
-        """Height of the tree.
+        """Height of the tree (height of its root node).
 
         :return:
         """
-        return self._height_helper(self.root)
+        return 0 if not self.root else self.root.height()
 
     def infix_tokens(self) -> list:
         """Infix tokens of the binary tree.
@@ -241,24 +268,6 @@ class BinaryTree:
                 tokens += [')']
 
         return tokens
-
-    def _height_helper(self, node: Optional[BinaryTreeNode]) -> int:
-        """Helper function to get the height of a binary tree node.
-
-        :param node:
-        :return:
-        """
-        if node is None:
-            return 0
-
-        # Get the depth of each sub-tree
-        left_depth = self._height_helper(node.left)
-        right_depth = self._height_helper(node.right)
-
-        if left_depth > right_depth:
-            return left_depth + 1
-        else:
-            return right_depth + 1
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'root={self.root!r})'

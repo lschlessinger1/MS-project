@@ -67,6 +67,27 @@ class TestBinaryTreeNode(TestCase):
         result = self.root.create_graph()
         self.assertIsInstance(result, Digraph)
 
+    def test_height(self):
+        root = BinaryTreeNode('*')
+        self.assertEqual(root.height(), 1)
+
+        left = root.add_left(10)
+        self.assertEqual(root.height(), 2)
+        right = root.add_right(20)
+        self.assertEqual(root.height(), 2)
+
+        ll = left.add_left(40)
+        self.assertEqual(root.height(), 3)
+        left.add_right(50)
+        self.assertEqual(root.height(), 3)
+        right.add_left(60)
+        self.assertEqual(root.height(), 3)
+        right.add_right(70)
+        self.assertEqual(root.height(), 3)
+
+        ll.add_left(80)
+        self.assertEqual(root.height(), 4)
+
 
 class TestBinaryTree(TestCase):
 
