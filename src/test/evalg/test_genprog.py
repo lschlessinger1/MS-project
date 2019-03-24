@@ -4,7 +4,8 @@ import numpy as np
 
 from src.evalg.encoding import BinaryTree, BinaryTreeNode
 from src.evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
-    GrowGenerator, FullGenerator, GrowMutator, FullMutator, SubtreeExchangeBinaryRecombinator, HalfAndHalfMutator
+    GrowGenerator, FullGenerator, GrowMutator, FullMutator, SubtreeExchangeBinaryRecombinator, HalfAndHalfMutator, \
+    HalfAndHalfGenerator
 
 
 class TestBinaryTreeGenerator(TestCase):
@@ -59,6 +60,21 @@ class TestFullGenerator(TestCase):
     def test_full(self):
         self.assertRaises(ValueError, self.generator.full, -2)
         self.assertIsInstance(self.generator.full(0), BinaryTreeNode)
+
+
+class TestHalfAndHalfGenerator(TestCase):
+
+    def setUp(self):
+        self.operators = ['+', '*']
+        self.operands = [1, 2, 3]
+        self.max_depth = 2
+        self.generator = HalfAndHalfGenerator(self.operators, self.operands, self.max_depth)
+
+    def test_generate(self):
+        tree = self.generator.generate()
+        self.assertIsInstance(tree, BinaryTree)
+        max_height = self.max_depth + 1  # depth of a stump is 0
+        self.assertLessEqual(tree.height(), max_height)
 
 
 class TestTreeMutator(TestCase):

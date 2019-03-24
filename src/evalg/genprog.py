@@ -144,6 +144,29 @@ class FullGenerator(BinaryTreeGenerator):
             f'{self.operands!r}, max_depth={self.max_depth!r})'
 
 
+class HalfAndHalfGenerator(BinaryTreeGenerator):
+
+    def __init__(self, binary_operators, operands, max_depth: int):
+        super().__init__(binary_operators, operands, max_depth)
+
+    def generate(self) -> BinaryTree:
+        """Generate a full binary tree.
+
+        :return:
+        """
+        if np.random.rand() > 0.5:
+            tree_generator = FullGenerator(operators, self.operands, self.max_depth)
+            root = tree_generator.full(depth=0)
+        else:
+            tree_generator = GrowGenerator(operators, self.operands, self.max_depth)
+            root = tree_generator.grow(depth=0)
+        return BinaryTree(root)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'binary_operators={self.binary_operators!r}, operands=' \
+            f'{self.operands!r}, max_depth={self.max_depth!r})'
+
+
 class TreeMutator(Mutator, ABC):
     operands: list
 
@@ -335,10 +358,7 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
         :return:
         """
         tree = individual
-        if np.random.rand() > 0.5:
-            tree_generator = FullGenerator(operators, self.operands, self.max_depth)
-        else:
-            tree_generator = GrowGenerator(operators, self.operands, self.max_depth)
+        tree_generator = HalfAndHalfGenerator(operators, self.operands, self.max_depth)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
