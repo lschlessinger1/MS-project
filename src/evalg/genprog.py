@@ -295,13 +295,13 @@ class GrowMutator(SubTreeExchangeMutator):
         return f'{self.__class__.__name__}('f'operands={self.operands!r}, max_depth={self.max_depth!r})'
 
 
-class HalfAndHalfMutator(SubTreeExchangeMutator):
+class FullMutator(SubTreeExchangeMutator):
 
     def __init__(self, operands, max_depth=2):
         super().__init__(operands, max_depth)
 
     def mutate(self, individual: BinaryTree) -> BinaryTree:
-        """Half and half mutation applied to a binary tree
+        """Full mutation applied to a binary tree
 
         :param individual:
         :return:
