@@ -32,7 +32,7 @@ class CrossoverVariator(Variator):
     n_way: int
     c_prob: float
 
-    def __init__(self, operator, n_offspring, n_way=2, c_prob=1.):
+    def __init__(self, operator, n_offspring, n_way=2, c_prob=0.9):
         """
 
         :param operator: the recombinator containing the crossover operator
@@ -85,7 +85,7 @@ class MutationVariator(Variator):
     operator: Mutator
     m_prob: float
 
-    def __init__(self, operator, m_prob=1.):
+    def __init__(self, operator, m_prob=0.01):
         """
 
         :param operator: the mutator
