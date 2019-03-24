@@ -368,30 +368,7 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
 
 # Binary tree recombinators
 
-class SubtreeExchangeBinaryRecombinator(Recombinator):
-
-    @check_binary_trees
-    @check_two_parents
-    def crossover(self, parents: List[BinaryTree]) -> Tuple[BinaryTree, BinaryTree]:
-        """Sub-tree exchange crossover.
-
-        :return:
-        """
-        tree_1 = parents[0]
-        tree_2 = parents[1]
-
-        postfix_tokens_1 = tree_1.postfix_tokens()
-        postfix_tokens_2 = tree_2.postfix_tokens()
-
-        r1, r2 = SubtreeExchangeBinaryRecombinator._select_token_ind(postfix_tokens_1, postfix_tokens_2)
-
-        # select nodes in tree
-        node_1 = tree_1.select_postorder(r1)
-        node_2 = tree_2.select_postorder(r2)
-
-        SubtreeExchangeBinaryRecombinator._swap_subtrees(node_1, node_2)
-
-        return tree_1, tree_2
+class SubtreeExchangeBinaryRecombinator(Recombinator, ABC):
 
     @staticmethod
     def _swap_subtrees(node_1: BinaryTreeNode,
@@ -458,3 +435,29 @@ class SubtreeExchangeBinaryRecombinator(Recombinator):
             r2 = np.random.randint(0, len(postfix_tokens_2))
 
         return r1, r2
+
+
+class OnePointRecombinator(SubtreeExchangeBinaryRecombinator):
+
+    @check_binary_trees
+    @check_two_parents
+    def crossover(self, parents: List[BinaryTree]) -> Tuple[BinaryTree, BinaryTree]:
+        """Sub-tree exchange crossover.
+
+        :return:
+        """
+        tree_1 = parents[0]
+        tree_2 = parents[1]
+
+        postfix_tokens_1 = tree_1.postfix_tokens()
+        postfix_tokens_2 = tree_2.postfix_tokens()
+
+        r1, r2 = self._select_token_ind(postfix_tokens_1, postfix_tokens_2)
+
+        # select nodes in tree
+        node_1 = tree_1.select_postorder(r1)
+        node_2 = tree_2.select_postorder(r2)
+
+        self._swap_subtrees(node_1, node_2)
+
+        return tree_1, tree_2

@@ -5,7 +5,7 @@ import numpy as np
 from src.evalg.encoding import BinaryTree, BinaryTreeNode
 from src.evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
     GrowGenerator, FullGenerator, GrowMutator, FullMutator, SubtreeExchangeBinaryRecombinator, HalfAndHalfMutator, \
-    HalfAndHalfGenerator
+    HalfAndHalfGenerator, OnePointRecombinator
 
 
 class TestBinaryTreeGenerator(TestCase):
@@ -204,33 +204,6 @@ class TestHalfAndHalfMutator(TestCase):
 
 class TestSubtreeExchangeBinaryRecombinator(TestCase):
 
-    def test_crossover(self):
-        np.random.seed(10)
-        tree_1 = BinaryTree(BinaryTreeNode('*'))
-        tree_1.root.add_left('A')
-        tree_1.root.add_right('B')
-
-        tree_2 = BinaryTree(BinaryTreeNode('+'))
-        tree_2.root.add_left('C')
-        tree_2.root.add_right('D')
-
-        # test bad type
-        self.assertRaises(TypeError, SubtreeExchangeBinaryRecombinator.crossover, 'bad type')
-        self.assertRaises(TypeError, SubtreeExchangeBinaryRecombinator.crossover, [tree_1, tree_2, 45])
-
-        parents = [tree_1, tree_2]
-        recombinator = SubtreeExchangeBinaryRecombinator()
-        result_1, result_2 = recombinator.crossover(parents)
-        self.assertIsInstance(result_1, BinaryTree)
-        self.assertIsInstance(result_2, BinaryTree)
-
-        self.assertEqual(result_1.root.value, '*')
-        self.assertEqual(result_1.root.left.value, 'A')
-        self.assertEqual(result_1.root.right.value, 'D')
-        self.assertEqual(result_2.root.value, '+')
-        self.assertEqual(result_2.root.left.value, 'C')
-        self.assertEqual(result_2.root.right.value, 'B')
-
     def test__swap_subtrees(self):
         node_1 = BinaryTreeNode('*')
         node_1.add_left('A')
@@ -273,6 +246,39 @@ class TestSubtreeExchangeBinaryRecombinator(TestCase):
         self.assertLess(idx_2, len(tokens_2))
         self.assertEqual(tokens_1[idx_1], 'B')
         self.assertEqual(tokens_2[idx_2], 'D')
+
+    def tearDown(self):
+        np.random.seed()
+
+
+class TestOnePointRecombinator(TestCase):
+
+    def test_crossover(self):
+        np.random.seed(10)
+        tree_1 = BinaryTree(BinaryTreeNode('*'))
+        tree_1.root.add_left('A')
+        tree_1.root.add_right('B')
+
+        tree_2 = BinaryTree(BinaryTreeNode('+'))
+        tree_2.root.add_left('C')
+        tree_2.root.add_right('D')
+
+        # test bad type
+        self.assertRaises(TypeError, OnePointRecombinator.crossover, 'bad type')
+        self.assertRaises(TypeError, OnePointRecombinator.crossover, [tree_1, tree_2, 45])
+
+        parents = [tree_1, tree_2]
+        recombinator = OnePointRecombinator()
+        result_1, result_2 = recombinator.crossover(parents)
+        self.assertIsInstance(result_1, BinaryTree)
+        self.assertIsInstance(result_2, BinaryTree)
+
+        self.assertEqual(result_1.root.value, '*')
+        self.assertEqual(result_1.root.left.value, 'A')
+        self.assertEqual(result_1.root.right.value, 'D')
+        self.assertEqual(result_2.root.value, '+')
+        self.assertEqual(result_2.root.left.value, 'C')
+        self.assertEqual(result_2.root.right.value, 'B')
 
     def tearDown(self):
         np.random.seed()
