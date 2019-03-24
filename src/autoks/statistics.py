@@ -3,7 +3,7 @@ import numpy as np
 
 DataType = Union[float, List[float]]
 DataList = List[DataType]
-Function = Callable[..., float]
+Function = Callable[..., Union[float, np.ndarray, List[float]]]
 
 
 class Statistic:

@@ -1,6 +1,6 @@
 import warnings
 from time import time
-from typing import Callable, List, Tuple, Optional, FrozenSet, Dict
+from typing import Callable, List, Tuple, Optional, FrozenSet, Dict, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -718,19 +718,19 @@ class Experiment:
 
 
 # stats functions
-def get_model_scores(aks_kernels: List[AKSKernel], *args, **kwargs):
+def get_model_scores(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[float]:
     return [aks_kernel.score for aks_kernel in aks_kernels if aks_kernel.evaluated]
 
 
-def get_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs):
+def get_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
     return [n_base_kernels(aks_kernel.kernel) for aks_kernel in aks_kernels]
 
 
-def get_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs):
+def get_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
     return [aks_kernel.kernel.param_array.size for aks_kernel in aks_kernels]
 
 
-def get_cov_dists(aks_kernels: List[AKSKernel], *args, **kwargs):
+def get_cov_dists(aks_kernels: List[AKSKernel], *args, **kwargs) -> Union[np.ndarray, List[int]]:
     kernels = [aks_kernel.kernel for aks_kernel in aks_kernels]
     if len(kernels) >= 2:
         x = kwargs.get('x')
@@ -739,7 +739,7 @@ def get_cov_dists(aks_kernels: List[AKSKernel], *args, **kwargs):
         return [0] * len(aks_kernels)
 
 
-def get_diversity_scores(aks_kernels: List[AKSKernel], *args, **kwargs):
+def get_diversity_scores(aks_kernels: List[AKSKernel], *args, **kwargs) -> Union[float, List[int]]:
     kernels = [aks_kernel.kernel for aks_kernel in aks_kernels]
     if len(kernels) >= 2:
         base_kernels = kwargs.get('base_kernels')
@@ -749,14 +749,14 @@ def get_diversity_scores(aks_kernels: List[AKSKernel], *args, **kwargs):
         return [0] * len(aks_kernels)
 
 
-def get_best_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs):
+def get_best_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
     model_scores = get_model_scores(aks_kernels, *args, **kwargs)
     n_operands = get_n_operands(aks_kernels)
     score_arg_max = int(np.argmax(model_scores))
     return [n_operands[score_arg_max]]
 
 
-def get_best_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs):
+def get_best_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
     model_scores = get_model_scores(aks_kernels, *args, **kwargs)
     n_hyperparams = get_n_hyperparams(aks_kernels, *args, **kwargs)
     score_arg_max = int(np.argmax(model_scores))
