@@ -86,32 +86,35 @@ class Experiment:
         self.n_restarts_optimizer = n_restarts_optimizer
 
         # statistics used for plotting
-        n_hyperparams_name = 'n_hyperparameters'
-        n_operands_name = 'n_operands'
-        score_name = 'score'
-        cov_dists_name = 'cov_dists'
-        diversity_scores_name = 'diversity_scores'
-        best_stat_name = 'best'
-        shared_multi_stat_names = [n_hyperparams_name, n_operands_name]  # All stat books track these variables
+        self.n_hyperparams_name = 'n_hyperparameters'
+        self.n_operands_name = 'n_operands'
+        self.score_name = 'score'
+        self.cov_dists_name = 'cov_dists'
+        self.diversity_scores_name = 'diversity_scores'
+        self.best_stat_name = 'best'
+        shared_multi_stat_names = [self.n_hyperparams_name,
+                                   self.n_operands_name]  # All stat books track these variables
 
         # raw value statistics
         shared_stats = [get_n_hyperparams, get_n_operands]
 
-        evaluations_name = 'evaluations'
-        active_set_name = 'active_set'
-        expansion_name = 'expansion'
-        stat_book_names = [evaluations_name, expansion_name, active_set_name]
+        self.evaluations_name = 'evaluations'
+        self.active_set_name = 'active_set'
+        self.expansion_name = 'expansion'
+        stat_book_names = [self.evaluations_name, self.expansion_name, self.active_set_name]
         self.stat_book_collection = StatBookCollection(stat_book_names, shared_multi_stat_names, shared_stats)
 
-        sb_active_set = self.stat_book_collection.stat_books[active_set_name]
-        sb_active_set.add_raw_value_stat(score_name, get_model_scores)
-        sb_active_set.add_raw_value_stat(cov_dists_name, get_cov_dists)
-        sb_active_set.add_raw_value_stat(diversity_scores_name, get_diversity_scores)
-        sb_active_set.multi_stats[n_hyperparams_name].add_statistic(Statistic(best_stat_name, get_best_n_hyperparams))
-        sb_active_set.multi_stats[n_operands_name].add_statistic(Statistic(best_stat_name, get_best_n_operands))
+        sb_active_set = self.stat_book_collection.stat_books[self.active_set_name]
+        sb_active_set.add_raw_value_stat(self.score_name, get_model_scores)
+        sb_active_set.add_raw_value_stat(self.cov_dists_name, get_cov_dists)
+        sb_active_set.add_raw_value_stat(self.diversity_scores_name, get_diversity_scores)
+        sb_active_set.multi_stats[self.n_hyperparams_name].add_statistic(Statistic(self.best_stat_name,
+                                                                                   get_best_n_hyperparams))
+        sb_active_set.multi_stats[self.n_operands_name].add_statistic(Statistic(self.best_stat_name,
+                                                                                get_best_n_operands))
 
-        sb_evals = self.stat_book_collection.stat_books[evaluations_name]
-        sb_evals.add_raw_value_stat(score_name, get_model_scores)
+        sb_evals = self.stat_book_collection.stat_books[self.evaluations_name]
+        sb_evals.add_raw_value_stat(self.score_name, get_model_scores)
         # sb_evals.multi_stats[n_hyperparams_name].add_statistic(Statistic(best_stat_name, get_best_n_hyperparams))
         # sb_evals.multi_stats[n_operands_name].add_statistic(Statistic(best_stat_name, get_best_n_operands))
 
@@ -146,8 +149,6 @@ class Experiment:
         else:
             self.query_strat = NaiveQueryStrategy()
 
-        # self.x_axis_evals = x_axis_evals
-
     def kernel_search(self) -> List[AKSKernel]:
         """Perform automated kernel search.
 
@@ -171,7 +172,7 @@ class Experiment:
         newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
         evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
-        self.update_stat_book(self.stat_book_collection.stat_books['active_set'], kernels)
+        self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
 
         max_same_expansions = 3  # Maximum number of same kernel proposal before terminating
         max_null_queries = 3  # Maximum number of empty queries in a row allowed before terminating
@@ -195,7 +196,7 @@ class Experiment:
                 parent.kernel.fix()
 
             new_kernels = self.propose_new_kernels(parents)
-            self.update_stat_book(self.stat_book_collection.stat_books['expansion'], new_kernels)
+            self.update_stat_book(self.stat_book_collection.stat_books[self.expansion_name], new_kernels)
             # Check for same expansions
             if self.all_same_expansion(new_kernels, prev_expansions, max_same_expansions):
                 if self.verbose:
@@ -233,7 +234,7 @@ class Experiment:
 
             kernels = self.prune_kernels(kernels, acq_scores, ind)
             kernels = self.select_offspring(kernels)
-            self.update_stat_book(self.stat_book_collection.stat_books['active_set'], kernels)
+            self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
             depth += 1
 
         self.total_kernel_search_time += time() - t_init
@@ -373,7 +374,7 @@ class Experiment:
             evaluated_kernels.append(evaluated_kernel)
 
             if not evaluated_kernel.nan_scored:
-                self.update_stat_book(self.stat_book_collection.stat_books['evaluations'], [evaluated_kernel])
+                self.update_stat_book(self.stat_book_collection.stat_books[self.evaluations_name], [evaluated_kernel])
 
         evaluated_kernels = self.remove_nan_scored_kernels(evaluated_kernels)
 
@@ -577,16 +578,16 @@ class Experiment:
 
     def plot_stat_book(self, stat_book: StatBook):
         ms = stat_book.multi_stats
-        if 'score' in ms:
+        if self.score_name in ms:
             self.plot_best_scores(stat_book)
             self.plot_score_summary(stat_book)
-        if 'n_hyperparameters' in ms:
+        if self.n_hyperparams_name in ms:
             self.plot_n_hyperparams_summary(stat_book)
-        if 'n_operands' in ms:
+        if self.n_operands_name in ms:
             self.plot_n_operands_summary(stat_book)
-        if 'cov_dists' in ms:
+        if self.cov_dists_name in ms:
             self.plot_cov_dist_summary(stat_book)
-        if 'diversity_scores' in ms:
+        if self.diversity_scores_name in ms:
             self.plot_kernel_diversity_summary(stat_book)
 
     def plot_best_scores(self, stat_book: StatBook) -> None:
@@ -594,11 +595,11 @@ class Experiment:
 
         :return:
         """
-        if stat_book.name == 'evaluations':
-            best_scores = stat_book.running_max('score')
+        if stat_book.name == self.evaluations_name:
+            best_scores = stat_book.running_max(self.score_name)
             x_label = ' evaluations'
         else:
-            best_scores = stat_book.maximum('score')
+            best_scores = stat_book.maximum(self.score_name)
             x_label = 'generation'
 
         plot_best_so_far(best_scores, x_label=x_label)
@@ -609,15 +610,15 @@ class Experiment:
 
         :return:
         """
-        if stat_book.name == 'evaluations':
-            best_scores = stat_book.running_max('score')
-            mean_scores = stat_book.running_mean('score')
-            std_scores = stat_book.running_std('score')
+        if stat_book.name == self.evaluations_name:
+            best_scores = stat_book.running_max(self.score_name)
+            mean_scores = stat_book.running_mean(self.score_name)
+            std_scores = stat_book.running_std(self.score_name)
             x_label = 'evaluations'
         else:
-            best_scores = stat_book.maximum('score')
-            mean_scores = stat_book.mean('score')
-            std_scores = stat_book.std('score')
+            best_scores = stat_book.maximum(self.score_name)
+            mean_scores = stat_book.mean(self.score_name)
+            std_scores = stat_book.std(self.score_name)
             x_label = 'generation'
 
         plot_distribution(mean_scores, std_scores, best_scores, x_label=x_label)
@@ -628,15 +629,15 @@ class Experiment:
 
         :return:
         """
-        x_label = 'evaluations' if stat_book.name == 'evaluations' else 'generation'
-        if 'best' in stat_book.multi_stats['n_hyperparameters'].stats:
-            best_n_hyperparameters = stat_book.multi_stats['n_hyperparameters'].stats['best'].data
+        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
+        if self.best_stat_name in stat_book.multi_stats[self.n_hyperparams_name].stats:
+            best_n_hyperparameters = stat_book.multi_stats[self.n_hyperparams_name].stats[self.best_stat_name].data
         else:
             best_n_hyperparameters = None
-        median_n_hyperparameters = stat_book.median('n_hyperparameters')
-        std_n_hyperparameters = stat_book.std('n_hyperparameters')
+        median_n_hyperparameters = stat_book.median(self.n_hyperparams_name)
+        std_n_hyperparameters = stat_book.std(self.n_hyperparams_name)
         plot_distribution(median_n_hyperparameters, std_n_hyperparameters, best_n_hyperparameters,
-                          value_name='median', metric_name=stat_book.name+'# Hyperparameters', x_label=x_label)
+                          value_name='median', metric_name=stat_book.name + '# Hyperparameters', x_label=x_label)
         plt.show()
 
     def plot_n_operands_summary(self, stat_book: StatBook) -> None:
@@ -644,13 +645,13 @@ class Experiment:
 
         :return:
         """
-        x_label = 'evaluations' if stat_book.name == 'evaluations' else 'generation'
-        if 'best' in stat_book.multi_stats['n_operands'].stats:
-            best_n_operands = stat_book.multi_stats['n_operands'].stats['best'].data
+        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
+        if self.best_stat_name in stat_book.multi_stats[self.n_operands_name].stats:
+            best_n_operands = stat_book.multi_stats[self.n_operands_name].stats[self.best_stat_name].data
         else:
             best_n_operands = None
-        median_n_operands = stat_book.median('n_operands')
-        std_n_operands = stat_book.std('n_operands')
+        median_n_operands = stat_book.median(self.n_operands_name)
+        std_n_operands = stat_book.std(self.n_operands_name)
         plot_distribution(median_n_operands, std_n_operands, best_n_operands, value_name='median',
                           metric_name='# Operands', x_label=x_label)
         plt.show()
@@ -660,9 +661,9 @@ class Experiment:
 
         :return:
         """
-        x_label = 'evaluations' if stat_book.name == 'evaluations' else 'generation'
-        mean_cov_dists = stat_book.mean('cov_dists')
-        std_cov_dists = stat_book.std('cov_dists')
+        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
+        mean_cov_dists = stat_book.mean(self.cov_dists_name)
+        std_cov_dists = stat_book.std(self.cov_dists_name)
         plot_distribution(mean_cov_dists, std_cov_dists, metric_name='covariance distance', x_label=x_label)
         plt.show()
 
@@ -671,9 +672,9 @@ class Experiment:
 
         :return:
         """
-        x_label = 'evaluations' if stat_book.name == 'evaluations' else 'generation'
-        mean_diversity_scores = stat_book.mean('diversity_scores')
-        std_diversity_scores = stat_book.std('diversity_scores')
+        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
+        mean_diversity_scores = stat_book.mean(self.diversity_scores_name)
+        std_diversity_scores = stat_book.std(self.diversity_scores_name)
         plot_distribution(mean_diversity_scores, std_diversity_scores, metric_name='diversity',
                           value_name='population', x_label=x_label)
         plt.show()
