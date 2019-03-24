@@ -1,8 +1,9 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from src.autoks.statistics import Statistic, MultiStat
+from src.autoks.statistics import Statistic, MultiStat, StatBook
 import numpy as np
+
 
 class TestStatistic(TestCase):
 
@@ -30,7 +31,7 @@ class TestMultiStat(TestCase):
 
     def test_add_raw_value_stat(self):
         ms = MultiStat('test_ms')
-        func = lambda x: x**2
+        func = lambda x: x ** 2
         ms.add_raw_value_stat(func)
         self.assertIn(ms.RAW_VALUE_STAT_NAME, ms.stats)
         self.assertEqual(ms.stats.get(ms.RAW_VALUE_STAT_NAME).name, ms.RAW_VALUE_STAT_NAME)
@@ -41,7 +42,7 @@ class TestMultiStat(TestCase):
         result = ms.get_raw_values()
         self.assertIsNone(result)
 
-        ms.add_raw_value_stat(lambda x: x**2)
+        ms.add_raw_value_stat(lambda x: x ** 2)
         ms.stats.get(ms.RAW_VALUE_STAT_NAME).record(1)
         ms.stats.get(ms.RAW_VALUE_STAT_NAME).record(2)
         ms.stats.get(ms.RAW_VALUE_STAT_NAME).record(3)
@@ -161,3 +162,158 @@ class TestMultiStat(TestCase):
         stat_1.clear.assert_called_once()
         stat_2.clear.assert_called_once()
         stat_3.clear.assert_called_once()
+
+
+class TestStatBook(TestCase):
+
+    def test_add_multistat(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        sb.add_multi_stat(ms)
+        self.assertIn(ms.name, sb.multi_stats)
+        self.assertEqual(sb.multi_stats.get(ms.name), ms)
+
+    def test_add_raw_value_stat(self):
+        sb = StatBook('test_sb')
+        func = lambda x: x + 1
+        sb.add_raw_value_stat('test_ms', func)
+        self.assertIn('test_ms', sb.multi_stats)
+        self.assertIn(MultiStat.RAW_VALUE_STAT_NAME, sb.multi_stats['test_ms'].stats)
+        self.assertEqual(sb.multi_stats['test_ms'].stats.get(MultiStat.RAW_VALUE_STAT_NAME).function, func)
+
+    def test_get_raw_values(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.get_raw_values = MagicMock()
+        ms.get_raw_values.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.get_raw_values(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.get_raw_values.assert_called_once()
+
+    def test_mean(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.mean = MagicMock()
+        ms.mean.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.mean(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.mean.assert_called_once()
+
+    def test_median(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.median = MagicMock()
+        ms.median.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.median(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.median.assert_called_once()
+
+    def test_maximum(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.maximum = MagicMock()
+        ms.maximum.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.maximum(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.maximum.assert_called_once()
+
+    def test_std(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.std = MagicMock()
+        ms.std.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.std(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.std.assert_called_once()
+
+    def test_var(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.var = MagicMock()
+        ms.var.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.var(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.var.assert_called_once()
+
+    def test_running_max(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.running_max = MagicMock()
+        ms.running_max.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.running_max(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.running_max.assert_called_once()
+
+    def test_running_mean(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.running_mean = MagicMock()
+        ms.running_mean.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.running_mean(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.running_mean.assert_called_once()
+
+    def test_running_std(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_stat')
+        ms.running_std = MagicMock()
+        ms.running_std.return_value = [3., 4., 5.]
+        sb.add_multi_stat(ms)
+        result = sb.running_std(ms.name)
+        self.assertListEqual(result, [3., 4., 5.])
+        ms.running_std.assert_called_once()
+
+    def test_multi_stats_names(self):
+        sb = StatBook('test_sb')
+        ms1 = MultiStat(name='test_stat1')
+        ms2 = MultiStat(name='test_stat2')
+        sb.add_multi_stat(ms1)
+        sb.add_multi_stat(ms2)
+        result = sb.multi_stats_names()
+        self.assertListEqual(result, [ms1.name, ms2.name])
+
+    def test_multi_stats(self):
+        sb = StatBook('test_sb')
+        ms1 = MultiStat(name='test_stat1')
+        ms2 = MultiStat(name='test_stat2')
+        sb.add_multi_stat(ms1)
+        sb.add_multi_stat(ms2)
+        result = sb.multi_stats_list()
+        self.assertListEqual(result, [ms1, ms2])
+
+    def test_update_stat_book(self):
+        sb = StatBook('test_sb')
+        sb.add_raw_value_stat('test_stat1')
+        sb.add_raw_value_stat('test_stat2')
+        sb.update_stat_book(data=[1, 2, 3])
+
+        result = sb.multi_stats['test_stat1'].get_raw_values()
+        self.assertListEqual(result, [[1, 2, 3]])
+
+        result = sb.multi_stats['test_stat2'].get_raw_values()
+        self.assertListEqual(result, [[1, 2, 3]])
+
+    def test_clear_all_values(self):
+        sb = StatBook('test_sb')
+
+        ms1 = MultiStat(name='test_stat1')
+        ms1.clear_all_values = MagicMock()
+
+        ms2 = MultiStat(name='test_stat2')
+        ms2.clear_all_values = MagicMock()
+
+        sb.add_multi_stat(ms1)
+        sb.add_multi_stat(ms2)
+
+        sb.clear_all_values()
+
+        ms1.clear_all_values.assert_called_once()
+        ms2.clear_all_values.assert_called_once()
