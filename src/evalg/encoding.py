@@ -61,6 +61,20 @@ class BinaryTreeNode(TreeNode):
         self.left = None
         self.right = None
 
+    def is_left_child(self) -> bool:
+        if self.parent is not None:
+            if self.parent.left is not None:
+                return self.parent.left == self
+        else:
+            raise AttributeError(f'{self.__class__.__name__!r} does not have a parent.')
+
+    def is_right_child(self) -> bool:
+        if self.parent is not None:
+            if self.parent.right is not None:
+                return self.parent.right == self
+        else:
+            raise AttributeError(f'{self.__class__.__name__!r} does not have a parent.')
+
     def add_left(self, value: T):
         """Add left node.
 
