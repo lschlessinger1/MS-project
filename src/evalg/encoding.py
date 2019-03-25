@@ -55,11 +55,11 @@ class BinaryTreeNode(TreeNode):
     left: Optional
     right: Optional
 
-    def __init__(self, value, parent=None):
+    def __init__(self, value, parent=None, left=None, right=None):
         super().__init__(value, parent)
 
-        self.left = None
-        self.right = None
+        self.left = left
+        self.right = right
 
     def is_left_child(self) -> bool:
         if self.parent is not None:
