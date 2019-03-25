@@ -5,7 +5,7 @@ import numpy as np
 from src.evalg.encoding import BinaryTree, BinaryTreeNode
 from src.evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
     GrowGenerator, FullGenerator, GrowMutator, FullMutator, SubtreeExchangeBinaryRecombinator, HalfAndHalfMutator, \
-    HalfAndHalfGenerator, OnePointRecombinator
+    HalfAndHalfGenerator, OnePointRecombinator, OnePointLeafBiasedRecombinator
 
 
 class TestBinaryTreeGenerator(TestCase):
@@ -279,6 +279,48 @@ class TestOnePointRecombinator(TestCase):
         self.assertEqual(result_2.root.value, '+')
         self.assertEqual(result_2.root.left.value, 'C')
         self.assertEqual(result_2.root.right.value, 'B')
+
+    def tearDown(self):
+        np.random.seed()
+
+
+class TestOnePointLeafBiasedRecombinator(TestCase):
+
+    def test_crossover(self):
+        tree_1 = BinaryTree(BinaryTreeNode('*'))
+        tree_1.root.add_left('A')
+        tree_1.root.add_right('B')
+
+        tree_2 = BinaryTree(BinaryTreeNode('+'))
+        tree_2.root.add_left('C')
+        tree_2.root.add_right('D')
+
+        # test bad type
+        self.assertRaises(TypeError, OnePointLeafBiasedRecombinator.crossover, 'bad type')
+        self.assertRaises(TypeError, OnePointLeafBiasedRecombinator.crossover, [tree_1, tree_2, 45])
+
+        parents = [tree_1, tree_2]
+
+        recombinator = OnePointLeafBiasedRecombinator(t_prob=0)
+        result_1, result_2 = recombinator.crossover(parents)
+        self.assertEqual(result_1.root.value, '*')
+        self.assertEqual(result_1.root.left.value, 'A')
+        self.assertEqual(result_1.root.right.value, 'B')
+        self.assertEqual(result_2.root.value, '+')
+        self.assertEqual(result_2.root.left.value, 'C')
+        self.assertEqual(result_2.root.right.value, 'D')
+
+        recombinator = OnePointLeafBiasedRecombinator(t_prob=1)
+        result_1, result_2 = recombinator.crossover(parents)
+        self.assertEqual(result_1.root.value, '*')
+        self.assertEqual(result_2.root.value, '+')
+
+        recombinator = OnePointLeafBiasedRecombinator()
+        result_1, result_2 = recombinator.crossover(parents)
+        self.assertIsInstance(result_1, BinaryTree)
+        self.assertIsInstance(result_2, BinaryTree)
+
+
 
     def tearDown(self):
         np.random.seed()

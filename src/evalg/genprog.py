@@ -442,7 +442,9 @@ class OnePointRecombinator(SubtreeExchangeBinaryRecombinator):
     @check_binary_trees
     @check_two_parents
     def crossover(self, parents: List[BinaryTree]) -> Tuple[BinaryTree, BinaryTree]:
-        """Sub-tree exchange crossover.
+        """One point crossover.
+
+        Nodes are selected uniformly at random.
 
         :return:
         """
@@ -455,6 +457,52 @@ class OnePointRecombinator(SubtreeExchangeBinaryRecombinator):
         r1, r2 = self._select_token_ind(postfix_tokens_1, postfix_tokens_2)
 
         # select nodes in tree
+        node_1 = tree_1.select_postorder(r1)
+        node_2 = tree_2.select_postorder(r2)
+
+        self._swap_subtrees(node_1, node_2)
+
+        return tree_1, tree_2
+
+
+class OnePointLeafBiasedRecombinator(SubtreeExchangeBinaryRecombinator):
+    t_prob: float
+
+    def __init__(self, t_prob: float = 0.1):
+        self.t_prob = t_prob  # probability of choosing a terminal node (leaf).
+
+    @check_binary_trees
+    @check_two_parents
+    def crossover(self, parents: List[BinaryTree]) -> Tuple[BinaryTree, BinaryTree]:
+        """One point leaf biased crossover.
+
+        Select terminal nodes with probability t_prob and internal nodes with probability 1 - t_prob.
+
+        :return:
+        """
+        tree_1 = parents[0]
+        tree_2 = parents[1]
+
+        postfix_tokens_1 = tree_1.postfix_tokens()
+        postfix_tokens_2 = tree_2.postfix_tokens()
+
+        if len(postfix_tokens_1) == 1 and len(postfix_tokens_2) == 1:
+            return tree_1, tree_2
+
+        if self.t_prob > np.random.rand():
+            # Choose terminal node pair uniformly at random.
+            terminals_1 = [i for (i, token) in enumerate(postfix_tokens_1) if token not in operators]
+            terminals_2 = [i for (i, token) in enumerate(postfix_tokens_2) if token not in operators]
+            r1 = np.random.choice(terminals_1)
+            r2 = np.random.choice(terminals_2)
+        else:
+            # Choose internal node pair uniformly at random.
+            internals_1 = [i for (i, token) in enumerate(postfix_tokens_1) if token in operators]
+            internals_2 = [i for (i, token) in enumerate(postfix_tokens_2) if token in operators]
+            r1 = np.random.choice(internals_1)
+            r2 = np.random.choice(internals_2)
+
+        # Select nodes in tree.
         node_1 = tree_1.select_postorder(r1)
         node_2 = tree_2.select_postorder(r2)
 
