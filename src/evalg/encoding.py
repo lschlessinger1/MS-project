@@ -47,7 +47,8 @@ class TreeNode:
         return self.label
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'label={self.label!r}, value={self.value!r}, parent={self.parent.label!r})'
+        parent_label = None if not self.parent else self.parent.label
+        return f'{self.__class__.__name__}('f'label={self.label!r}, value={self.value!r}, parent={parent_label!r})'
 
 
 class BinaryTreeNode(TreeNode):
@@ -138,8 +139,11 @@ class BinaryTreeNode(TreeNode):
         return self.label
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'label={self.label!r}, value={self.value!r}, left={self.left.label}, ' \
-            f'right={self.right.label}, parent={self.parent.label})'
+        parent_label = None if not self.parent else self.parent.label
+        left_label = None if not self.left else self.left.label
+        right_label = None if not self.right else self.right.label
+        return f'{self.__class__.__name__}('f'label={self.label!r}, value={self.value!r}, left={left_label!r}, ' \
+            f'right={right_label!r}, parent={parent_label!r})'
 
 
 class BinaryTree:
