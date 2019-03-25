@@ -28,10 +28,12 @@ class TreeNode:
 
     def __init__(self,
                  value: T,
-                 parent=None):
+                 parent=None,
+                 children=None):
         self._value = value
         self.label = val_to_label(value)
         self.parent = parent
+        self.children = children
 
     @property
     def value(self) -> T:
@@ -56,7 +58,8 @@ class BinaryTreeNode(TreeNode):
     right: Optional
 
     def __init__(self, value, parent=None, left=None, right=None):
-        super().__init__(value, parent)
+        children = [left, right]
+        super().__init__(value, parent, children)
 
         self.left = left
         self.right = right
