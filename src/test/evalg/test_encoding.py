@@ -16,7 +16,8 @@ class TestTreeNode(TestCase):
 
         self.child_val = 42
         self.child_label = str(self.child_val)
-        self.child = TreeNode(self.child_val, parent=self.parent)
+        self.child = self.parent.add_child(self.child_val)
+        # self.child = TreeNode(self.child_val, parent=self.parent)
 
         self.kernel_node_val_prev = 10
         self.kernel_node_label_prev = str(self.kernel_node_val_prev)
@@ -38,6 +39,23 @@ class TestTreeNode(TestCase):
         self.assertEqual(self.parent.label, self.parent_label)
         self.assertEqual(self.child.label, self.child_label)
         self.assertEqual(self.kernel_node.label, new_label)
+
+    def test_has_parent(self):
+        self.assertFalse(self.parent.has_parent())
+        self.assertTrue(self.child.has_parent())
+
+    def test_has_children(self):
+        self.assertTrue(self.parent.has_children())
+        self.assertFalse(self.child.has_children())
+
+    def test_add_child(self):
+        node = TreeNode(self.parent_val)
+        result = node.add_child('value')
+        self.assertIsInstance(result, TreeNode)
+        self.assertTrue(result.has_parent())
+        self.assertTrue(node.has_children())
+        self.assertEqual(node.children[0], result)
+        self.assertEqual(result.parent, node)
 
 
 class TestBinaryTreeNode(TestCase):

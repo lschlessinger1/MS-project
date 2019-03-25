@@ -1,4 +1,4 @@
-from typing import List, Optional, TypeVar
+from typing import List, Optional, TypeVar, Sequence
 
 from GPy.kern.src.kern import Kern
 from graphviz import Digraph
@@ -24,6 +24,7 @@ def val_to_label(value: T) -> str:
 class TreeNode:
     label: str
     parent: Optional
+    children: Optional[Sequence]
     _value: T
 
     def __init__(self,
@@ -33,7 +34,10 @@ class TreeNode:
         self._value = value
         self.label = val_to_label(value)
         self.parent = parent
-        self.children = children
+        if children is None:
+            self.children = []
+        else:
+            self.children = children
 
     @property
     def value(self) -> T:
@@ -44,6 +48,25 @@ class TreeNode:
         self._value = value
         # update label as well
         self.label = val_to_label(value)
+
+    def has_parent(self) -> bool:
+        return self.parent is not None
+
+    def has_children(self) -> bool:
+        return self.children is not None and len(self.children) > 0
+
+    def add_child(self, value: T):
+        """Add child node.
+
+        :param value:
+        :return:
+        """
+        child = TreeNode(value=value, parent=self)
+        self._add_child(child)
+        return child
+
+    def _add_child(self, child):
+        self.children.append(child)
 
     def __str__(self):
         return self.label
@@ -64,14 +87,11 @@ class BinaryTreeNode(TreeNode):
         self.left = left
         self.right = right
 
-    def has_left_child(self):
+    def has_left_child(self) -> bool:
         return self.left is not None
 
-    def has_right_child(self):
+    def has_right_child(self) -> bool:
         return self.right is not None
-
-    def has_parent(self):
-        return self.parent is not None
 
     def is_left_child(self) -> bool:
         if self.has_parent():
@@ -94,6 +114,7 @@ class BinaryTreeNode(TreeNode):
         :return:
         """
         self.left = BinaryTreeNode(value, self)
+        self._add_child(self.right)
         return self.left
 
     def add_right(self, value: T):
@@ -103,6 +124,7 @@ class BinaryTreeNode(TreeNode):
         :return:
         """
         self.right = BinaryTreeNode(value, self)
+        self._add_child(self.right)
         return self.right
 
     def create_graph(self, graph: Optional[Digraph] = None) -> Digraph:
