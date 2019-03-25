@@ -486,10 +486,14 @@ class OnePointLeafBiasedRecombinator(SubtreeExchangeBinaryRecombinator):
         postfix_tokens_1 = tree_1.postfix_tokens()
         postfix_tokens_2 = tree_2.postfix_tokens()
 
-        if len(postfix_tokens_1) == 1 and len(postfix_tokens_2) == 1:
+        tree_1_single_elt = len(postfix_tokens_1) == 1
+        tree_2_single_elt = len(postfix_tokens_2) == 1
+        if tree_1_single_elt and tree_2_single_elt:
             return tree_1, tree_2
 
-        if self.t_prob > np.random.rand():
+        # If either tree has a single node, we must select a terminal node.
+        either_tree_single_elt = tree_1_single_elt or tree_2_single_elt
+        if self.t_prob > np.random.rand() or either_tree_single_elt:
             # Choose terminal node pair uniformly at random.
             terminals_1 = [i for (i, token) in enumerate(postfix_tokens_1) if token not in operators]
             terminals_2 = [i for (i, token) in enumerate(postfix_tokens_2) if token not in operators]

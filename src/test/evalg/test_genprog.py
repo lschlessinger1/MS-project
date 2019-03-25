@@ -320,7 +320,11 @@ class TestOnePointLeafBiasedRecombinator(TestCase):
         self.assertIsInstance(result_1, BinaryTree)
         self.assertIsInstance(result_2, BinaryTree)
 
-
+        recombinator = OnePointLeafBiasedRecombinator()
+        stump = BinaryTree(BinaryTreeNode('C'))
+        result_1, result_2 = recombinator.crossover([tree_1, stump])
+        self.assertIsInstance(result_1, BinaryTree)
+        self.assertIsInstance(result_2, BinaryTree)
 
     def tearDown(self):
         np.random.seed()
