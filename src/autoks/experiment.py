@@ -42,13 +42,14 @@ class Experiment:
     additive_form: bool
     debug: bool
     verbose: bool
+    tabu_search: bool
     optimizer: Optional[str]
     n_restarts_optimizer: int
 
     def __init__(self, grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
                  init_query_strat=None, query_strat=None, hyperpriors=None, additive_form=False, debug=False,
-                 verbose=False, optimizer=None, n_restarts_optimizer=10):
+                 verbose=False, tabu_search=True, optimizer=None, n_restarts_optimizer=10):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -148,6 +149,8 @@ class Experiment:
             self.query_strat = query_strat
         else:
             self.query_strat = NaiveQueryStrategy()
+
+        self.tabu_search = tabu_search
 
     def kernel_search(self) -> List[AKSKernel]:
         """Perform automated kernel search.
@@ -276,7 +279,10 @@ class Experiment:
         :param kernels:
         :return:
         """
-        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and not kernel.expanded]
+        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
+        if self.tabu_search:
+            # Expanded kernels are the tabu list.
+            evaluated_kernels = [kernel for kernel in kernels if not kernel.expanded]
         kernel_scores = [kernel.score for kernel in evaluated_kernels]
         parents = self.kernel_selector.select_parents(evaluated_kernels, kernel_scores)
         # Print parent (seed) kernels
