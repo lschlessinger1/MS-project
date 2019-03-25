@@ -49,6 +49,31 @@ class TestBinaryTreeNode(TestCase):
         self.left_child_val = 42
         self.right_child_val = 13
 
+    def test_has_left_child(self):
+        self.assertFalse(self.root.has_left_child())
+        self.root.add_right(self.right_child_val)
+        self.assertFalse(self.root.has_left_child())
+        self.root.add_left(self.left_child_val)
+        self.assertTrue(self.root.has_left_child())
+
+    def test_has_right_child(self):
+        self.assertFalse(self.root.has_right_child())
+        self.root.add_left(self.left_child_val)
+        self.assertFalse(self.root.has_right_child())
+        self.root.add_right(self.right_child_val)
+        self.assertTrue(self.root.has_right_child())
+
+    def test_has_parent(self):
+        self.assertFalse(self.root.has_parent())
+        right = self.root.add_right(self.right_child_val)
+        self.assertTrue(right.has_parent())
+        self.assertTrue(self.root.right.has_parent())
+        self.assertFalse(self.root.has_parent())
+        left = self.root.add_left(self.left_child_val)
+        self.assertTrue(left.has_parent())
+        self.assertTrue(self.root.left.has_parent())
+        self.assertFalse(self.root.has_parent())
+
     def test_is_left_child(self):
         self.assertRaises(AttributeError, self.root.is_left_child)
         left = self.root.add_left(self.left_child_val)
