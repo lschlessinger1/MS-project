@@ -107,6 +107,12 @@ class BinaryTreeNode(TreeNode):
         else:
             raise AttributeError(f'{self.__class__.__name__!r} does not have a parent.')
 
+    def is_root(self) -> bool:
+        return not self.parent
+
+    def is_leaf(self) -> bool:
+        return not (self.right or self.left)
+
     def add_left(self, value: T):
         """Add left node.
 

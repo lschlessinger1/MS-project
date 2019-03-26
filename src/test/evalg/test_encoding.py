@@ -110,6 +110,22 @@ class TestBinaryTreeNode(TestCase):
         self.assertTrue(right.is_right_child())
         self.assertTrue(self.root.right.is_right_child())
 
+    def test_is_root(self):
+        self.assertTrue(self.root.is_root())
+        left = self.root.add_left(self.left_child_val)
+        self.assertFalse(left.is_root())
+        right = self.root.add_right(self.right_child_val)
+        self.assertFalse(right.is_root())
+
+    def test_is_leaf(self):
+        self.assertTrue(self.root.is_leaf())
+        left = self.root.add_left(self.left_child_val)
+        self.assertTrue(left.is_leaf())
+        self.assertFalse(self.root.is_leaf())
+        right = self.root.add_right(self.right_child_val)
+        self.assertTrue(right.is_leaf())
+        self.assertFalse(self.root.is_leaf())
+
     def test_add_left(self):
         result = self.root.add_left(self.left_child_val)
         self.assertEqual(result.parent, self.root)
