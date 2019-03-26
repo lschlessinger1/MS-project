@@ -4,9 +4,8 @@ from unittest.mock import MagicMock
 from GPy.kern import RBF, Add, RatQuad, Prod
 
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
-    remove_duplicate_aks_kernels, set_priors
+    remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode
 from src.autoks.util import remove_duplicates
-from src.evalg.encoding import BinaryTree
 from src.test.autoks.support.util import has_combo_kernel_type
 
 
@@ -204,8 +203,38 @@ class TestAKSKernel(unittest.TestCase):
         kernel = RBF(1) * RBF(1) + RatQuad(1)
         aks_kernel = AKSKernel(kernel)
         result = aks_kernel.to_binary_tree()
-        self.assertIsInstance(result, BinaryTree)
+        self.assertIsInstance(result, KernelTree)
         self.assertCountEqual(result.postfix_tokens(), ['SE0', 'SE0', '*', 'RQ0', '+'])
+
+
+class TestKernelNode(unittest.TestCase):
+
+    def test_init(self):
+        kern = RBF(1)
+        result = KernelNode(kern)
+        self.assertEqual(result.value, kern)
+        self.assertEqual(result.label, 'SE0')
+        self.assertIsNone(result.parent)
+        self.assertIsNone(result.left)
+        self.assertIsNone(result.right)
+
+    def test__value_to_label(self):
+        mock_kern = RBF(1)
+        node = KernelNode(mock_kern)
+        result = node._value_to_label(mock_kern)
+        self.assertIsInstance(result, str)
+        self.assertEqual(result, 'SE0')
+
+
+class TestKernelTree(unittest.TestCase):
+
+    def test_init(self):
+        kern = RBF(1)
+        root = KernelNode(kern)
+        result = KernelTree(root)
+        self.assertEqual(result.root, root)
+        self.assertEqual(result.root.label, 'SE0')
+        self.assertEqual(result.root.value, kern)
 
 
 if __name__ == '__main__':

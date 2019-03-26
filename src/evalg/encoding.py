@@ -1,24 +1,9 @@
-from typing import List, Optional, TypeVar, Sequence
+from typing import List, Optional, TypeVar, Sequence, Type
 
-from GPy.kern.src.kern import Kern
 from graphviz import Digraph
-
-import src.autoks.kernel
 
 operators = ['+', '*']
 T = TypeVar('T')
-
-
-def val_to_label(value: T) -> str:
-    """Convert value to a string a label.
-
-    :param value:
-    :return:
-    """
-    if isinstance(value, Kern):
-        return src.autoks.kernel.subkernel_expression(value)
-    else:
-        return str(value)
 
 
 class TreeNode:
@@ -31,13 +16,20 @@ class TreeNode:
                  value: T,
                  parent=None,
                  children=None):
-        self._value = value
-        self.label = val_to_label(value)
+        self.value = value
         self.parent = parent
         if children is None:
             self.children = []
         else:
             self.children = children
+
+    def _value_to_label(self, value) -> str:
+        """Convert value to a string a label.
+
+        :param value:
+        :return:
+        """
+        return str(value)
 
     @property
     def value(self) -> T:
@@ -47,7 +39,7 @@ class TreeNode:
     def value(self, value: T) -> None:
         self._value = value
         # update label as well
-        self.label = val_to_label(value)
+        self.label = self._value_to_label(value)
 
     def has_parent(self) -> bool:
         return self.parent is not None
@@ -61,7 +53,7 @@ class TreeNode:
         :param value:
         :return:
         """
-        child = TreeNode(value=value, parent=self)
+        child = self.__class__(value=value, parent=self)
         self._add_child(child)
         return child
 
@@ -119,7 +111,7 @@ class BinaryTreeNode(TreeNode):
         :param value:
         :return:
         """
-        self.left = BinaryTreeNode(value, self)
+        self.left = self.__class__(value, self)
         self._add_child(self.right)
         return self.left
 
@@ -129,7 +121,7 @@ class BinaryTreeNode(TreeNode):
         :param value:
         :return:
         """
-        self.right = BinaryTreeNode(value, self)
+        self.right = self.__class__(value, self)
         self._add_child(self.right)
         return self.right
 
@@ -188,6 +180,17 @@ class BinaryTreeNode(TreeNode):
             return left_depth + 1
         else:
             return right_depth + 1
+
+    def __iter__(self):
+        """Pre-order traversal of the binary tree node."""
+        if self:
+            yield self
+            if self.has_left_child():
+                for node in self.left:
+                    yield node
+            if self.has_right_child():
+                for node in self.right:
+                    yield node
 
     def __str__(self):
         return self.label
@@ -331,16 +334,15 @@ class BinaryTree:
         return f'{self.__class__.__name__}('f'root={self.root!r})'
 
 
-def postfix_tokens_to_binexp_tree(postfix_tokens: List[str]) -> BinaryTree:
-    """Convert postfix tokens to a binary tree.
+def postfix_tokens_to_bin_tree_node(postfix_tokens: List[str],
+                                    bin_tree_cls: Type[BinaryTreeNode] = BinaryTreeNode) -> BinaryTreeNode:
+    """Convert postfix tokens to a binary tree node.
 
     :param postfix_tokens:
+    :param bin_tree_cls: Binary tree node class
     :return:
     """
-    tree = BinaryTree()
-
-    root = BinaryTreeNode(postfix_tokens[-1])
-    tree.root = root
+    root = bin_tree_cls(postfix_tokens[-1])
 
     curr = root
     for token in postfix_tokens[-2::-1]:
@@ -354,7 +356,17 @@ def postfix_tokens_to_binexp_tree(postfix_tokens: List[str]) -> BinaryTree:
             node = curr.add_left(token)
         curr = node
 
-    return tree
+    return root
+
+
+V = TypeVar('V')
+
+
+def postfix_tokens_to_binexp_tree(postfix_tokens: List[str],
+                                  bin_tree_node_cls: Type[BinaryTreeNode] = BinaryTreeNode,
+                                  bin_tree_cls: Type[V] = BinaryTree) -> V:
+    root = postfix_tokens_to_bin_tree_node(postfix_tokens, bin_tree_node_cls)
+    return bin_tree_cls(root)
 
 
 def infix_tokens_to_postfix_tokens(infix_tokens: List[str]) -> list:

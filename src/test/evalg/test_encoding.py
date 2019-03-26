@@ -1,6 +1,5 @@
 from unittest import TestCase
 
-from GPy.kern import RBF
 from graphviz import Digraph
 
 from src.evalg.encoding import TreeNode, BinaryTreeNode, BinaryTree, infix_tokens_to_postfix_tokens, \
@@ -29,8 +28,9 @@ class TestTreeNode(TestCase):
         self.assertEqual(self.parent.value, self.parent_val)
         self.assertEqual(self.kernel_node.value, self.kernel_node_val_prev)
 
-        new_val = RBF(1, [0])
-        new_label = 'SE0'
+        # new_val = RBF(1, [0])
+        new_val = 15
+        new_label = '15'
         self.kernel_node.value = new_val
 
         self.assertEqual(self.kernel_node.value, new_val)

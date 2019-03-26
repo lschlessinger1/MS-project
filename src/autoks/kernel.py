@@ -8,8 +8,33 @@ from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.special import comb
 
-import src.evalg.encoding
 from src.autoks.util import remove_duplicates, arg_sort, join_operands, tokenize, flatten, remove_outer_parens
+from src.evalg.encoding import BinaryTree, BinaryTreeNode, infix_tokens_to_postfix_tokens, \
+    postfix_tokens_to_binexp_tree
+
+
+class KernelNode(BinaryTreeNode):
+    _value: Union[Kern, str]
+
+    def __init__(self,
+                 value: Union[Kern, str],
+                 parent: Optional[BinaryTreeNode] = None,
+                 left: Optional[BinaryTreeNode] = None,
+                 right: Optional[BinaryTreeNode] = None):
+        super().__init__(value, parent, left, right)
+
+    def _value_to_label(self, value: Union[Kern, str]) -> str:
+        if isinstance(value, Kern):
+            return subkernel_expression(value)
+        else:
+            return str(value)
+
+
+class KernelTree(BinaryTree):
+    _root: Optional[KernelNode]
+
+    def __init__(self, root: Optional[KernelNode] = None):
+        super().__init__(root)
 
 
 class AKSKernel:
@@ -39,14 +64,14 @@ class AKSKernel:
         # Update evaluated as well
         self.evaluated = True
 
-    def to_binary_tree(self) -> src.evalg.encoding.BinaryTree:
+    def to_binary_tree(self) -> KernelTree:
         """Get the binary tree representation of the kernel
 
         :return:
         """
         infix_tokens = kernel_to_infix_tokens(self.kernel)
-        postfix_tokens = src.evalg.encoding.infix_tokens_to_postfix_tokens(infix_tokens)
-        tree = src.evalg.encoding.postfix_tokens_to_binexp_tree(postfix_tokens)
+        postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
+        tree = postfix_tokens_to_binexp_tree(postfix_tokens, bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
         return tree
 
     def to_additive_form(self) -> None:
@@ -307,7 +332,7 @@ def apply_op(left: Kern,
         raise ValueError(f'Unknown operator {operator}')
 
 
-def eval_binexp_tree(root: src.evalg.encoding.BinaryTreeNode) -> Kern:
+def eval_binexp_tree(root: BinaryTreeNode) -> Kern:
     """Evaluate a binary expression tree.
 
     :param root:
@@ -325,7 +350,7 @@ def eval_binexp_tree(root: src.evalg.encoding.BinaryTreeNode) -> Kern:
         return apply_op(left_node, right_node, operator)
 
 
-def tree_to_kernel(tree: src.evalg.encoding.BinaryTree) -> Kern:
+def tree_to_kernel(tree: BinaryTree) -> Kern:
     """Convert a binary tree to a kernel.
 
     :param tree:
