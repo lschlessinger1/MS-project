@@ -165,6 +165,49 @@ class TestBinaryTreeNode(TestCase):
         ll.add_left(80)
         self.assertEqual(root.height(), 4)
 
+    def test_contains(self):
+        root = BinaryTreeNode('*')
+        self.assertIn('*', root)
+
+        left = root.add_left(10)
+        self.assertIn('*', root)
+        self.assertIn(10, root)
+        self.assertIn(10, left)
+        self.assertIn(10, root.left)
+
+        right = root.add_right(20)
+        self.assertIn('*', root)
+        self.assertIn(20, right)
+        self.assertIn(20, right)
+        self.assertIn(20, root.right)
+
+    def test_iter(self):
+        root = BinaryTreeNode('*')
+        self.assertEqual(root.height(), 1)
+
+        left = root.add_left(10)
+        self.assertEqual(root.height(), 2)
+        right = root.add_right(20)
+        self.assertEqual(root.height(), 2)
+
+        ll = left.add_left(40)
+        self.assertEqual(root.height(), 3)
+        left.add_right(50)
+        self.assertEqual(root.height(), 3)
+        right.add_left(60)
+        self.assertEqual(root.height(), 3)
+        right.add_right(70)
+        self.assertEqual(root.height(), 3)
+
+        ll.add_left(80)
+        self.assertEqual(root.height(), 4)
+
+        result = []
+        for value in root:
+            self.assertIn(value, root)
+            result.append(value)
+        self.assertEqual(len(result), 8)
+
 
 class TestBinaryTree(TestCase):
 

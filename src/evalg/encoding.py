@@ -184,13 +184,20 @@ class BinaryTreeNode(TreeNode):
     def __iter__(self):
         """Pre-order traversal of the binary tree node."""
         if self:
-            yield self
+            yield self.value
             if self.has_left_child():
-                for node in self.left:
-                    yield node
+                for item in self.left:
+                    yield item
             if self.has_right_child():
-                for node in self.right:
-                    yield node
+                for item in self.right:
+                    yield item
+
+    def __contains__(self, value):
+        """Returns True if node is in some node of the tree, False otherwise."""
+        for item in self:
+            if value == item:
+                return True
+        return False
 
     def __str__(self):
         return self.label
@@ -329,6 +336,12 @@ class BinaryTree:
                 tokens += [')']
 
         return tokens
+
+    def __iter__(self):
+        return self.root.__iter__()
+
+    def __contains__(self, value):
+        return self.root.__contains__(value)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'root={self.root!r})'
