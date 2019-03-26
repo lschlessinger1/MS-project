@@ -1,4 +1,3 @@
-import copy
 from abc import ABC
 from typing import List, Callable, Tuple
 
@@ -201,6 +200,11 @@ def check_binary_trees(f: Callable) -> Callable:
 # Binary tree mutators
 
 class TreePointMutator(TreeMutator):
+    """Node replacement mutation (also known as point mutation).
+
+    A node in the tree is randomly selected and randomly changed, keeping the replacement node with the same number of
+    arguments as the node it is replacing.
+    """
 
     def __init__(self, operands):
         super().__init__(operands)
