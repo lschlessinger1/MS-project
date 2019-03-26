@@ -35,6 +35,8 @@ class QueryStrategy(Selector, ABC):
         :param hyperpriors:
         :return:
         """
+        if len(kernels) == 0:
+            return np.array([]), []
         scores = self.score_kernels(kernels, x_train, y_train, hyperpriors)
         ind = self.arg_select(np.array(kernels), scores)
         return ind, scores
