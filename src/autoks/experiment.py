@@ -194,7 +194,7 @@ class Experiment:
             if self.debug and depth % 2 == 0:
                 if self.max_depth < np.inf:
                     print('Starting iteration %d/%d' % (depth, self.max_depth))
-                print('Evaluated %d/%d kernels' % (self.n_evals, self.eval_budget))
+                print('Evaluated %d/%d kernels\n' % (self.n_evals, self.eval_budget))
 
             parents = self.select_parents(kernels)
 
@@ -222,7 +222,7 @@ class Experiment:
             kernels = remove_duplicate_aks_kernels(kernels)
             if self.verbose:
                 n_removed = n_before - len(kernels)
-                print(f'Removed {n_removed} duplicate kernels.')
+                print(f'Removed {n_removed} duplicate kernels.\n')
 
             # Select kernels by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat, self.hyperpriors)
@@ -275,7 +275,7 @@ class Experiment:
 
             acq_scores_selected = [s for i, s in enumerate(acq_scores) if i in ind]
             for kern, score in zip(selected_kernels, acq_scores_selected):
-                print(str(kern), 'score:', score)
+                print(str(kern), 'acq. score =', score)
 
         return selected_kernels, ind, acq_scores
 
@@ -341,7 +341,7 @@ class Experiment:
         if self.verbose:
             n_before_prune = len(unevaluated_kernels)
             n_pruned = n_before_prune - len(pruned_candidates)
-            print(f'Kernel pruner removed {n_pruned}/{n_before_prune} un-evaluated kernels')
+            print(f'Kernel pruner removed {n_pruned}/{n_before_prune} un-evaluated kernels\n')
 
         return kernels
 
@@ -360,7 +360,7 @@ class Experiment:
         offspring = self.kernel_selector.select_offspring(kernels, augmented_scores)
 
         if self.verbose:
-            print(f'Offspring selector kept {len(kernels)}/{len(offspring)} kernels')
+            print(f'Offspring selector kept {len(kernels)}/{len(offspring)} kernels\n')
 
         return offspring
 
@@ -394,8 +394,8 @@ class Experiment:
             print('Printing all results')
             # Sort kernels by scores with un-evaluated kernels last
             for k in sorted(evaluated_kernels, key=lambda x: (x.score is not None, x.score), reverse=True):
-                print(str(k), 'score:', k.score)
-
+                print(str(k), 'objective =', k.score)
+            print('')
         return evaluated_kernels
 
     def optimize_kernel(self, aks_kernel: AKSKernel) -> AKSKernel:
@@ -486,7 +486,7 @@ class Experiment:
     def randomize_kernels(aks_kernels: List[AKSKernel],
                           verbose: bool = False) -> List[AKSKernel]:
         if verbose:
-            print('Randomizing kernels')
+            print('Randomizing kernels\n')
 
         for aks_kernel in aks_kernels:
             aks_kernel.kernel.randomize()

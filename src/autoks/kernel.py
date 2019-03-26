@@ -93,6 +93,7 @@ def pretty_print_aks_kernels(aks_kernels: List[AKSKernel],
     print(message)
     for k in aks_kernels:
         k.pretty_print()
+    print('')
 
 
 def get_kernel_mapping() -> Dict[str, Type[Kern]]:
