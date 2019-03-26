@@ -208,6 +208,49 @@ class TestBinaryTreeNode(TestCase):
             result.append(value)
         self.assertEqual(len(result), 8)
 
+    def test_len(self):
+        root = BinaryTreeNode('*')
+        self.assertEqual(len(root), 1)
+
+        left = root.add_left(10)
+        self.assertEqual(len(root), 2)
+        self.assertEqual(len(left), 1)
+
+        right = root.add_right(20)
+        self.assertEqual(len(root), 3)
+        self.assertEqual(len(left), 1)
+        self.assertEqual(len(right), 1)
+
+        ll = left.add_left(40)
+        self.assertEqual(len(root), 4)
+        self.assertEqual(len(left), 2)
+        self.assertEqual(len(right), 1)
+        self.assertEqual(len(ll), 1)
+
+        lr = left.add_right(50)
+        self.assertEqual(len(root), 5)
+        self.assertEqual(len(left), 3)
+        self.assertEqual(len(right), 1)
+        self.assertEqual(len(ll), 1)
+        self.assertEqual(len(lr), 1)
+
+        rl = right.add_left(60)
+        self.assertEqual(len(root), 6)
+        self.assertEqual(len(left), 3)
+        self.assertEqual(len(right), 2)
+        self.assertEqual(len(ll), 1)
+        self.assertEqual(len(lr), 1)
+        self.assertEqual(len(rl), 1)
+
+        rr = right.add_right(70)
+        self.assertEqual(len(root), 7)
+        self.assertEqual(len(left), 3)
+        self.assertEqual(len(right), 3)
+        self.assertEqual(len(ll), 1)
+        self.assertEqual(len(lr), 1)
+        self.assertEqual(len(rl), 1)
+        self.assertEqual(len(rr), 1)
+
 
 class TestBinaryTree(TestCase):
 

@@ -199,6 +199,17 @@ class BinaryTreeNode(TreeNode):
                 return True
         return False
 
+    def __len__(self):
+        return self._size(self)
+
+    def _size(self, node):
+        n = 1
+        if node.has_left_child():
+            n += self._size(node.left)
+        if node.has_right_child():
+            n += self._size(node.right)
+        return n
+
     def __str__(self):
         return self.label
 
@@ -342,6 +353,9 @@ class BinaryTree:
 
     def __contains__(self, value):
         return self.root.__contains__(value)
+
+    def __len__(self):
+        return self.root.__len__()
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'root={self.root!r})'
