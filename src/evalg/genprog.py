@@ -372,36 +372,52 @@ class SubtreeExchangeBinaryRecombinator(Recombinator, ABC):
 
     @staticmethod
     def _swap_subtrees(node_1: BinaryTreeNode,
-                       node_2: BinaryTreeNode) -> Tuple[BinaryTreeNode, BinaryTreeNode]:
+                      node_2: BinaryTreeNode,
+                      tree_1: BinaryTree,
+                      tree_2: BinaryTree) -> None:
         """Swap parents and children of nodes.
+
 
         :param node_1:
         :param node_2:
+        :param tree_1: tree corresponding to node 1
+        :param tree_2: tree corresponding to node 2
         :return:
         """
-        node_1_cp = copy.copy(node_1)
-        node_2_cp = copy.copy(node_2)
+        if node_1 == node_2:
+            return
 
-        node_1_parent_cp = node_1_cp.parent
-        node_2_parent_cp = node_2_cp.parent
+        if node_1 is None or node_2 is None:
+            return
 
-        # find out if node is left or right child
-        if node_1_parent_cp:
-            if node_1_parent_cp.left is node_1:
-                node_1.parent.left = node_2_cp
-            elif node_1_parent_cp.right is node_1:
-                node_1.parent.right = node_2_cp
+        if not node_1.has_parent() and not node_2.has_parent():
+            return
 
-        if node_2_parent_cp:
-            if node_2_parent_cp.left is node_2:
-                node_2.parent.left = node_1_cp
-            elif node_2_parent_cp.right is node_2:
-                node_2.parent.right = node_1_cp
+        if not node_1.has_parent():
+            tree_1.root = node_2
+            if node_2.is_left_child():
+                node_2.parent.left = node_1
+            else:
+                node_2.parent.right = node_1
+        elif not node_2.has_parent():
+            tree_2.root = node_1
+            if node_1.is_left_child():
+                node_1.parent.left = node_2
+            else:
+                node_1.parent.right = node_2
+        else:
+            if node_1.is_left_child():
+                if node_2.is_left_child():
+                    node_2.parent.left, node_1.parent.left = node_1, node_2
+                else:
+                    node_2.parent.right, node_1.parent.left = node_1, node_2
+            else:
+                if node_2.is_left_child():
+                    node_2.parent.left, node_1.parent.right = node_1, node_2
+                else:
+                    node_2.parent.right, node_1.parent.right = node_1, node_2
 
-        node_1.parent = node_2_parent_cp
-        node_2.parent = node_1_parent_cp
-
-        return node_1, node_2
+        node_1.parent, node_2.parent = node_2.parent, node_1.parent
 
     @staticmethod
     def _valid_pair(postfix_token_1: str,
@@ -460,7 +476,7 @@ class OnePointRecombinator(SubtreeExchangeBinaryRecombinator):
         node_1 = tree_1.select_postorder(r1)
         node_2 = tree_2.select_postorder(r2)
 
-        self._swap_subtrees(node_1, node_2)
+        self._swap_subtrees(node_1, node_2, tree_1, tree_2)
 
         return tree_1, tree_2
 
@@ -510,6 +526,6 @@ class OnePointLeafBiasedRecombinator(SubtreeExchangeBinaryRecombinator):
         node_1 = tree_1.select_postorder(r1)
         node_2 = tree_2.select_postorder(r2)
 
-        self._swap_subtrees(node_1, node_2)
+        self._swap_subtrees(node_1, node_2, tree_1, tree_2)
 
         return tree_1, tree_2

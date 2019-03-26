@@ -204,28 +204,324 @@ class TestHalfAndHalfMutator(TestCase):
 
 class TestSubtreeExchangeBinaryRecombinator(TestCase):
 
-    def test__swap_subtrees(self):
+    def _check_node(self, node, value, left_value, right_value, parent_value):
+        self.assertEqual(node.value, value)
+        if not node.left:
+            self.assertIsNone(left_value)
+        else:
+            self.assertEqual(node.left.value, left_value)
+
+        if not node.right:
+            self.assertIsNone(right_value)
+        else:
+            self.assertEqual(node.right.value, right_value)
+
+        if not node.parent:
+            self.assertIsNone(parent_value)
+        else:
+            self.assertEqual(node.parent.value, parent_value)
+
+    def test_swap_same_node(self):
+        node = BinaryTreeNode('*')
+        tree = BinaryTree(node)
+        a = b = node
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree, tree)
+
+        root = tree.root
+        self._check_node(root, '*', None, None, None)
+
+    def test_swap_none_node(self):
+        node = BinaryTreeNode('*')
+        tree = BinaryTree(node)
+        a = b = node
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(None, b, tree, tree)
+
+        root = tree.root
+        self._check_node(root, '*', None, None, None)
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, None, tree, tree)
+        self._check_node(root, '*', None, None, None)
+
+    def test_swap_left_nodes(self):
         node_1 = BinaryTreeNode('*')
         node_1.add_left('A')
         node_1.add_right('B')
+        tree_1 = BinaryTree(node_1)
 
         node_2 = BinaryTreeNode('+')
         node_2.add_left('C')
         node_2.add_right('D')
+        tree_2 = BinaryTree(node_2)
 
-        new_node_1, new_node_2 = SubtreeExchangeBinaryRecombinator._swap_subtrees(node_1.left, node_2.left)
+        a = node_1.left
+        b = node_2.left
 
-        self.assertIsInstance(new_node_1, BinaryTreeNode)
-        self.assertIsInstance(new_node_2, BinaryTreeNode)
+        # should be
+        #     *         +
+        #    / \       / \
+        #   C   B  ,  A   D
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
 
-        self.assertEqual(new_node_1.value, 'A')
-        self.assertEqual(new_node_1.parent.value, '+')
-        self.assertEqual(new_node_1.parent.left.value, 'A')
-        self.assertEqual(new_node_1.parent.right.value, 'D')
-        self.assertEqual(new_node_2.value, 'C')
-        self.assertEqual(new_node_2.parent.value, '*')
-        self.assertEqual(new_node_2.parent.left.value, 'C')
-        self.assertEqual(new_node_2.parent.right.value, 'B')
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', 'C', 'B', None)
+        self._check_node(root_1.left, 'C', None, None, '*')
+        self._check_node(root_1.right, 'B', None, None, '*')
+
+        root_2 = tree_2.root
+        self._check_node(root_2, '+', 'A', 'D', None)
+        self._check_node(root_2.left, 'A', None, None, '+')
+        self._check_node(root_2.right, 'D', None, None, '+')
+
+    def test_swap_right_nodes(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1.right
+        b = node_2.right
+
+        # should be
+        #     *         +
+        #    / \       / \
+        #   A   D  ,  C   B
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', 'A', 'D', None)
+        self._check_node(root_1.left, 'A', None, None, '*')
+        self._check_node(root_1.right, 'D', None, None, '*')
+
+        root_2 = tree_2.root
+        self._check_node(root_2, '+', 'C', 'B', None)
+        self._check_node(root_2.left, 'C', None, None, '+')
+        self._check_node(root_2.right, 'B', None, None, '+')
+
+    def test_swap_left_and_right_nodes(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1.left
+        b = node_2.right
+
+        # should be
+        #     *         +
+        #    / \       / \
+        #   D   B  ,  C   A
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', 'D', 'B', None)
+        self._check_node(root_1.left, 'D', None, None, '*')
+        self._check_node(root_1.right, 'B', None, None, '*')
+
+        root_2 = tree_2.root
+        self._check_node(root_2, '+', 'C', 'A', None)
+        self._check_node(root_2.left, 'C', None, None, '+')
+        self._check_node(root_2.right, 'A', None, None, '+')
+
+    def test_swap_right_and_left_nodes(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1.right
+        b = node_2.left
+
+        # should be
+        #     *         +
+        #    / \       / \
+        #   A   C  ,  B   D
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', 'A', 'C', None)
+        self._check_node(root_1.left, 'A', None, None, '*')
+        self._check_node(root_1.right, 'C', None, None, '*')
+
+        root_2 = tree_2.root
+        self._check_node(root_2, '+', 'B', 'D', None)
+        self._check_node(root_2.left, 'B', None, None, '+')
+        self._check_node(root_2.right, 'D', None, None, '+')
+
+    def test_swap_left_and_stump(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('C')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1.left
+        b = node_2
+        # should be
+        #     *
+        #    / \    ,  A
+        #   C   B
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', 'C', 'B', None)
+        self._check_node(root_1.left, 'C', None, None, '*')
+        self._check_node(root_1.right, 'B', None, None, '*')
+        root_2 = tree_2.root
+        self._check_node(root_2, 'A', None, None, None)
+
+    def test_swap_right_and_stump(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('C')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1.right
+        b = node_2
+        # should be
+        #     *
+        #    / \    ,  B
+        #   A   C
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', 'A', 'C', None)
+        self._check_node(root_1.left, 'A', None, None, '*')
+        self._check_node(root_1.right, 'C', None, None, '*')
+        root_2 = tree_2.root
+        self._check_node(root_2, 'B', None, None, None)
+
+    def test_swap_stump_and_node(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1.left
+        b = node_2
+        # should be
+        #     *
+        #    / \
+        #   +   B   ,  A
+        #  / \
+        # C   D
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', '+', 'B', None)
+        self._check_node(root_1.left, '+', 'C', 'D', '*')
+        self._check_node(root_1.right, 'B', None, None, '*')
+        self._check_node(root_1.left.left, 'C', None, None, '+')
+        self._check_node(root_1.left.right, 'D', None, None, '+')
+
+        root_2 = tree_2.root
+        self._check_node(root_2, 'A', None, None, None)
+
+    def test_swap_nodes_with_children(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1
+        b = node_2
+        # should be
+        #     +         *
+        #    / \       / \
+        #   C   D  ,  A   B
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', 'A', 'B', None)
+        self._check_node(root_1.left, 'A', None, None, '*')
+        self._check_node(root_1.right, 'B', None, None, '*')
+
+        root_2 = tree_2.root
+        self._check_node(root_2, '+', 'C', 'D', None)
+        self._check_node(root_2.left, 'C', None, None, '+')
+        self._check_node(root_2.right, 'D', None, None, '+')
+
+    def test_swap_leaves(self):
+        node_1 = BinaryTreeNode('A')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('B')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1
+        b = node_2
+        # should be
+        #     A         B
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, 'A', None, None, None)
+
+        root_2 = tree_2.root
+        self._check_node(root_2, 'B', None, None, None)
+
+    def test_swap_complex_trees(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        right = node_1.add_right('B')
+        right.add_right('R')
+        tree_1 = BinaryTree(node_1)
+
+        node_2 = BinaryTreeNode('+')
+        left = node_2.add_left('C')
+        node_2.add_right('D')
+        left.add_left('L')
+        tree_2 = BinaryTree(node_2)
+
+        a = node_1.right
+        b = node_2.left
+        # should be
+        #     *           +
+        #    / \         / \
+        #   A   C   ,   B   D
+        #      /         \
+        #     L           R
+        SubtreeExchangeBinaryRecombinator._swap_subtrees(a, b, tree_1, tree_2)
+
+        root_1 = tree_1.root
+        self._check_node(root_1, '*', 'A', 'C', None)
+        self._check_node(root_1.left, 'A', None, None, '*')
+        self._check_node(root_1.right, 'C', 'L', None, '*')
+        self._check_node(root_1.right.left, 'L', None, None, 'C')
+
+        root_2 = tree_2.root
+        self._check_node(root_2, '+', 'B', 'D', None)
+        self._check_node(root_2.left, 'B', None, 'R', '+')
+        self._check_node(root_2.right, 'D', None, None, '+')
+        self._check_node(root_2.left.right, 'R', None, None, 'B')
 
     def test__valid_pair(self):
         result = SubtreeExchangeBinaryRecombinator._valid_pair('A', 'B')
