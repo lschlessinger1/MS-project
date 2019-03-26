@@ -45,11 +45,14 @@ class Experiment:
     tabu_search: bool
     optimizer: Optional[str]
     n_restarts_optimizer: int
+    max_null_queries: int
+    max_same_expansions: int
 
     def __init__(self, grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
                  init_query_strat=None, query_strat=None, hyperpriors=None, additive_form=False, debug=False,
-                 verbose=False, tabu_search=True, optimizer=None, n_restarts_optimizer=10):
+                 verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3, optimizer=None,
+                 n_restarts_optimizer=10):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -152,6 +155,10 @@ class Experiment:
 
         self.tabu_search = tabu_search
 
+        # Kernel search termination conditions.
+        self.max_same_expansions = max_same_expansions  # Maximum number of same kernel proposal before terminating
+        self.max_null_queries = max_null_queries  # Maximum number of empty queries in a row allowed before terminating
+
     def kernel_search(self) -> List[AKSKernel]:
         """Perform automated kernel search.
 
@@ -177,8 +184,6 @@ class Experiment:
         kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
         self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
 
-        max_same_expansions = 3  # Maximum number of same kernel proposal before terminating
-        max_null_queries = 3  # Maximum number of empty queries in a row allowed before terminating
         prev_expansions = []
         prev_n_queried = []
         depth = 0
@@ -201,13 +206,13 @@ class Experiment:
             new_kernels = self.propose_new_kernels(parents)
             self.update_stat_book(self.stat_book_collection.stat_books[self.expansion_name], new_kernels)
             # Check for same expansions
-            if self.all_same_expansion(new_kernels, prev_expansions, max_same_expansions):
+            if self.all_same_expansion(new_kernels, prev_expansions, self.max_same_expansions):
                 if self.verbose:
-                    print(f'Terminating kernel search. The last {max_same_expansions} expansions proposed the same '
+                    print(f'Terminating kernel search. The last {self.max_same_expansions} expansions proposed the same '
                           f'kernels.')
                 break
             else:
-                prev_expansions = self.update_kernel_infix_set(new_kernels, prev_expansions, max_same_expansions)
+                prev_expansions = self.update_kernel_infix_set(new_kernels, prev_expansions, self.max_same_expansions)
 
             new_kernels = self.randomize_kernels(new_kernels, verbose=self.verbose)
             kernels += new_kernels
@@ -224,9 +229,10 @@ class Experiment:
 
             # Check for empty queries
             prev_n_queried.append(len(ind))
-            if all([n == 0 for n in prev_n_queried[-max_null_queries:]]) and len(prev_n_queried) >= max_null_queries:
+            if all([n == 0 for n in prev_n_queried[-self.max_null_queries:]]) and \
+                    len(prev_n_queried) >= self.max_null_queries:
                 if self.verbose:
-                    print(f'Terminating kernel search. The last {max_null_queries} queries were empty.')
+                    print(f'Terminating kernel search. The last {self.max_null_queries} queries were empty.')
                 break
 
             unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
