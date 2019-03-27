@@ -185,7 +185,10 @@ class BOMSGrammar(BaseGrammar):
         :return:
         """
         # geometric random walk
+        max_depth = 10
         n_steps = np.random.geometric(p=t_prob, size=n_walks)
+        n_steps[n_steps > max_depth] = max_depth
+
         rw_kernels = []
         for n in n_steps:
             # first expansion of empty kernel is all 1d kernels
