@@ -67,6 +67,12 @@ class Selector:
         return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
+class ProbabilityMixin:
+
+    def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
+        raise NotImplementedError('Implement get_probabilities in a child class')
+
+
 class AllSelector(Selector):
 
     def __init__(self, n_individuals=None):
@@ -198,7 +204,7 @@ class BoltzmannSelector(Selector):
             f' prev_pop_avg={self.prev_pop_avg!r})'
 
 
-class FitnessProportionalSelector(Selector):
+class FitnessProportionalSelector(Selector, ProbabilityMixin):
 
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
@@ -229,15 +235,14 @@ class FitnessProportionalSelector(Selector):
         ind = np.random.choice(pop_size, size=self.n_individuals, replace=True, p=probabilities)
         return ind
 
-    @staticmethod
-    def get_probabilities(raw_fitness: np.ndarray) -> np.ndarray:
+    def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
         return raw_fitness / np.sum(raw_fitness)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
-class SigmaScalingSelector(Selector):
+class SigmaScalingSelector(Selector, ProbabilityMixin):
 
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
@@ -263,10 +268,17 @@ class SigmaScalingSelector(Selector):
         :return:
         """
         pop_size = population.shape[0]
-        sigma = np.std(fitness_list)
+        probabilities = self.get_probabilities(fitness_list)
+        ind = np.random.choice(pop_size, size=self.n_individuals, replace=True, p=probabilities)
+        return ind
+
+    def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
+        pop_size = raw_fitness.shape[0]
+        mu = np.mean(raw_fitness)
+        sigma = np.std(raw_fitness)
         expected_cnts = np.empty(pop_size)
         if sigma > 0.0001:
-            expected_cnts[:] = 1 + (fitness_list - np.mean(fitness_list)) / sigma
+            expected_cnts[:] = 1 + (raw_fitness - mu) / (2 * sigma)
         else:
             expected_cnts[:] = 1
 
@@ -277,8 +289,7 @@ class SigmaScalingSelector(Selector):
         expected_cnts[expected_cnts < min_exp_cnt] = min_exp_cnt
 
         probabilities = expected_cnts / np.sum(expected_cnts)
-        ind = np.random.choice(pop_size, size=self.n_individuals, replace=True, p=probabilities)
-        return ind
+        return probabilities
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
@@ -312,7 +323,7 @@ class TruncationSelector(Selector):
         return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
-class LinearRankingSelector(Selector):
+class LinearRankingSelector(Selector, ProbabilityMixin):
 
     def __init__(self, n_individuals: int):
         super().__init__(n_individuals)
@@ -338,17 +349,29 @@ class LinearRankingSelector(Selector):
         ranking of the individual.
         """
         pop_size = population.shape[0]
-        rankings_asc = np.argsort(np.argsort(fitness_list)) + 1
-        probabilities = rankings_asc / np.sum(rankings_asc)
-
+        probabilities = self.get_probabilities(fitness_list)
         ind = np.random.choice(pop_size, size=self.n_individuals, replace=True, p=probabilities)
         return ind
+
+    @staticmethod
+    def linear_rankings(fitness_list: np.ndarray) -> np.ndarray:
+        """Best individual gets rank N and the worst one gets rank 1.
+
+        :param fitness_list:
+        :return:
+        """
+        return np.argsort(np.argsort(fitness_list)) + 1
+
+    def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
+        rankings_asc = self.linear_rankings(raw_fitness)
+        probabilities = rankings_asc / np.sum(rankings_asc)
+        return probabilities
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
-class ExponentialRankingSelector(Selector):
+class ExponentialRankingSelector(Selector, ProbabilityMixin):
     _c: float
 
     def __init__(self,
@@ -388,11 +411,15 @@ class ExponentialRankingSelector(Selector):
         :return:
         """
         pop_size = population.shape[0]
-        rankings_asc = np.argsort(np.argsort(fitness_list))
-        probabilities = (self.c ** (pop_size - rankings_asc)) / np.sum(self.c ** (pop_size - rankings_asc))
-
+        probabilities = self.get_probabilities(fitness_list)
         ind = np.random.choice(pop_size, size=self.n_individuals, replace=True, p=probabilities)
         return ind
+
+    def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
+        pop_size = raw_fitness.shape[0]
+        linear_rankings = LinearRankingSelector.linear_rankings(raw_fitness)
+        probabilities = ((self.c - 1) / (self.c ** pop_size - 1)) * self.c ** (pop_size - linear_rankings)
+        return probabilities
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r}, c={self.c!r})'

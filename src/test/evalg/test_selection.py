@@ -89,16 +89,19 @@ class TestFitnessProportionalSelector(TestCase):
         result = selector.get_probabilities(fitness_list)
         self.assertIsInstance(result, np.ndarray)
         self.assertListEqual(list(result.tolist()), [0, 1])
+        self.assertAlmostEqual(result.sum(), 1)
 
         fitness_list = np.array([0, 10, 90])
         result = selector.get_probabilities(fitness_list)
         self.assertIsInstance(result, np.ndarray)
         self.assertListEqual(list(result.tolist()), [0, 0.1, 0.9])
+        self.assertAlmostEqual(result.sum(), 1)
 
-        fitness_list = np.array([0, 10, 90])
+        fitness_list = np.array([0, 10, 0, 50, 20, 20])
         result = selector.get_probabilities(fitness_list)
         self.assertIsInstance(result, np.ndarray)
-        self.assertListEqual(list(result.tolist()), [0, 0.1, 0.9])
+        self.assertListEqual(list(result.tolist()), [0, 0.1, 0, 0.5, 0.2, 0.2])
+        self.assertAlmostEqual(result.sum(), 1)
 
     def tearDown(self):
         # reset random seed
@@ -115,12 +118,26 @@ class TestSigmaScalingSelector(TestCase):
     def test_select(self):
         selector = SigmaScalingSelector(n_individuals=3)
         result = selector.select(self.population, self.fitness_list)
-        self.assertCountEqual(result.tolist(), [2, 4, 4])
+        self.assertCountEqual(result.tolist(), [2, 5, 4])
 
     def test_arg_select(self):
         selector = SigmaScalingSelector(n_individuals=3)
         result = selector.arg_select(self.population, self.fitness_list)
-        self.assertEqual(result.tolist(), [1, 3, 3])
+        self.assertEqual(result.tolist(), [1, 4, 3])
+
+    def test_get_probabilities(self):
+        selector = SigmaScalingSelector(n_individuals=10)
+        fitness_list = np.array([10, 10])
+        result = selector.get_probabilities(fitness_list)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertListEqual(list(result.tolist()), [0.5, 0.5])
+        self.assertAlmostEqual(result.sum(), 1)
+
+        fitness_list = np.array([1, 2])
+        result = selector.get_probabilities(fitness_list)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertListEqual(list(result.tolist()), [0.25, 0.75])
+        self.assertAlmostEqual(result.sum(), 1)
 
     def tearDown(self):
         # reset random seed
@@ -161,6 +178,34 @@ class TestLinearRankingSelector(TestCase):
         result = selector.arg_select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [1, 4, 3])
 
+    def test_linear_rankings(self):
+        fitness_list = np.array([1, 2, 3, 4, 5])
+        result = LinearRankingSelector.linear_rankings(fitness_list)
+        self.assertListEqual(list(result.tolist()), [1, 2, 3, 4, 5])
+
+        fitness_list = np.array([10, 20, 30, 40, 50])
+        result = LinearRankingSelector.linear_rankings(fitness_list)
+        self.assertListEqual(list(result.tolist()), [1, 2, 3, 4, 5])
+
+        fitness_list = np.array([100, 40, 60, 90])
+        result = LinearRankingSelector.linear_rankings(fitness_list)
+        self.assertListEqual(list(result.tolist()), [4, 1, 2, 3])
+
+    def test_get_probabilities(self):
+        selector = LinearRankingSelector(n_individuals=10)
+
+        fitness_list = np.array([1, 2, 3, 4, 5])
+        result = selector.get_probabilities(fitness_list)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertListEqual(list(result.tolist()), [1 / 15, 2 / 15, 3 / 15, 4 / 15, 5 / 15])
+        self.assertAlmostEqual(result.sum(), 1)
+
+        fitness_list = np.array([55, 10, 3])
+        result = selector.get_probabilities(fitness_list)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertListEqual(list(result.tolist()), [3 / 6, 2 / 6, 1 / 6])
+        self.assertAlmostEqual(result.sum(), 1)
+
     def tearDown(self):
         # reset random seed
         np.random.seed()
@@ -192,6 +237,20 @@ class TestExponentialRankingSelector(TestCase):
         selector = ExponentialRankingSelector(self.n_indivs, self.c)
         result = selector.arg_select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [2, 3, 3])
+
+    def test_get_probabilities(self):
+        fitness_list = np.array([1, 2, 3, 4, 5])
+        selector = ExponentialRankingSelector(n_individuals=10, c=0.5)
+        result = selector.get_probabilities(fitness_list)
+        self.assertIsInstance(result, np.ndarray)
+        should_be = (0.03225806451612903,
+                     0.06451612903225806,
+                     0.12903225806451613,
+                     0.25806451612903225,
+                     0.5161290322580645)
+        for actual, expected in zip(result.tolist(), should_be):
+            self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(result.sum(), 1)
 
     def tearDown(self):
         # reset random seed
