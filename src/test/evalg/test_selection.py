@@ -83,6 +83,23 @@ class TestFitnessProportionalSelector(TestCase):
         result = selector.arg_select(self.population, self.fitness_list)
         self.assertCountEqual(result.tolist(), [1, 4, 3])
 
+    def test_get_probabilities(self):
+        selector = FitnessProportionalSelector(n_individuals=10)
+        fitness_list = np.array([0, 10])
+        result = selector.get_probabilities(fitness_list)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertListEqual(list(result.tolist()), [0, 1])
+
+        fitness_list = np.array([0, 10, 90])
+        result = selector.get_probabilities(fitness_list)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertListEqual(list(result.tolist()), [0, 0.1, 0.9])
+
+        fitness_list = np.array([0, 10, 90])
+        result = selector.get_probabilities(fitness_list)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertListEqual(list(result.tolist()), [0, 0.1, 0.9])
+
     def tearDown(self):
         # reset random seed
         np.random.seed()

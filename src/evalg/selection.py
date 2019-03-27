@@ -225,9 +225,13 @@ class FitnessProportionalSelector(Selector):
         selection or stochastic sampling with replacement.
         """
         pop_size = population.shape[0]
-        probabilities = fitness_list / np.sum(fitness_list)
+        probabilities = self.get_probabilities(fitness_list)
         ind = np.random.choice(pop_size, size=self.n_individuals, replace=True, p=probabilities)
         return ind
+
+    @staticmethod
+    def get_probabilities(raw_fitness: np.ndarray) -> np.ndarray:
+        return raw_fitness / np.sum(raw_fitness)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
