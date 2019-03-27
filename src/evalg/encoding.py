@@ -8,6 +8,7 @@ T = TypeVar('T')
 
 class TreeNode:
     label: str
+    html_label: str
     parent: Optional
     children: Optional[Sequence]
     _value: T
@@ -31,6 +32,9 @@ class TreeNode:
         """
         return str(value)
 
+    def _value_to_html(self, value) -> str:
+        return '<' + self._value_to_label(value) + '>'
+
     @property
     def value(self) -> T:
         return self._value
@@ -40,6 +44,7 @@ class TreeNode:
         self._value = value
         # update label as well
         self.label = self._value_to_label(value)
+        self.html_label = self._value_to_html(value)
 
     def has_parent(self) -> bool:
         return self.parent is not None
@@ -137,18 +142,18 @@ class BinaryTreeNode(TreeNode):
 
         if root is not None:
             root_id = str(id(root))
-            graph.node(root_id, label=root.label)
+            graph.node(root_id, label=root.html_label)
 
             if root.left is not None:
                 left = root.left
                 left_id = str(id(left))
-                graph.node(left_id, label=left.label)
+                graph.node(left_id, label=left.html_label)
                 graph.edge(root_id, left_id)
                 root.left.create_graph(graph=graph)
             if root.right is not None:
                 right = root.right
                 right_id = str(id(right))
-                graph.node(right_id, label=right.label)
+                graph.node(right_id, label=right.html_label)
                 graph.edge(root_id, right_id)
                 root.right.create_graph(graph=graph)
 

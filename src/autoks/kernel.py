@@ -29,6 +29,12 @@ class KernelNode(BinaryTreeNode):
         else:
             return str(value)
 
+    def _value_to_html(self, value) -> str:
+        if isinstance(value, Kern):
+            return subkernel_expression(value, html_like=True)
+        else:
+            return '<' + str(value) + '>'
+
 
 class KernelTree(BinaryTree):
     _root: Optional[KernelNode]
@@ -207,11 +213,13 @@ def set_priors(param: Parameterized, priors: Dict[str, Prior]) -> Parameterized:
 
 
 def subkernel_expression(kernel: Kern,
-                         show_params: bool = False) -> str:
+                         show_params: bool = False,
+                         html_like: bool = False) -> str:
     """Construct a subkernel expression
 
     :param kernel:
     :param show_params:
+    :param html_like:
     :return:
     """
     kernel_families = get_allowable_kernels()
@@ -222,7 +230,11 @@ def subkernel_expression(kernel: Kern,
     # assume only 1 matching base kernel
     base_kernel = matching_base_kerns[0]
 
-    kern_str = base_kernel + str(dim)
+    if not html_like:
+        kern_str = base_kernel + str(dim)
+    else:
+        kern_str = '<%s<SUB><FONT POINT-SIZE="8">%s</FONT></SUB>>' % (base_kernel, dim)
+
     if show_params:
         params = list(zip(kernel.parameter_names(), kernel.param_array))
         param_str = ', '.join(tuple([name + '=' + "{:.6f}".format(val) for name, val in params]))

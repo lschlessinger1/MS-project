@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from GPy.kern import RBF, Add, RatQuad, Prod
 
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
-    remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode
+    remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression
 from src.autoks.util import remove_duplicates
 from src.test.autoks.support.util import has_combo_kernel_type
 
@@ -195,6 +195,29 @@ class TestKernel(unittest.TestCase):
         priors['variance'] = mock_prior
         result = set_priors(param, priors)
         self.assertEqual(result['variance'].priors.properties()[0], mock_prior)
+
+    def test_subkernel_expression(self):
+        kernel = RBF(1, variance=3, lengthscale=2)
+        result = subkernel_expression(kernel=kernel, show_params=False, html_like=False)
+        self.assertIsInstance(result, str)
+        self.assertEqual(result, 'SE0')
+        result = subkernel_expression(kernel=kernel, show_params=True, html_like=False)
+        self.assertIsInstance(result, str)
+        self.assertIn('SE0', result)
+        self.assertIn('variance', result)
+        self.assertIn('lengthscale', result)
+        self.assertIn('3', result)
+        self.assertIn('2', result)
+        result = subkernel_expression(kernel=kernel, show_params=False, html_like=True)
+        self.assertIsInstance(result, str)
+        self.assertEqual(result, '<SE<SUB><FONT POINT-SIZE="8">0</FONT></SUB>>')
+        result = subkernel_expression(kernel=kernel, show_params=True, html_like=True)
+        self.assertIsInstance(result, str)
+        self.assertIn('<SE<SUB><FONT POINT-SIZE="8">0</FONT></SUB>>', result)
+        self.assertIn('variance', result)
+        self.assertIn('lengthscale', result)
+        self.assertIn('3', result)
+        self.assertIn('2', result)
 
 
 class TestAKSKernel(unittest.TestCase):
