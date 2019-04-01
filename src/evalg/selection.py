@@ -468,6 +468,7 @@ class TournamentSelector(Selector):
 
         Notes
         -----
+        Unary tournaments (`n_way` = 1) are equivalent to random selection.
         Binary tournaments (`n_way` = 2) are equivalent to linear
         ranking selection in expectation. If `n_way` = 3, it is
         equivalent, in expectation, to quadratic ranking selection.
