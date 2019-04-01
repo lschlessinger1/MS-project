@@ -7,6 +7,7 @@ from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, tree_to_kernel, \
     pretty_print_aks_kernels
+from src.evalg.genprog import BinaryTreeGenerator
 from src.evalg.vary import PopulationOperator
 
 
@@ -53,23 +54,39 @@ class BaseGrammar:
 
 class EvolutionaryGrammar(BaseGrammar):
     population_operator: PopulationOperator
+    initializer: Optional[BinaryTreeGenerator]
+    n_init_trees: Optional[int]
 
-    def __init__(self, population_operator):
+    def __init__(self, population_operator, initializer=None, n_init_trees=None):
         super().__init__()
         self.population_operator = population_operator
+        self.initializer = initializer
+        self.n_init_trees = n_init_trees
 
     def initialize(self,
                    kernel_families: List[str],
                    n_dims: int,
                    hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
-        """Naive initialization of all SE_i and RQ_i (for every dimension).
+        """Initialize using initializer or same as CKS.
 
         :param kernel_families:
         :param n_dims:
         :param hyperpriors:
         :return:
         """
-        return CKSGrammar.all_1d_aks_kernels(kernel_families, n_dims, hyperpriors)
+        if self.initializer is not None:
+            n_init_trees = 10
+            if self.n_init_trees is not None:
+                self.n_init_trees = n_init_trees
+
+            # Generate trees and then convert to GPy kernels, then to AKSKernels
+            trees = [self.initializer.generate() for i in range(self.n_init_trees)]
+            kernels = [tree_to_kernel(tree) for tree in trees]
+            aks_kernels = [AKSKernel(kernel) for kernel in kernels]
+            return aks_kernels
+        else:
+            # Naive initialization of all SE_i and RQ_i (for every dimension).
+            return CKSGrammar.all_1d_aks_kernels(kernel_families, n_dims, hyperpriors)
 
     def expand(self,
                aks_kernels: List[AKSKernel],
