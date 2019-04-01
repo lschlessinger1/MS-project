@@ -132,7 +132,12 @@ def get_kernel_mapping() -> Dict[str, Type[Kern]]:
 
     :return:
     """
-    return dict(zip(get_allowable_kernels(), get_matching_kernels()))
+    return {
+        'SE': RBF,
+        'RQ': RatQuad,
+        'LIN': Linear,
+        'PER': StdPeriodic
+    }
 
 
 def get_allowable_kernels() -> List[str]:
@@ -140,7 +145,7 @@ def get_allowable_kernels() -> List[str]:
 
     :return:
     """
-    return ['SE', 'RQ', 'LIN', 'PER']
+    return list(get_kernel_mapping().keys())
 
 
 def get_matching_kernels() -> List[Type[Kern]]:
@@ -148,7 +153,7 @@ def get_matching_kernels() -> List[Type[Kern]]:
 
     :return:
     """
-    return [RBF, RatQuad, Linear, StdPeriodic]
+    return list(get_kernel_mapping().values())
 
 
 def get_all_1d_kernels(base_kernels: List[str],
