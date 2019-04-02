@@ -424,35 +424,35 @@ class SubtreeExchangeBinaryRecombinator(Recombinator, ABC):
         node_1.parent, node_2.parent = node_2.parent, node_1.parent
 
     @staticmethod
-    def _valid_pair(postfix_token_1: str,
-                    postfix_token_2: str) -> bool:
+    def _valid_pair(token_1: str,
+                    token_2: str) -> bool:
         """Checks if postfix token pair is valid.
 
-        :param postfix_token_1: The first token in post-order notation
-        :param postfix_token_2: The second token in post-order notation
+        :param token_1: The first token
+        :param token_2: The second token
         :return:
         """
-        if postfix_token_1 in operators and postfix_token_2 in operators:
+        if token_1 in operators and token_2 in operators:
             return True
-        elif postfix_token_1 not in operators and postfix_token_2 not in operators:
+        elif token_1 not in operators and token_2 not in operators:
             return True
 
         return False
 
     @staticmethod
-    def _select_token_ind(postfix_tokens_1: List[str],
-                          postfix_tokens_2: List[str]) -> Tuple[int, int]:
-        """Select indices of parent postfix tokens.
+    def _select_token_ind(tokens_1: List[str],
+                          tokens_2: List[str]) -> Tuple[int, int]:
+        """Select indices of parent tokens.
 
-        :param postfix_tokens_1: The first list of tokens in post-order notation
-        :param postfix_tokens_2: The second list of tokens in post-order notation
+        :param tokens_1: The first list of tokens
+        :param tokens_2: The second list of tokens
         :return:
         """
-        r1 = np.random.randint(0, len(postfix_tokens_1))
-        r2 = np.random.randint(0, len(postfix_tokens_2))
-        while not SubtreeExchangeBinaryRecombinator._valid_pair(postfix_tokens_1[r1], postfix_tokens_2[r2]):
-            r1 = np.random.randint(0, len(postfix_tokens_1))
-            r2 = np.random.randint(0, len(postfix_tokens_2))
+        r1 = np.random.randint(0, len(tokens_1))
+        r2 = np.random.randint(0, len(tokens_2))
+        while not SubtreeExchangeBinaryRecombinator._valid_pair(tokens_1[r1], tokens_2[r2]):
+            r1 = np.random.randint(0, len(tokens_1))
+            r2 = np.random.randint(0, len(tokens_2))
 
         return r1, r2
 
