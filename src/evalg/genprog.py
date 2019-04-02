@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Optional
 
 import numpy as np
 
@@ -535,20 +535,10 @@ class SubtreeExchangeLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
         return tree_1, tree_2
 
 
+NodePair = Tuple[BinaryTreeNode, BinaryTreeNode]
+
+
 class OnePointRecombinator(SubtreeExchangeRecombinatorBase):
-
-    def get_common_region(self, node_1, node_2, valid_pairs=None) -> None:
-        """Get valid pairs of nodes using an in-order traversal"""
-        if valid_pairs is None:
-            valid_pairs = []
-
-        if node_1 and node_2:
-            both_leaves = node_1.is_leaf() and node_2.is_leaf()
-            both_internals = not node_1.is_leaf() and not node_2.is_leaf()
-            if both_leaves or both_internals:
-                valid_pairs.append((node_1, node_2))
-                self.get_common_region(node_1.left, node_2.left, valid_pairs)
-                self.get_common_region(node_1.right, node_2.right, valid_pairs)
 
     @check_binary_trees
     @check_two_parents
@@ -562,19 +552,50 @@ class OnePointRecombinator(SubtreeExchangeRecombinatorBase):
         tree_2 = parents[1]
 
         # All the nodes encountered are stored, forming a tree fragment
-        common_region = []
-        self.get_common_region(tree_1.root, tree_2.root, common_region)
+        common_region = self.get_common_region(tree_1.root, tree_2.root)
 
         if len(common_region) <= 1:
             return tree_1, tree_2
 
-        # A random crossover point is selected with a uniform probability.
-        r = np.random.randint(0, len(common_region))
-        node_1, node_2 = common_region[r]
+        node_1, node_2 = self.select_node_pair(common_region)
 
         self._swap_subtrees(node_1, node_2, tree_1, tree_2)
 
         return tree_1, tree_2
+
+    def _get_common_region(self,
+                           node_1: BinaryTreeNode,
+                           node_2: BinaryTreeNode,
+                           valid_pairs: Optional[List[NodePair]] = None) -> None:
+        """Recursive helper to get common region."""
+        if valid_pairs is None:
+            valid_pairs = []
+
+        if node_1 and node_2:
+            both_leaves = node_1.is_leaf() and node_2.is_leaf()
+            both_internals = not node_1.is_leaf() and not node_2.is_leaf()
+            if both_leaves or both_internals:
+                valid_pairs.append((node_1, node_2))
+                self._get_common_region(node_1.left, node_2.left, valid_pairs)
+                self._get_common_region(node_1.right, node_2.right, valid_pairs)
+
+    def get_common_region(self,
+                          node_1: BinaryTreeNode,
+                          node_2: BinaryTreeNode) -> List[NodePair]:
+        """Get valid pairs of nodes using an in-order traversal"""
+        common_region = []
+        self._get_common_region(node_1, node_2, common_region)
+        return common_region
+
+    @staticmethod
+    def select_node_pair(common_region: List[NodePair]) -> NodePair:
+        """A random crossover point is selected with a uniform probability.
+
+        :param common_region:
+        :return: A pair of nodes representing a random crossover point
+        """
+        r = np.random.randint(0, len(common_region))
+        return common_region[r]
 
 
 class OnePointLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):

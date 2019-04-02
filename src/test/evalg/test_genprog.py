@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 import numpy as np
 
@@ -202,24 +203,36 @@ class TestHalfAndHalfMutator(TestCase):
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
 
 
-class TestSubtreeExchangeRecombinatorBase(TestCase):
+class NodeCheckTestCase(TestCase):
 
     def _check_node(self, node, value, left_value, right_value, parent_value):
-        self.assertEqual(node.value, value)
+        self.assertEqual(node.value, value, 'Node values not equal')
         if not node.left:
-            self.assertIsNone(left_value)
+            self.assertIsNone(left_value, 'Left value not none')
         else:
-            self.assertEqual(node.left.value, left_value)
+            self.assertEqual(node.left.value, left_value, 'Left values not equal')
 
         if not node.right:
-            self.assertIsNone(right_value)
+            self.assertIsNone(right_value, 'Right value not none')
         else:
-            self.assertEqual(node.right.value, right_value)
+            self.assertEqual(node.right.value, right_value, 'Right values not equal')
 
         if not node.parent:
-            self.assertIsNone(parent_value)
+            self.assertIsNone(parent_value, 'Parent value not none')
         else:
-            self.assertEqual(node.parent.value, parent_value)
+            self.assertEqual(node.parent.value, parent_value, 'Parent values not equal')
+
+    def check_root(self, parent_node, value, left_value, right_value):
+        self._check_node(parent_node, value, left_value, right_value, None)
+
+    def check_leaf(self, leaf_node, value, parent_value):
+        self._check_node(leaf_node, value, None, None, parent_value)
+
+    def check_stump(self, stump_node, value):
+        self._check_node(stump_node, value, None, None, None)
+
+
+class TestSubtreeExchangeRecombinatorBase(NodeCheckTestCase):
 
     def test_swap_same_node(self):
         node = BinaryTreeNode('*')
@@ -237,9 +250,9 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(None, b, tree, tree)
 
         root = tree.root
-        self._check_node(root, '*', None, None, None)
+        self.check_stump(root, '*')
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, None, tree, tree)
-        self._check_node(root, '*', None, None, None)
+        self.check_stump(root, '*')
 
     def test_swap_left_nodes(self):
         node_1 = BinaryTreeNode('*')
@@ -262,14 +275,14 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', 'C', 'B', None)
-        self._check_node(root_1.left, 'C', None, None, '*')
-        self._check_node(root_1.right, 'B', None, None, '*')
+        self.check_root(root_1, '*', 'C', 'B')
+        self.check_leaf(root_1.left, 'C', '*')
+        self.check_leaf(root_1.right, 'B', '*')
 
         root_2 = tree_2.root
-        self._check_node(root_2, '+', 'A', 'D', None)
-        self._check_node(root_2.left, 'A', None, None, '+')
-        self._check_node(root_2.right, 'D', None, None, '+')
+        self.check_root(root_2, '+', 'A', 'D')
+        self.check_leaf(root_2.left, 'A', '+')
+        self.check_leaf(root_2.right, 'D', '+')
 
     def test_swap_right_nodes(self):
         node_1 = BinaryTreeNode('*')
@@ -292,14 +305,14 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', 'A', 'D', None)
-        self._check_node(root_1.left, 'A', None, None, '*')
-        self._check_node(root_1.right, 'D', None, None, '*')
+        self.check_root(root_1, '*', 'A', 'D')
+        self.check_leaf(root_1.left, 'A', '*')
+        self.check_leaf(root_1.right, 'D', '*')
 
         root_2 = tree_2.root
-        self._check_node(root_2, '+', 'C', 'B', None)
-        self._check_node(root_2.left, 'C', None, None, '+')
-        self._check_node(root_2.right, 'B', None, None, '+')
+        self.check_root(root_2, '+', 'C', 'B')
+        self.check_leaf(root_2.left, 'C', '+')
+        self.check_leaf(root_2.right, 'B', '+')
 
     def test_swap_left_and_right_nodes(self):
         node_1 = BinaryTreeNode('*')
@@ -322,14 +335,14 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', 'D', 'B', None)
-        self._check_node(root_1.left, 'D', None, None, '*')
-        self._check_node(root_1.right, 'B', None, None, '*')
+        self.check_root(root_1, '*', 'D', 'B')
+        self.check_leaf(root_1.left, 'D', '*')
+        self.check_leaf(root_1.right, 'B', '*')
 
         root_2 = tree_2.root
-        self._check_node(root_2, '+', 'C', 'A', None)
-        self._check_node(root_2.left, 'C', None, None, '+')
-        self._check_node(root_2.right, 'A', None, None, '+')
+        self.check_root(root_2, '+', 'C', 'A')
+        self.check_leaf(root_2.left, 'C', '+')
+        self.check_leaf(root_2.right, 'A', '+')
 
     def test_swap_right_and_left_nodes(self):
         node_1 = BinaryTreeNode('*')
@@ -352,14 +365,14 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', 'A', 'C', None)
-        self._check_node(root_1.left, 'A', None, None, '*')
-        self._check_node(root_1.right, 'C', None, None, '*')
+        self.check_root(root_1, '*', 'A', 'C')
+        self.check_leaf(root_1.left, 'A', '*')
+        self.check_leaf(root_1.right, 'C', '*')
 
         root_2 = tree_2.root
-        self._check_node(root_2, '+', 'B', 'D', None)
-        self._check_node(root_2.left, 'B', None, None, '+')
-        self._check_node(root_2.right, 'D', None, None, '+')
+        self.check_root(root_2, '+', 'B', 'D')
+        self.check_leaf(root_2.left, 'B', '+')
+        self.check_leaf(root_2.right, 'D', '+')
 
     def test_swap_left_and_stump(self):
         node_1 = BinaryTreeNode('*')
@@ -379,11 +392,11 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', 'C', 'B', None)
-        self._check_node(root_1.left, 'C', None, None, '*')
-        self._check_node(root_1.right, 'B', None, None, '*')
+        self.check_root(root_1, '*', 'C', 'B')
+        self.check_leaf(root_1.left, 'C', '*')
+        self.check_leaf(root_1.right, 'B', '*')
         root_2 = tree_2.root
-        self._check_node(root_2, 'A', None, None, None)
+        self.check_stump(root_2, 'A')
 
     def test_swap_right_and_stump(self):
         node_1 = BinaryTreeNode('*')
@@ -403,11 +416,11 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', 'A', 'C', None)
-        self._check_node(root_1.left, 'A', None, None, '*')
-        self._check_node(root_1.right, 'C', None, None, '*')
+        self.check_root(root_1, '*', 'A', 'C')
+        self.check_leaf(root_1.left, 'A', '*')
+        self.check_leaf(root_1.right, 'C', '*')
         root_2 = tree_2.root
-        self._check_node(root_2, 'B', None, None, None)
+        self.check_stump(root_2, 'B')
 
     def test_swap_stump_and_node(self):
         node_1 = BinaryTreeNode('*')
@@ -431,14 +444,14 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', '+', 'B', None)
+        self.check_root(root_1, '*', '+', 'B')
         self._check_node(root_1.left, '+', 'C', 'D', '*')
-        self._check_node(root_1.right, 'B', None, None, '*')
-        self._check_node(root_1.left.left, 'C', None, None, '+')
-        self._check_node(root_1.left.right, 'D', None, None, '+')
+        self.check_leaf(root_1.right, 'B', '*')
+        self.check_leaf(root_1.left.left, 'C', '+')
+        self.check_leaf(root_1.left.right, 'D', '+')
 
         root_2 = tree_2.root
-        self._check_node(root_2, 'A', None, None, None)
+        self.check_stump(root_2, 'A')
 
     def test_swap_nodes_with_children(self):
         node_1 = BinaryTreeNode('*')
@@ -460,14 +473,14 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', 'A', 'B', None)
-        self._check_node(root_1.left, 'A', None, None, '*')
-        self._check_node(root_1.right, 'B', None, None, '*')
+        self.check_root(root_1, '*', 'A', 'B')
+        self.check_leaf(root_1.left, 'A', '*')
+        self.check_leaf(root_1.right, 'B', '*')
 
         root_2 = tree_2.root
-        self._check_node(root_2, '+', 'C', 'D', None)
-        self._check_node(root_2.left, 'C', None, None, '+')
-        self._check_node(root_2.right, 'D', None, None, '+')
+        self.check_root(root_2, '+', 'C', 'D')
+        self.check_leaf(root_2.left, 'C', '+')
+        self.check_leaf(root_2.right, 'D', '+')
 
     def test_swap_leaves(self):
         node_1 = BinaryTreeNode('A')
@@ -483,10 +496,10 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, 'A', None, None, None)
+        self.check_stump(root_1, 'A')
 
         root_2 = tree_2.root
-        self._check_node(root_2, 'B', None, None, None)
+        self.check_stump(root_2, 'B')
 
     def test_swap_complex_trees(self):
         node_1 = BinaryTreeNode('*')
@@ -512,16 +525,16 @@ class TestSubtreeExchangeRecombinatorBase(TestCase):
         SubtreeExchangeRecombinatorBase._swap_subtrees(a, b, tree_1, tree_2)
 
         root_1 = tree_1.root
-        self._check_node(root_1, '*', 'A', 'C', None)
-        self._check_node(root_1.left, 'A', None, None, '*')
+        self.check_root(root_1, '*', 'A', 'C')
+        self.check_leaf(root_1.left, 'A', '*')
         self._check_node(root_1.right, 'C', 'L', None, '*')
-        self._check_node(root_1.right.left, 'L', None, None, 'C')
+        self.check_leaf(root_1.right.left, 'L', 'C')
 
         root_2 = tree_2.root
-        self._check_node(root_2, '+', 'B', 'D', None)
+        self.check_root(root_2, '+', 'B', 'D')
         self._check_node(root_2.left, 'B', None, 'R', '+')
-        self._check_node(root_2.right, 'D', None, None, '+')
-        self._check_node(root_2.left.right, 'R', None, None, 'B')
+        self.check_leaf(root_2.right, 'D', '+')
+        self.check_leaf(root_2.left.right, 'R', 'B')
 
     def test__valid_pair(self):
         result = SubtreeExchangeRecombinatorBase._valid_pair('A', 'B')
@@ -626,7 +639,7 @@ class TestSubtreeExchangeLeafBiasedRecombinator(TestCase):
         np.random.seed()
 
 
-class TestOnePointRecombinator(TestCase):
+class TestOnePointRecombinator(NodeCheckTestCase):
 
     def setUp(self) -> None:
         self.recombinator = OnePointRecombinator()
@@ -688,34 +701,130 @@ class TestOnePointRecombinator(TestCase):
         self.assertEqual(result_1, tree_1)
         self.assertEqual(result_2, tree_2)
 
-    def test_crossover_trees(self):
-        root = BinaryTreeNode('*')
-        root.add_left('B')
-        right = root.add_right('+')
+    def test_crossover_trees_roots_selected(self):
+        root_1 = BinaryTreeNode('*')
+        root_1.add_left('B')
+        right = root_1.add_right('+')
         right.add_left('D')
         rr = right.add_right('*')
         rr.add_left('F')
         rr.add_right('G')
-        tree_1 = BinaryTree(root)
+        tree_1 = BinaryTree(root_1)
 
-        root = BinaryTreeNode('+')
-        left = root.add_left('+')
-        right = root.add_right('J')
+        root_2 = BinaryTreeNode('+')
+        left = root_2.add_left('+')
+        right = root_2.add_right('*')
         left.add_left('K')
         left.add_right('L')
         right.add_right('M')
-        right.add_right('N')
-        tree_2 = BinaryTree(root)
+        right.add_left('N')
+        tree_2 = BinaryTree(root_2)
 
         parents = [tree_1, tree_2]
 
-        np.random.seed(11)  # choose root.right
+        self.recombinator.select_node_pair = MagicMock()
+        self.recombinator.select_node_pair.return_value = (root_1, root_2)
         result_1, result_2 = self.recombinator.crossover(parents)
 
         self.assertIsInstance(result_1, BinaryTree)
         self.assertIsInstance(result_2, BinaryTree)
 
-        # TODO check results
+        self.recombinator.select_node_pair.assert_called_once()
+
+        self.assertEqual(result_1, tree_1)
+        self.assertEqual(result_2, tree_2)
+
+    def test_crossover_subtrees(self):
+        root_1 = BinaryTreeNode('*')
+        root_1.add_left('B')
+        right = root_1.add_right('+')
+        right.add_left('D')
+        rr = right.add_right('*')
+        rr.add_left('F')
+        rr.add_right('G')
+        tree_1 = BinaryTree(root_1)
+
+        root_2 = BinaryTreeNode('+')
+        left = root_2.add_left('+')
+        right = root_2.add_right('*')
+        left.add_left('K')
+        left.add_right('L')
+        right.add_right('M')
+        right.add_left('N')
+        tree_2 = BinaryTree(root_2)
+
+        parents = [tree_1, tree_2]
+
+        self.recombinator.select_node_pair = MagicMock()
+        self.recombinator.select_node_pair.return_value = (root_1.right, root_2.right)
+        result_1, result_2 = self.recombinator.crossover(parents)
+
+        self.assertIsInstance(result_1, BinaryTree)
+        self.assertIsInstance(result_2, BinaryTree)
+
+        self.recombinator.select_node_pair.assert_called_once()
+
+        self.check_root(result_1.root, '*', 'B', '*')
+        self.check_leaf(result_1.root.left, 'B', '*')
+        self._check_node(result_1.root.right, '*', 'N', 'M', '*')
+        self.check_leaf(result_1.root.right.left, 'N', '*')
+        self.check_leaf(result_1.root.right.right, 'M', '*')
+
+        self.check_root(result_2.root, '+', '+', '+')
+        self._check_node(result_2.root.left, '+', 'K', 'L', '+')
+        self._check_node(result_2.root.right, '+', 'D', '*', '+')
+        self.check_leaf(result_2.root.left.left, 'K', '+')
+        self.check_leaf(result_2.root.left.right, 'L', '+')
+        self.check_leaf(result_2.root.right.left, 'D', '+')
+        self._check_node(result_2.root.right.right, '*', 'F', 'G', '+')
+        self.check_leaf(result_2.root.right.right.left, 'F', '*')
+        self.check_leaf(result_2.root.right.right.right, 'G', '*')
+
+    def test_crossover_leaves(self):
+        root_1 = BinaryTreeNode('*')
+        root_1.add_left('B')
+        right = root_1.add_right('+')
+        right.add_left('D')
+        rr = right.add_right('*')
+        rr.add_left('F')
+        rr.add_right('G')
+        tree_1 = BinaryTree(root_1)
+
+        root_2 = BinaryTreeNode('+')
+        left = root_2.add_left('+')
+        right = root_2.add_right('*')
+        left.add_left('K')
+        left.add_right('L')
+        right.add_right('M')
+        right.add_left('N')
+        tree_2 = BinaryTree(root_2)
+
+        parents = [tree_1, tree_2]
+
+        self.recombinator.select_node_pair = MagicMock()
+        self.recombinator.select_node_pair.return_value = (root_1.right.left, root_2.right.left)
+        result_1, result_2 = self.recombinator.crossover(parents)
+
+        self.assertIsInstance(result_1, BinaryTree)
+        self.assertIsInstance(result_2, BinaryTree)
+
+        self.recombinator.select_node_pair.assert_called_once()
+
+        self.check_root(result_1.root, '*', 'B', '+')
+        self.check_leaf(result_1.root.left, 'B', '*')
+        self._check_node(result_1.root.right, '+', 'N', '*', '*')
+        self.check_leaf(result_1.root.right.left, 'N', '+')
+        self._check_node(result_1.root.right.right, '*', 'F', 'G', '+')
+        self.check_leaf(result_1.root.right.right.left, 'F', '*')
+        self.check_leaf(result_1.root.right.right.right, 'G', '*')
+
+        self.check_root(result_2.root, '+', '+', '*')
+        self._check_node(result_2.root.left, '+', 'K', 'L', '+')
+        self._check_node(result_2.root.right, '*', 'D', 'M', '+')
+        self.check_leaf(result_2.root.left.left, 'K', '+')
+        self.check_leaf(result_2.root.left.right, 'L', '+')
+        self.check_leaf(result_2.root.right.left, 'D', '*')
+        self.check_leaf(result_2.root.right.right, 'M', '*')
 
     def test_get_common_region(self):
         root_1 = BinaryTreeNode('*')
@@ -734,10 +843,9 @@ class TestOnePointRecombinator(TestCase):
         right.add_right('M')
         right.add_left('N')
 
-        common_region = []
-        self.recombinator.get_common_region(root_1, root_2, common_region)
-        self.assertListEqual(common_region, [(root_1, root_2), (root_1.right, root_2.right),
-                                             (root_1.right.left, root_2.right.left)])
+        result = self.recombinator.get_common_region(root_1, root_2)
+        self.assertListEqual(result, [(root_1, root_2), (root_1.right, root_2.right),
+                                      (root_1.right.left, root_2.right.left)])
 
     def tearDown(self):
         np.random.seed()
