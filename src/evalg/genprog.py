@@ -538,8 +538,8 @@ class SubtreeExchangeLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
 NodePair = Tuple[BinaryTreeNode, BinaryTreeNode]
 
 
-class OnePointRecombinatorBase(SubtreeExchangeRecombinatorBase, ABC):
-    """Abstract base class for one point crossover"""
+class OnePointRecombinatorBase(SubtreeExchangeRecombinatorBase):
+    """Base class for one point crossover"""
 
     def _get_common_region(self,
                            node_1: BinaryTreeNode,
@@ -564,18 +564,6 @@ class OnePointRecombinatorBase(SubtreeExchangeRecombinatorBase, ABC):
         common_region = []
         self._get_common_region(node_1, node_2, common_region)
         return common_region
-
-    @staticmethod
-    def select_node_pair(common_region: List[NodePair]) -> NodePair:
-        """A crossover point is selected.
-
-        :param common_region:
-        :return: A pair of nodes representing a random crossover point
-        """
-        raise NotImplementedError('Select node pair must be implemented in a child class.')
-
-
-class OnePointRecombinator(OnePointRecombinatorBase):
 
     @check_binary_trees
     @check_two_parents
@@ -602,6 +590,18 @@ class OnePointRecombinator(OnePointRecombinatorBase):
 
     @staticmethod
     def select_node_pair(common_region: List[NodePair]) -> NodePair:
+        """A crossover point is selected.
+
+        :param common_region:
+        :return: A pair of nodes representing a random crossover point
+        """
+        raise NotImplementedError('Select node pair must be implemented in a child class.')
+
+
+class OnePointRecombinator(OnePointRecombinatorBase):
+
+    @staticmethod
+    def select_node_pair(common_region: List[NodePair]) -> NodePair:
         """A random crossover point is selected with a uniform probability."""
         r = np.random.randint(0, len(common_region))
         return common_region[r]
@@ -613,11 +613,6 @@ class OnePointLeafBiasedRecombinator(OnePointRecombinatorBase):
 
     def __init__(self, t_prob: float = 0.1):
         self.t_prob = t_prob  # probability of choosing a terminal node (leaf).
-
-    @check_binary_trees
-    @check_two_parents
-    def crossover(self, parents: list) -> Tuple[BinaryTree, BinaryTree]:
-        pass
 
     @staticmethod
     def select_node_pair(common_region: List[NodePair]) -> NodePair:
