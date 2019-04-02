@@ -538,30 +538,8 @@ class SubtreeExchangeLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
 NodePair = Tuple[BinaryTreeNode, BinaryTreeNode]
 
 
-class OnePointRecombinator(SubtreeExchangeRecombinatorBase):
-
-    @check_binary_trees
-    @check_two_parents
-    def crossover(self, parents: list) -> Tuple[BinaryTree, BinaryTree]:
-        """One point crossover.
-
-        :param parents:
-        :return:
-        """
-        tree_1 = parents[0]
-        tree_2 = parents[1]
-
-        # All the nodes encountered are stored, forming a tree fragment
-        common_region = self.get_common_region(tree_1.root, tree_2.root)
-
-        if len(common_region) <= 1:
-            return tree_1, tree_2
-
-        node_1, node_2 = self.select_node_pair(common_region)
-
-        self._swap_subtrees(node_1, node_2, tree_1, tree_2)
-
-        return tree_1, tree_2
+class OnePointRecombinatorBase(SubtreeExchangeRecombinatorBase, ABC):
+    """Abstract base class for one point crossover"""
 
     def _get_common_region(self,
                            node_1: BinaryTreeNode,
@@ -589,16 +567,48 @@ class OnePointRecombinator(SubtreeExchangeRecombinatorBase):
 
     @staticmethod
     def select_node_pair(common_region: List[NodePair]) -> NodePair:
-        """A random crossover point is selected with a uniform probability.
+        """A crossover point is selected.
 
         :param common_region:
         :return: A pair of nodes representing a random crossover point
         """
+        raise NotImplementedError('Select node pair must be implemented in a child class.')
+
+
+class OnePointRecombinator(OnePointRecombinatorBase):
+
+    @check_binary_trees
+    @check_two_parents
+    def crossover(self, parents: list) -> Tuple[BinaryTree, BinaryTree]:
+        """One point crossover.
+
+        :param parents:
+        :return:
+        """
+        tree_1 = parents[0]
+        tree_2 = parents[1]
+
+        # All the nodes encountered are stored, forming a tree fragment
+        common_region = self.get_common_region(tree_1.root, tree_2.root)
+
+        if len(common_region) <= 1:
+            return tree_1, tree_2
+
+        node_1, node_2 = self.select_node_pair(common_region)
+
+        self._swap_subtrees(node_1, node_2, tree_1, tree_2)
+
+        return tree_1, tree_2
+
+    @staticmethod
+    def select_node_pair(common_region: List[NodePair]) -> NodePair:
+        """A random crossover point is selected with a uniform probability."""
         r = np.random.randint(0, len(common_region))
         return common_region[r]
 
 
-class OnePointLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
+class OnePointLeafBiasedRecombinator(OnePointRecombinatorBase):
+
     t_prob: float
 
     def __init__(self, t_prob: float = 0.1):
@@ -607,4 +617,8 @@ class OnePointLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
     @check_binary_trees
     @check_two_parents
     def crossover(self, parents: list) -> Tuple[BinaryTree, BinaryTree]:
+        pass
+
+    @staticmethod
+    def select_node_pair(common_region: List[NodePair]) -> NodePair:
         pass

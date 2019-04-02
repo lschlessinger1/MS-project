@@ -6,7 +6,8 @@ import numpy as np
 from src.evalg.encoding import BinaryTree, BinaryTreeNode
 from src.evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
     GrowGenerator, FullGenerator, GrowMutator, FullMutator, SubtreeExchangeRecombinatorBase, HalfAndHalfMutator, \
-    HalfAndHalfGenerator, SubtreeExchangeRecombinator, SubtreeExchangeLeafBiasedRecombinator, OnePointRecombinator
+    HalfAndHalfGenerator, SubtreeExchangeRecombinator, SubtreeExchangeLeafBiasedRecombinator, OnePointRecombinatorBase, \
+    OnePointRecombinator
 
 
 class TestBinaryTreeGenerator(TestCase):
@@ -639,6 +640,39 @@ class TestSubtreeExchangeLeafBiasedRecombinator(TestCase):
         np.random.seed()
 
 
+class TestOnePointRecombinatorBase(TestCase):
+
+    def setUp(self) -> None:
+        self.recombinator = OnePointRecombinatorBase()
+
+    def test_get_common_region(self):
+        root_1 = BinaryTreeNode('*')
+        root_1.add_left('B')
+        right = root_1.add_right('+')
+        right.add_left('D')
+        rr = right.add_right('*')
+        rr.add_left('F')
+        rr.add_right('G')
+
+        root_2 = BinaryTreeNode('+')
+        left = root_2.add_left('+')
+        right = root_2.add_right('*')
+        left.add_left('K')
+        left.add_right('L')
+        right.add_right('M')
+        right.add_left('N')
+
+        result = self.recombinator.get_common_region(root_1, root_2)
+        self.assertListEqual(result, [(root_1, root_2), (root_1.right, root_2.right),
+                                      (root_1.right.left, root_2.right.left)])
+
+    def test_select_node_pair(self):
+        self.assertRaises(NotImplementedError, self.recombinator.select_node_pair, [])
+
+    def tearDown(self):
+        np.random.seed()
+
+
 class TestOnePointRecombinator(NodeCheckTestCase):
 
     def setUp(self) -> None:
@@ -825,27 +859,3 @@ class TestOnePointRecombinator(NodeCheckTestCase):
         self.check_leaf(result_2.root.left.right, 'L', '+')
         self.check_leaf(result_2.root.right.left, 'D', '*')
         self.check_leaf(result_2.root.right.right, 'M', '*')
-
-    def test_get_common_region(self):
-        root_1 = BinaryTreeNode('*')
-        root_1.add_left('B')
-        right = root_1.add_right('+')
-        right.add_left('D')
-        rr = right.add_right('*')
-        rr.add_left('F')
-        rr.add_right('G')
-
-        root_2 = BinaryTreeNode('+')
-        left = root_2.add_left('+')
-        right = root_2.add_right('*')
-        left.add_left('K')
-        left.add_right('L')
-        right.add_right('M')
-        right.add_left('N')
-
-        result = self.recombinator.get_common_region(root_1, root_2)
-        self.assertListEqual(result, [(root_1, root_2), (root_1.right, root_2.right),
-                                      (root_1.right.left, root_2.right.left)])
-
-    def tearDown(self):
-        np.random.seed()
