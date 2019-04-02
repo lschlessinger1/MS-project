@@ -1,8 +1,8 @@
-from typing import Optional, List
+from typing import Optional
 
 import numpy as np
-from GPy.core.parameterization.priors import Prior
 
+from src.autoks.hyperprior import Hyperpriors
 from src.autoks.kernel import AKSKernel, n_base_kernels
 
 
@@ -13,7 +13,7 @@ class AcquisitionFunction:
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None) -> float:
         """Acquisition function score.
 
         :param kernel:
@@ -34,7 +34,7 @@ class UniformScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None) -> float:
         """Same score for all kernels.
 
         :param kernel:
@@ -52,7 +52,7 @@ class ExpectedImprovement(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None) -> float:
         """Expected improvement (EI) acquisition function
 
         This acquisition function takes a model (kernel and hyperpriors) and computes expected improvement using
@@ -73,7 +73,7 @@ class RandomScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None) -> float:
         """Random acquisition function
 
         This acquisition function returns a random score in the half-open interval [0.0, 1.0).
@@ -93,7 +93,7 @@ class ParamProportionalScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None) -> float:
         """Score proportional to number of kernel hyperparameters.
 
         :param kernel:
@@ -111,7 +111,7 @@ class OperandProportionalScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None) -> float:
         """Score proportional to the number of 1D kernels (operands).
 
         :param kernel:
@@ -128,7 +128,7 @@ class KernComplexityProportionalScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[List[Prior]] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None) -> float:
         """Score proportional to the complexity of a kernel
 
         :param kernel:

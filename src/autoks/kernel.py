@@ -8,6 +8,7 @@ from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
 from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.special import comb
 
+from src.autoks.hyperprior import Hyperpriors, Hyperprior
 from src.autoks.util import remove_duplicates, arg_sort, join_operands, tokenize, flatten, remove_outer_parens
 from src.evalg.encoding import BinaryTree, BinaryTreeNode, infix_tokens_to_postfix_tokens, \
     postfix_tokens_to_binexp_tree
@@ -158,7 +159,7 @@ def get_matching_kernels() -> List[Type[Kern]]:
 
 def get_all_1d_kernels(base_kernels: List[str],
                        n_dims: int,
-                       hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[Kern]:
+                       hyperpriors: Optional[Hyperpriors] = None) -> List[Kern]:
     """Get all possible 1-D kernels.
 
     :param base_kernels:
@@ -184,7 +185,7 @@ def create_1d_kernel(kernel_family: str,
                      active_dim: int,
                      kernel_mapping: Optional[Dict[str, Type[Kern]]] = None,
                      kernel_cls: Optional[Type[Kern]] = None,
-                     hyperpriors: Optional[Dict[str, Prior]] = None) -> Kern:
+                     hyperpriors: Optional[Hyperprior] = None) -> Kern:
     """Create a 1D kernel.
 
     :param kernel_family:

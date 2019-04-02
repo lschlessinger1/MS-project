@@ -1,10 +1,10 @@
-from typing import List, Dict, Optional
+from typing import List, Optional
 
 import numpy as np
-from GPy.core.parameterization.priors import Prior
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
+from src.autoks.hyperprior import Hyperpriors, BOMSHyperpriors
 from src.autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, tree_to_kernel, \
     pretty_print_aks_kernels
 from src.evalg.genprog import BinaryTreeGenerator
@@ -21,7 +21,7 @@ class BaseGrammar:
     def initialize(self,
                    kernel_families: List[str],
                    n_dims: int,
-                   hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+                   hyperpriors: Optional[Hyperpriors] = None) -> List[AKSKernel]:
         """Initialize kernels.
 
         :param kernel_families:
@@ -36,7 +36,7 @@ class BaseGrammar:
                kernel_families: List[str],
                n_dims: int,
                verbose: bool = False,
-               hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+               hyperpriors: Optional[Hyperpriors] = None) -> List[AKSKernel]:
         """Get next round of candidate kernels from current kernels.
 
         :param kernels:
@@ -66,7 +66,7 @@ class EvolutionaryGrammar(BaseGrammar):
     def initialize(self,
                    kernel_families: List[str],
                    n_dims: int,
-                   hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+                   hyperpriors: Optional[Hyperpriors] = None) -> List[AKSKernel]:
         """Initialize using initializer or same as CKS.
 
         :param kernel_families:
@@ -93,7 +93,7 @@ class EvolutionaryGrammar(BaseGrammar):
                kernel_families: List[str],
                n_dims: int,
                verbose: bool = False,
-               hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+               hyperpriors: Optional[Hyperpriors] = None) -> List[AKSKernel]:
         """Perform crossover and mutation.
 
         :param aks_kernels: list of AKSKernels
@@ -138,7 +138,7 @@ class BOMSGrammar(BaseGrammar):
     def initialize(self,
                    kernel_families: List[str],
                    n_dims: int,
-                   hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+                   hyperpriors: Optional[BOMSHyperpriors] = None) -> List[AKSKernel]:
         """Initialize kernels according to number of dimensions.
 
         :param kernel_families:
@@ -153,7 +153,7 @@ class BOMSGrammar(BaseGrammar):
                kernel_families: List[str],
                n_dims: int,
                verbose: bool = False,
-               hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+               hyperpriors: Optional[BOMSHyperpriors] = None) -> List[AKSKernel]:
         """Greedy and exploratory expansion of kernels.
 
         :param aks_kernels: list of AKSKernels
@@ -191,7 +191,7 @@ class BOMSGrammar(BaseGrammar):
                             base_kernels: List[str],
                             t_prob: float = 1 / 3.,
                             n_walks: int = 15,
-                            hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[Kern]:
+                            hyperpriors: Optional[BOMSHyperpriors] = None) -> List[Kern]:
         """Geometric random walk kernels.
 
         :param n_dims:
@@ -223,7 +223,7 @@ class BOMSGrammar(BaseGrammar):
     def greedy_kernels(best_kernel: AKSKernel,
                        n_dims: int,
                        base_kernels: List[str],
-                       hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[Kern]:
+                       hyperpriors: Optional[BOMSHyperpriors] = None) -> List[Kern]:
         """Single expansion of CKS Grammar.
 
         :param best_kernel:
@@ -259,7 +259,7 @@ class CKSGrammar(BaseGrammar):
     @staticmethod
     def all_1d_aks_kernels(kernel_families: List[str],
                            n_dims: int,
-                           hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None):
+                           hyperpriors: Optional[Hyperpriors] = None):
         kernels = get_all_1d_kernels(kernel_families, n_dims, hyperpriors=hyperpriors)
         kernels = [AKSKernel(kernel) for kernel in kernels]
         return kernels
@@ -267,7 +267,7 @@ class CKSGrammar(BaseGrammar):
     def initialize(self,
                    kernel_families: List[str],
                    n_dims: int,
-                   hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+                   hyperpriors: Optional[Hyperpriors] = None) -> List[AKSKernel]:
         """Initialize with all base kernel families applied to all input dimensions.
 
         :param kernel_families:
@@ -282,7 +282,7 @@ class CKSGrammar(BaseGrammar):
                kernel_families: List[str],
                n_dims: int,
                verbose: bool = False,
-               hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+               hyperpriors: Optional[Hyperpriors] = None) -> List[AKSKernel]:
         """Greedy expansion of nodes.
 
         :param aks_kernels:
@@ -320,7 +320,7 @@ class CKSGrammar(BaseGrammar):
                              n_dims: int,
                              base_kernels: List[str],
                              operators: List[str],
-                             hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[Kern]:
+                             hyperpriors: Optional[Hyperpriors] = None) -> List[Kern]:
         """Expand a single kernel.
 
         :param kernel:
@@ -360,7 +360,7 @@ class CKSGrammar(BaseGrammar):
                            n_dims: int,
                            base_kernels: List[str],
                            operators: List[str],
-                           hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[Kern]:
+                           hyperpriors: Optional[Hyperpriors] = None) -> List[Kern]:
         """Expand full kernel.
 
         :param kernel:
@@ -406,7 +406,7 @@ class RandomGrammar(BaseGrammar):
     def initialize(self,
                    kernel_families: List[str],
                    n_dims: int,
-                   hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+                   hyperpriors: Optional[Hyperpriors] = None) -> List[AKSKernel]:
         """Same initialization as CKS and BOMS
 
         :param kernel_families:
@@ -421,7 +421,7 @@ class RandomGrammar(BaseGrammar):
                kernel_families: List[str],
                n_dims: int,
                verbose: bool = False,
-               hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[AKSKernel]:
+               hyperpriors: Optional[Hyperpriors] = None) -> List[AKSKernel]:
         """Random expansion of nodes.
 
         :param aks_kernels:

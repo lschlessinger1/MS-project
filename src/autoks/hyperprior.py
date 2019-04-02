@@ -1,9 +1,14 @@
 from typing import Dict
 
-from GPy.core.parameterization.priors import LogGaussian
+from GPy.core.parameterization.priors import LogGaussian, Prior
+
+Hyperprior = Dict[str, Prior]
+Hyperpriors = Dict[str, Hyperprior]
+BOMSHyperprior = Dict[str, LogGaussian]
+BOMSHyperpriors = Dict[str, BOMSHyperprior]
 
 
-def boms_hyperpriors() -> Dict[str, Dict[str, LogGaussian]]:
+def boms_hyperpriors() -> BOMSHyperpriors:
     """
 
     Malkomes et al., 2016

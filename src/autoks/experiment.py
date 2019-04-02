@@ -1,16 +1,16 @@
 import warnings
 from time import time
-from typing import Callable, List, Tuple, Optional, FrozenSet, Dict, Union
+from typing import Callable, List, Tuple, Optional, FrozenSet, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
-from GPy.core.parameterization.priors import Prior
 from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
 from src.autoks.grammar import BaseGrammar
+from src.autoks.hyperprior import Hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
     AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors
 from src.autoks.kernel_selection import KernelSelector
@@ -35,7 +35,7 @@ class Experiment:
     standardize_y: bool
     eval_budget: int
     max_depth: Optional[int]
-    hyperpriors: Optional[Dict[str, Dict[str, Prior]]]
+    hyperpriors: Optional[Hyperpriors]
     init_query_strat: Optional[QueryStrategy]
     query_strat: Optional[QueryStrategy]
     gp_model: Optional[GP]
@@ -253,7 +253,7 @@ class Experiment:
     def query_kernels(self,
                       kernels: List[AKSKernel],
                       query_strategy: QueryStrategy,
-                      hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) \
+                      hyperpriors: Optional[Hyperpriors] = None) \
             -> Tuple[List[AKSKernel], List[int], List[float]]:
         """Select kernels using the acquisition function of the query strategy.
 

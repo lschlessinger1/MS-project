@@ -1,10 +1,10 @@
 from abc import ABC
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional
 
 import numpy as np
-from GPy.core.parameterization.priors import Prior
 
 from src.autoks.acquisition_function import AcquisitionFunction, UniformScorer
+from src.autoks.hyperprior import Hyperpriors
 from src.autoks.kernel import AKSKernel, get_kernel_mapping
 from src.evalg.selection import Selector, AllSelector
 
@@ -26,7 +26,7 @@ class QueryStrategy(Selector, ABC):
               kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> Tuple[np.ndarray, List[float]]:
+              hyperpriors: Optional[Hyperpriors] = None) -> Tuple[np.ndarray, List[float]]:
         """Query the next round of kernels using the acquisition function.
 
         :param kernels:
@@ -45,7 +45,7 @@ class QueryStrategy(Selector, ABC):
                       kernels: List[AKSKernel],
                       x_train: np.ndarray,
                       y_train: np.ndarray,
-                      hyperpriors: Optional[Dict[str, Dict[str, Prior]]] = None) -> List[float]:
+                      hyperpriors: Optional[Hyperpriors] = None) -> List[float]:
         """Score all kernels using the scoring function.
 
         :param kernels:
