@@ -7,7 +7,7 @@ from src.evalg.encoding import BinaryTree, BinaryTreeNode
 from src.evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
     GrowGenerator, FullGenerator, GrowMutator, FullMutator, SubtreeExchangeRecombinatorBase, HalfAndHalfMutator, \
     HalfAndHalfGenerator, SubtreeExchangeRecombinator, SubtreeExchangeLeafBiasedRecombinator, OnePointRecombinatorBase, \
-    OnePointRecombinator
+    OnePointRecombinator, OnePointLeafBiasedRecombinator
 
 
 class TestBinaryTreeGenerator(TestCase):
@@ -207,21 +207,21 @@ class TestHalfAndHalfMutator(TestCase):
 class NodeCheckTestCase(TestCase):
 
     def _check_node(self, node, value, left_value, right_value, parent_value):
-        self.assertEqual(node.value, value, 'Node values not equal')
+        self.assertEqual(value, node.value, 'Node values not equal')
         if not node.left:
             self.assertIsNone(left_value, 'Left value not none')
         else:
-            self.assertEqual(node.left.value, left_value, 'Left values not equal')
+            self.assertEqual(left_value, node.left.value, 'Left values not equal')
 
         if not node.right:
             self.assertIsNone(right_value, 'Right value not none')
         else:
-            self.assertEqual(node.right.value, right_value, 'Right values not equal')
+            self.assertEqual(right_value, node.right.value, 'Right values not equal')
 
         if not node.parent:
             self.assertIsNone(parent_value, 'Parent value not none')
         else:
-            self.assertEqual(node.parent.value, parent_value, 'Parent values not equal')
+            self.assertEqual(parent_value, node.parent.value, 'Parent values not equal')
 
     def check_root(self, parent_node, value, left_value, right_value):
         self._check_node(parent_node, value, left_value, right_value, None)
@@ -613,12 +613,8 @@ class TestSubtreeExchangeLeafBiasedRecombinator(TestCase):
 
         recombinator = SubtreeExchangeLeafBiasedRecombinator(t_prob=0)
         result_1, result_2 = recombinator.crossover(parents)
-        self.assertEqual(result_1.root.value, '*')
-        self.assertEqual(result_1.root.left.value, 'A')
-        self.assertEqual(result_1.root.right.value, 'B')
-        self.assertEqual(result_2.root.value, '+')
-        self.assertEqual(result_2.root.left.value, 'C')
-        self.assertEqual(result_2.root.right.value, 'D')
+        self.assertEqual(result_1, tree_1)
+        self.assertEqual(result_2, tree_2)
 
         recombinator = SubtreeExchangeLeafBiasedRecombinator(t_prob=1)
         result_1, result_2 = recombinator.crossover(parents)
@@ -640,7 +636,7 @@ class TestSubtreeExchangeLeafBiasedRecombinator(TestCase):
         np.random.seed()
 
 
-class TestOnePointRecombinatorBase(TestCase):
+class TestOnePointRecombinatorBase(NodeCheckTestCase):
 
     def setUp(self) -> None:
         self.recombinator = OnePointRecombinatorBase()
@@ -668,28 +664,6 @@ class TestOnePointRecombinatorBase(TestCase):
 
     def test_select_node_pair(self):
         self.assertRaises(NotImplementedError, self.recombinator.select_node_pair, [])
-
-    def tearDown(self):
-        np.random.seed()
-
-
-class TestOnePointRecombinator(NodeCheckTestCase):
-
-    def setUp(self) -> None:
-        self.recombinator = OnePointRecombinator()
-
-    def test_select_node_pair(self):
-        node_1 = BinaryTreeNode('*')
-        node_1.add_left('A')
-        node_1.add_right('B')
-        node_2 = BinaryTreeNode('+')
-        node_2.add_left('C')
-        node_2.add_right('D')
-        node_3 = BinaryTreeNode('E')
-        node_4 = BinaryTreeNode('F')
-        common_region = [(node_1, node_2), (node_3, node_4)]
-        result = self.recombinator.select_node_pair(common_region)
-        self.assertIn(result, common_region)
 
     def test_crossover_stumps(self):
         tree_1 = BinaryTree(BinaryTreeNode('*'))
@@ -873,3 +847,110 @@ class TestOnePointRecombinator(NodeCheckTestCase):
         self.check_leaf(result_2.root.right.left, 'D', '*')
         self.check_leaf(result_2.root.right.right, 'M', '*')
 
+    def tearDown(self):
+        np.random.seed()
+
+
+class TestOnePointRecombinator(TestCase):
+
+    def setUp(self) -> None:
+        self.recombinator = OnePointRecombinator()
+
+    def test_select_node_pair(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        node_3 = BinaryTreeNode('E')
+        node_4 = BinaryTreeNode('F')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertIn(result, common_region)
+
+
+class TestOnePointLeafBiasedRecombinator(NodeCheckTestCase):
+
+    def setUp(self) -> None:
+        self.recombinator = OnePointLeafBiasedRecombinator()
+
+    def test_select_node_pair_one_pair(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        common_region = [(node_1, node_2)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertEqual(result, common_region[0])
+
+    def test_select_node_pair_only_operators(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        node_3 = BinaryTreeNode('+')
+        node_3.add_left('A1')
+        node_3.add_right('B1')
+        node_4 = BinaryTreeNode('+')
+        node_4.add_left('C1')
+        node_4.add_right('D1')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertIn(result, common_region)
+
+    def test_select_node_pair_only_operands(self):
+        node_1 = BinaryTreeNode('A')
+        node_2 = BinaryTreeNode('B')
+        node_3 = BinaryTreeNode('C')
+        node_4 = BinaryTreeNode('D')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertIn(result, common_region)
+
+    def test_select_node_pair_operands_and_operators(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        node_3 = BinaryTreeNode('C')
+        node_4 = BinaryTreeNode('D')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertIn(result, common_region)
+
+    def test_select_node_pair_t_prob_1(self):
+        self.recombinator.t_prob = 1
+
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        node_3 = BinaryTreeNode('C')
+        node_4 = BinaryTreeNode('D')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertEqual(result, common_region[0])
+
+    def test_select_node_pair_t_prob_0(self):
+        self.recombinator.t_prob = 0
+
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        node_3 = BinaryTreeNode('C')
+        node_4 = BinaryTreeNode('D')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertEqual(result, common_region[1])

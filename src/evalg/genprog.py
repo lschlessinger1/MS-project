@@ -513,7 +513,8 @@ class SubtreeExchangeLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
 
         # If either tree has a single node, we must select a terminal node.
         either_tree_single_elt = tree_1_single_elt or tree_2_single_elt
-        if self.t_prob > np.random.rand() or either_tree_single_elt:
+        choose_terminal = self.t_prob < np.random.rand()
+        if choose_terminal or either_tree_single_elt:
             # Choose terminal node pair uniformly at random.
             terminals_1 = [i for (i, token) in enumerate(postfix_tokens_1) if token not in operators]
             terminals_2 = [i for (i, token) in enumerate(postfix_tokens_2) if token not in operators]
@@ -588,8 +589,7 @@ class OnePointRecombinatorBase(SubtreeExchangeRecombinatorBase):
 
         return tree_1, tree_2
 
-    @staticmethod
-    def select_node_pair(common_region: List[NodePair]) -> NodePair:
+    def select_node_pair(self, common_region: List[NodePair]) -> NodePair:
         """A crossover point is selected.
 
         :param common_region:
@@ -600,8 +600,7 @@ class OnePointRecombinatorBase(SubtreeExchangeRecombinatorBase):
 
 class OnePointRecombinator(OnePointRecombinatorBase):
 
-    @staticmethod
-    def select_node_pair(common_region: List[NodePair]) -> NodePair:
+    def select_node_pair(self, common_region: List[NodePair]) -> NodePair:
         """A random crossover point is selected with a uniform probability."""
         r = np.random.randint(0, len(common_region))
         return common_region[r]
@@ -614,6 +613,31 @@ class OnePointLeafBiasedRecombinator(OnePointRecombinatorBase):
     def __init__(self, t_prob: float = 0.1):
         self.t_prob = t_prob  # probability of choosing a terminal node (leaf).
 
-    @staticmethod
-    def select_node_pair(common_region: List[NodePair]) -> NodePair:
-        pass
+    def select_node_pair(self, common_region: List[NodePair]) -> NodePair:
+        if len(common_region) == 1:
+            return common_region[0]
+
+        terminals = [i for (i, (node_1, node_2)) in enumerate(common_region)
+                     if node_1.value not in operators and node_2.value not in operators]
+        internals = [i for (i, (node_1, node_2)) in enumerate(common_region)
+                     if node_1.value in operators and node_2.value in operators]
+
+        if len(terminals) == 0:
+            # Choose internal node pair uniformly at random.
+            r = np.random.choice(internals)
+            return common_region[r]
+        elif len(internals) == 0:
+            # Choose terminal node pair uniformly at random.
+            r = np.random.choice(terminals)
+            return common_region[r]
+        elif len(terminals) > 0 and len(internals) > 0:
+            # Choose terminal (leaf) with probability `t_prob`.
+            choose_terminal = self.t_prob < np.random.rand()
+            if choose_terminal:
+                # Choose terminal node pair uniformly at random.
+                r = np.random.choice(terminals)
+                return common_region[r]
+            else:
+                # Choose internal node pair uniformly at random.
+                r = np.random.choice(internals)
+                return common_region[r]
