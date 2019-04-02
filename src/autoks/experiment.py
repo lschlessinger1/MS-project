@@ -276,6 +276,7 @@ class Experiment:
             acq_scores_selected = [s for i, s in enumerate(acq_scores) if i in ind]
             for kern, score in zip(selected_kernels, acq_scores_selected):
                 print(str(kern), 'acq. score =', score)
+            print('')
 
         return selected_kernels, ind, acq_scores
 
