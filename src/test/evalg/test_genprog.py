@@ -970,7 +970,7 @@ class TestOnePointStrictRecombinator(NodeCheckTestCase):
         node_2.add_right('D')
         common_region = [(node_1, node_2)]
         result = self.recombinator.select_node_pair(common_region)
-        self.assertEqual(result, common_region[0])
+        self.assertIsNone(result)
 
     def test_select_node_pair_dif_operator(self):
         node_1 = BinaryTreeNode('+')

@@ -583,7 +583,11 @@ class OnePointRecombinatorBase(SubtreeExchangeRecombinatorBase):
         if len(common_region) <= 1:
             return tree_1, tree_2
 
-        node_1, node_2 = self.select_node_pair(common_region)
+        selected_nodes = self.select_node_pair(common_region)
+        if selected_nodes is None:
+            return tree_1, tree_2
+        else:
+            node_1, node_2 = selected_nodes
 
         self._swap_subtrees(node_1, node_2, tree_1, tree_2)
 
@@ -602,8 +606,9 @@ class OnePointRecombinator(OnePointRecombinatorBase):
 
     def select_node_pair(self, common_region: List[NodePair]) -> NodePair:
         """A random crossover point is selected with a uniform probability."""
-        r = np.random.randint(0, len(common_region))
-        return common_region[r]
+        if len(common_region) > 0:
+            r = np.random.randint(0, len(common_region))
+            return common_region[r]
 
 
 class OnePointStrictRecombinator(OnePointRecombinatorBase):
@@ -612,16 +617,8 @@ class OnePointStrictRecombinator(OnePointRecombinatorBase):
     Poli and Langdon, 1997b
     """
 
-    def select_node_pair(self, common_region: List[NodePair]) -> NodePair:
-        """Exactly like one-point crossover except that the
-        crossover point can be located only in the parts of the two
-        trees which are exactly the same (i.e. which have the same
-        functions in the nodes encountered traversing the trees from
-        the root node).
-        """
-        if len(common_region) == 1:
-            return common_region[0]
-
+    @staticmethod
+    def get_allowed_pairs(common_region: List[NodePair]) -> List[NodePair]:
         terminals = [(node_1, node_2) for (i, (node_1, node_2)) in enumerate(common_region)
                      if node_1.value not in operators and node_2.value not in operators]
         internals = [(node_1, node_2) for (i, (node_1, node_2)) in enumerate(common_region)
@@ -630,9 +627,18 @@ class OnePointStrictRecombinator(OnePointRecombinatorBase):
         # Pairs the have the same internal/operator
         same_functions = [(node_1, node_2) for (node_1, node_2) in internals if node_1.value == node_2.value]
 
-        allowed_node_pairs = same_functions + terminals
-        r = np.random.randint(0, len(allowed_node_pairs))
-        return allowed_node_pairs[r]
+        return same_functions + terminals
+
+    def select_node_pair(self, common_region: List[NodePair]) -> NodePair:
+        """Exactly like one-point crossover except that the
+        crossover point can be located only in the parts of the two
+        trees which are exactly the same (i.e. which have the same
+        functions in the nodes encountered traversing the trees from
+        the root node).
+        """
+        allowed_node_pairs = self.get_allowed_pairs(common_region)
+        recombinator = OnePointRecombinator()
+        return recombinator.select_node_pair(allowed_node_pairs)
 
 
 class OnePointLeafBiasedRecombinator(OnePointRecombinatorBase):
@@ -669,3 +675,15 @@ class OnePointLeafBiasedRecombinator(OnePointRecombinatorBase):
                 # Choose internal node pair uniformly at random.
                 r = np.random.choice(internals)
                 return common_region[r]
+
+
+class OnePointStrictLeafBiasedRecombinator(OnePointRecombinatorBase):
+    t_prob: float
+
+    def __init__(self, t_prob: float = 0.1):
+        self.t_prob = t_prob  # probability of choosing a terminal node (leaf).
+
+    def select_node_pair(self, common_region: List[NodePair]) -> NodePair:
+        allowed_node_pairs = OnePointStrictRecombinator.get_allowed_pairs(common_region)
+        recombinator = OnePointLeafBiasedRecombinator(t_prob=self.t_prob)
+        return recombinator.select_node_pair(allowed_node_pairs)
