@@ -208,8 +208,8 @@ class Experiment:
             # Check for same expansions
             if self.all_same_expansion(new_kernels, prev_expansions, self.max_same_expansions):
                 if self.verbose:
-                    print(f'Terminating kernel search. The last {self.max_same_expansions} expansions proposed the same '
-                          f'kernels.')
+                    print(f'Terminating kernel search. The last {self.max_same_expansions} expansions proposed the same'
+                          f' kernels.')
                 break
             else:
                 prev_expansions = self.update_kernel_infix_set(new_kernels, prev_expansions, self.max_same_expansions)
