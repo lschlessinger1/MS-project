@@ -6,8 +6,8 @@ from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.hyperprior import Hyperpriors, BOMSHyperpriors
 from src.autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, tree_to_kernel, \
-    pretty_print_aks_kernels
-from src.evalg.genprog import BinaryTreeGenerator
+    pretty_print_aks_kernels, sort_kernel
+from src.evalg.genprog import BinaryTreeGenerator, OnePointRecombinatorBase
 from src.evalg.vary import PopulationOperator
 
 
@@ -105,6 +105,15 @@ class EvolutionaryGrammar(BaseGrammar):
         """
         if verbose:
             pretty_print_aks_kernels(aks_kernels, 'Seed')
+
+        using_1_pt_cx = any([isinstance(v.operator, OnePointRecombinatorBase) for v in
+                             self.population_operator.variators])
+        if using_1_pt_cx:
+            if verbose:
+                print('Using one-point crossover. Sorting kernels.\n')
+            # Sort trees if performing one-point crossover for alignment of trees.
+            for aks_kernel in aks_kernels:
+                aks_kernel.kernel = sort_kernel(aks_kernel.kernel)
 
         # Convert GPy kernels to BinaryTrees
         trees = [aks_kernel.to_binary_tree() for aks_kernel in aks_kernels]

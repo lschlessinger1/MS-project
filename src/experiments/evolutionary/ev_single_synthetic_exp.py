@@ -6,7 +6,7 @@ from src.autoks.grammar import EvolutionaryGrammar, CKSGrammar
 from src.autoks.kernel import get_all_1d_kernels
 from src.autoks.kernel_selection import evolutionary_kernel_selector
 from src.autoks.model import log_likelihood_normalized
-from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeLeafBiasedRecombinator, HalfAndHalfGenerator
+from src.evalg.genprog import HalfAndHalfMutator, OnePointRecombinator, HalfAndHalfGenerator
 from src.evalg.vary import CrossMutPopOperator, CrossoverVariator, MutationVariator
 from src.experiments.util.synthetic_data import Sinosoid2Dataset
 
@@ -23,7 +23,7 @@ n_offspring = 10
 pop_size = 25
 
 mutator = HalfAndHalfMutator(operands=get_all_1d_kernels(base_kernels, x.shape[1]))
-recombinator = SubtreeExchangeLeafBiasedRecombinator()
+recombinator = OnePointRecombinator()
 cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring)
 mut_variator = MutationVariator(mutator)
 variators = [cx_variator, mut_variator]
