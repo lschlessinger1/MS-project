@@ -606,8 +606,36 @@ class OnePointRecombinator(OnePointRecombinatorBase):
         return common_region[r]
 
 
-class OnePointLeafBiasedRecombinator(OnePointRecombinatorBase):
+class OnePointStrictRecombinator(OnePointRecombinatorBase):
+    """Strict one-point crossover.
 
+    Poli and Langdon, 1997b
+    """
+
+    def select_node_pair(self, common_region: List[NodePair]) -> NodePair:
+        """Exactly like one-point crossover except that the
+        crossover point can be located only in the parts of the two
+        trees which are exactly the same (i.e. which have the same
+        functions in the nodes encountered traversing the trees from
+        the root node).
+        """
+        if len(common_region) == 1:
+            return common_region[0]
+
+        terminals = [(node_1, node_2) for (i, (node_1, node_2)) in enumerate(common_region)
+                     if node_1.value not in operators and node_2.value not in operators]
+        internals = [(node_1, node_2) for (i, (node_1, node_2)) in enumerate(common_region)
+                     if node_1.value in operators and node_2.value in operators]
+
+        # Pairs the have the same internal/operator
+        same_functions = [(node_1, node_2) for (node_1, node_2) in internals if node_1.value == node_2.value]
+
+        allowed_node_pairs = same_functions + terminals
+        r = np.random.randint(0, len(allowed_node_pairs))
+        return allowed_node_pairs[r]
+
+
+class OnePointLeafBiasedRecombinator(OnePointRecombinatorBase):
     t_prob: float
 
     def __init__(self, t_prob: float = 0.1):

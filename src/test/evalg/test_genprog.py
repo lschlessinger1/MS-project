@@ -7,7 +7,7 @@ from src.evalg.encoding import BinaryTree, BinaryTreeNode
 from src.evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
     GrowGenerator, FullGenerator, GrowMutator, FullMutator, SubtreeExchangeRecombinatorBase, HalfAndHalfMutator, \
     HalfAndHalfGenerator, SubtreeExchangeRecombinator, SubtreeExchangeLeafBiasedRecombinator, OnePointRecombinatorBase, \
-    OnePointRecombinator, OnePointLeafBiasedRecombinator
+    OnePointRecombinator, OnePointLeafBiasedRecombinator, OnePointStrictRecombinator
 
 
 class TestBinaryTreeGenerator(TestCase):
@@ -954,3 +954,46 @@ class TestOnePointLeafBiasedRecombinator(NodeCheckTestCase):
         common_region = [(node_1, node_2), (node_3, node_4)]
         result = self.recombinator.select_node_pair(common_region)
         self.assertEqual(result, common_region[1])
+
+
+class TestOnePointStrictRecombinator(NodeCheckTestCase):
+
+    def setUp(self) -> None:
+        self.recombinator = OnePointStrictRecombinator()
+
+    def test_select_node_pair_one_pair(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        common_region = [(node_1, node_2)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertEqual(result, common_region[0])
+
+    def test_select_node_pair_dif_operator(self):
+        node_1 = BinaryTreeNode('+')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('*')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        node_3 = BinaryTreeNode('C')
+        node_4 = BinaryTreeNode('D')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertEqual(common_region[1], result)
+
+    def test_select_node_pair_same_operator(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('*')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        node_3 = BinaryTreeNode('C')
+        node_4 = BinaryTreeNode('D')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertIn(result, common_region)
