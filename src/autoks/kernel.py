@@ -426,7 +426,7 @@ def kernel_l2_dist(kernel_1: Kern,
     return np.linalg.norm(kernel_1.K(x, x) - kernel_2.K(x, x))
 
 
-def sort_kernel(kernel: Kern) -> Union[Kern, None]:
+def sort_kernel(kernel: Kern) -> Optional[Kern]:
     """Sorts kernel tree.
 
     :param kernel:
