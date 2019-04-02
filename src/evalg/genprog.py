@@ -372,13 +372,13 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
 
 # Binary tree recombinators
 
-class SubtreeExchangeBinaryRecombinator(Recombinator, ABC):
+class SubtreeExchangeRecombinatorBase(Recombinator, ABC):
 
     @staticmethod
     def _swap_subtrees(node_1: BinaryTreeNode,
-                      node_2: BinaryTreeNode,
-                      tree_1: BinaryTree,
-                      tree_2: BinaryTree) -> None:
+                       node_2: BinaryTreeNode,
+                       tree_1: BinaryTree,
+                       tree_2: BinaryTree) -> None:
         """Swap parents and children of nodes.
 
 
@@ -426,7 +426,7 @@ class SubtreeExchangeBinaryRecombinator(Recombinator, ABC):
     @staticmethod
     def _valid_pair(token_1: str,
                     token_2: str) -> bool:
-        """Checks if postfix token pair is valid.
+        """Checks if token pair is valid.
 
         :param token_1: The first token
         :param token_2: The second token
@@ -439,6 +439,9 @@ class SubtreeExchangeBinaryRecombinator(Recombinator, ABC):
 
         return False
 
+
+class SubtreeExchangeRecombinator(SubtreeExchangeRecombinatorBase):
+
     @staticmethod
     def _select_token_ind(tokens_1: List[str],
                           tokens_2: List[str]) -> Tuple[int, int]:
@@ -450,19 +453,16 @@ class SubtreeExchangeBinaryRecombinator(Recombinator, ABC):
         """
         r1 = np.random.randint(0, len(tokens_1))
         r2 = np.random.randint(0, len(tokens_2))
-        while not SubtreeExchangeBinaryRecombinator._valid_pair(tokens_1[r1], tokens_2[r2]):
+        while not SubtreeExchangeRecombinatorBase._valid_pair(tokens_1[r1], tokens_2[r2]):
             r1 = np.random.randint(0, len(tokens_1))
             r2 = np.random.randint(0, len(tokens_2))
 
         return r1, r2
 
-
-class OnePointRecombinator(SubtreeExchangeBinaryRecombinator):
-
     @check_binary_trees
     @check_two_parents
     def crossover(self, parents: List[BinaryTree]) -> Tuple[BinaryTree, BinaryTree]:
-        """One point crossover.
+        """Subtree exchange crossover.
 
         Nodes are selected uniformly at random.
 
@@ -485,7 +485,7 @@ class OnePointRecombinator(SubtreeExchangeBinaryRecombinator):
         return tree_1, tree_2
 
 
-class OnePointLeafBiasedRecombinator(SubtreeExchangeBinaryRecombinator):
+class SubtreeExchangeLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
     t_prob: float
 
     def __init__(self, t_prob: float = 0.1):
@@ -494,7 +494,7 @@ class OnePointLeafBiasedRecombinator(SubtreeExchangeBinaryRecombinator):
     @check_binary_trees
     @check_two_parents
     def crossover(self, parents: List[BinaryTree]) -> Tuple[BinaryTree, BinaryTree]:
-        """One point leaf biased crossover.
+        """Subtree exchange leaf biased crossover.
 
         Select terminal nodes with probability t_prob and internal nodes with probability 1 - t_prob.
 
@@ -533,3 +533,57 @@ class OnePointLeafBiasedRecombinator(SubtreeExchangeBinaryRecombinator):
         self._swap_subtrees(node_1, node_2, tree_1, tree_2)
 
         return tree_1, tree_2
+
+
+class OnePointRecombinator(SubtreeExchangeRecombinatorBase):
+
+    def get_common_region(self, node_1, node_2, valid_pairs=None) -> None:
+        """Get valid pairs of nodes using an in-order traversal"""
+        if valid_pairs is None:
+            valid_pairs = []
+
+        if node_1 and node_2:
+            both_leaves = node_1.is_leaf() and node_2.is_leaf()
+            both_internals = not node_1.is_leaf() and not node_2.is_leaf()
+            if both_leaves or both_internals:
+                valid_pairs.append((node_1, node_2))
+                self.get_common_region(node_1.left, node_2.left, valid_pairs)
+                self.get_common_region(node_1.right, node_2.right, valid_pairs)
+
+    @check_binary_trees
+    @check_two_parents
+    def crossover(self, parents: list) -> Tuple[BinaryTree, BinaryTree]:
+        """One point crossover.
+
+        :param parents:
+        :return:
+        """
+        tree_1 = parents[0]
+        tree_2 = parents[1]
+
+        # All the nodes encountered are stored, forming a tree fragment
+        common_region = []
+        self.get_common_region(tree_1.root, tree_2.root, common_region)
+
+        if len(common_region) <= 1:
+            return tree_1, tree_2
+
+        # A random crossover point is selected with a uniform probability.
+        r = np.random.randint(0, len(common_region))
+        node_1, node_2 = common_region[r]
+
+        self._swap_subtrees(node_1, node_2, tree_1, tree_2)
+
+        return tree_1, tree_2
+
+
+class OnePointLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
+    t_prob: float
+
+    def __init__(self, t_prob: float = 0.1):
+        self.t_prob = t_prob  # probability of choosing a terminal node (leaf).
+
+    @check_binary_trees
+    @check_two_parents
+    def crossover(self, parents: list) -> Tuple[BinaryTree, BinaryTree]:
+        pass
