@@ -678,6 +678,19 @@ class TestOnePointRecombinator(NodeCheckTestCase):
     def setUp(self) -> None:
         self.recombinator = OnePointRecombinator()
 
+    def test_select_node_pair(self):
+        node_1 = BinaryTreeNode('*')
+        node_1.add_left('A')
+        node_1.add_right('B')
+        node_2 = BinaryTreeNode('+')
+        node_2.add_left('C')
+        node_2.add_right('D')
+        node_3 = BinaryTreeNode('E')
+        node_4 = BinaryTreeNode('F')
+        common_region = [(node_1, node_2), (node_3, node_4)]
+        result = self.recombinator.select_node_pair(common_region)
+        self.assertIn(result, common_region)
+
     def test_crossover_stumps(self):
         tree_1 = BinaryTree(BinaryTreeNode('*'))
         tree_2 = BinaryTree(BinaryTreeNode('+'))
@@ -859,3 +872,4 @@ class TestOnePointRecombinator(NodeCheckTestCase):
         self.check_leaf(result_2.root.left.right, 'L', '+')
         self.check_leaf(result_2.root.right.left, 'D', '*')
         self.check_leaf(result_2.root.right.right, 'M', '*')
+
