@@ -141,19 +141,24 @@ class BinaryTreeNode(TreeNode):
             graph = Digraph()
 
         if root is not None:
+            leaf_shape = 'box'
+
+            root_shape = leaf_shape if self.is_leaf() else None
             root_id = str(id(root))
-            graph.node(root_id, label=root.html_label)
+            graph.node(root_id, label=root.html_label, shape=root_shape)
 
             if root.left is not None:
                 left = root.left
+                left_shape = leaf_shape if left.is_leaf() else None
                 left_id = str(id(left))
-                graph.node(left_id, label=left.html_label)
+                graph.node(left_id, label=left.html_label, shape=left_shape)
                 graph.edge(root_id, left_id)
                 root.left.create_graph(graph=graph)
             if root.right is not None:
                 right = root.right
+                right_shape = leaf_shape if right.is_leaf() else None
                 right_id = str(id(right))
-                graph.node(right_id, label=right.html_label)
+                graph.node(right_id, label=right.html_label, shape=right_shape)
                 graph.edge(root_id, right_id)
                 root.right.create_graph(graph=graph)
 
