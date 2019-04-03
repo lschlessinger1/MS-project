@@ -7,6 +7,7 @@ from GPy.kern import Kern
 
 from src.autoks.kernel import kernel_to_infix_tokens, tokens_to_str
 from src.evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTree
+from src.evalg.fitness import covariant_parsimony_pressure
 
 
 def model_to_infix_tokens(model: GP) -> List[str]:
@@ -148,6 +149,16 @@ def pl2(model: GP) -> float:
     k = model._size_transformed()
     nll = -model.log_likelihood()
     return nll / n + k / (2 * n)
+
+
+def cov_parsimony_pressure(model: GP,
+                           model_scores: List[float],
+                           model_sizes: List[int]) -> float:
+    """Covariant parsimony pressure method of a model."""
+    # noinspection PyProtectedMember
+    model_size = model._size_transformed()
+    lml = model.log_likelihood()
+    return covariant_parsimony_pressure(fitness=lml, size=model_size, sizes=model_sizes, fitness_list=model_scores)
 
 
 # Model comparison scores
