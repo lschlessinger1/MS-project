@@ -195,10 +195,19 @@ class Experiment:
             if depth > self.max_depth:
                 break
 
-            if self.debug and depth % 2 == 0:
-                if self.max_depth < np.inf:
-                    print('Starting iteration %d/%d' % (depth, self.max_depth))
-                print('Evaluated %d/%d kernels\n' % (self.n_evals, self.eval_budget))
+            if self.verbose:
+                print(f'Iteration {depth}/{self.max_depth}')
+                print(f'Evaluated {self.n_evals}/{self.eval_budget}')
+                evaluated_kernels = self.remove_nan_scored_kernels(kernels)
+                scores = [aks_kernel.score for aks_kernel in evaluated_kernels]
+                arg_max_score = int(np.argmax(scores))
+                best_kernel = evaluated_kernels[arg_max_score]
+                sizes = [len(aks_kernel.to_binary_tree()) for aks_kernel in evaluated_kernels]
+                print(f'Avg. objective = {np.mean(scores)}')
+                print(f'Best objective = {scores[arg_max_score]}')
+                print(f'Avg. size = {np.mean(sizes)}')
+                print(f'Best kernel: {best_kernel}')
+                print('')
 
             parents = self.select_parents(kernels)
 
@@ -490,9 +499,6 @@ class Experiment:
     @staticmethod
     def randomize_kernels(aks_kernels: List[AKSKernel],
                           verbose: bool = False) -> List[AKSKernel]:
-        if verbose:
-            print('Randomizing kernels\n')
-
         for aks_kernel in aks_kernels:
             aks_kernel.kernel.randomize()
 
