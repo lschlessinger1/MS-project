@@ -535,6 +535,9 @@ class Experiment:
         for stat_book in self.stat_book_collection.stat_book_list():
             self.plot_stat_book(stat_book)
 
+        # Plot the kernel tree of the best kernel
+        self.plot_kernel_tree(best_aks_kernel)
+
         print('')
         self.timing_report()
         print('')
@@ -721,6 +724,23 @@ class Experiment:
         std_diversity_scores = stat_book.running_std(self.diversity_scores_name)
         plot_distribution(mean_diversity_scores, std_diversity_scores, metric_name='diversity',
                           value_name='population', x_label=x_label)
+        plt.show()
+
+    def plot_kernel_tree(self, aks_kernel: AKSKernel,
+                         graph_name: str = 'best_kernel_tree',
+                         directory: str = '../results/figures') -> None:
+        """Create a kernel tree file and plot it.
+
+        :param aks_kernel:
+        :param graph_name:
+        :param directory:
+        :return:
+        """
+        graph = aks_kernel.to_binary_tree().create_graph(name=graph_name)
+        graph.format = 'png'  # only tested with PNG
+        graph.render(f"{graph_name}", directory, view=False, cleanup=True)
+        img = plt.imread(graph.filepath + '.' + graph.format)
+        plt.imshow(img)
         plt.show()
 
     def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
