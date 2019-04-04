@@ -1,4 +1,5 @@
 from typing import Callable, Optional, List, Dict, Iterable, Union, Any
+
 import numpy as np
 
 DataType = Union[float, List[float]]
@@ -87,6 +88,9 @@ class MultiStat:
     def var(self) -> DataList:
         return [float(np.var(value)) for value in self.get_raw_values()]
 
+    def sum(self) -> DataList:
+        return [float(np.sum(value)) for value in self.get_raw_values()]
+
     def running_max(self) -> DataList:
         max_so_far = []
         for data_point in self.get_raw_values():
@@ -159,6 +163,9 @@ class StatBook:
 
     def var(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].var()
+
+    def sum(self, multi_stat_name: str) -> DataList:
+        return self.multi_stats[multi_stat_name].sum()
 
     def running_max(self, multi_stat_name: str) -> DataList:
         return self.multi_stats[multi_stat_name].running_max()

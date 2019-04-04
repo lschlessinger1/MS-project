@@ -1,8 +1,9 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from src.autoks.statistics import Statistic, MultiStat, StatBook
 import numpy as np
+
+from src.autoks.statistics import Statistic, MultiStat, StatBook
 
 
 class TestStatistic(TestCase):
@@ -116,6 +117,16 @@ class TestMultiStat(TestCase):
         ms.stats.get(ms.RAW_VALUE_STAT_NAME).record([5, 7])
         ms.stats.get(ms.RAW_VALUE_STAT_NAME).record([4, 1, 1])
         self.assertListEqual(ms.var(), [0, 0, 0, 1., 2.])
+
+    def test_sum(self):
+        ms = MultiStat('test_ms')
+        ms.add_raw_value_stat(lambda x: x)
+        ms.stats.get(ms.RAW_VALUE_STAT_NAME).record(1)
+        ms.stats.get(ms.RAW_VALUE_STAT_NAME).record(2)
+        ms.stats.get(ms.RAW_VALUE_STAT_NAME).record(3)
+        ms.stats.get(ms.RAW_VALUE_STAT_NAME).record([5, 7])
+        ms.stats.get(ms.RAW_VALUE_STAT_NAME).record([4, 1, 1])
+        self.assertListEqual(ms.sum(), [1, 2, 3, 12, 6])
 
     def test_running_max(self):
         ms = MultiStat('test_ms')
