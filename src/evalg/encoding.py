@@ -130,7 +130,7 @@ class BinaryTreeNode(TreeNode):
         self._add_child(self.right)
         return self.right
 
-    def create_graph(self, graph: Optional[Digraph] = None) -> Digraph:
+    def create_graph(self, graph: Optional[Digraph] = None, **digraph_kwargs) -> Digraph:
         """Create a graphviz graph of the binary tree node.
 
         :param graph:
@@ -138,7 +138,10 @@ class BinaryTreeNode(TreeNode):
         """
         root = self
         if not graph:
-            graph = Digraph()
+            default_name = 'binary_tree_node'
+            if 'name' not in digraph_kwargs:
+                digraph_kwargs['name'] = default_name
+            graph = Digraph(**digraph_kwargs)
 
         if root is not None:
             leaf_shape = 'box'
@@ -247,12 +250,15 @@ class BinaryTree:
             raise TypeError('root must be a {}'.format(BinaryTreeNode.__name__))
         self._root = root
 
-    def create_graph(self) -> Digraph:
+    def create_graph(self, **digraph_kwargs) -> Digraph:
         """Create a graphviz graph of the binary tree.
 
         :return:
         """
-        return self.root.create_graph()
+        default_name = 'binary_tree'
+        if 'name' not in digraph_kwargs:
+            digraph_kwargs['name'] = default_name
+        return self.root.create_graph(**digraph_kwargs)
 
     def select_postorder(self, node_idx: int) -> Optional[BinaryTreeNode]:
         """Select node from binary tree given postorder index.
