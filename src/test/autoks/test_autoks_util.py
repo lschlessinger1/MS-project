@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from src.autoks.util import arg_sort, arg_unique, remove_duplicates, tokenize, flatten, remove_outer_parens, \
-    join_operands
+    join_operands, type_count
 
 
 class TestUtil(TestCase):
@@ -54,3 +54,9 @@ class TestUtil(TestCase):
         self.assertListEqual(result, [1, '+', 2, '+', 3])
         result = join_operands([1, [44, 77], 3], '+')
         self.assertListEqual(result, [1, '+', [44, 77], '+', 3])
+
+    def test_type_count(self):
+        result = type_count([1, 2, 3, '4'], str)
+        self.assertEqual(1, result)
+        result = type_count([1, 2, 3, '4'], int)
+        self.assertEqual(3, result)

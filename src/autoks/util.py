@@ -1,4 +1,4 @@
-from typing import List, Iterable, Sequence, TypeVar
+from typing import List, Iterable, Sequence, TypeVar, Type
 
 
 def arg_sort(unsorted_iterable: Iterable) -> List[int]:
@@ -99,3 +99,14 @@ def join_operands(operands: list,
         if i < len(operands) - 1:
             joined += [operator]
     return joined
+
+
+def type_count(a: Iterable,
+               cls: Type) -> int:
+    """Count how many items of a given type there are in an iterable.
+
+    :param a:
+    :param cls:
+    :return:
+    """
+    return sum(isinstance(x, cls) for x in a)

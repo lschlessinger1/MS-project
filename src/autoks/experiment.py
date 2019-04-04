@@ -1,24 +1,26 @@
 import warnings
 from time import time
-from typing import Callable, List, Tuple, Optional, FrozenSet, Union
+from typing import Callable, List, Tuple, Optional, FrozenSet, Union, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
 from GPy.models import GPRegression
+from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
 from src.autoks.grammar import BaseGrammar
 from src.autoks.hyperprior import Hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
-    AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors
+    AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping
 from src.autoks.kernel_selection import KernelSelector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
 from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy
 from src.autoks.statistics import StatBookCollection, Statistic, StatBook
+from src.autoks.util import type_count
 from src.evalg.plotting import plot_best_so_far, plot_distribution
 
 
@@ -92,15 +94,17 @@ class Experiment:
         # statistics used for plotting
         self.n_hyperparams_name = 'n_hyperparameters'
         self.n_operands_name = 'n_operands'
+        self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in self.kernel_families]
         self.score_name = 'score'
         self.cov_dists_name = 'cov_dists'
         self.diversity_scores_name = 'diversity_scores'
         self.best_stat_name = 'best'
-        shared_multi_stat_names = [self.n_hyperparams_name,
-                                   self.n_operands_name]  # All stat books track these variables
+        # All stat books track these variables
+        shared_multi_stat_names = [self.n_hyperparams_name, self.n_operands_name] + self.base_kern_freq_names
 
         # raw value statistics
-        shared_stats = [get_n_hyperparams, get_n_operands]
+        base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in self.kernel_families]
+        shared_stats = [get_n_hyperparams, get_n_operands] + base_kern_stat_funcs
 
         self.evaluations_name = 'evaluations'
         self.active_set_name = 'active_set'
@@ -598,6 +602,8 @@ class Experiment:
             self.plot_n_hyperparams_summary(stat_book)
         if self.n_operands_name in ms:
             self.plot_n_operands_summary(stat_book)
+        if all(key in ms for key in self.base_kern_freq_names):
+            self.plot_base_kernel_freqs(stat_book)
         if self.cov_dists_name in ms:
             self.plot_cov_dist_summary(stat_book)
         if self.diversity_scores_name in ms:
@@ -667,6 +673,25 @@ class Experiment:
         std_n_operands = stat_book.std(self.n_operands_name)
         plot_distribution(median_n_operands, std_n_operands, best_n_operands, value_name='median',
                           metric_name='# Operands', x_label=x_label)
+        plt.show()
+
+    def plot_base_kernel_freqs(self, stat_book: StatBook) -> None:
+        """Plot base kernel frequency across generations.
+
+        :param stat_book:
+        :return:
+        """
+        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
+        freqs = [(stat_book.sum(key), key) for key in self.base_kern_freq_names]
+
+        plt.title('%s Base Kernel Frequency' % stat_book.name)
+        plt.xlabel(x_label)
+        plt.ylabel('Frequency')
+        ax = plt.gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))  # x-axis will have integer ticks
+        for freq, key in freqs:
+            plt.plot(freq, label=key, marker='o', markerfacecolor='black')
+        plt.legend()
         plt.show()
 
     def plot_cov_dist_summary(self, stat_book: StatBook) -> None:
@@ -775,3 +800,11 @@ def get_best_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs) -> Lis
     n_hyperparams = get_n_hyperparams(aks_kernels, *args, **kwargs)
     score_arg_max = int(np.argmax(model_scores))
     return [n_hyperparams[score_arg_max]]
+
+
+def base_kern_freq(base_kern: str) -> Callable[[List[AKSKernel], Any, Any], List[int]]:
+    def get_frequency(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
+        cls = get_kernel_mapping()[base_kern]
+        return [type_count(aks_kernel.to_binary_tree(), cls) for aks_kernel in aks_kernels]
+
+    return get_frequency
