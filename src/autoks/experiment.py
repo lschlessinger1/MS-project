@@ -833,8 +833,8 @@ class Experiment:
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
 
         n_offspring = 10
-        pop_size = 25
-        n_parents = 4
+        pop_size = 16
+        n_parents = 10
 
         mutator = HalfAndHalfMutator(operands=get_all_1d_kernels(base_kernels, x_train.shape[1]))
         recombinator = OnePointRecombinator()
