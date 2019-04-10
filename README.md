@@ -21,4 +21,4 @@ Master's Project
 4. Update the `GPy.kern.src` file with newly defined kernels.
 5. Update `autoks.kernel.get_matching_kernels` to replace `RatQuad`, `Linear`, and `StdPeriodic` with new kernels.
 
-See the correspoinding notebooks with kernel definitions [here](https://github.com/lschlessinger1/MS-project/tree/master/src/playground/test%20custom%20kernels).
+See the corresponding notebooks with kernel definitions [here](https://github.com/lschlessinger1/MS-project/tree/master/src/playground/test%20custom%20kernels).
