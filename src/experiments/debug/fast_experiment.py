@@ -10,7 +10,7 @@ from src.experiments.util.synthetic_data import CubicSine1dDataset
 # Set random seed for reproducibility.
 np.random.seed(4096)
 
-dataset = CubicSine1dDataset(n_samples=10)
+dataset = CubicSine1dDataset(n_samples=100)
 x, y = dataset.load_or_generate_data()
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
@@ -28,5 +28,5 @@ def negative_BIC(m):
 objective = negative_BIC
 
 experiment = Experiment(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
-                        eval_budget=8, debug=True, verbose=True)
-experiment.run(title='Random Experiment', summarize=True)
+                        eval_budget=8, debug=True, verbose=True, additive_form=False)
+experiment.run(title='Fast Experiment', create_report=False)

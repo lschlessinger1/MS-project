@@ -10,18 +10,22 @@ from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
-from src.autoks.grammar import BaseGrammar
-from src.autoks.hyperprior import Hyperpriors
+from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
+from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
-    AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping
-from src.autoks.kernel_selection import KernelSelector
+    AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
+    get_all_1d_kernels
+from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
+    evolutionary_kernel_selector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
-from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy
+from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy
 from src.autoks.statistics import StatBookCollection, Statistic, StatBook
 from src.autoks.util import type_count
+from src.evalg.genprog import HalfAndHalfMutator, OnePointRecombinator, HalfAndHalfGenerator
 from src.evalg.plotting import plot_best_so_far, plot_distribution
+from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
 
 
 class Experiment:
@@ -60,11 +64,15 @@ class Experiment:
         self.objective = objective
         self.kernel_families = kernel_families
 
-        self.x_train = np.atleast_2d(x_train)
-        self.x_test = np.atleast_2d(x_test)
+        self.x_train = x_train.reshape(-1, 1) if x_train.ndim == 1 else x_train
+        # self.x_train = np.atleast_2d(x_train)
+        self.x_test = x_test.reshape(-1, 1) if x_test.ndim == 1 else x_test
+        # self.x_test = np.atleast_2d(x_test)
         # Make y >= 2-dimensional
-        self.y_train = np.atleast_2d(y_train)
-        self.y_test = np.atleast_2d(y_test)
+        self.y_train = y_train.reshape(-1, 1) if y_train.ndim == 1 else y_train
+        # self.y_train = np.atleast_2d(y_train)
+        self.y_test = y_test.reshape(-1, 1) if y_test.ndim == 1 else y_test
+        # self.y_test = np.atleast_2d(y_test)
         # only save scaled version of data
         if standardize_x or standardize_y:
             scaler = StandardScaler()
@@ -183,7 +191,8 @@ class Experiment:
         selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat, self.hyperpriors)
         unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
         unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
-        newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
+        budget_left = self.eval_budget - self.n_evals
+        newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels[:budget_left])
         evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
         self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
@@ -198,7 +207,8 @@ class Experiment:
             if self.verbose:
                 print(f'Iteration {depth}/{self.max_depth}')
                 print(f'Evaluated {self.n_evals}/{self.eval_budget}')
-                evaluated_kernels = self.remove_nan_scored_kernels(kernels)
+                evaluated_kernels = [aks_kernel for aks_kernel in self.remove_nan_scored_kernels(kernels)
+                                     if aks_kernel.evaluated]
                 scores = [aks_kernel.score for aks_kernel in evaluated_kernels]
                 arg_max_score = int(np.argmax(scores))
                 best_kernel = evaluated_kernels[arg_max_score]
@@ -250,7 +260,8 @@ class Experiment:
 
             unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
             unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
-            newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
+            budget_left = self.eval_budget - self.n_evals
+            newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels[:budget_left])
             evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
             kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
 
@@ -302,7 +313,7 @@ class Experiment:
         evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
         if self.tabu_search:
             # Expanded kernels are the tabu list.
-            evaluated_kernels = [kernel for kernel in kernels if not kernel.expanded]
+            evaluated_kernels = [kernel for kernel in evaluated_kernels if not kernel.expanded]
         kernel_scores = [kernel.score for kernel in evaluated_kernels]
         parents = self.kernel_selector.select_parents(evaluated_kernels, kernel_scores)
         # Print parent (seed) kernels
@@ -472,6 +483,8 @@ class Experiment:
                 aks_kernel.score = np.nan
                 # also count a nan-evaluated kernel as an evaluation
                 self.n_evals += 1
+            if self.n_evals >= 49:
+                print(self.eval_budget)
         return aks_kernel
 
     def all_same_expansion(self, new_kernels: List[AKSKernel],
@@ -780,6 +793,77 @@ class Experiment:
         """
         stat_book.update_stat_book(data=aks_kernels, x=self.x_train, base_kernels=self.kernel_families,
                                    n_dims=self.n_dims)
+
+    @classmethod
+    def boms_experiment(cls, dataset, **kwargs):
+        x_train, x_test, y_train, y_test = dataset.split_train_test()
+        base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
+        grammar = BOMSGrammar()
+        kernel_selector = BOMS_kernel_selector()
+        hyperpriors = boms_hyperpriors()
+        objective = log_likelihood_normalized
+        init_qs = BOMSInitQueryStrategy()
+        return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
+                   eval_budget=50, hyperpriors=hyperpriors, init_query_strat=init_qs, **kwargs)
+
+    @classmethod
+    def cks_experiment(cls, dataset, **kwargs):
+        x_train, x_test, y_train, y_test = dataset.split_train_test()
+        base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
+        grammar = CKSGrammar()
+        kernel_selector = CKS_kernel_selector()
+
+        def negative_BIC(m):
+            """Computes the negative of the Bayesian Information Criterion (BIC)."""
+            return -BIC(m)
+
+        # Use the negative BIC because we want to maximize the objective.
+        objective = negative_BIC
+
+        # use conjugate gradient descent for CKS
+        optimizer = 'scg'
+        return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test, max_depth=10,
+                   optimizer=optimizer, **kwargs)
+
+    @classmethod
+    def evolutionary_experiment(cls,
+                                dataset,
+                                **kwargs):
+        x_train, x_test, y_train, y_test = dataset.split_train_test()
+        base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
+
+        n_offspring = 10
+        pop_size = 25
+        n_parents = 4
+
+        mutator = HalfAndHalfMutator(operands=get_all_1d_kernels(base_kernels, x_train.shape[1]))
+        recombinator = OnePointRecombinator()
+        cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring)
+        mut_variator = MutationVariator(mutator)
+        variators = [cx_variator, mut_variator]
+        pop_operator = CrossMutPopOperator(variators)
+        grammar = EvolutionaryGrammar(population_operator=pop_operator)
+        initializer = HalfAndHalfGenerator(binary_operators=grammar.operators, max_depth=1, operands=mutator.operands)
+        grammar.initializer = initializer
+        grammar.n_init_trees = pop_size
+
+        kernel_selector = evolutionary_kernel_selector(n_parents=n_parents, max_offspring=pop_size)
+        objective = log_likelihood_normalized
+        budget = 50
+        return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
+                   tabu_search=False, eval_budget=budget, max_null_queries=budget, max_same_expansions=budget, **kwargs)
+
+    @classmethod
+    def random_experiment(cls,
+                          dataset,
+                          **kwargs):
+        grammar = RandomGrammar()
+        kernel_selector = CKS_kernel_selector(n_parents=4)
+        x_train, x_test, y_train, y_test = dataset.split_train_test()
+        base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
+        objective = log_likelihood_normalized
+        return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test, eval_budget=50,
+                   **kwargs)
 
 
 # stats functions
