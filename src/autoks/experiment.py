@@ -831,9 +831,10 @@ class Experiment:
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
 
-        n_offspring = 10
-        pop_size = 16
-        n_parents = 10
+        pop_size = 25
+        variation_pct = 0.6  # 60% of individuals created using crossover and mutation
+        n_offspring = int(variation_pct * pop_size)
+        n_parents = n_offspring
 
         mutator = HalfAndHalfMutator(operands=get_all_1d_kernels(base_kernels, x_train.shape[1]))
         recombinator = OnePointRecombinator()
