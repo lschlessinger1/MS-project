@@ -3,4 +3,4 @@ from src.experiments.util.synthetic_data import Sinosoid1Dataset
 
 dataset = Sinosoid1Dataset(input_dim=1)
 experiment = Experiment.random_experiment(dataset)
-experiment.run(title='Simple BOMS Experiment')
+experiment.run(title='Simple Random Experiment')
