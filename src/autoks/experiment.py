@@ -751,7 +751,7 @@ class Experiment:
         """
         graph = aks_kernel.to_binary_tree().create_graph(name=graph_name)
         graph.format = 'png'  # only tested with PNG
-        graph.render(f"{graph_name}", directory, view=False, cleanup=True)
+        graph.render(f"{graph_name}.gv", directory, view=False, cleanup=True)
         img = plt.imread(graph.filepath + '.' + graph.format)
         plt.imshow(img)
         plt.show()
