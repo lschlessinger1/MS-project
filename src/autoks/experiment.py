@@ -832,7 +832,7 @@ class Experiment:
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
 
         pop_size = 25
-        variation_pct = 0.6  # 60% of individuals created using crossover and mutation
+        variation_pct = 0.61  # 60% of individuals created using crossover and 1% mutation
         n_offspring = int(variation_pct * pop_size)
         n_parents = n_offspring
 
