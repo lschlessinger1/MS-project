@@ -483,8 +483,7 @@ class Experiment:
                 aks_kernel.score = np.nan
                 # also count a nan-evaluated kernel as an evaluation
                 self.n_evals += 1
-            if self.n_evals >= 49:
-                print(self.eval_budget)
+
         return aks_kernel
 
     def all_same_expansion(self, new_kernels: List[AKSKernel],
