@@ -48,7 +48,25 @@ class KnownGPExperimentRunner(ExperimentRunner):
 class FileExperimentRunner(ExperimentRunner):
 
     def get_datasets(self) -> List[FileDataset]:
-        data_paths = gen_dataset_paths(data_dir='../../data')
+        data_dir = os.path.join('..', '..', 'data')
+        data_paths = gen_dataset_paths(data_dir=data_dir)
+        datasets = [FileDataset(path) for path in data_paths]
+        return datasets
+
+
+class BOMSFilesExperimentRunner(ExperimentRunner):
+
+    def get_datasets(self) -> List[Dataset]:
+        data_dir = os.path.join('..', '..', 'data')
+        data_1d_dir = os.path.join(data_dir, '1d_data')
+
+        data_1d_paths = gen_dataset_paths(data_dir=data_1d_dir)
+        data_multi_d_dir = os.path.join(data_dir, 'multi_dimensional')
+        concrete_path = os.path.join(data_multi_d_dir, 'concrete_500.csv')
+        housing_path = os.path.join(data_multi_d_dir, 'housing.csv')
+        data_multi_d_paths = [concrete_path, housing_path]
+
+        data_paths = data_1d_paths + data_multi_d_paths
         datasets = [FileDataset(path) for path in data_paths]
         return datasets
 
