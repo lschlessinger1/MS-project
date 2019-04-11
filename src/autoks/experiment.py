@@ -643,6 +643,8 @@ class Experiment:
             x_label = 'generation'
 
         plot_best_so_far(best_scores, x_label=x_label)
+        plt.gcf().suptitle(f'{stat_book.label}', y=1)
+        plt.gcf().subplots_adjust(top=0.88)
         plt.show()
 
     def plot_score_summary(self, stat_book: StatBook) -> None:
@@ -662,6 +664,8 @@ class Experiment:
             x_label = 'generation'
 
         plot_distribution(mean_scores, std_scores, best_scores, x_label=x_label)
+        plt.gcf().suptitle(f'{stat_book.label}', y=1)
+        plt.gcf().subplots_adjust(top=0.88)
         plt.show()
 
     def plot_n_hyperparams_summary(self, stat_book: StatBook) -> None:
@@ -677,7 +681,9 @@ class Experiment:
         median_n_hyperparameters = stat_book.median(self.n_hyperparams_name)
         std_n_hyperparameters = stat_book.std(self.n_hyperparams_name)
         plot_distribution(median_n_hyperparameters, std_n_hyperparameters, best_n_hyperparameters,
-                          value_name='median', metric_name=stat_book.name + '# Hyperparameters', x_label=x_label)
+                          value_name='median', metric_name='# Hyperparameters', x_label=x_label)
+        plt.gcf().suptitle(f'{stat_book.label}', y=1)
+        plt.gcf().subplots_adjust(top=0.88)
         plt.show()
 
     def plot_n_operands_summary(self, stat_book: StatBook) -> None:
@@ -694,6 +700,8 @@ class Experiment:
         std_n_operands = stat_book.std(self.n_operands_name)
         plot_distribution(median_n_operands, std_n_operands, best_n_operands, value_name='median',
                           metric_name='# Operands', x_label=x_label)
+        plt.gcf().suptitle(f'{stat_book.label}', y=1)
+        plt.gcf().subplots_adjust(top=0.88)
         plt.show()
 
     def plot_base_kernel_freqs(self, stat_book: StatBook) -> None:
@@ -705,7 +713,7 @@ class Experiment:
         x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
         freqs = [(stat_book.sum(key), key) for key in self.base_kern_freq_names]
 
-        plt.title('%s Base Kernel Frequency' % stat_book.name)
+        plt.title('Base Kernel Frequency')
         plt.xlabel(x_label)
         plt.ylabel('Frequency')
         ax = plt.gca()
@@ -713,6 +721,8 @@ class Experiment:
         for freq, key in freqs:
             plt.plot(freq, label=key, marker='o', markerfacecolor='black')
         plt.legend()
+        plt.gcf().suptitle(f'{stat_book.label}', y=1)
+        plt.gcf().subplots_adjust(top=0.88)
         plt.show()
 
     def plot_cov_dist_summary(self, stat_book: StatBook) -> None:
@@ -724,6 +734,8 @@ class Experiment:
         mean_cov_dists = stat_book.mean(self.cov_dists_name)
         std_cov_dists = stat_book.std(self.cov_dists_name)
         plot_distribution(mean_cov_dists, std_cov_dists, metric_name='covariance distance', x_label=x_label)
+        plt.gcf().suptitle(f'{stat_book.label}', y=1)
+        plt.gcf().subplots_adjust(top=0.88)
         plt.show()
 
     def plot_kernel_diversity_summary(self, stat_book: StatBook) -> None:
@@ -736,6 +748,8 @@ class Experiment:
         std_diversity_scores = stat_book.running_std(self.diversity_scores_name)
         plot_distribution(mean_diversity_scores, std_diversity_scores, metric_name='diversity',
                           value_name='population', x_label=x_label)
+        plt.gcf().suptitle(f'{stat_book.label}', y=1)
+        plt.gcf().subplots_adjust(top=0.88)
         plt.show()
 
     def plot_kernel_tree(self, aks_kernel: AKSKernel,

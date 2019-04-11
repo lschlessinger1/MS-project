@@ -136,6 +136,15 @@ class StatBook:
             for multi_stat in multi_stats:
                 self.add_multi_stat(multi_stat)
 
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, name) -> None:
+        self._name = name
+        self.label = ' '.join(name.split('_')).capitalize()
+
     def add_multi_stat(self, multi_stat: MultiStat):
         self.multi_stats[multi_stat.name] = multi_stat
 
