@@ -237,7 +237,7 @@ def subkernel_expression(kernel: Kern,
     base_kernel = matching_base_kerns[0]
 
     if not html_like:
-        kern_str = base_kernel + str(dim)
+        kern_str = base_kernel + '_' + str(dim)
     else:
         kern_str = '<%s<SUB><FONT POINT-SIZE="8">%s</FONT></SUB>>' % (base_kernel, dim)
 
