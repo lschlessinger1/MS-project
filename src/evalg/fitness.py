@@ -1,6 +1,8 @@
-from typing import List
+from typing import List, Callable, Optional
 
 import numpy as np
+
+from src.evalg.encoding import BinaryTreeNode, BinaryTree
 
 
 def parsimony_pressure(fitness: float,
@@ -39,3 +41,68 @@ def covariant_parsimony_pressure(fitness: float,
     var_l = cov[0, 0]
     c = cov_lf / var_l
     return parsimony_pressure(fitness, size, c)
+
+
+# TODO: make this work with any general tree type
+def structural_hamming_dist(tree_1: BinaryTree,
+                            tree_2: BinaryTree) -> float:
+    """Structural Hamming distance (SHD)
+
+    A syntactic distance measure between trees ranging from 0 (trees are equal) to a maximum distance of 1.
+
+    Moraglio and Poli (2005)
+    """
+    return shd(tree_1.root, tree_2.root)
+
+
+def shd(node_1: BinaryTreeNode,
+        node_2: BinaryTreeNode,
+        hd: Optional[Callable[[BinaryTreeNode, BinaryTreeNode], float]] = None) -> float:
+    """Structural Hamming distance (SHD)
+
+    :param node_1:
+    :param node_2:
+    :param hd:
+    :return:
+    """
+    if hd is None:
+        hd = _hd
+
+    if node_1 is None or node_2 is None:
+        return 1
+    # first get arity of each node
+    arity_1 = 0
+    arity_2 = 0
+    if node_1.has_left_child():
+        arity_1 += 1
+    if node_1.has_right_child():
+        arity_1 += 1
+    if node_2.has_left_child():
+        arity_2 += 1
+    if node_2.has_right_child():
+        arity_2 += 1
+
+    if arity_1 != arity_2:
+        return 1
+    else:
+        if arity_1 == 0:
+            # both are leaves
+            return hd(node_1, node_2)
+        else:
+            m = arity_1
+            ham_dist = hd(node_1, node_2)
+            children_dist_sum = sum([shd(node_1.left, node_2.left), shd(node_1.right, node_2.right)])
+            return (1 / (m + 1)) * (ham_dist + children_dist_sum)
+
+
+def _hd(node_1: BinaryTreeNode,
+        node_2: BinaryTreeNode) -> float:
+    """Hamming distance between p and q
+
+    0 if p = q (Both terminal nodes of equal value)
+    1 otherwise (different terminal node type or internal node)
+    """
+    if node_1.is_leaf() and node_2.is_leaf() and node_1.value == node_2.value:
+        return 0
+    else:
+        return 1
