@@ -200,10 +200,10 @@ class TestKernel(unittest.TestCase):
         kernel = RBF(1, variance=3, lengthscale=2)
         result = subkernel_expression(kernel=kernel, show_params=False, html_like=False)
         self.assertIsInstance(result, str)
-        self.assertEqual(result, 'SE0')
+        self.assertEqual(result, 'SE_0')
         result = subkernel_expression(kernel=kernel, show_params=True, html_like=False)
         self.assertIsInstance(result, str)
-        self.assertIn('SE0', result)
+        self.assertIn('SE_0', result)
         self.assertIn('variance', result)
         self.assertIn('lengthscale', result)
         self.assertIn('3', result)
@@ -227,7 +227,7 @@ class TestAKSKernel(unittest.TestCase):
         aks_kernel = AKSKernel(kernel)
         result = aks_kernel.to_binary_tree()
         self.assertIsInstance(result, KernelTree)
-        self.assertCountEqual(result.postfix_tokens(), ['SE0', 'SE0', '*', 'RQ0', '+'])
+        self.assertCountEqual(result.postfix_tokens(), ['SE_0', 'SE_0', '*', 'RQ_0', '+'])
 
 
 class TestKernelNode(unittest.TestCase):
@@ -236,7 +236,7 @@ class TestKernelNode(unittest.TestCase):
         kern = RBF(1)
         result = KernelNode(kern)
         self.assertEqual(result.value, kern)
-        self.assertEqual(result.label, 'SE0')
+        self.assertEqual(result.label, 'SE_0')
         self.assertIsNone(result.parent)
         self.assertIsNone(result.left)
         self.assertIsNone(result.right)
@@ -246,7 +246,7 @@ class TestKernelNode(unittest.TestCase):
         node = KernelNode(mock_kern)
         result = node._value_to_label(mock_kern)
         self.assertIsInstance(result, str)
-        self.assertEqual(result, 'SE0')
+        self.assertEqual(result, 'SE_0')
 
 
 class TestKernelTree(unittest.TestCase):
@@ -256,7 +256,7 @@ class TestKernelTree(unittest.TestCase):
         root = KernelNode(kern)
         result = KernelTree(root)
         self.assertEqual(result.root, root)
-        self.assertEqual(result.root.label, 'SE0')
+        self.assertEqual(result.root.label, 'SE_0')
         self.assertEqual(result.root.value, kern)
 
 
