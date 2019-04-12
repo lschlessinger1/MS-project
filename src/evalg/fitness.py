@@ -45,19 +45,22 @@ def covariant_parsimony_pressure(fitness: float,
 
 # TODO: make this work with any general tree type
 def structural_hamming_dist(tree_1: BinaryTree,
-                            tree_2: BinaryTree) -> float:
+                            tree_2: BinaryTree,
+                            hd: Optional[Callable[[BinaryTreeNode, BinaryTreeNode], float]] = None) -> float:
     """Structural Hamming distance (SHD)
 
     A syntactic distance measure between trees ranging from 0 (trees are equal) to a maximum distance of 1.
 
     Moraglio and Poli (2005)
     """
-    return shd(tree_1.root, tree_2.root)
+    if hd is None:
+        hd = _hd
+    return shd(tree_1.root, tree_2.root, hd)
 
 
 def shd(node_1: BinaryTreeNode,
         node_2: BinaryTreeNode,
-        hd: Optional[Callable[[BinaryTreeNode, BinaryTreeNode], float]] = None) -> float:
+        hd: Callable[[BinaryTreeNode, BinaryTreeNode], float]) -> float:
     """Structural Hamming distance (SHD)
 
     :param node_1:
@@ -65,9 +68,6 @@ def shd(node_1: BinaryTreeNode,
     :param hd:
     :return:
     """
-    if hd is None:
-        hd = _hd
-
     if node_1 is None or node_2 is None:
         return 1
     # first get arity of each node
@@ -91,7 +91,7 @@ def shd(node_1: BinaryTreeNode,
         else:
             m = arity_1
             ham_dist = hd(node_1, node_2)
-            children_dist_sum = sum([shd(node_1.left, node_2.left), shd(node_1.right, node_2.right)])
+            children_dist_sum = sum([shd(node_1.left, node_2.left, hd), shd(node_1.right, node_2.right, hd)])
             return (1 / (m + 1)) * (ham_dist + children_dist_sum)
 
 
