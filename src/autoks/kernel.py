@@ -4,7 +4,7 @@ from typing import List, Type, Union, Optional, Dict
 import numpy as np
 from GPy import Parameterized
 from GPy.core.parameterization.priors import Prior
-from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
+from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod, KernelKernel
 from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.special import comb
 
@@ -12,6 +12,7 @@ from src.autoks.hyperprior import Hyperpriors, Hyperprior
 from src.autoks.util import remove_duplicates, arg_sort, join_operands, tokenize, flatten, remove_outer_parens
 from src.evalg.encoding import BinaryTree, BinaryTreeNode, infix_tokens_to_postfix_tokens, \
     postfix_tokens_to_binexp_tree
+from src.evalg.fitness import structural_hamming_dist
 
 
 class KernelNode(BinaryTreeNode):
@@ -650,3 +651,63 @@ def all_pairs_avg_dist(kernels: List[Kern],
     n_pairs = int(comb(N=len(kernel_vecs), k=2))
     all_pairs_avg_dist = all_pairs_total_dist / n_pairs
     return all_pairs_avg_dist
+
+
+#### SHD
+def shd_metric(u, v):
+    """Used for structural hamming distance metric"""
+    tree_1 = postfix_tokens_to_binexp_tree(u[0], bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
+    tree_2 = postfix_tokens_to_binexp_tree(v[0], bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
+    return structural_hamming_dist(tree_1, tree_2, hd=hd_kern_nodes)
+
+
+def decode_leaf_kernel(kern_dict_str: str) -> Kern:
+    """Convert kernel dictionary string to a kernel.
+
+    :param kern_dict_str:
+    :return:
+    """
+    k_dict = eval(kern_dict_str)
+    return Kern.from_dict(k_dict)
+
+
+def hd_kern_nodes(node_1: KernelNode,
+                  node_2: KernelNode) -> float:
+    """Hamming distance between two kernel nodes
+
+    0 if p = q (Both terminal nodes of equal active dim and class)
+    1 otherwise (different terminal node type or internal node)
+    """
+    if node_1.is_leaf() and node_2.is_leaf():
+        kern_1 = decode_leaf_kernel(node_1.value)
+        kern_2 = decode_leaf_kernel(node_2.value)
+        same_dims = kern_1.active_dims == kern_2.active_dims
+        same_cls = kern_1.__class__ == kern_2.__class__
+        # consider kernels equal if they have the same active dimension and class
+        nodes_eq = same_dims and same_cls
+        if nodes_eq:
+            return 0
+        else:
+            return 1
+    else:
+        return 1
+
+
+def encode_kernel(kern: Kern) -> List[str]:
+    """Encode kernel to a list of postfix strings"""
+    infix_tokens = kernel_to_infix_tokens(kern)
+    postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
+    str_postfix = []
+    for token in postfix_tokens:
+        if isinstance(token, Kern):
+            token = str(token.to_dict())
+        str_postfix.append(token)
+    return str_postfix
+
+
+def encode_aks_kerns(aks_kernels: List[AKSKernel]) -> np.ndarray:
+    return np.array([[encode_kernel(aks_kernel.kernel)] for aks_kernel in aks_kernels])
+
+
+def shd_kernel_kernel(**kwargs) -> KernelKernel:
+    return KernelKernel(distance_metric=shd_metric, **kwargs)
