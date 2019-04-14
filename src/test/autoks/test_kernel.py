@@ -6,7 +6,8 @@ from GPy.kern import RBF, Add, RatQuad, Prod, KernelKernel
 
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
     remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, shd_metric, \
-    decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, shd_kernel_kernel, encode_aks_kernel
+    decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, shd_kernel_kernel, encode_aks_kernel, \
+    euclidean_metric, euclidean_kernel_kernel
 from src.autoks.util import remove_duplicates
 from src.test.autoks.support.util import has_combo_kernel_type
 
@@ -305,6 +306,23 @@ class TestKernel(unittest.TestCase):
         self.assertTrue(np.array_equal(d, np.array([[0, 1], [1, 0]])))
         k = RBF(1, variance=1, lengthscale=1)
         self.assertTrue(np.array_equal(result.K(x), k.K(d)))
+
+    def test_euclidean_metric(self):
+        x_train = np.array([[1, 2], [3, 4]])
+        aks_kernels = [AKSKernel(RBF(1) + RatQuad(1)), AKSKernel(RBF(1))]
+        data = encode_aks_kerns(aks_kernels)
+        u, v = data[0], data[1]
+        result = euclidean_metric(u, v, get_x_train=lambda: x_train)
+        self.assertIsInstance(result, float)
+        self.assertAlmostEqual(result,
+                               np.linalg.norm(aks_kernels[0].kernel.K(x_train, x_train) -
+                                              aks_kernels[1].kernel.K(x_train, x_train)))
+
+    def test_euclidean_kernel_kernel(self):
+        x_train = np.array([[1, 2], [3, 4]])
+        result = euclidean_kernel_kernel(x_train)
+        self.assertIsInstance(result, KernelKernel)
+        self.assertEqual(result.dist_metric, euclidean_metric)
 
 
 class TestAKSKernel(unittest.TestCase):
