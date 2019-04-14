@@ -1,9 +1,10 @@
 from typing import Optional
 
 import numpy as np
+from GPyOpt.util.general import get_quantiles
 
 from src.autoks.hyperprior import Hyperpriors
-from src.autoks.kernel import AKSKernel, n_base_kernels
+from src.autoks.kernel import AKSKernel, n_base_kernels, encode_aks_kerns
 
 
 class AcquisitionFunction:
@@ -13,13 +14,15 @@ class AcquisitionFunction:
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model: Optional = None) -> float:
         """Acquisition function score.
 
         :param kernel:
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
         raise NotImplementedError('Must be implemented in a child class')
@@ -34,13 +37,15 @@ class UniformScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model: Optional = None) -> float:
         """Same score for all kernels.
 
         :param kernel:
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
         return UniformScorer.CONST_SCORE
@@ -52,7 +57,8 @@ class ExpectedImprovement(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model=None) -> float:
         """Expected improvement (EI) acquisition function
 
         This acquisition function takes a model (kernel and hyperpriors) and computes expected improvement using
@@ -62,9 +68,17 @@ class ExpectedImprovement(AcquisitionFunction):
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
-        pass
+        # Computes the Expected Improvement per unit of cost
+        jitter = 0.01
+        x_test = encode_aks_kerns([kernel])
+        m, s = surrogate_model.predict(x_test)
+        f_min = surrogate_model.predict(surrogate_model.X)[0].min()
+        pdf, cdf, u = get_quantiles(jitter, f_min, m, s)
+        f_acqu = s * (u * cdf + pdf)
+        return f_acqu[0, 0]
 
 
 class RandomScorer(AcquisitionFunction):
@@ -73,7 +87,8 @@ class RandomScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model: Optional = None) -> float:
         """Random acquisition function
 
         This acquisition function returns a random score in the half-open interval [0.0, 1.0).
@@ -82,6 +97,7 @@ class RandomScorer(AcquisitionFunction):
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
         return np.random.random()
@@ -93,13 +109,15 @@ class ParamProportionalScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model: Optional = None) -> float:
         """Score proportional to number of kernel hyperparameters.
 
         :param kernel:
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
         return -kernel.kernel.num_params  # return the negative because we want to minimize this
@@ -111,13 +129,15 @@ class OperandProportionalScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model: Optional = None) -> float:
         """Score proportional to the number of 1D kernels (operands).
 
         :param kernel:
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
         return -n_base_kernels(kernel.kernel)  # return the negative because we want to minimize this
@@ -128,13 +148,15 @@ class KernComplexityProportionalScorer(AcquisitionFunction):
     def score(kernel: AKSKernel,
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None) -> float:
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model: Optional = None) -> float:
         """Score proportional to the complexity of a kernel
 
         :param kernel:
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
         param_score = ParamProportionalScorer.score(kernel, x_train, y_train, hyperpriors)

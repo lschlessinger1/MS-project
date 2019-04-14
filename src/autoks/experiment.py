@@ -1,26 +1,28 @@
 import warnings
 from time import time
-from typing import Callable, List, Tuple, Optional, FrozenSet, Union, Any
+from typing import Callable, List, Tuple, Optional, FrozenSet, Union, Any, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
+from GPy.kern import KernelKernel
 from GPy.models import GPRegression
 from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
+from src.autoks.acquisition_function import ExpectedImprovement
 from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
     AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
-    get_all_1d_kernels
+    get_all_1d_kernels, encode_aks_kerns, shd_kernel_kernel
 from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
     evolutionary_kernel_selector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
-from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy
+from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy, BestScoreStrategy
 from src.autoks.statistics import StatBookCollection, Statistic, StatBook
 from src.autoks.util import type_count
 from src.evalg.genprog import HalfAndHalfMutator, OnePointRecombinator, HalfAndHalfGenerator
@@ -53,12 +55,17 @@ class Experiment:
     n_restarts_optimizer: int
     max_null_queries: int
     max_same_expansions: int
+    use_surrogate: bool
+    kernel_kernel: KernelKernel
+    surrogate_model: Optional
+    surrogate_model_cls: Type
+    surrogate_opt_freq: int
 
     def __init__(self, grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
                  init_query_strat=None, query_strat=None, hyperpriors=None, additive_form=False, debug=False,
                  verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3, optimizer=None,
-                 n_restarts_optimizer=10):
+                 n_restarts_optimizer=10, use_surrogate=True, kernel_kernel=None, surrogate_opt_freq=10):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -171,6 +178,17 @@ class Experiment:
         self.max_same_expansions = max_same_expansions  # Maximum number of same kernel proposal before terminating
         self.max_null_queries = max_null_queries  # Maximum number of empty queries in a row allowed before terminating
 
+        self.use_surrogate = use_surrogate
+        self.surrogate_model = None
+        if self.use_surrogate:
+            if kernel_kernel is None:
+                self.kernel_kernel = shd_kernel_kernel()
+            else:
+                self.kernel_kernel = kernel_kernel
+            # for now, force surrogate model class to be GP Regression
+            self.surrogate_model_cls = GPRegression
+            self.surrogate_opt_freq = surrogate_opt_freq
+
     def kernel_search(self) -> List[AKSKernel]:
         """Perform automated kernel search.
 
@@ -195,6 +213,13 @@ class Experiment:
         newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels[:budget_left])
         evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
+
+        n_evals_since_s_opt = len(evaluated_kernels)
+        if self.use_surrogate:
+            self.update_surrogate_model(kernels)
+            self.optimize_surrogate_model()
+            n_evals_since_s_opt = 0
+
         self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
 
         prev_expansions = []
@@ -264,6 +289,13 @@ class Experiment:
             newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels[:budget_left])
             evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
             kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
+            if self.use_surrogate:
+                self.update_surrogate_model(kernels)
+                if n_evals_since_s_opt >= self.surrogate_opt_freq:
+                    self.optimize_surrogate_model()
+                    n_evals_since_s_opt = 0
+                else:
+                    n_evals_since_s_opt += len(ind)
 
             kernels = self.prune_kernels(kernels, acq_scores, ind)
             kernels = self.select_offspring(kernels)
@@ -273,6 +305,22 @@ class Experiment:
         self.total_kernel_search_time += time() - t_init
 
         return kernels
+
+    def update_surrogate_model(self, kernels):
+        all_evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
+        x_train = encode_aks_kerns(all_evaluated_kernels)
+        y_train = np.array([aks_kernel.score for aks_kernel in all_evaluated_kernels])
+        y_train = y_train.reshape(-1, 1) if y_train.ndim == 1 else y_train
+        if self.surrogate_model is None:
+            self.surrogate_model = self.surrogate_model_cls(x_train, y_train, kernel=self.kernel_kernel)
+        else:
+            self.surrogate_model.set_XY(X=np.vstack((self.surrogate_model.X, x_train)),
+                                        Y=np.vstack((self.surrogate_model.Y, y_train)))
+
+    def optimize_surrogate_model(self):
+        if self.verbose:
+            print('Optimizing surrogate model\n')
+        self.surrogate_model.optimize()
 
     def query_kernels(self,
                       kernels: List[AKSKernel],
@@ -288,7 +336,8 @@ class Experiment:
         """
         t0 = time()
         unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
-        ind, acq_scores = query_strategy.query(unevaluated_kernels, self.x_train, self.y_train, hyperpriors)
+        ind, acq_scores = query_strategy.query(unevaluated_kernels, self.x_train, self.y_train, hyperpriors,
+                                               self.surrogate_model)
         selected_kernels = query_strategy.select(np.array(unevaluated_kernels), acq_scores)
         self.total_query_time += time() - t0
 
@@ -816,8 +865,12 @@ class Experiment:
         hyperpriors = boms_hyperpriors()
         objective = log_likelihood_normalized
         init_qs = BOMSInitQueryStrategy()
+        acq = ExpectedImprovement()
+        qs = BestScoreStrategy(scoring_func=acq)
+        # todo: add exp. sq. hellinger distance metric to kernel kernel
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
-                   eval_budget=50, hyperpriors=hyperpriors, init_query_strat=init_qs, **kwargs)
+                   eval_budget=50, hyperpriors=hyperpriors, init_query_strat=init_qs, query_strat=qs,
+                   use_surrogate=True, surrogate_opt_freq=10, **kwargs)
 
     @classmethod
     def cks_experiment(cls, dataset, **kwargs):
@@ -836,7 +889,7 @@ class Experiment:
         # use conjugate gradient descent for CKS
         optimizer = 'scg'
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test, max_depth=10,
-                   optimizer=optimizer, **kwargs)
+                   optimizer=optimizer, use_surrogate=False, **kwargs)
 
     @classmethod
     def evolutionary_experiment(cls,

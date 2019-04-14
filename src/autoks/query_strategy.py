@@ -26,18 +26,20 @@ class QueryStrategy(Selector, ABC):
               kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None) -> Tuple[np.ndarray, List[float]]:
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model: Optional = None) -> Tuple[np.ndarray, List[float]]:
         """Query the next round of kernels using the acquisition function.
 
         :param kernels:
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
         if len(kernels) == 0:
             return np.array([]), []
-        scores = self.score_kernels(kernels, x_train, y_train, hyperpriors)
+        scores = self.score_kernels(kernels, x_train, y_train, hyperpriors, surrogate_model)
         ind = self.arg_select(np.array(kernels), scores)
         return ind, scores
 
@@ -45,16 +47,18 @@ class QueryStrategy(Selector, ABC):
                       kernels: List[AKSKernel],
                       x_train: np.ndarray,
                       y_train: np.ndarray,
-                      hyperpriors: Optional[Hyperpriors] = None) -> List[float]:
+                      hyperpriors: Optional[Hyperpriors] = None,
+                      surrogate_model: Optional = None) -> List[float]:
         """Score all kernels using the scoring function.
 
         :param kernels:
         :param x_train:
         :param y_train:
         :param hyperpriors:
+        :param surrogate_model:
         :return:
         """
-        return [self.scoring_func.score(kernel, x_train, y_train, hyperpriors) for kernel in kernels]
+        return [self.scoring_func.score(kernel, x_train, y_train, hyperpriors, surrogate_model) for kernel in kernels]
 
 
 # Query Strategies

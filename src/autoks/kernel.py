@@ -77,10 +77,7 @@ class AKSKernel:
 
         :return:
         """
-        infix_tokens = kernel_to_infix_tokens(self.kernel)
-        postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
-        tree = postfix_tokens_to_binexp_tree(postfix_tokens, bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
-        return tree
+        return kernel_to_tree(self.kernel)
 
     def to_additive_form(self) -> None:
         """Convert the kernel to additive form.
@@ -297,7 +294,8 @@ def kernel_to_infix_tokens(kernel: Kern) -> List[str]:
     in_order_traversal = in_order(kernel, tokens=[])
     infix_tokens = flatten(tokenize(in_order_traversal))
     # for readability, remove outer parentheses
-    infix_tokens = remove_outer_parens(infix_tokens)
+    if len(infix_tokens) > 1:
+        infix_tokens = remove_outer_parens(infix_tokens)
     return infix_tokens
 
 
@@ -376,6 +374,12 @@ def tree_to_kernel(tree: BinaryTree) -> Kern:
     :return:
     """
     return eval_binexp_tree(tree.root)
+
+
+def kernel_to_tree(kernel: Kern) -> KernelTree:
+    infix_tokens = kernel_to_infix_tokens(kernel)
+    postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
+    return postfix_tokens_to_binexp_tree(postfix_tokens, bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
 
 
 def n_base_kernels(kernel: Kern) -> int:
@@ -653,19 +657,26 @@ def all_pairs_avg_dist(kernels: List[Kern],
     return all_pairs_avg_dist
 
 
-#### SHD
-def shd_metric(u, v):
-    """Used for structural hamming distance metric"""
-    tree_1 = postfix_tokens_to_binexp_tree(u[0], bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
-    tree_2 = postfix_tokens_to_binexp_tree(v[0], bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
+# Structural hamming distance functions
+def shd_metric(u: np.ndarray,
+               v: np.ndarray) -> float:
+    """Structural hamming distance (SHD) metric
+
+    :param u: An array containing the first list of an encoded kernel as its only element
+    :param v: An array containing the second list of an encoded kernel as its only element
+    :return: SHD between u and v
+    """
+    aks_kernel_1_enc, aks_kernel_2_enc = u[0], v[0]
+    k1, k2 = decode_kernel(aks_kernel_1_enc[0]), decode_kernel(aks_kernel_2_enc[0])
+    tree_1, tree_2 = kernel_to_tree(k1), kernel_to_tree(k2)
     return structural_hamming_dist(tree_1, tree_2, hd=hd_kern_nodes)
 
 
-def decode_leaf_kernel(kern_dict_str: str) -> Kern:
+def decode_kernel(kern_dict_str: str) -> Kern:
     """Convert kernel dictionary string to a kernel.
 
-    :param kern_dict_str:
-    :return:
+    :param kern_dict_str: A string of a Kern's dictionary representation.
+    :return: A kernel from the kernel dictionary string
     """
     k_dict = eval(kern_dict_str)
     return Kern.from_dict(k_dict)
@@ -675,12 +686,16 @@ def hd_kern_nodes(node_1: KernelNode,
                   node_2: KernelNode) -> float:
     """Hamming distance between two kernel nodes
 
-    0 if p = q (Both terminal nodes of equal active dim and class)
+    0 if node_1 = node_2 (Both terminal nodes of equal active dim. and class)
     1 otherwise (different terminal node type or internal node)
+
+    :param node_1: The first kernel node.
+    :param node_2: The second kernel node.
+    :return: The Hamming distance between nodes.
     """
     if node_1.is_leaf() and node_2.is_leaf():
-        kern_1 = decode_leaf_kernel(node_1.value)
-        kern_2 = decode_leaf_kernel(node_2.value)
+        kern_1 = node_1.value
+        kern_2 = node_2.value
         same_dims = kern_1.active_dims == kern_2.active_dims
         same_cls = kern_1.__class__ == kern_2.__class__
         # consider kernels equal if they have the same active dimension and class
@@ -693,21 +708,40 @@ def hd_kern_nodes(node_1: KernelNode,
         return 1
 
 
-def encode_kernel(kern: Kern) -> List[str]:
-    """Encode kernel to a list of postfix strings"""
-    infix_tokens = kernel_to_infix_tokens(kern)
-    postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
-    str_postfix = []
-    for token in postfix_tokens:
-        if isinstance(token, Kern):
-            token = str(token.to_dict())
-        str_postfix.append(token)
-    return str_postfix
+def encode_kernel(kern: Kern) -> str:
+    """Encode kernel.
+
+    :param kern: The kernel to be encoded
+    :return: The encoded kernel.
+    """
+    return str(kern.to_dict())
+
+
+def encode_aks_kernel(aks_kernel: AKSKernel) -> List[str]:
+    """Encode AKSKernel
+
+    :param aks_kernel:
+    :return:
+    """
+    return [encode_kernel(aks_kernel.kernel)]
 
 
 def encode_aks_kerns(aks_kernels: List[AKSKernel]) -> np.ndarray:
-    return np.array([[encode_kernel(aks_kernel.kernel)] for aks_kernel in aks_kernels])
+    """Encode a list of AKSKernels.
+
+    :param aks_kernels: the AKSKernels to encode.
+    :return: An array containing encodings of the kernels.
+    """
+    enc = np.empty((len(aks_kernels), 1), dtype=np.object)
+    for i, aks_kernel in enumerate(aks_kernels):
+        enc[i, 0] = encode_aks_kernel(aks_kernel)
+    return enc
 
 
 def shd_kernel_kernel(**kwargs) -> KernelKernel:
+    """Construct a kernel kernel using the SHD metric.
+
+    :param kwargs: KernelKernel keyword arguments.
+    :return: The SHD kernel kernel
+    """
     return KernelKernel(distance_metric=shd_metric, **kwargs)

@@ -1,10 +1,12 @@
 import unittest
 from unittest.mock import MagicMock
 
-from GPy.kern import RBF, Add, RatQuad, Prod
+import numpy as np
+from GPy.kern import RBF, Add, RatQuad, Prod, KernelKernel
 
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
-    remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression
+    remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, shd_metric, \
+    decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, shd_kernel_kernel, encode_aks_kernel
 from src.autoks.util import remove_duplicates
 from src.test.autoks.support.util import has_combo_kernel_type
 
@@ -218,6 +220,91 @@ class TestKernel(unittest.TestCase):
         self.assertIn('lengthscale', result)
         self.assertIn('3', result)
         self.assertIn('2', result)
+
+    def test_shd_metric(self):
+        aks_kernels = [AKSKernel(RBF(1) + RatQuad(1)), AKSKernel(RBF(1))]
+        data = encode_aks_kerns(aks_kernels)
+        u, v = data[0], data[1]
+        result = shd_metric(u, v)
+        self.assertEqual(result, 1)
+
+    def test_decode_leaf_kernel(self):
+        kern = RBF(1)
+        kern_dict = kern.to_dict()
+        kern_dict_str = str(kern_dict)
+        result = decode_kernel(kern_dict_str)
+        self.assertIsInstance(result, RBF)
+        self.assertEqual(result.input_dim, 1)
+        self.assertDictEqual(result.to_dict(), kern_dict)
+
+    def test_hd_kern_nodes(self):
+        node_1 = KernelNode(RBF(1, active_dims=[0]))
+        node_2 = KernelNode(RBF(1, active_dims=[0]))
+        result = hd_kern_nodes(node_1, node_2)
+        self.assertEqual(result, 0)
+
+        node_1 = KernelNode(RBF(1, active_dims=[0]))
+        node_2 = KernelNode(RatQuad(1, active_dims=[0]))
+        result = hd_kern_nodes(node_1, node_2)
+        self.assertEqual(result, 1)
+
+        node_1 = KernelNode(RBF(1, active_dims=[0]))
+        node_2 = KernelNode(RBF(1, active_dims=[1]))
+        result = hd_kern_nodes(node_1, node_2)
+        self.assertEqual(result, 1)
+
+        node_1 = KernelNode(RBF(1, active_dims=[0]))
+        node_1.add_left('U')
+        node_1.add_right('V')
+        node_2 = KernelNode(RBF(1, active_dims=[0]))
+        result = hd_kern_nodes(node_1, node_2)
+        self.assertEqual(result, 1)
+
+    def test_encode_kernel(self):
+        kern = RBF(1, active_dims=[0])
+        result = encode_kernel(kern)
+        self.assertIsInstance(result, str)
+        self.assertEqual(result, str(kern.to_dict()))
+
+        kern = RBF(1, active_dims=[0]) + RBF(1)
+        result = encode_kernel(kern)
+        self.assertIsInstance(result, str)
+        self.assertEqual(result, str(kern.to_dict()))
+
+    def test_encode_aks_kernel(self):
+        aks_kernel = AKSKernel(RBF(1, active_dims=[0]))
+        result = encode_aks_kernel(aks_kernel)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], str)
+        self.assertListEqual(result, [encode_kernel(aks_kernel.kernel)])
+
+    def test_encode_aks_kerns(self):
+        aks_kernels = [AKSKernel(RBF(1)), AKSKernel(RatQuad(1))]
+        result = encode_aks_kerns(aks_kernels)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape, (len(aks_kernels), 1))
+        self.assertListEqual(result[0][0], [encode_kernel(aks_kernels[0].kernel)])
+        self.assertListEqual(result[1][0], [encode_kernel(aks_kernels[1].kernel)])
+
+        aks_kernels = [AKSKernel(RBF(1) * RBF(1)), AKSKernel(RatQuad(1))]
+        result = encode_aks_kerns(aks_kernels)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape, (len(aks_kernels), 1))
+        self.assertListEqual(result[0][0], [encode_kernel(aks_kernels[0].kernel)])
+        self.assertListEqual(result[1][0], [encode_kernel(aks_kernels[1].kernel)])
+
+    def test_shd_kernel_kernel(self):
+        result = shd_kernel_kernel(variance=1, lengthscale=1)
+        self.assertIsInstance(result, KernelKernel)
+        self.assertEqual(result.dist_metric, shd_metric)
+
+        aks_kernels_evaluated = [AKSKernel(RBF(1)), AKSKernel(RatQuad(1))]
+        x = encode_aks_kerns(aks_kernels_evaluated)
+        d = result._unscaled_dist(x)
+        self.assertIsInstance(d, np.ndarray)
+        self.assertTrue(np.array_equal(d, np.array([[0, 1], [1, 0]])))
+        k = RBF(1, variance=1, lengthscale=1)
+        self.assertTrue(np.array_equal(result.K(x), k.K(d)))
 
 
 class TestAKSKernel(unittest.TestCase):
