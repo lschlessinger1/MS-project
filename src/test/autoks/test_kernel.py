@@ -229,7 +229,7 @@ class TestKernel(unittest.TestCase):
         result = shd_metric(u, v)
         self.assertEqual(result, 1)
 
-    def test_decode_leaf_kernel(self):
+    def test_decode_kernel(self):
         kern = RBF(1)
         kern_dict = kern.to_dict()
         kern_dict_str = str(kern_dict)
