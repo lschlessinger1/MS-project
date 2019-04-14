@@ -644,7 +644,7 @@ def all_pairs_avg_dist(kernels: List[Kern],
 
         kernel_vecs.append(kernel_vec)
 
-    # compute average Eucldiean distance for all pairs of kernels
+    # compute average Euclidean distance for all pairs of kernels
     all_pairs_total_dist = 0
     for i, v in enumerate(kernel_vecs):
         for u in kernel_vecs[i + 1:]:
@@ -653,8 +653,8 @@ def all_pairs_avg_dist(kernels: List[Kern],
             all_pairs_total_dist += avg_dist
 
     n_pairs = int(comb(N=len(kernel_vecs), k=2))
-    all_pairs_avg_dist = all_pairs_total_dist / n_pairs
-    return all_pairs_avg_dist
+    dist = all_pairs_total_dist / n_pairs
+    return dist
 
 
 # Structural hamming distance functions
