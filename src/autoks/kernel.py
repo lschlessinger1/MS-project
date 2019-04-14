@@ -1,5 +1,5 @@
 import warnings
-from typing import List, Type, Union, Optional, Dict
+from typing import List, Type, Union, Optional, Dict, Callable
 
 import numpy as np
 from GPy import Parameterized
@@ -745,3 +745,33 @@ def shd_kernel_kernel(**kwargs) -> KernelKernel:
     :return: The SHD kernel kernel
     """
     return KernelKernel(distance_metric=shd_metric, **kwargs)
+
+
+# Euclidean distance metric
+def euclidean_metric(u: np.ndarray,
+                     v: np.ndarray,
+                     get_x_train: Callable[[], np.ndarray]) -> float:
+    """Euclidean distance metric
+
+    :param u: An array containing the first list of an encoded kernel as its only element
+    :param v: An array containing the second list of an encoded kernel as its only element
+    :param get_x_train:
+    :return: Euclidean distance between u and v
+    """
+    aks_kernel_1_enc, aks_kernel_2_enc = u[0], v[0]
+    k1, k2 = decode_kernel(aks_kernel_1_enc[0]), decode_kernel(aks_kernel_2_enc[0])
+    x_train = get_x_train()
+    return kernel_l2_dist(k1, k2, x_train)
+
+
+def euclidean_kernel_kernel(x_train: np.ndarray, **kwargs) -> KernelKernel:
+    """Construct a kernel kernel using the SHD metric.
+
+    :param x_train: Training data
+    :param kwargs: KernelKernel keyword arguments.
+    :return: The SHD kernel kernel
+    """
+    input_dict = {
+        'get_x_train': lambda: x_train
+    }
+    return KernelKernel(distance_metric=euclidean_metric, dm_kwargs_dict=input_dict, **kwargs)
