@@ -7,7 +7,8 @@ from GPy.kern import RBF, Add, RatQuad, Prod, KernelKernel
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
     remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, shd_metric, \
     decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, shd_kernel_kernel, encode_aks_kernel, \
-    euclidean_metric, euclidean_kernel_kernel
+    euclidean_metric, euclidean_kernel_kernel, additive_part_to_vec, kernel_vec_avg_dist, all_pairs_avg_dist, \
+    kernels_to_kernel_vecs
 from src.autoks.util import remove_duplicates
 from src.test.autoks.support.util import has_combo_kernel_type
 
@@ -221,6 +222,80 @@ class TestKernel(unittest.TestCase):
         self.assertIn('lengthscale', result)
         self.assertIn('3', result)
         self.assertIn('2', result)
+
+    def test_additive_part_to_vec(self):
+        base_kernels = ['SE', 'RQ']
+        n_dims = 2
+        k = RBF(1) + RBF(1)
+        self.assertRaises(TypeError, additive_part_to_vec, k, base_kernels, n_dims)
+
+        k = RBF(1)
+        result = additive_part_to_vec(k, base_kernels=base_kernels, n_dims=2)
+        np.testing.assert_array_equal(result, np.array([1, 0, 0, 0]))
+
+        k = RBF(1) * RBF(1) * RBF(1, active_dims=[1]) * RatQuad(1, active_dims=[1])
+        result = additive_part_to_vec(k, base_kernels=base_kernels, n_dims=2)
+        np.testing.assert_array_equal(result, np.array([2, 1, 0, 1]))
+
+        k = RBF(1) * (RBF(1) + RBF(1))
+        self.assertRaises(TypeError, additive_part_to_vec, k, base_kernels, n_dims)
+
+    def test_kernel_vec_avg_dist(self):
+        kv1 = [np.array([1, 0, 0])]
+        kv2 = [np.array([1, 0, 0])]
+        result = kernel_vec_avg_dist(kv1, kv2)
+        self.assertIsInstance(result, float)
+        self.assertEqual(0, result)
+
+        kv1 = [np.array([1, 0, 0])]
+        kv2 = [np.array([1, 0, 4])]
+        result = kernel_vec_avg_dist(kv1, kv2)
+        self.assertIsInstance(result, float)
+        self.assertEqual(4, result)
+
+        kv1 = [np.array([1, 0, 4]), np.array([1, 3, 4])]
+        kv2 = [np.array([1, 0, 0]), np.array([1, 0, 0])]
+        result = kernel_vec_avg_dist(kv1, kv2)
+        self.assertIsInstance(result, float)
+        self.assertEqual(9 / 2, result)
+
+    def test_kernels_to_kernel_vecs(self):
+        base_kernels = ['SE', 'RQ']
+        n_dims = 2
+        kerns = [RBF(1), RBF(1) * RBF(1) + RBF(1, active_dims=[1])]
+        result = kernels_to_kernel_vecs(kerns, base_kernels, n_dims)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], np.ndarray)
+        self.assertIsInstance(result[1], np.ndarray)
+        np.testing.assert_array_equal(result[0], np.array([[1, 0, 0, 0]]))
+        np.testing.assert_array_equal(result[1], np.array([[2, 0, 0, 0],
+                                                           [0, 1, 0, 0]]))
+
+    def test_all_pairs_avg_dist(self):
+        base_kernels = ['SE', 'RQ']
+        n_dims = 2
+        kerns = [RBF(1), RBF(1)]
+        result = all_pairs_avg_dist(kerns, base_kernels, n_dims)
+        self.assertIsInstance(result, float)
+        self.assertEqual(0, result)
+
+        kerns = [RBF(1), RBF(1) + RBF(1) * RBF(1, active_dims=[1])]
+        result = all_pairs_avg_dist(kerns, base_kernels, n_dims)
+        self.assertIsInstance(result, float)
+        # [[1 0 0 0]], [[1 0 0 0],
+        #               [1 1 0 0]]
+        self.assertEqual(0.5, result)
+
+        kerns = [RBF(1), RBF(1) + RBF(1) * RBF(1, active_dims=[1]), RatQuad(1) * RBF(1) * RatQuad(1) +
+                 RBF(1, active_dims=[1])]
+        result = all_pairs_avg_dist(kerns, base_kernels, n_dims)
+        self.assertIsInstance(result, float)
+        # [[1 0 0 0]],  [[1 0 0 0],
+        #               [1 1 0 0]],
+        # [[1 0 2 0],
+        #  [0 1 0 0]]
+        expected = (0.5 + (np.sqrt(2) + 2) / 2 + (2 + np.sqrt(2) + 1 + np.sqrt(5)) / 4) / 3
+        self.assertAlmostEqual(expected, result)
 
     def test_shd_metric(self):
         aks_kernels = [AKSKernel(RBF(1) + RatQuad(1)), AKSKernel(RBF(1))]

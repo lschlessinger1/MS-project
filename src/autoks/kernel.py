@@ -6,7 +6,7 @@ from GPy import Parameterized
 from GPy.core.parameterization.priors import Prior
 from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod, KernelKernel
 from GPy.kern.src.kern import CombinationKernel, Kern
-from scipy.special import comb
+from scipy.spatial.distance import cdist, pdist
 
 from src.autoks.hyperprior import Hyperpriors, Hyperprior
 from src.autoks.util import remove_duplicates, arg_sort, join_operands, tokenize, flatten, remove_outer_parens
@@ -382,20 +382,52 @@ def kernel_to_tree(kernel: Kern) -> KernelTree:
     return postfix_tokens_to_binexp_tree(postfix_tokens, bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
 
 
+def is_base_kernel(kernel: Kern) -> bool:
+    return isinstance(kernel, Kern) and not isinstance(kernel, CombinationKernel)
+
+
 def n_base_kernels(kernel: Kern) -> int:
     """Count the number of base kernels.
 
     :param kernel:
     :return:
     """
+    return count_kernel_types(kernel, is_base_kernel)
+
+
+def n_sum_kernels(kernel: Kern) -> int:
+    """Count the number of sum kernels.
+
+    :param kernel:
+    :return:
+    """
+    return count_kernel_types(kernel, lambda k: isinstance(k, Add))
+
+
+def n_prod_kernels(kernel: Kern) -> int:
+    """Count the number of product kernels.
+
+    :param kernel:
+    :return:
+    """
+    return count_kernel_types(kernel, lambda k: isinstance(k, Prod))
+
+
+def count_kernel_types(kernel: Kern,
+                       k_type_fn: Callable[[Kern], bool]):
+    """Count the number of kernels of given type.
+
+    :param kernel:
+    :param k_type_fn:
+    :return:
+    """
     count = [0]
 
-    def count_base_kernels(kern):
-        if isinstance(kern, Kern):
-            if not isinstance(kern, CombinationKernel):
-                count[0] += 1
+    def count_k_types(kern):
+        if k_type_fn(kern):
+            count[0] += 1
 
-    kernel.traverse(count_base_kernels)
+    kernel.traverse(count_k_types)
     return count[0]
 
 
@@ -418,6 +450,11 @@ def covariance_distance(kernels: List[Kern],
     return dists
 
 
+def euclidean_distance(x: np.ndarray,
+                       y: np.ndarray) -> float:
+    return np.linalg.norm(x - y)
+
+
 def kernel_l2_dist(kernel_1: Kern,
                    kernel_2: Kern,
                    x: np.ndarray) -> float:
@@ -428,7 +465,7 @@ def kernel_l2_dist(kernel_1: Kern,
     :param x:
     :return:
     """
-    return np.linalg.norm(kernel_1.K(x, x) - kernel_2.K(x, x))
+    return euclidean_distance(kernel_1.K(x, x), kernel_2.K(x, x))
 
 
 def sort_kernel(kernel: Kern) -> Optional[Kern]:
@@ -568,6 +605,8 @@ def additive_part_to_vec(additive_part: Kern,
     """
     if isinstance(additive_part, Add):
         raise TypeError('additive_part cannot be a sum')
+    elif n_sum_kernels(additive_part) > 0:
+        raise TypeError('additive_part contains a sum kernel')
 
     all_kerns = get_all_1d_kernels(base_kernels, n_dims)
     vec_length = len(base_kernels) * n_dims
@@ -592,24 +631,40 @@ def additive_part_to_vec(additive_part: Kern,
     return vec
 
 
-def kernel_vec_avg_dist(kvecs1: List[np.ndarray],
-                        kvecs2: List[np.ndarray]) -> float:
+def kernel_vec_avg_dist(kvecs1: np.ndarray,
+                        kvecs2: np.ndarray) -> float:
     """Average Euclidean distance between two lists of vectors.
 
-    :param kvecs1:
-    :param kvecs2:
+    :param kvecs1: n_1 x d array encoding of an additive kernel part
+    :param kvecs2: n_2 x d array encoding of an additive kernel part
     :return:
     """
-    total_dist = 0
-    for kv1 in kvecs1:
-        for kv2 in kvecs2:
-            dist = np.linalg.norm(kv1 - kv2)
-            total_dist += dist
+    dists = cdist(kvecs1, kvecs2, metric='euclidean')
+    return float(np.mean(dists))
 
-    n = len(kvecs1) + len(kvecs2)
-    avg_dist = total_dist / n
 
-    return avg_dist
+def kernels_to_kernel_vecs(kernels: List[Kern],
+                           base_kernels: List[str],
+                           n_dims: int) -> List[np.ndarray]:
+    # first change each kernel into additive form
+    additive_kernels = [additive_form(kernel) for kernel in kernels]
+
+    # For each kernel, convert each additive part into a vector
+    kernel_vecs = []
+    for additive_kernel in additive_kernels:
+        if isinstance(additive_kernel, CombinationKernel):
+            vecs = [additive_part_to_vec(additive_part, base_kernels, n_dims) for additive_part in
+                    additive_kernel.parts]
+            vec = np.vstack(vecs)
+        elif isinstance(additive_kernel, Kern):
+            # base kernel
+            additive_part = additive_kernel
+            vec = additive_part_to_vec(additive_part, base_kernels, n_dims)
+            vec = np.atleast_2d(vec)
+        else:
+            raise TypeError('Unknown kernel %s' % additive_kernel.__class__.__name__)
+        kernel_vecs.append(vec)
+    return kernel_vecs
 
 
 def all_pairs_avg_dist(kernels: List[Kern],
@@ -623,38 +678,48 @@ def all_pairs_avg_dist(kernels: List[Kern],
     :param n_dims:
     :return:
     """
-    # first change each kernel into additive form
-    additive_kernels = [additive_form(kernel) for kernel in kernels]
-
-    # For each kernel, convert each additive part into a vector
-    kernel_vecs = []
-    for additive_kernel in additive_kernels:
-        kernel_vec = []
-        if isinstance(additive_kernel, CombinationKernel):
-            for additive_part in additive_kernel.parts:
-                vec = additive_part_to_vec(additive_part, base_kernels, n_dims)
-                kernel_vec.append(vec)
-        elif isinstance(additive_kernel, Kern):
-            # base kernel
-            additive_part = additive_kernel
-            vec = additive_part_to_vec(additive_part, base_kernels, n_dims)
-            kernel_vec.append(vec)
-        else:
-            raise TypeError('Unknown kernel %s' % additive_kernel.__class__.__name__)
-
-        kernel_vecs.append(kernel_vec)
+    kernel_vecs = kernels_to_kernel_vecs(kernels, base_kernels, n_dims)
 
     # compute average Euclidean distance for all pairs of kernels
-    all_pairs_total_dist = 0
-    for i, v in enumerate(kernel_vecs):
-        for u in kernel_vecs[i + 1:]:
-            # compute dist between v and u
-            avg_dist = kernel_vec_avg_dist(v, u)
-            all_pairs_total_dist += avg_dist
+    data = np.empty((len(kernel_vecs), 1), dtype=np.object)
+    for i, kvec in enumerate(kernel_vecs):
+        data[i, 0] = kvec
+    pairwise_dist = pdist(data, metric=lambda u, v: kernel_vec_avg_dist(u[0], v[0]))
+    return float(np.mean(pairwise_dist))
 
-    n_pairs = int(comb(N=len(kernel_vecs), k=2))
-    dist = all_pairs_total_dist / n_pairs
-    return dist
+
+def k_vec_metric(u: np.ndarray,
+                 v: np.ndarray,
+                 base_kernels: List[str],
+                 n_dims: int) -> float:
+    """Kernel vector encoding distance metric
+
+    :param u:
+    :param v:
+    :param base_kernels:
+    :param n_dims:
+    :return:
+    """
+    aks_kernel_1_enc, aks_kernel_2_enc = u[0], v[0]
+    k1, k2 = decode_kernel(aks_kernel_1_enc[0]), decode_kernel(aks_kernel_2_enc[0])
+    return all_pairs_avg_dist([k1, k2], base_kernels, n_dims)
+
+
+def k_vec_kernel_kernel(base_kernels: List[str],
+                        n_dims: int,
+                        **kwargs) -> KernelKernel:
+    """Construct a kernel kernel using the kernel vector metric.
+
+    :param n_dims:
+    :param base_kernels:
+    :param kwargs: KernelKernel keyword arguments.
+    :return: The K_vec kernel kernel
+    """
+    input_dict = {
+        'base_kernels': base_kernels,
+        'n_dims': n_dims
+    }
+    return KernelKernel(distance_metric=k_vec_metric, dm_kwargs_dict=input_dict, **kwargs)
 
 
 # Structural hamming distance functions
