@@ -2,8 +2,9 @@ import unittest
 from unittest.mock import MagicMock
 
 import numpy as np
-from GPy.kern import RBF, Add, RatQuad, Prod, KernelKernel
+from GPy.kern import RBF, Add, RatQuad, Prod
 
+from src.autoks.custom_kernels import KernelKernel
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
     remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, shd_metric, \
     decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, shd_kernel_kernel, encode_aks_kernel, \
