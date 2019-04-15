@@ -4,11 +4,11 @@ from typing import List, Type, Union, Optional, Dict, Callable
 import numpy as np
 from GPy import Parameterized
 from GPy.core.parameterization.priors import Prior
-from GPy.kern import RBF, RatQuad, Linear, StdPeriodic, Add, Prod
+from GPy.kern import RBF, Add, Prod, RationalQuadratic, LinScaleShift, \
+    StandardPeriodic, KernelKernel
 from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.spatial.distance import cdist, pdist
 
-from src.autoks.custom_kernels import KernelKernel
 from src.autoks.hyperprior import Hyperpriors, Hyperprior
 from src.autoks.util import remove_duplicates, arg_sort, join_operands, tokenize, flatten, remove_outer_parens
 from src.evalg.encoding import BinaryTree, BinaryTreeNode, infix_tokens_to_postfix_tokens, \
@@ -134,9 +134,9 @@ def get_kernel_mapping() -> Dict[str, Type[Kern]]:
     """
     return {
         'SE': RBF,
-        'RQ': RatQuad,
-        'LIN': Linear,
-        'PER': StdPeriodic
+        'RQ': RationalQuadratic,
+        'LIN': LinScaleShift,
+        'PER': StandardPeriodic
     }
 
 

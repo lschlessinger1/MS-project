@@ -1,8 +1,8 @@
 from typing import List, Optional, Tuple
 
 import numpy as np
-from GPy import Model
 from GPy.core import GP
+from GPy.core.model import Model
 from GPy.kern import Kern
 
 from src.autoks.kernel import kernel_to_infix_tokens, tokens_to_str

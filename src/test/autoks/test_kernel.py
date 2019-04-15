@@ -2,9 +2,8 @@ import unittest
 from unittest.mock import MagicMock
 
 import numpy as np
-from GPy.kern import RBF, Add, RatQuad, Prod
+from GPy.kern import Add, Prod, KernelKernel, RBF, RationalQuadratic
 
-from src.autoks.custom_kernels import KernelKernel
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
     remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, shd_metric, \
     decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, shd_kernel_kernel, encode_aks_kernel, \
@@ -19,8 +18,8 @@ class TestKernel(unittest.TestCase):
     def setUp(self):
         self.se0 = RBF(1, active_dims=[0])
         self.se1 = RBF(1, active_dims=[1])
-        self.rq0 = RatQuad(1, active_dims=[0])
-        self.rq1 = RatQuad(1, active_dims=[1])
+        self.rq0 = RationalQuadratic(1, active_dims=[0])
+        self.rq1 = RationalQuadratic(1, active_dims=[1])
 
     def test_sort_kernel(self):
         k = self.se0
@@ -42,7 +41,7 @@ class TestKernel(unittest.TestCase):
         result = sort_kernel(k)
         # should be RQ0 + RQ1 + SE0 + SE1
         self.assertIsInstance(result, Add)
-        kernel_types = [(RatQuad, 0), (RatQuad, 1), (RBF, 0), (RBF, 1)]
+        kernel_types = [(RationalQuadratic, 0), (RationalQuadratic, 1), (RBF, 0), (RBF, 1)]
         for (k_class, dim), part in zip(kernel_types, result.parts):
             self.assertIsInstance(part, k_class)
             self.assertEqual(part.active_dims[0], dim)
@@ -55,19 +54,19 @@ class TestKernel(unittest.TestCase):
         for k_class, part in zip(kernel_types_outer, result.parts):
             self.assertIsInstance(part, k_class)
 
-        kernel_types_inner_1 = [(RatQuad, 1), (RBF, 0), (RBF, 1)]
+        kernel_types_inner_1 = [(RationalQuadratic, 1), (RBF, 0), (RBF, 1)]
         prod_1 = result.parts[0]
         for (k_class, dim), part in zip(kernel_types_inner_1, prod_1.parts):
             self.assertIsInstance(part, k_class)
             self.assertEqual(part.active_dims[0], dim)
 
-        kernel_types_inner_2 = [(RatQuad, 0), (RatQuad, 1)]
+        kernel_types_inner_2 = [(RationalQuadratic, 0), (RationalQuadratic, 1)]
         prod_2 = result.parts[1]
         for (k_class, dim), part in zip(kernel_types_inner_2, prod_2.parts):
             self.assertIsInstance(part, k_class)
             self.assertEqual(part.active_dims[0], dim)
 
-        kernel_types_inner_3 = [(RatQuad, 0), (RatQuad, 1), (RBF, 1)]
+        kernel_types_inner_3 = [(RationalQuadratic, 0), (RationalQuadratic, 1), (RBF, 1)]
         prod_3 = result.parts[2]
         for (k_class, dim), part in zip(kernel_types_inner_3, prod_3.parts):
             self.assertIsInstance(part, k_class)
@@ -100,7 +99,7 @@ class TestKernel(unittest.TestCase):
 
         k6 = AKSKernel(RBF(1, lengthscale=0.5))
 
-        k7 = AKSKernel(RatQuad(1))
+        k7 = AKSKernel(RationalQuadratic(1))
 
         # Always keep k1 then k2 then k3 etc.
         result = remove_duplicate_aks_kernels([k1, k2, k3, k4, k5, k6, k7])
@@ -190,7 +189,7 @@ class TestKernel(unittest.TestCase):
         self.assertEqual(result.active_dims[0], 0)
 
         result = create_1d_kernel(active_dim=1, kernel_family='RQ')
-        self.assertIsInstance(result, RatQuad)
+        self.assertIsInstance(result, RationalQuadratic)
         self.assertEqual(result.active_dims[0], 1)
 
     def test_set_priors(self):
@@ -234,7 +233,7 @@ class TestKernel(unittest.TestCase):
         result = additive_part_to_vec(k, base_kernels=base_kernels, n_dims=2)
         np.testing.assert_array_equal(result, np.array([1, 0, 0, 0]))
 
-        k = RBF(1) * RBF(1) * RBF(1, active_dims=[1]) * RatQuad(1, active_dims=[1])
+        k = RBF(1) * RBF(1) * RBF(1, active_dims=[1]) * RationalQuadratic(1, active_dims=[1])
         result = additive_part_to_vec(k, base_kernels=base_kernels, n_dims=2)
         np.testing.assert_array_equal(result, np.array([2, 1, 0, 1]))
 
@@ -287,8 +286,8 @@ class TestKernel(unittest.TestCase):
         #               [1 1 0 0]]
         self.assertEqual(0.5, result)
 
-        kerns = [RBF(1), RBF(1) + RBF(1) * RBF(1, active_dims=[1]), RatQuad(1) * RBF(1) * RatQuad(1) +
-                 RBF(1, active_dims=[1])]
+        kerns = [RBF(1), RBF(1) + RBF(1) * RBF(1, active_dims=[1]), RationalQuadratic(1) * RBF(1) *
+                 RationalQuadratic(1) + RBF(1, active_dims=[1])]
         result = all_pairs_avg_dist(kerns, base_kernels, n_dims)
         self.assertIsInstance(result, float)
         # [[1 0 0 0]],  [[1 0 0 0],
@@ -299,7 +298,7 @@ class TestKernel(unittest.TestCase):
         self.assertAlmostEqual(expected, result)
 
     def test_shd_metric(self):
-        aks_kernels = [AKSKernel(RBF(1) + RatQuad(1)), AKSKernel(RBF(1))]
+        aks_kernels = [AKSKernel(RBF(1) + RationalQuadratic(1)), AKSKernel(RBF(1))]
         data = encode_aks_kerns(aks_kernels)
         u, v = data[0], data[1]
         result = shd_metric(u, v)
@@ -321,7 +320,7 @@ class TestKernel(unittest.TestCase):
         self.assertEqual(result, 0)
 
         node_1 = KernelNode(RBF(1, active_dims=[0]))
-        node_2 = KernelNode(RatQuad(1, active_dims=[0]))
+        node_2 = KernelNode(RationalQuadratic(1, active_dims=[0]))
         result = hd_kern_nodes(node_1, node_2)
         self.assertEqual(result, 1)
 
@@ -356,14 +355,14 @@ class TestKernel(unittest.TestCase):
         self.assertListEqual(result, [encode_kernel(aks_kernel.kernel)])
 
     def test_encode_aks_kerns(self):
-        aks_kernels = [AKSKernel(RBF(1)), AKSKernel(RatQuad(1))]
+        aks_kernels = [AKSKernel(RBF(1)), AKSKernel(RationalQuadratic(1))]
         result = encode_aks_kerns(aks_kernels)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (len(aks_kernels), 1))
         self.assertListEqual(result[0][0], [encode_kernel(aks_kernels[0].kernel)])
         self.assertListEqual(result[1][0], [encode_kernel(aks_kernels[1].kernel)])
 
-        aks_kernels = [AKSKernel(RBF(1) * RBF(1)), AKSKernel(RatQuad(1))]
+        aks_kernels = [AKSKernel(RBF(1) * RBF(1)), AKSKernel(RationalQuadratic(1))]
         result = encode_aks_kerns(aks_kernels)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (len(aks_kernels), 1))
@@ -375,7 +374,7 @@ class TestKernel(unittest.TestCase):
         self.assertIsInstance(result, KernelKernel)
         self.assertEqual(result.dist_metric, shd_metric)
 
-        aks_kernels_evaluated = [AKSKernel(RBF(1)), AKSKernel(RatQuad(1))]
+        aks_kernels_evaluated = [AKSKernel(RBF(1)), AKSKernel(RationalQuadratic(1))]
         x = encode_aks_kerns(aks_kernels_evaluated)
         d = result._unscaled_dist(x)
         self.assertIsInstance(d, np.ndarray)
@@ -385,7 +384,7 @@ class TestKernel(unittest.TestCase):
 
     def test_euclidean_metric(self):
         x_train = np.array([[1, 2], [3, 4]])
-        aks_kernels = [AKSKernel(RBF(1) + RatQuad(1)), AKSKernel(RBF(1))]
+        aks_kernels = [AKSKernel(RBF(1) + RationalQuadratic(1)), AKSKernel(RBF(1))]
         data = encode_aks_kerns(aks_kernels)
         u, v = data[0], data[1]
         result = euclidean_metric(u, v, get_x_train=lambda: x_train)
@@ -404,7 +403,7 @@ class TestKernel(unittest.TestCase):
 class TestAKSKernel(unittest.TestCase):
 
     def test_to_binary_tree(self):
-        kernel = RBF(1) * RBF(1) + RatQuad(1)
+        kernel = RBF(1) * RBF(1) + RationalQuadratic(1)
         aks_kernel = AKSKernel(kernel)
         result = aks_kernel.to_binary_tree()
         self.assertIsInstance(result, KernelTree)

@@ -5,13 +5,13 @@ from typing import Callable, List, Tuple, Optional, FrozenSet, Union, Any, Type
 import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
+from GPy.kern import KernelKernel
 from GPy.models import GPRegression
 from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
 from src.autoks.acquisition_function import ExpectedImprovement
-from src.autoks.custom_kernels import KernelKernel
 from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \

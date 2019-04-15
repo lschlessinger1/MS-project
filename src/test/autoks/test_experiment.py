@@ -3,7 +3,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, call
 
 import numpy as np
-from GPy.kern import RatQuad, RBF
+from GPy.kern import RationalQuadratic, RBF
 
 from src.autoks.experiment import Experiment
 from src.autoks.kernel import AKSKernel
@@ -13,7 +13,7 @@ from src.autoks.query_strategy import QueryStrategy
 class TestExperiment(TestCase):
 
     def setUp(self):
-        self.kernels = [AKSKernel(RatQuad(1)), AKSKernel(RBF(1)), AKSKernel(RBF(1))]
+        self.kernels = [AKSKernel(RationalQuadratic(1)), AKSKernel(RBF(1)), AKSKernel(RBF(1))]
 
         grammar = MagicMock()
         kernel_selector = MagicMock()
@@ -47,9 +47,9 @@ class TestExperiment(TestCase):
             for parent in parents:
                 new_kernels.append(parent)
                 new_kernels.append(AKSKernel(parent.kernel + RBF(1)))
-                new_kernels.append(AKSKernel(parent.kernel + RatQuad(1)))
+                new_kernels.append(AKSKernel(parent.kernel + RationalQuadratic(1)))
                 new_kernels.append(AKSKernel(parent.kernel * RBF(1)))
-                new_kernels.append(AKSKernel(parent.kernel * RatQuad(1)))
+                new_kernels.append(AKSKernel(parent.kernel * RationalQuadratic(1)))
             return new_kernels
 
         self.exp.grammar.expand.side_effect = expand
@@ -126,7 +126,8 @@ class TestExperiment(TestCase):
         self.assertListEqual(result, parents)
 
     def test_propose_new_kernels(self):
-        expansion = [AKSKernel(kern) for kern in [RBF(1), RatQuad(1), RBF(1) + RatQuad(1), RBF(1) * RatQuad(1)]]
+        expansion = [AKSKernel(kern) for kern in [RBF(1), RationalQuadratic(1), RBF(1) + RationalQuadratic(1), RBF(1)
+                                                  * RationalQuadratic(1)]]
         self.exp.grammar.expand.return_value = expansion
         result = self.exp.propose_new_kernels(self.kernels)
         self.assertIsInstance(result, list)
@@ -177,7 +178,8 @@ class TestExperiment(TestCase):
         self.assertTrue(kern.evaluated)
 
     def test_remove_nan_scored_kernels(self):
-        kernels = [AKSKernel(RatQuad(1), nan_scored=True), AKSKernel(RBF(1)), AKSKernel(RBF(1), nan_scored=True)]
+        kernels = [AKSKernel(RationalQuadratic(1), nan_scored=True), AKSKernel(RBF(1)),
+                   AKSKernel(RBF(1), nan_scored=True)]
         result = self.exp.remove_nan_scored_kernels(kernels)
         self.assertIsInstance(result, list)
         self.assertListEqual(result, [kernels[1]])

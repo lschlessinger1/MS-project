@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from GPy.kern import RBF, RatQuad, Add
+from GPy.kern import RBF, RationalQuadratic, Add
 
 from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels
 from src.autoks.kernel import AKSKernel
@@ -12,8 +12,8 @@ class TestGrammar(TestCase):
     def setUp(self):
         self.se0 = RBF(1, active_dims=[0])
         self.se1 = RBF(1, active_dims=[1])
-        self.rq0 = RatQuad(1, active_dims=[0])
-        self.rq1 = RatQuad(1, active_dims=[1])
+        self.rq0 = RationalQuadratic(1, active_dims=[0])
+        self.rq1 = RationalQuadratic(1, active_dims=[1])
 
     def test_remove_duplicate_kernels(self):
         kernels = [self.se0 + self.se0, self.se1, self.se0, self.se0, self.se1 + self.se0, self.se0 + self.se1]
@@ -58,8 +58,8 @@ class TestCKSGrammar(TestCase):
         self.grammar = CKSGrammar()
         self.se0 = RBF(1, active_dims=[0])
         self.se1 = RBF(1, active_dims=[1])
-        self.rq0 = RatQuad(1, active_dims=[0])
-        self.rq1 = RatQuad(1, active_dims=[1])
+        self.rq0 = RationalQuadratic(1, active_dims=[0])
+        self.rq1 = RationalQuadratic(1, active_dims=[1])
 
     def test_initialize(self):
         result = self.grammar.initialize(['SE', 'RQ'], n_dims=2)

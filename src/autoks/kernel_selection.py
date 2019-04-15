@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 
 from src.autoks.kernel import AKSKernel
-from src.evalg.selection import Selector, TruncationSelector, AllSelector
+from src.evalg.selection import Selector, TruncationSelector, AllSelector, LinearRankingSelector
 
 
 class KernelSelector:
@@ -97,7 +97,7 @@ def evolutionary_kernel_selector(n_parents: int = 1,
     :param max_offspring: Max. number of models to keep each round
     :return:
     """
-    parent_selector = TruncationSelector(n_parents)
+    parent_selector = LinearRankingSelector(n_parents)
     offspring_selector = TruncationSelector(max_offspring)
     kernel_pruner = AllSelector()
     return KernelSelector(parent_selector, offspring_selector, kernel_pruner)
