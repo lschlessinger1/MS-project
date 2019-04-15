@@ -525,3 +525,51 @@ class StandardPeriodic(Kern):
 
     def input_sensitivity(self, summarize=True):
         return self.variance * np.ones(self.input_dim) / self.lengthscale ** 2
+
+
+class RationalQuadratic(Stationary):
+    def __init__(self, input_dim, variance=1., lengthscale=None, power=2., ARD=False, active_dims=None,
+                 name='rat_quad'):
+        super(RationalQuadratic, self).__init__(input_dim, variance, lengthscale, ARD, active_dims, name)
+        self.power = Param('power', power, Logexp())
+        self.link_parameters(self.power)
+
+    def to_dict(self):
+        """
+        Convert the object into a json serializable dictionary.
+
+        Note: It uses the private method _save_to_input_dict of the parent.
+
+        :return dict: json serializable dictionary containing the needed information to instantiate the object
+        """
+
+        input_dict = super(RationalQuadratic, self)._save_to_input_dict()
+        input_dict["class"] = "GPy.kern.RationalQuadratic"
+        input_dict["power"] = self.power.values.tolist()
+        return input_dict
+
+    @staticmethod
+    def _build_from_input_dict(kernel_class, input_dict):
+        useGPU = input_dict.pop('useGPU', None)
+        return RationalQuadratic(**input_dict)
+
+    def K_of_r(self, r):
+        r2 = np.square(r)
+        return self.variance * np.exp(-self.power * np.log1p(r2 / (2. * self.power)))
+
+    def dK_dr(self, r):
+        r2 = np.square(r)
+        return -self.variance * r * np.exp(-(self.power + 1) * np.log1p(r2 / (2. * self.power)))
+
+    def update_gradients_full(self, dL_dK, X, X2=None):
+        super(RationalQuadratic, self).update_gradients_full(dL_dK, X, X2)
+        r = self._scaled_dist(X, X2)
+        r2 = np.square(r) + np.spacing(1)  # add epsilon for numerical stability
+        dK_dpow = self.K_of_r(r) * (
+                np.exp(np.log(r2) - np.log(r2 + 2. * self.power)) - np.log1p(r2 / (2. * self.power)))
+        grad = np.sum(dL_dK * dK_dpow)
+        self.power.gradient = grad
+
+    def update_gradients_diag(self, dL_dKdiag, X):
+        super(RationalQuadratic, self).update_gradients_diag(dL_dKdiag, X)
+        self.power.gradient = 0.
