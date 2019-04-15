@@ -1,7 +1,7 @@
 from typing import Optional
 
 import numpy as np
-from GPyOpt.util.general import get_quantiles
+from scipy.stats import norm
 
 from src.autoks.hyperprior import Hyperpriors
 from src.autoks.kernel import AKSKernel, n_base_kernels, encode_aks_kerns
@@ -71,14 +71,20 @@ class ExpectedImprovement(AcquisitionFunction):
         :param surrogate_model:
         :return:
         """
-        # Computes the Expected Improvement per unit of cost
-        jitter = 0.01
+        # TODO: remove encoding here
         x_test = encode_aks_kerns([kernel])
-        m, s = surrogate_model.predict(x_test)
-        f_min = surrogate_model.predict(surrogate_model.X)[0].min()
-        pdf, cdf, u = get_quantiles(jitter, f_min, m, s)
-        f_acqu = s * (u * cdf + pdf)
-        return f_acqu[0, 0]
+        mu, cov = surrogate_model.predict(x_test)
+        y_max = surrogate_model.predict(surrogate_model.X)[0].max()
+
+        # Ensure cov > 0.
+        cov[cov < 0] = 0
+        sigma = np.sqrt(cov)
+
+        improvement = mu - y_max
+        u = improvement / sigma
+        ei = improvement * norm.cdf(u) + sigma * norm.pdf(u)
+        ei[sigma == 0.0] = 0.0
+        return ei[0, 0]
 
 
 class RandomScorer(AcquisitionFunction):
