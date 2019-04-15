@@ -20,3 +20,7 @@ Make sure to install the [forked version of GPy](https://github.com/lschlessinge
 `pip install git+git://github.com/lschlessinger1/GPy#egg=GPy`
 
 See the corresponding notebooks with kernel definitions [here](https://github.com/lschlessinger1/MS-project/tree/master/src/playground/test%20custom%20kernels).
+
+## Testing
+
+Unit tests are included in the `src/test` folder. You can invoke them using the [pytest](https://docs.pytest.org/en/latest/) package.
