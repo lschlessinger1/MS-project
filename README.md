@@ -13,7 +13,7 @@ Master's Project
 
 `evalg`: **Ev**olutionary **Alg**orithms
 
-## Installation:
+## Installation
 
 Make sure to install the [forked version of GPy](https://github.com/lschlessinger1/GPy):
 
