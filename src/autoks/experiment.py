@@ -289,8 +289,7 @@ class Experiment:
 
             unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
             unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
-            budget_left = self.eval_budget - self.n_evals
-            newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels[:budget_left])
+            newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
             evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
             kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
             if self.use_surrogate:
@@ -452,6 +451,10 @@ class Experiment:
         evaluated_kernels = []
 
         for aks_kernel in kernels:
+            if self.n_evals >= self.eval_budget:
+                if self.verbose:
+                    print('Stopping optimization and evaluation. Evaluation budget reached.\n')
+                break
             t0 = time()
 
             optimized_kernel = self.optimize_kernel(aks_kernel)
