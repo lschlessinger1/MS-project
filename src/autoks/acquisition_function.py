@@ -2,6 +2,7 @@ from typing import Optional
 
 import numpy as np
 from scipy.stats import norm
+from sklearn.linear_model import LinearRegression
 
 from src.autoks.hyperprior import Hyperpriors
 from src.autoks.kernel import AKSKernel, n_base_kernels, encode_aks_kerns
@@ -15,7 +16,8 @@ class AcquisitionFunction:
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
-              surrogate_model: Optional = None) -> float:
+              surrogate_model: Optional = None,
+              **kwargs) -> float:
         """Acquisition function score.
 
         :param kernel:
@@ -38,7 +40,8 @@ class UniformScorer(AcquisitionFunction):
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
-              surrogate_model: Optional = None) -> float:
+              surrogate_model: Optional = None,
+              **kwargs) -> float:
         """Same score for all kernels.
 
         :param kernel:
@@ -58,7 +61,8 @@ class ExpectedImprovement(AcquisitionFunction):
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
-              surrogate_model=None) -> float:
+              surrogate_model=None,
+              **kwargs) -> float:
         """Expected improvement (EI) acquisition function
 
         This acquisition function takes a model (kernel and hyperpriors) and computes expected improvement using
@@ -87,6 +91,29 @@ class ExpectedImprovement(AcquisitionFunction):
         return ei[0, 0]
 
 
+class ExpectedImprovementPerSec(AcquisitionFunction):
+
+    @staticmethod
+    def score(kernel: AKSKernel,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
+              hyperpriors: Optional[Hyperpriors] = None,
+              surrogate_model: Optional = None,
+              durations=None,
+              n_hyperparams=None,
+              **kwargs) -> float:
+        scorer = ExpectedImprovement()
+        ei = scorer.score(kernel, x_train, y_train, hyperpriors, surrogate_model)
+        reg = LinearRegression()
+        x = np.array(n_hyperparams)[:, None]
+        y = np.log(durations)
+        reg.fit(x, y)
+        t = reg.predict(np.array([[kernel.kernel.num_params]]))
+        eps = np.spacing(1)
+        t[t <= 0] = eps
+        return ei / t[0]
+
+
 class RandomScorer(AcquisitionFunction):
 
     @staticmethod
@@ -94,7 +121,8 @@ class RandomScorer(AcquisitionFunction):
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
-              surrogate_model: Optional = None) -> float:
+              surrogate_model: Optional = None,
+              **kwargs) -> float:
         """Random acquisition function
 
         This acquisition function returns a random score in the half-open interval [0.0, 1.0).
@@ -116,7 +144,8 @@ class ParamProportionalScorer(AcquisitionFunction):
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
-              surrogate_model: Optional = None) -> float:
+              surrogate_model: Optional = None,
+              **kwargs) -> float:
         """Score proportional to number of kernel hyperparameters.
 
         :param kernel:
@@ -136,7 +165,8 @@ class OperandProportionalScorer(AcquisitionFunction):
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
-              surrogate_model: Optional = None) -> float:
+              surrogate_model: Optional = None,
+              **kwargs) -> float:
         """Score proportional to the number of 1D kernels (operands).
 
         :param kernel:
@@ -155,7 +185,8 @@ class KernComplexityProportionalScorer(AcquisitionFunction):
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
-              surrogate_model: Optional = None) -> float:
+              surrogate_model: Optional = None,
+              **kwargs) -> float:
         """Score proportional to the complexity of a kernel
 
         :param kernel:

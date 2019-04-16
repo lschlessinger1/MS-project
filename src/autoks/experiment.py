@@ -11,7 +11,7 @@ from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
-from src.autoks.acquisition_function import ExpectedImprovement
+from src.autoks.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
@@ -189,6 +189,10 @@ class Experiment:
             self.surrogate_model_cls = GPRegression
             self.surrogate_opt_freq = surrogate_opt_freq
 
+        # Used for expected improvement per second.
+        self.n_kernel_params = []
+        self.objective_times = []
+
     def kernel_search(self) -> List[AKSKernel]:
         """Perform automated kernel search.
 
@@ -337,7 +341,8 @@ class Experiment:
         t0 = time()
         unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
         ind, acq_scores = query_strategy.query(unevaluated_kernels, self.x_train, self.y_train, hyperpriors,
-                                               self.surrogate_model)
+                                               self.surrogate_model, durations=self.objective_times,
+                                               n_hyperparams=self.n_kernel_params)
         selected_kernels = query_strategy.select(np.array(unevaluated_kernels), acq_scores)
         self.total_query_time += time() - t0
 
@@ -484,6 +489,7 @@ class Experiment:
         if not aks_kernel.evaluated:
             try:
                 kernel = aks_kernel.kernel
+                t0 = time()
                 k_unfixed = kernel.copy()
                 k_unfixed.unfix()
 
@@ -507,8 +513,12 @@ class Experiment:
                 set_model_kern(self.gp_model, k_fixed)
                 aks_kernel.kernel = self.gp_model.kern
                 aks_kernel.lik_params = self.gp_model.likelihood[:].copy()
+                delta_t = time() - t0
+                self.update_object_time_predictor(kernel.num_params, delta_t)
             except LinAlgError:
                 warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
+        else:
+            raise RuntimeError('already optimized')
         return aks_kernel
 
     def evaluate_kernel(self, aks_kernel: AKSKernel) -> AKSKernel:
@@ -865,7 +875,7 @@ class Experiment:
         hyperpriors = boms_hyperpriors()
         objective = log_likelihood_normalized
         init_qs = BOMSInitQueryStrategy()
-        acq = ExpectedImprovement()
+        acq = ExpectedImprovementPerSec()
         qs = BestScoreStrategy(scoring_func=acq)
         # todo: add exp. sq. hellinger distance metric to kernel kernel
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
@@ -931,6 +941,12 @@ class Experiment:
         objective = log_likelihood_normalized
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test, eval_budget=50,
                    **kwargs)
+
+    def update_object_time_predictor(self,
+                                     n_hyperparams: int,
+                                     time: float):
+        self.n_kernel_params.append(n_hyperparams)
+        self.objective_times.append(time)
 
 
 # stats functions
