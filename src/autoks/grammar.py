@@ -445,19 +445,11 @@ class RandomGrammar(BaseGrammar):
 
         new_kernels = []
 
-        # for each kernel, randomly add or multiply a random 1D kernel
+        # For each kernel, select a kernel from one step of a CKS expansion uniformly at random.
         for aks_kernel in aks_kernels:
             k = aks_kernel.kernel
-            all_1d_kernels = get_all_1d_kernels(kernel_families, n_dims, hyperpriors)
-
-            random_op = np.random.choice(self.operators)
-            random_1d_kernel = np.random.choice(all_1d_kernels)
-
-            if random_op == '+':
-                k += random_1d_kernel
-            elif random_op == '*':
-                k *= random_1d_kernel
-
+            expansion = CKSGrammar.expand_full_kernel(k, n_dims, kernel_families, self.operators)
+            k = np.random.choice(expansion)
             new_kernels.append(k)
 
         new_kernels = remove_duplicate_kernels(new_kernels)

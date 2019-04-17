@@ -943,7 +943,7 @@ class Experiment:
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
         objective = log_likelihood_normalized
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test, eval_budget=50,
-                   use_surrogate=False, **kwargs)
+                   use_surrogate=False, tabu_search=False, **kwargs)
 
     def update_object_time_predictor(self,
                                      n_hyperparams: int,
