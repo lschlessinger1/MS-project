@@ -962,7 +962,7 @@ def get_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
 
 
 def get_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
-    return [aks_kernel.kernel.param_array.size for aks_kernel in aks_kernels]
+    return [aks_kernel.kernel.size for aks_kernel in aks_kernels]
 
 
 def get_cov_dists(aks_kernels: List[AKSKernel], *args, **kwargs) -> Union[np.ndarray, List[int]]:
