@@ -108,7 +108,7 @@ class ExpectedImprovementPerSec(AcquisitionFunction):
         x = np.array(n_hyperparams)[:, None]
         y = np.log(durations)
         reg.fit(x, y)
-        t = reg.predict(np.array([[kernel.kernel.num_params]]))
+        t = reg.predict(np.array([[kernel.kernel.size]]))
         eps = np.spacing(1)
         t[t <= 0] = eps
         return ei / t[0]
@@ -155,7 +155,7 @@ class ParamProportionalScorer(AcquisitionFunction):
         :param surrogate_model:
         :return:
         """
-        return -kernel.kernel.num_params  # return the negative because we want to minimize this
+        return -kernel.kernel.size  # return the negative because we want to minimize this
 
 
 class OperandProportionalScorer(AcquisitionFunction):

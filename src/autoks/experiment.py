@@ -517,7 +517,7 @@ class Experiment:
                 aks_kernel.kernel = self.gp_model.kern
                 aks_kernel.lik_params = self.gp_model.likelihood[:].copy()
                 delta_t = time() - t0
-                self.update_object_time_predictor(kernel.num_params, delta_t)
+                self.update_object_time_predictor(kernel.size, delta_t)
             except LinAlgError:
                 warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
         else:
