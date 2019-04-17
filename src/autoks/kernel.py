@@ -207,6 +207,19 @@ def create_1d_kernel(kernel_family: str,
     return kernel
 
 
+def get_priors(cov: Kern):
+    """Get the priors of a kernel (if they exists)"""
+    # for now, make sure that priors are return in sorted order of parameters
+    # and that all parameters have priors
+    if cov.priors.size != cov.size:
+        raise ValueError('All kernel parameters must have priors')
+
+    priors = np.empty(cov.priors.size, dtype=np.object)
+    for prior, ind in cov.priors.items():
+        priors[ind] = prior
+    return priors
+
+
 def set_priors(param: Parameterized, priors: Dict[str, Prior]) -> Parameterized:
     param_copy = param.copy()
     for param_name in priors:

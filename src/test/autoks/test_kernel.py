@@ -2,13 +2,14 @@ import unittest
 from unittest.mock import MagicMock
 
 import numpy as np
+from GPy.core.parameterization.priors import LogGaussian
 from GPy.kern import Add, Prod, KernelKernel, RBF, RationalQuadratic
 
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
     remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, shd_metric, \
     decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, shd_kernel_kernel, encode_aks_kernel, \
     euclidean_metric, euclidean_kernel_kernel, additive_part_to_vec, kernel_vec_avg_dist, all_pairs_avg_dist, \
-    kernels_to_kernel_vecs
+    kernels_to_kernel_vecs, get_priors
 from src.autoks.util import remove_duplicates
 from src.test.autoks.support.util import has_combo_kernel_type
 
@@ -191,6 +192,25 @@ class TestKernel(unittest.TestCase):
         result = create_1d_kernel(active_dim=1, kernel_family='RQ')
         self.assertIsInstance(result, RationalQuadratic)
         self.assertEqual(result.active_dims[0], 1)
+
+    def test_get_priors(self):
+        # Test assertRaises ValueError if not all parameters have priors set
+        c = RBF(1)
+        self.assertRaises(ValueError, get_priors, c)
+
+        c = RBF(1) * RationalQuadratic(1)
+        p1 = LogGaussian(2, 2.21)
+        p2 = LogGaussian(1, 2.1)
+        p3 = LogGaussian(1, 2)
+        c.parameters[0].variance.set_prior(p1, warning=False)
+        c.parameters[1].lengthscale.set_prior(p2, warning=False)
+        c.parameters[0].lengthscale.set_prior(p3, warning=False)
+        c.parameters[1].power.set_prior(p2, warning=False)
+        c.parameters[1].variance.set_prior(p1, warning=False)
+        result = get_priors(c)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape, (5,))
+        np.testing.assert_array_equal(result, [p1, p3, p1, p2, p2])
 
     def test_set_priors(self):
         priors = dict()
