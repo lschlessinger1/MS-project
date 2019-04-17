@@ -517,7 +517,7 @@ class Experiment:
                 aks_kernel.kernel = self.gp_model.kern
                 aks_kernel.lik_params = self.gp_model.likelihood[:].copy()
                 delta_t = time() - t0
-                self.update_object_time_predictor(kernel.num_params, delta_t)
+                self.update_object_time_predictor(kernel.size, delta_t)
             except LinAlgError:
                 warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
         else:
@@ -874,7 +874,7 @@ class Experiment:
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
         grammar = BOMSGrammar()
-        kernel_selector = BOMS_kernel_selector()
+        kernel_selector = BOMS_kernel_selector(n_parents=1, max_candidates=600)
         hyperpriors = boms_hyperpriors()
         objective = log_likelihood_normalized
         init_qs = BOMSInitQueryStrategy()
@@ -890,7 +890,7 @@ class Experiment:
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
         grammar = CKSGrammar()
-        kernel_selector = CKS_kernel_selector()
+        kernel_selector = CKS_kernel_selector(n_parents=1)
 
         def negative_BIC(m):
             """Computes the negative of the Bayesian Information Criterion (BIC)."""
@@ -938,12 +938,12 @@ class Experiment:
                           dataset,
                           **kwargs):
         grammar = RandomGrammar()
-        kernel_selector = CKS_kernel_selector(n_parents=4)
+        kernel_selector = CKS_kernel_selector(n_parents=1)
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
         objective = log_likelihood_normalized
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test, eval_budget=50,
-                   **kwargs)
+                   use_surrogate=False, tabu_search=False, **kwargs)
 
     def update_object_time_predictor(self,
                                      n_hyperparams: int,
@@ -962,7 +962,7 @@ def get_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
 
 
 def get_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
-    return [aks_kernel.kernel.param_array.size for aks_kernel in aks_kernels]
+    return [aks_kernel.kernel.size for aks_kernel in aks_kernels]
 
 
 def get_cov_dists(aks_kernels: List[AKSKernel], *args, **kwargs) -> Union[np.ndarray, List[int]]:
