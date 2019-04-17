@@ -5,3 +5,4 @@ matplotlib==3.0.3
 numpy==1.16.2
 git+git://github.com/lschlessinger1/GPy#egg=GPy
 pylatex==1.3.0
+sobol_seq
