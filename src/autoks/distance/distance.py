@@ -104,6 +104,30 @@ class DistanceBuilder:
         raise NotImplementedError
 
 
+class HellingerDistanceBuilder(DistanceBuilder):
+    """HellingerDistanceBuilder builds distances based on the Hellinger distance between
+    the model's Gram matrices.
+    """
+
+    def __init__(self, noise_prior, num_samples, max_num_hyperparameters, max_num_kernels,
+                 active_models, initial_model_indices, data_X):
+        super().__init__(noise_prior, num_samples, max_num_hyperparameters, max_num_kernels,
+                         active_models, initial_model_indices, data_X)
+
+    @staticmethod
+    def hellinger_distance(data_i, data_j):
+        pass
+
+    def compute_distance(self, active_models, indices_i, indices_j) -> None:
+        pass
+
+    def create_precomputed_info(self, covariance, data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        pass
+
+
+
+
+
 def fix_numerical_problem(k: np.ndarray,
                           tolerance: float) -> np.ndarray:
     """
