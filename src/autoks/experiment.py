@@ -874,7 +874,7 @@ class Experiment:
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
         grammar = BOMSGrammar()
-        kernel_selector = BOMS_kernel_selector()
+        kernel_selector = BOMS_kernel_selector(n_parents=1, max_candidates=600)
         hyperpriors = boms_hyperpriors()
         objective = log_likelihood_normalized
         init_qs = BOMSInitQueryStrategy()
@@ -890,7 +890,7 @@ class Experiment:
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
         grammar = CKSGrammar()
-        kernel_selector = CKS_kernel_selector()
+        kernel_selector = CKS_kernel_selector(n_parents=1)
 
         def negative_BIC(m):
             """Computes the negative of the Bayesian Information Criterion (BIC)."""
@@ -938,7 +938,7 @@ class Experiment:
                           dataset,
                           **kwargs):
         grammar = RandomGrammar()
-        kernel_selector = CKS_kernel_selector(n_parents=4)
+        kernel_selector = CKS_kernel_selector(n_parents=1)
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
         objective = log_likelihood_normalized
