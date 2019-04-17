@@ -2,6 +2,7 @@ from typing import Tuple
 
 import numpy as np
 from GPy.core.parameterization.priors import Prior
+from numpy.linalg import LinAlgError
 
 from src.autoks.distance.util import probability_samples, prior_sample
 
@@ -118,4 +119,19 @@ def fix_numerical_problem(k: np.ndarray,
     k = v @ new_diagonal @ v.T
     k = (k + k.T) / 2
     chol_k = np.linalg.cholesky(k).T
+    return chol_k
+
+
+def chol_safe(k: np.ndarray,
+              tolerance: float) -> np.ndarray:
+    """Safe Cholesky decomposition.
+
+    k: covariance matrix (n x n)
+    """
+    try:
+        chol_k = np.linalg.cholesky(k).T
+    except LinAlgError:
+        # Decomposition failed, k may not be positive-definite.
+        # Try to recover by making the covariance matrix positive-definite.
+        chol_k = fix_numerical_problem(k, tolerance)
     return chol_k
