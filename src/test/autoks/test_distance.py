@@ -1,9 +1,12 @@
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 import numpy as np
+from GPy.core.parameterization.priors import LogGaussian, Gaussian
+from GPy.kern import RBF
 from numpy.linalg import LinAlgError
 
-from src.autoks.distance.distance import fix_numerical_problem, chol_safe
+from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder
 
 
 class TestDistance(TestCase):
@@ -46,3 +49,27 @@ class TestDistance(TestCase):
         # Test non-square matrix assertRaises LinAlgError
         k = np.ones((3, 1))
         self.assertRaises(LinAlgError, chol_safe, k, tolerance)
+
+
+class TestHellingerDistanceBuilder(TestCase):
+
+    def test_create_precomputed_info(self):
+        num_samples = 20
+        x = np.array([[1, 2], [4, 5], [6, 7], [8, 9], [10, 11]])
+        noise_prior = Gaussian(mu=np.log(0.01), sigma=1)
+        builder = HellingerDistanceBuilder(noise_prior, num_samples, max_num_hyperparameters=40, max_num_kernels=10,
+                                           active_models=MagicMock(), initial_model_indices=MagicMock(), data_X=x)
+
+        cov = RBF(1)
+        p1 = LogGaussian(20, 1)
+        p2 = LogGaussian(0, 1.1)
+        cov.variance.set_prior(p1, warning=False)
+        cov.lengthscale.set_prior(p2, warning=False)
+
+        result = builder.create_precomputed_info(cov, x)
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        self.assertIsInstance(result[0], np.ndarray)
+        self.assertIsInstance(result[1], np.ndarray)
+        self.assertEqual(result[0].shape, (num_samples,))
+        self.assertEqual(result[1].shape, (x.shape[0], x.shape[0], num_samples))

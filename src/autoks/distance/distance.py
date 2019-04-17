@@ -2,14 +2,14 @@ from typing import Tuple
 
 import numpy as np
 from GPy.core.parameterization.priors import Prior
+from GPy.kern import Kern
 from numpy.linalg import LinAlgError
 
 from src.autoks.distance.util import probability_samples, prior_sample
-
-
 # Adapted from Malkomes, 2016
 # Bayesian optimization for automated model selection (BOMS)
 # https://github.com/gustavomalkomes/automated_model_selection
+from src.autoks.kernel import get_priors
 
 
 class DistanceBuilder:
@@ -121,11 +121,33 @@ class HellingerDistanceBuilder(DistanceBuilder):
     def compute_distance(self, active_models, indices_i, indices_j) -> None:
         pass
 
-    def create_precomputed_info(self, covariance, data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        pass
+    def create_precomputed_info(self,
+                                covariance: Kern,
+                                data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        n = data_X.shape[0]
+        tolerance = 1e-6
 
+        log_det = np.full(self.num_samples, np.nan)
+        mini_gram_matrices = np.full((n, n, self.num_samples), np.nan)
 
+        cov_priors = get_priors(covariance)
+        hyperparameters = prior_sample(cov_priors, self.probability_samples)
+        # For numerical stability
+        hyperparameters[hyperparameters == 0] = 1e-9
 
+        for i in range(hyperparameters.shape[0]):
+            hyp = hyperparameters[i, :]
+            lmbda = self.hyperparameter_data_noise_samples[i]
+
+            covariance[:] = hyp
+            k = covariance.K(data_X, data_X)
+            k = k + lmbda * np.eye(k.shape[0])
+
+            mini_gram_matrices[:, :, i] = k
+            chol_k = chol_safe(k, tolerance)
+            log_det[i] = 2 * np.sum(np.log(np.diag(chol_k)), axis=0)
+
+        return log_det, mini_gram_matrices
 
 
 def fix_numerical_problem(k: np.ndarray,
