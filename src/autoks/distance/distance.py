@@ -1,27 +1,34 @@
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
-from GPy.core.parameterization.priors import Prior
+from GPy.core.parameterization.priors import Prior, Gaussian
 from GPy.kern import Kern
 from numpy.linalg import LinAlgError
 
 from src.autoks.distance.util import probability_samples, prior_sample
+from src.autoks.kernel import get_priors, AKSKernel
+
 # Adapted from Malkomes, 2016
 # Bayesian optimization for automated model selection (BOMS)
 # https://github.com/gustavomalkomes/automated_model_selection
-from src.autoks.kernel import get_priors
+
+
+# For now this represents the active set class
+ActiveModels = List[AKSKernel]
 
 
 class DistanceBuilder:
     """DistanceBuilder Build distance matrix between models."""
+    hyperparameter_data_noise_samples: np.ndarray
+    _average_distance: np.ndarray
 
     def __init__(self,
                  noise_prior: Prior,
                  num_samples: int,
                  max_num_hyperparameters: int,
                  max_num_kernels: int,
-                 active_models,
-                 initial_model_indices,
+                 active_models: ActiveModels,
+                 initial_model_indices: List[int],
                  data_X: np.ndarray):
         self.num_samples = num_samples
         self.max_num_hyperparameters = max_num_hyperparameters
@@ -30,16 +37,19 @@ class DistanceBuilder:
         self.probability_samples = probability_samples(max_num_hyperparameters=self.max_num_hyperparameters,
                                                        num_samples=self.num_samples)
 
+        # FIXME: This forces the noise prior to be gaussian because we then exponentiate it, making it a Log-Gaussian
+        assert noise_prior.__class__ == Gaussian
         noise_prior = np.array([noise_prior])
         noise_samples = prior_sample(noise_prior, self.probability_samples)
         self.hyperparameter_data_noise_samples = np.exp(noise_samples)
+
         self._average_distance = np.full((self.max_num_kernels, self.max_num_kernels), np.nan)
         np.fill_diagonal(self._average_distance, 0)
         self.precompute_information(active_models, initial_model_indices, data_X)
 
     def precompute_information(self,
-                               active_models,
-                               new_candidates_indices,
+                               active_models: ActiveModels,
+                               new_candidates_indices: List[int],
                                data_X: np.ndarray) -> None:
         """Precompute distance information for each new candidate.
 
@@ -48,17 +58,18 @@ class DistanceBuilder:
         :param data_X:
         :return:
         """
-        # TODO: test correctness
         for i in new_candidates_indices:
-            covariance = active_models.models[i].covariance
+            # covariance = active_models.models[i].covariance
+            covariance = active_models[i].kernel
             precomputed_info = self.create_precomputed_info(covariance, data_X)
-            active_models.models[i].set_precomputed_info(precomputed_info)
+            # active_models.models[i].info = precomputed_info
+            active_models[i].info = precomputed_info
 
     def update(self,
-               active_models,
-               new_candidates_indices,
-               all_candidates_indices,
-               selected_indices,
+               active_models: ActiveModels,
+               new_candidates_indices: List[int],
+               all_candidates_indices: List[int],
+               selected_indices: List[int],
                data_X: np.ndarray) -> None:
         """Update average distance between models.
 
@@ -69,7 +80,6 @@ class DistanceBuilder:
         :param data_X:
         :return:
         """
-        # TODO: test correctness
         # First step is to precompute information for the new candidate models
         self.precompute_information(active_models, new_candidates_indices, data_X)
 
@@ -78,7 +88,7 @@ class DistanceBuilder:
         all_old_candidates_indices = np.setdiff1d(all_candidates_indices, new_candidates_indices)
 
         # i) new evaluated models vs all old candidates.
-        self.compute_distance(active_models, new_evaluated_models, all_old_candidates_indices)
+        self.compute_distance(active_models, [new_evaluated_models], list(all_old_candidates_indices.tolist()))
 
         # ii) new candidate models vs all trained models
         self.compute_distance(active_models, selected_indices, new_candidates_indices)
@@ -89,17 +99,16 @@ class DistanceBuilder:
         :param index:
         :return:
         """
-        # TODO: test correctness
         return self._average_distance[:index, :index]
 
     def compute_distance(self,
-                         active_models,
-                         indices_i,
-                         indices_j) -> None:
+                         active_models: ActiveModels,
+                         indices_i: List[int],
+                         indices_j: List[int]) -> None:
         raise NotImplementedError
 
     def create_precomputed_info(self,
-                                covariance,
+                                covariance: Kern,
                                 data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError
 
@@ -139,8 +148,16 @@ class HellingerDistanceBuilder(DistanceBuilder):
         distance = np.mean(hellinger, axis=0)
         return float(distance)
 
-    def compute_distance(self, active_models, indices_i, indices_j) -> None:
-        pass
+    def compute_distance(self,
+                         active_models: ActiveModels,
+                         indices_i: List[int],
+                         indices_j: List[int]) -> None:
+        # TODO: test correctness
+        for i in indices_i:
+            for j in indices_j:
+                dist = self.hellinger_distance(*active_models[i].info, *active_models[j].info)
+                self._average_distance[i, j] = dist
+                self._average_distance[j, i] = dist
 
     def create_precomputed_info(self,
                                 covariance: Kern,

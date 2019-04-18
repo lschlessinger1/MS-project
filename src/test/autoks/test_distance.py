@@ -1,4 +1,4 @@
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -6,7 +6,8 @@ from GPy.core.parameterization.priors import LogGaussian, Gaussian
 from GPy.kern import RBF, RationalQuadratic
 from numpy.linalg import LinAlgError
 
-from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder
+from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder, DistanceBuilder
+from src.autoks.kernel import AKSKernel
 
 
 class TestDistance(TestCase):
@@ -51,7 +52,114 @@ class TestDistance(TestCase):
         self.assertRaises(LinAlgError, chol_safe, k, tolerance)
 
 
+class TestDistanceBuilder(TestCase):
+
+    def setUp(self) -> None:
+        self.x = np.array([[1, 2], [4, 5], [6, 7], [8, 9], [10, 11]])
+        self.noise_prior = Gaussian(mu=np.log(0.01), sigma=1)
+        self.cov_i = RBF(1)
+        p1 = LogGaussian(20, 1)
+        p2 = LogGaussian(0, 1.1)
+        self.cov_i.variance.set_prior(p1, warning=False)
+        self.cov_i.lengthscale.set_prior(p2, warning=False)
+        self.active_models = [AKSKernel(self.cov_i)]
+        self.ind_init = [0]
+
+    @mock.patch('src.autoks.distance.distance.DistanceBuilder.precompute_information')
+    def test_init(self, mock_precompute_information):
+        builder = DistanceBuilder(self.noise_prior, num_samples=20, max_num_hyperparameters=40, max_num_kernels=3,
+                                  active_models=self.active_models, initial_model_indices=self.ind_init, data_X=self.x)
+        ps = builder.probability_samples
+        self.assertIsInstance(ps, np.ndarray)
+        self.assertEqual(ps.shape, (builder.num_samples, builder.max_num_hyperparameters))
+
+        hdns = builder.hyperparameter_data_noise_samples
+        self.assertIsInstance(hdns, np.ndarray)
+        self.assertEqual(hdns.shape, (builder.num_samples, 1))
+
+        ad = builder._average_distance
+        self.assertIsInstance(ad, np.ndarray)
+        self.assertEqual(ad.shape, (builder.max_num_kernels, builder.max_num_kernels))
+        nan = np.nan
+        np.testing.assert_equal(ad, np.array([[0, nan, nan],
+                                              [nan, 0, nan],
+                                              [nan, nan, 0]]))
+
+        mock_precompute_information.assert_called_once_with(self.active_models, self.ind_init, self.x)
+
+
 class TestHellingerDistanceBuilder(TestCase):
+
+    def setUp(self) -> None:
+        self.x = np.array([[1, 2], [4, 5], [6, 7], [8, 9], [10, 11]])
+
+        self.noise_prior = Gaussian(mu=np.log(0.01), sigma=1)
+        cov_1 = RBF(1)
+        p1 = LogGaussian(20, 1)
+        p2 = LogGaussian(0, 1.1)
+        cov_1.variance.set_prior(p1, warning=False)
+        cov_1.lengthscale.set_prior(p2, warning=False)
+
+        cov_2 = RBF(1)
+        p3 = LogGaussian(11, 1)
+        p4 = LogGaussian(1, 1.21)
+        cov_2.variance.set_prior(p3, warning=False)
+        cov_2.lengthscale.set_prior(p4, warning=False)
+
+        cov_3 = RationalQuadratic(1)
+        p5 = LogGaussian(4, 1)
+        p6 = LogGaussian(1.2, 1.21)
+        p7 = LogGaussian(13, 1.21)
+        cov_3.variance.set_prior(p5, warning=False)
+        cov_3.lengthscale.set_prior(p6, warning=False)
+        cov_3.power.set_prior(p7, warning=False)
+        self.active_models = [AKSKernel(cov_1), AKSKernel(cov_2), AKSKernel(cov_3)]
+        self.ind_init = [0, 2]
+
+    def test_precompute_information(self):
+        n = self.x.shape[0]
+        builder = HellingerDistanceBuilder(self.noise_prior, num_samples=20, max_num_hyperparameters=40,
+                                           max_num_kernels=3, active_models=self.active_models,
+                                           initial_model_indices=self.ind_init, data_X=self.x)
+
+        self.assertIsInstance(self.active_models[0].info, tuple)
+        self.assertIsInstance(self.active_models[0].info[0], np.ndarray)
+        self.assertIsInstance(self.active_models[0].info[1], np.ndarray)
+        self.assertEqual(self.active_models[0].info[0].shape, (builder.num_samples,))
+        self.assertEqual(self.active_models[0].info[1].shape, (n, n, builder.num_samples,))
+
+        new_ind = [1]
+        builder.precompute_information(self.active_models, new_ind, self.x)
+        self.assertIsInstance(self.active_models[1].info, tuple)
+        self.assertIsInstance(self.active_models[1].info[0], np.ndarray)
+        self.assertIsInstance(self.active_models[1].info[1], np.ndarray)
+        self.assertEqual(self.active_models[1].info[0].shape, (builder.num_samples,))
+
+        self.assertEqual(self.active_models[1].info[1].shape, (n, n, builder.num_samples,))
+
+    def test_update(self):
+        builder = HellingerDistanceBuilder(self.noise_prior, num_samples=20, max_num_hyperparameters=40,
+                                           max_num_kernels=3, active_models=self.active_models,
+                                           initial_model_indices=self.ind_init, data_X=self.x)
+
+        builder.update(self.active_models, [1], [self.ind_init[0]], [self.ind_init[1]], self.x)
+
+    def test_get_kernel(self):
+        builder = HellingerDistanceBuilder(self.noise_prior, num_samples=20, max_num_hyperparameters=40,
+                                           max_num_kernels=3, active_models=self.active_models,
+                                           initial_model_indices=self.ind_init, data_X=self.x)
+
+        result = builder.get_kernel(1)
+        self.assertIsInstance(result, np.ndarray)
+
+    def test_compute_distance(self):
+        builder = HellingerDistanceBuilder(self.noise_prior, num_samples=20, max_num_hyperparameters=40,
+                                           max_num_kernels=3, active_models=self.active_models,
+                                           initial_model_indices=self.ind_init, data_X=self.x)
+
+        builder.compute_distance(self.active_models, [self.ind_init[0]], [self.ind_init[1]])
+        # check symmetric:
+        np.testing.assert_allclose(builder._average_distance, builder._average_distance.T, atol=1e-8)
 
     def test_hellinger_distance(self):
         cov_i = RBF(1)
