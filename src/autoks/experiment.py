@@ -16,7 +16,8 @@ from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, Evolutionar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
     AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
-    get_all_1d_kernels, encode_aks_kerns, k_vec_kernel_kernel
+    get_all_1d_kernels, encode_aks_kerns
+from src.autoks.kernel_kernel import k_vec_kernel_kernel, hellinger_kernel_kernel
 from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
     evolutionary_kernel_selector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
@@ -880,10 +881,10 @@ class Experiment:
         init_qs = BOMSInitQueryStrategy()
         acq = ExpectedImprovementPerSec()
         qs = BestScoreStrategy(scoring_func=acq)
-        # todo: add exp. sq. hellinger distance metric to kernel kernel
+        kernel = hellinger_kernel_kernel(x_train)
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
                    eval_budget=50, hyperpriors=hyperpriors, init_query_strat=init_qs, query_strat=qs,
-                   use_surrogate=True, surrogate_opt_freq=10, **kwargs)
+                   kernel_kernel=kernel, use_surrogate=True, surrogate_opt_freq=10, **kwargs)
 
     @classmethod
     def cks_experiment(cls, dataset, **kwargs):

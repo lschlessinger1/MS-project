@@ -5,11 +5,13 @@ import numpy as np
 from GPy.core.parameterization.priors import LogGaussian
 from GPy.kern import Add, Prod, KernelKernel, RBF, RationalQuadratic
 
+from src.autoks.distance.metrics import shd_metric, euclidean_metric
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
-    remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, shd_metric, \
-    decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, shd_kernel_kernel, encode_aks_kernel, \
-    euclidean_metric, euclidean_kernel_kernel, additive_part_to_vec, kernel_vec_avg_dist, all_pairs_avg_dist, \
+    remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, \
+    decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, encode_aks_kernel, additive_part_to_vec, \
+    kernel_vec_avg_dist, all_pairs_avg_dist, \
     kernels_to_kernel_vecs, get_priors
+from src.autoks.kernel_kernel import shd_kernel_kernel, euclidean_kernel_kernel
 from src.autoks.util import remove_duplicates
 from src.test.autoks.support.util import has_combo_kernel_type
 
@@ -372,22 +374,22 @@ class TestKernel(unittest.TestCase):
         result = encode_aks_kernel(aks_kernel)
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], str)
-        self.assertListEqual(result, [encode_kernel(aks_kernel.kernel)])
+        self.assertListEqual(result, [encode_kernel(aks_kernel.kernel), [None]])
 
     def test_encode_aks_kerns(self):
         aks_kernels = [AKSKernel(RBF(1)), AKSKernel(RationalQuadratic(1))]
         result = encode_aks_kerns(aks_kernels)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (len(aks_kernels), 1))
-        self.assertListEqual(result[0][0], [encode_kernel(aks_kernels[0].kernel)])
-        self.assertListEqual(result[1][0], [encode_kernel(aks_kernels[1].kernel)])
+        self.assertListEqual(result[0][0], [encode_kernel(aks_kernels[0].kernel), [None]])
+        self.assertListEqual(result[1][0], [encode_kernel(aks_kernels[1].kernel), [None]])
 
         aks_kernels = [AKSKernel(RBF(1) * RBF(1)), AKSKernel(RationalQuadratic(1))]
         result = encode_aks_kerns(aks_kernels)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (len(aks_kernels), 1))
-        self.assertListEqual(result[0][0], [encode_kernel(aks_kernels[0].kernel)])
-        self.assertListEqual(result[1][0], [encode_kernel(aks_kernels[1].kernel)])
+        self.assertListEqual(result[0][0], [encode_kernel(aks_kernels[0].kernel), [None]])
+        self.assertListEqual(result[1][0], [encode_kernel(aks_kernels[1].kernel), [None]])
 
     def test_shd_kernel_kernel(self):
         result = shd_kernel_kernel(variance=1, lengthscale=1)

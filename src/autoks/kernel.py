@@ -5,7 +5,7 @@ import numpy as np
 from GPy import Parameterized
 from GPy.core.parameterization.priors import Prior
 from GPy.kern import RBF, Add, Prod, RationalQuadratic, LinScaleShift, \
-    StandardPeriodic, KernelKernel
+    StandardPeriodic
 from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.spatial.distance import cdist, pdist
 
@@ -13,7 +13,6 @@ from src.autoks.hyperprior import Hyperpriors, Hyperprior
 from src.autoks.util import remove_duplicates, arg_sort, join_operands, tokenize, flatten, remove_outer_parens
 from src.evalg.encoding import BinaryTree, BinaryTreeNode, infix_tokens_to_postfix_tokens, \
     postfix_tokens_to_binexp_tree
-from src.evalg.fitness import structural_hamming_dist
 
 
 class KernelNode(BinaryTreeNode):
@@ -228,6 +227,18 @@ def set_priors(param: Parameterized, priors: Dict[str, Prior]) -> Parameterized:
         else:
             warnings.warn(f'parameter {param_name} not found in {param.__class__.__name__}.')
     return param_copy
+
+
+def encode_prior(p: Prior) -> bytes:
+    import pickle
+    p_string = pickle.dumps(p)
+    return p_string
+
+
+def decode_prior(p_string: bytes) -> Prior:
+    import pickle
+    p_new = pickle.loads(p_string)
+    return p_new
 
 
 def subkernel_expression(kernel: Kern,
@@ -702,54 +713,7 @@ def all_pairs_avg_dist(kernels: List[Kern],
     return float(np.mean(pairwise_dist))
 
 
-def k_vec_metric(u: np.ndarray,
-                 v: np.ndarray,
-                 base_kernels: List[str],
-                 n_dims: int) -> float:
-    """Kernel vector encoding distance metric
-
-    :param u:
-    :param v:
-    :param base_kernels:
-    :param n_dims:
-    :return:
-    """
-    aks_kernel_1_enc, aks_kernel_2_enc = u[0], v[0]
-    k1, k2 = decode_kernel(aks_kernel_1_enc[0]), decode_kernel(aks_kernel_2_enc[0])
-    return all_pairs_avg_dist([k1, k2], base_kernels, n_dims)
-
-
-def k_vec_kernel_kernel(base_kernels: List[str],
-                        n_dims: int,
-                        **kwargs) -> KernelKernel:
-    """Construct a kernel kernel using the kernel vector metric.
-
-    :param n_dims:
-    :param base_kernels:
-    :param kwargs: KernelKernel keyword arguments.
-    :return: The K_vec kernel kernel
-    """
-    input_dict = {
-        'base_kernels': base_kernels,
-        'n_dims': n_dims
-    }
-    return KernelKernel(distance_metric=k_vec_metric, dm_kwargs_dict=input_dict, **kwargs)
-
-
 # Structural hamming distance functions
-def shd_metric(u: np.ndarray,
-               v: np.ndarray) -> float:
-    """Structural hamming distance (SHD) metric
-
-    :param u: An array containing the first list of an encoded kernel as its only element
-    :param v: An array containing the second list of an encoded kernel as its only element
-    :return: SHD between u and v
-    """
-    aks_kernel_1_enc, aks_kernel_2_enc = u[0], v[0]
-    k1, k2 = decode_kernel(aks_kernel_1_enc[0]), decode_kernel(aks_kernel_2_enc[0])
-    tree_1, tree_2 = kernel_to_tree(k1), kernel_to_tree(k2)
-    return structural_hamming_dist(tree_1, tree_2, hd=hd_kern_nodes)
-
 
 def decode_kernel(kern_dict_str: str) -> Kern:
     """Convert kernel dictionary string to a kernel.
@@ -802,7 +766,11 @@ def encode_aks_kernel(aks_kernel: AKSKernel) -> List[str]:
     :param aks_kernel:
     :return:
     """
-    return [encode_kernel(aks_kernel.kernel)]
+    try:
+        prior_enc = [encode_prior(prior) for prior in get_priors(aks_kernel.kernel)]
+    except ValueError:
+        prior_enc = None
+    return [encode_kernel(aks_kernel.kernel), [prior_enc]]
 
 
 def encode_aks_kerns(aks_kernels: List[AKSKernel]) -> np.ndarray:
@@ -815,42 +783,3 @@ def encode_aks_kerns(aks_kernels: List[AKSKernel]) -> np.ndarray:
     for i, aks_kernel in enumerate(aks_kernels):
         enc[i, 0] = encode_aks_kernel(aks_kernel)
     return enc
-
-
-def shd_kernel_kernel(**kwargs) -> KernelKernel:
-    """Construct a kernel kernel using the SHD metric.
-
-    :param kwargs: KernelKernel keyword arguments.
-    :return: The SHD kernel kernel
-    """
-    return KernelKernel(distance_metric=shd_metric, **kwargs)
-
-
-# Euclidean distance metric
-def euclidean_metric(u: np.ndarray,
-                     v: np.ndarray,
-                     get_x_train: Callable[[], np.ndarray]) -> float:
-    """Euclidean distance metric
-
-    :param u: An array containing the first list of an encoded kernel as its only element
-    :param v: An array containing the second list of an encoded kernel as its only element
-    :param get_x_train:
-    :return: Euclidean distance between u and v
-    """
-    aks_kernel_1_enc, aks_kernel_2_enc = u[0], v[0]
-    k1, k2 = decode_kernel(aks_kernel_1_enc[0]), decode_kernel(aks_kernel_2_enc[0])
-    x_train = get_x_train()
-    return kernel_l2_dist(k1, k2, x_train)
-
-
-def euclidean_kernel_kernel(x_train: np.ndarray, **kwargs) -> KernelKernel:
-    """Construct a kernel kernel using the SHD metric.
-
-    :param x_train: Training data
-    :param kwargs: KernelKernel keyword arguments.
-    :return: The SHD kernel kernel
-    """
-    input_dict = {
-        'get_x_train': lambda: x_train
-    }
-    return KernelKernel(distance_metric=euclidean_metric, dm_kwargs_dict=input_dict, **kwargs)
