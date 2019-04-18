@@ -115,8 +115,29 @@ class HellingerDistanceBuilder(DistanceBuilder):
                          active_models, initial_model_indices, data_X)
 
     @staticmethod
-    def hellinger_distance(data_i, data_j):
-        pass
+    def hellinger_distance(log_det_i: np.ndarray,
+                           mini_gram_matrices_i: np.ndarray,
+                           log_det_j: np.ndarray,
+                           mini_gram_matrices_j: np.ndarray,
+                           tol: float = 0.02) -> float:
+        are_different = np.abs(log_det_i - log_det_j) > tol
+        indices = np.arange(are_different.size)
+        logdet_p_and_q = log_det_i
+        for i in indices[are_different]:
+            p_K = mini_gram_matrices_i[:, :, i]
+            q_K = mini_gram_matrices_j[:, :, i]
+            p_and_q_kernels = 0.5 * (p_K + q_K)
+            chol_p_and_q = chol_safe(p_and_q_kernels, tol)
+            logdet_p_and_q[i] = 2 * np.sum(np.log(np.diag(chol_p_and_q)), axis=0)
+
+        # Compute log distance.
+        log_det_sum = log_det_i + log_det_j
+        log_hellinger = 0.25 * log_det_sum - 0.5 * logdet_p_and_q
+
+        # Exponentiate.
+        hellinger = 1 - np.exp(log_hellinger)
+        distance = np.mean(hellinger, axis=0)
+        return float(distance)
 
     def compute_distance(self, active_models, indices_i, indices_j) -> None:
         pass
@@ -132,8 +153,6 @@ class HellingerDistanceBuilder(DistanceBuilder):
 
         cov_priors = get_priors(covariance)
         hyperparameters = prior_sample(cov_priors, self.probability_samples)
-        # For numerical stability
-        hyperparameters[hyperparameters == 0] = 1e-9
 
         for i in range(hyperparameters.shape[0]):
             hyp = hyperparameters[i, :]
