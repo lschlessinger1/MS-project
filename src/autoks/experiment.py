@@ -17,7 +17,7 @@ from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
     AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
     get_all_1d_kernels, encode_aks_kerns
-from src.autoks.kernel_kernel import k_vec_kernel_kernel, hellinger_kernel_kernel
+from src.autoks.kernel_kernel import hellinger_kernel_kernel, euclidean_kernel_kernel
 from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
     evolutionary_kernel_selector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
@@ -183,7 +183,7 @@ class Experiment:
         self.surrogate_model = None
         if self.use_surrogate:
             if kernel_kernel is None:
-                self.kernel_kernel = k_vec_kernel_kernel(self.kernel_families, self.n_dims)
+                self.kernel_kernel = euclidean_kernel_kernel(self.x_train)
             else:
                 self.kernel_kernel = kernel_kernel
             # for now, force surrogate model class to be GP Regression
