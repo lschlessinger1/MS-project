@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 from GPy.core.parameterization.priors import LogGaussian
-from GPy.kern import Add, Prod, RBF, RationalQuadratic
+from GPy.kern import Add, Prod, RBF, RationalQuadratic, RBFKernelKernel
 
 from src.autoks.distance.metrics import shd_metric, euclidean_metric
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
@@ -393,7 +393,7 @@ class TestKernel(unittest.TestCase):
 
     def test_shd_kernel_kernel(self):
         result = shd_kernel_kernel(variance=1, lengthscale=1)
-        self.assertIsInstance(result, KernelKernel)
+        self.assertIsInstance(result, RBFKernelKernel)
         self.assertEqual(result.dist_metric, shd_metric)
 
         aks_kernels_evaluated = [AKSKernel(RBF(1)), AKSKernel(RationalQuadratic(1))]
@@ -418,7 +418,7 @@ class TestKernel(unittest.TestCase):
     def test_euclidean_kernel_kernel(self):
         x_train = np.array([[1, 2], [3, 4]])
         result = euclidean_kernel_kernel(x_train)
-        self.assertIsInstance(result, KernelKernel)
+        self.assertIsInstance(result, RBFKernelKernel)
         self.assertEqual(result.dist_metric, euclidean_metric)
 
 
