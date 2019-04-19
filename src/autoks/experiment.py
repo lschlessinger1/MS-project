@@ -5,7 +5,7 @@ from typing import Callable, List, Tuple, Optional, FrozenSet, Union, Any, Type
 import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
-from GPy.kern import KernelKernel
+from GPy.kern import RBFKernelKernel
 from GPy.models import GPRegression
 from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
@@ -57,7 +57,7 @@ class Experiment:
     max_null_queries: int
     max_same_expansions: int
     use_surrogate: bool
-    kernel_kernel: KernelKernel
+    kernel_kernel: RBFKernelKernel
     surrogate_model: Optional
     surrogate_model_cls: Type
     surrogate_opt_freq: int

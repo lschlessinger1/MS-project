@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 from GPy.core.parameterization.priors import LogGaussian
-from GPy.kern import Add, Prod, KernelKernel, RBF, RationalQuadratic
+from GPy.kern import Add, Prod, RBF, RationalQuadratic
 
 from src.autoks.distance.metrics import shd_metric, euclidean_metric
 from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create_1d_kernel, \
