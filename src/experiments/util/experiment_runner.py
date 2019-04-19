@@ -58,9 +58,14 @@ class BOMSFilesExperimentRunner(ExperimentRunner):
 
     def get_datasets(self) -> List[Dataset]:
         data_dir = os.path.join('..', '..', 'data')
-        data_1d_dir = os.path.join(data_dir, '1d_data')
 
-        data_1d_paths = gen_dataset_paths(data_dir=data_1d_dir)
+        data_1d_dir = os.path.join(data_dir, '1d_data')
+        airline_path = os.path.join(data_1d_dir, 'airline.csv')
+        mauna_path = os.path.join(data_1d_dir, 'mauna.csv')
+        methane_500_path = os.path.join(data_1d_dir, 'methane_500.csv')
+        solar_path = os.path.join(data_1d_dir, 'methane_500.csv')
+        data_1d_paths = [airline_path, mauna_path, methane_500_path, solar_path]
+
         data_multi_d_dir = os.path.join(data_dir, 'multi_dimensional')
         concrete_path = os.path.join(data_multi_d_dir, 'concrete_500.csv')
         housing_path = os.path.join(data_multi_d_dir, 'housing.csv')
