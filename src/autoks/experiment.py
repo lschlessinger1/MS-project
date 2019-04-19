@@ -932,7 +932,8 @@ class Experiment:
         objective = log_likelihood_normalized
         budget = 50
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
-                   tabu_search=False, eval_budget=budget, max_null_queries=budget, max_same_expansions=budget, **kwargs)
+                   tabu_search=False, eval_budget=budget, max_null_queries=budget, max_same_expansions=budget,
+                   use_surrogate=False, **kwargs)
 
     @classmethod
     def random_experiment(cls,
