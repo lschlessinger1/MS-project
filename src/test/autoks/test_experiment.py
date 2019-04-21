@@ -23,7 +23,8 @@ class TestExperiment(TestCase):
         y_train = np.array([[5], [10]])
         x_test = np.array([[10, 20, 30], [40, 50, 60]])
         y_test = np.array([[2], [1]])
-        self.exp = Experiment(grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test)
+        self.exp = Experiment(grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
+                              use_surrogate=False)
 
     def test_kernel_search(self):
         max_depth = 2
