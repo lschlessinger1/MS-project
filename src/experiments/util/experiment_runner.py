@@ -63,7 +63,7 @@ class BOMSFilesExperimentRunner(ExperimentRunner):
         airline_path = os.path.join(data_1d_dir, 'airline.csv')
         mauna_path = os.path.join(data_1d_dir, 'mauna.csv')
         methane_500_path = os.path.join(data_1d_dir, 'methane_500.csv')
-        solar_path = os.path.join(data_1d_dir, 'methane_500.csv')
+        solar_path = os.path.join(data_1d_dir, 'solar.csv')
         data_1d_paths = [airline_path, mauna_path, methane_500_path, solar_path]
 
         data_multi_d_dir = os.path.join(data_dir, 'multi_dimensional')
