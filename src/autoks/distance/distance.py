@@ -65,6 +65,32 @@ class DistanceBuilder:
             # active_models.models[i].info = precomputed_info
             active_models[i].info = precomputed_info
 
+    # TODO: remove and refactor original update method
+    def update_multiple(self,
+                        active_models: ActiveModels,
+                        new_candidates_ind: List[int],
+                        all_candidates_ind: List[int],
+                        old_selected_ind: List[int],
+                        new_selected_ind: List[int],
+                        data_X: np.ndarray) -> None:
+        # First step is to precompute information for the new candidate models
+        self.precompute_information(active_models, new_candidates_ind, data_X)
+
+        # Second step is to compute the distance between the trained models vs candidate models.
+        new_evaluated_models = new_selected_ind
+        all_old_candidates_indices = np.setdiff1d(all_candidates_ind, new_candidates_ind)
+
+        # compute distance between evaluated kernels
+        if len(new_evaluated_models) > 1:
+            self.compute_distance(active_models, new_evaluated_models, new_evaluated_models)
+
+        # i) new evaluated models vs all old candidates.
+        self.compute_distance(active_models, new_evaluated_models, list(all_old_candidates_indices.tolist()))
+
+        # ii) new candidate models vs all trained models
+        all_selected = old_selected_ind + new_selected_ind
+        self.compute_distance(active_models, all_selected, new_candidates_ind)
+
     def update(self,
                active_models: ActiveModels,
                new_candidates_indices: List[int],
