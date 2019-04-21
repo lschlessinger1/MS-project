@@ -5,6 +5,7 @@ from typing import Callable, List, Tuple, Optional, FrozenSet, Union, Any, Type
 import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
+from GPy.core.parameterization.priors import Gaussian
 from GPy.kern import RBFKernelKernel
 from GPy.models import GPRegression
 from matplotlib.ticker import MaxNLocator
@@ -12,6 +13,7 @@ from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
 from src.autoks.acquisition_function import ExpectedImprovementPerSec
+from src.autoks.distance.distance import HellingerDistanceBuilder
 from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
@@ -189,6 +191,7 @@ class Experiment:
             # for now, force surrogate model class to be GP Regression
             self.surrogate_model_cls = GPRegression
             self.surrogate_opt_freq = surrogate_opt_freq
+            self.distance_builder = None
 
         # Used for expected improvement per second.
         self.n_kernel_params = []
@@ -204,6 +207,12 @@ class Experiment:
         # initialize models
         kernels = self.grammar.initialize(self.kernel_families, n_dims=self.n_dims, hyperpriors=self.hyperpriors)
         kernels = self.randomize_kernels(kernels, verbose=self.verbose)
+
+        # create distance builder if using surrogate model
+        if self.use_surrogate:
+            candidates = kernels
+            # for now, it must be a Hellinger distance builder
+            self.distance_builder = self.create_hellinger_db(candidates, self.x_train)
 
         # convert to additive form if necessary
         if self.additive_form:
@@ -952,6 +961,24 @@ class Experiment:
                                      time: float):
         self.n_kernel_params.append(n_hyperparams)
         self.objective_times.append(time)
+
+    def create_hellinger_db(self, active_models, data_X):
+        """Create Hellinger distance builder with all active models being candidates"""
+        # todo: get this from boms hyperpriors
+        lik_noise_std = np.log(0.01)
+        lik_noise_mean = 1
+        noise_prior = Gaussian(lik_noise_std, lik_noise_mean)
+
+        initial_model_indices = list(range(len(active_models)))
+
+        num_samples = 20
+        max_num_hyperparameters = 40
+        max_num_kernels = 1000
+
+        builder = HellingerDistanceBuilder(noise_prior, num_samples, max_num_hyperparameters, max_num_kernels,
+                                           active_models, initial_model_indices, data_X=data_X)
+
+        return builder
 
 
 # stats functions
