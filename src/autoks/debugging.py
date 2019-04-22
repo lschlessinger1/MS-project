@@ -9,10 +9,10 @@ def has_no_nans(a):
     return (~np.isnan(a)).all()
 
 
-def test_kernel(distance_builder: DistanceBuilder,
-                n_active_models: int,
-                selected_ind: List[int],
-                all_candidate_indices: List[int]):
+def assert_valid_kernel_kernel(distance_builder: DistanceBuilder,
+                               n_active_models: int,
+                               selected_ind: List[int],
+                               all_candidate_indices: List[int]):
     """For debugging"""
     # get kernel kernel
     K = distance_builder.get_kernel(n_active_models)

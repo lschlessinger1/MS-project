@@ -5,7 +5,7 @@ from GPy import likelihoods
 from GPy.core import GP
 
 from src.autoks.active_set import ActiveSet
-from src.autoks.debugging import test_kernel
+from src.autoks.debugging import assert_valid_kernel_kernel
 
 
 class KernelKernelGPRegression(GP):
@@ -41,7 +41,7 @@ class KernelKernelGPRegression(GP):
 
         # for debugging
         selected = old_selected_indices + new_selected_indices
-        test_kernel(self.kern.distance_builder, len(active_models), selected, all_candidates_indices)
+        assert_valid_kernel_kernel(self.kern.distance_builder, len(active_models), selected, all_candidates_indices)
 
         x_meta_train = np.array(list(selected))[:, None]
         y_meta_train = np.array(list(fitness_scores))[:, None]
