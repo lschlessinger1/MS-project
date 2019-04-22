@@ -6,6 +6,7 @@ from GPy.core.parameterization.priors import LogGaussian, Gaussian
 from GPy.kern import RBF, RationalQuadratic
 from numpy.linalg import LinAlgError
 
+from src.autoks.active_set import ActiveSet
 from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder, DistanceBuilder
 from src.autoks.kernel import AKSKernel
 
@@ -62,7 +63,9 @@ class TestDistanceBuilder(TestCase):
         p2 = LogGaussian(0, 1.1)
         self.cov_i.variance.set_prior(p1, warning=False)
         self.cov_i.lengthscale.set_prior(p2, warning=False)
-        self.active_models = [AKSKernel(self.cov_i)]
+        models = [AKSKernel(self.cov_i)]
+        self.active_models = ActiveSet(max_n_models=3)
+        self.active_models.models = models
         self.ind_init = [0]
 
     @mock.patch('src.autoks.distance.distance.DistanceBuilder.precompute_information')
@@ -113,7 +116,9 @@ class TestHellingerDistanceBuilder(TestCase):
         cov_3.variance.set_prior(p5, warning=False)
         cov_3.lengthscale.set_prior(p6, warning=False)
         cov_3.power.set_prior(p7, warning=False)
-        self.active_models = [AKSKernel(cov_1), AKSKernel(cov_2), AKSKernel(cov_3)]
+        models = [AKSKernel(cov_1), AKSKernel(cov_2), AKSKernel(cov_3)]
+        self.active_models = ActiveSet(max_n_models=3)
+        self.active_models.models = models
         self.ind_init = [0, 2]
 
     def test_precompute_information(self):
@@ -122,20 +127,20 @@ class TestHellingerDistanceBuilder(TestCase):
                                            max_num_kernels=3, active_models=self.active_models,
                                            initial_model_indices=self.ind_init, data_X=self.x)
 
-        self.assertIsInstance(self.active_models[0].info, tuple)
-        self.assertIsInstance(self.active_models[0].info[0], np.ndarray)
-        self.assertIsInstance(self.active_models[0].info[1], np.ndarray)
-        self.assertEqual(self.active_models[0].info[0].shape, (builder.num_samples,))
-        self.assertEqual(self.active_models[0].info[1].shape, (n, n, builder.num_samples,))
+        self.assertIsInstance(self.active_models.models[0].info, tuple)
+        self.assertIsInstance(self.active_models.models[0].info[0], np.ndarray)
+        self.assertIsInstance(self.active_models.models[0].info[1], np.ndarray)
+        self.assertEqual(self.active_models.models[0].info[0].shape, (builder.num_samples,))
+        self.assertEqual(self.active_models.models[0].info[1].shape, (n, n, builder.num_samples,))
 
         new_ind = [1]
         builder.precompute_information(self.active_models, new_ind, self.x)
-        self.assertIsInstance(self.active_models[1].info, tuple)
-        self.assertIsInstance(self.active_models[1].info[0], np.ndarray)
-        self.assertIsInstance(self.active_models[1].info[1], np.ndarray)
-        self.assertEqual(self.active_models[1].info[0].shape, (builder.num_samples,))
+        self.assertIsInstance(self.active_models.models[1].info, tuple)
+        self.assertIsInstance(self.active_models.models[1].info[0], np.ndarray)
+        self.assertIsInstance(self.active_models.models[1].info[1], np.ndarray)
+        self.assertEqual(self.active_models.models[1].info[0].shape, (builder.num_samples,))
 
-        self.assertEqual(self.active_models[1].info[1].shape, (n, n, builder.num_samples,))
+        self.assertEqual(self.active_models.models[1].info[1].shape, (n, n, builder.num_samples,))
 
     def test_update(self):
         builder = HellingerDistanceBuilder(self.noise_prior, num_samples=20, max_num_hyperparameters=40,
