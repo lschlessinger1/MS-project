@@ -5,8 +5,9 @@ from GPy.core.parameterization.priors import Prior, Gaussian
 from GPy.kern import Kern
 from numpy.linalg import LinAlgError
 
+from src.autoks.active_set import ActiveSet
 from src.autoks.distance.util import probability_samples, prior_sample
-from src.autoks.kernel import get_priors, AKSKernel
+from src.autoks.kernel import get_priors
 
 # Adapted from Malkomes, 2016
 # Bayesian optimization for automated model selection (BOMS)
@@ -14,7 +15,7 @@ from src.autoks.kernel import get_priors, AKSKernel
 
 
 # For now this represents the active set class
-ActiveModels = List[AKSKernel]
+ActiveModels = ActiveSet
 
 
 class DistanceBuilder:
@@ -60,10 +61,10 @@ class DistanceBuilder:
         """
         for i in new_candidates_indices:
             # covariance = active_models.models[i].covariance
-            covariance = active_models[i].kernel
+            covariance = active_models.models[i].kernel
             precomputed_info = self.create_precomputed_info(covariance, data_X)
             # active_models.models[i].info = precomputed_info
-            active_models[i].info = precomputed_info
+            active_models.models[i].info = precomputed_info
 
     # TODO: remove and refactor original update method
     def update_multiple(self,
@@ -181,7 +182,7 @@ class HellingerDistanceBuilder(DistanceBuilder):
         # TODO: test correctness
         for i in indices_i:
             for j in indices_j:
-                dist = self.hellinger_distance(*active_models[i].info, *active_models[j].info)
+                dist = self.hellinger_distance(*active_models.models[i].info, *active_models.models[j].info)
                 self._average_distance[i, j] = dist
                 self._average_distance[j, i] = dist
 

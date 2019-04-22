@@ -17,11 +17,11 @@ class ActiveSet:
         self.selected_indices = []
 
     @property
-    def remove_priority(self):
+    def remove_priority(self) -> List[int]:
         return self._remove_priority
 
     @remove_priority.setter
-    def remove_priority(self, remove_priority):
+    def remove_priority(self, remove_priority) -> None:
         if len(remove_priority) > self.max_n_models:
             raise ValueError(f'Size of removal priority {len(remove_priority)} cannot be greater than maximum number '
                              f'of models {self.max_n_models}.')
@@ -37,13 +37,13 @@ class ActiveSet:
         return self._models
 
     @models.setter
-    def models(self, models):
+    def models(self, models) -> None:
         if len(models) > self.max_n_models:
             raise ValueError(f'Size of models {len(models)} cannot be greater than maximum number of models '
                              f'{self.max_n_models}.')
         self._models = models
 
-    def get_index_to_insert(self):
+    def get_index_to_insert(self) -> int:
         n_models = len(self)
         if n_models < self.max_n_models:
             return n_models
@@ -75,8 +75,14 @@ class ActiveSet:
 
         return idx, True
 
-    def get_selected_models(self):
+    def get_selected_models(self) -> List[Model]:
         return [self.models[i] for i in self.selected_indices]
 
-    def __len__(self):
+    def get_candidate_indices(self) -> List[int]:
+        return [i for (i, model) in enumerate(self.models) if i not in self.selected_indices and model is not None]
+
+    def get_candidates(self) -> List[Model]:
+        return [self.models[i] for i in self.get_candidate_indices()]
+
+    def __len__(self) -> int:
         return sum(1 for m in self.models if m is not None)

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
 from GPy.core.parameterization.priors import Gaussian
-from GPy.kern import RBFKernelKernel, RBFDistanceBuilderKernelKernel
+from GPy.kern import RBFKernelKernel
 from GPy.models import GPRegression
 from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
@@ -21,7 +21,6 @@ from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
     AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
     get_all_1d_kernels
-from src.autoks.kernel_kernel import hellinger_kernel_kernel, euclidean_kernel_kernel
 from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
     evolutionary_kernel_selector
 from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
@@ -71,7 +70,7 @@ class Experiment:
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
                  init_query_strat=None, query_strat=None, hyperpriors=None, additive_form=False, debug=False,
                  verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3, optimizer=None,
-                 n_restarts_optimizer=10, use_surrogate=True, kernel_kernel=None, surrogate_opt_freq=10):
+                 n_restarts_optimizer=10, use_surrogate=True):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -187,13 +186,8 @@ class Experiment:
         self.use_surrogate = use_surrogate
         self.surrogate_model = None
         if self.use_surrogate:
-            if kernel_kernel is None:
-                self.kernel_kernel = euclidean_kernel_kernel(self.x_train)
-            else:
-                self.kernel_kernel = kernel_kernel
             # for now, force surrogate model class to be GP Regression
             self.surrogate_model_cls = KernelKernelGPRegression
-            self.surrogate_opt_freq = surrogate_opt_freq
             self.distance_builder = None
             # TODO: ensure this matches distance builder limit
             self.active_set = ActiveSet(max_n_models=1000)
@@ -216,9 +210,10 @@ class Experiment:
         # create distance builder if using surrogate model
         if self.use_surrogate:
             new_candidate_indices = self.active_set.update(kernels)
-            candidates = [self.active_set.models[i] for i in new_candidate_indices]
+            assert new_candidate_indices == self.active_set.get_candidate_indices()
+
             # for now, it must be a Hellinger distance builder
-            self.distance_builder = self.create_hellinger_db(candidates, self.x_train)
+            self.distance_builder = self.create_hellinger_db(self.active_set, self.x_train)
 
         # convert to additive form if necessary
         if self.additive_form:
@@ -234,11 +229,26 @@ class Experiment:
         old_evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
 
-        # n_evals_since_s_opt = len(old_evaluated_kernels)
         if self.use_surrogate:
-            self.update_surrogate_model(kernels)
+            new_candidate_indices = []
+            new_selected_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel in
+                                    newly_evaluated_kernels]
+            old_selected_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel in
+                                    old_evaluated_kernels]
+            all_candidates_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel is not None
+                                      and not kernel.evaluated]
+            fitness_scores = [self.active_set.models[i].score for i in old_selected_indices] + \
+                             [self.active_set.models[i].score for i in new_selected_indices]
+            assert self.active_set.selected_indices == old_selected_indices + new_selected_indices
+            builder = self.distance_builder
+            builder.update_multiple(self.active_set, new_candidate_indices, all_candidates_indices,
+                                    old_selected_indices,
+                                    new_selected_indices, data_X=self.x_train)
+            self.surrogate_model = KernelKernelGPRegression.from_distance_builder(builder, self.active_set,
+                                                                                  fitness_scores)
+            assert self.active_set.selected_indices == self.surrogate_model.X.flatten().astype(int).tolist()
+            assert fitness_scores == self.surrogate_model.Y.flatten().tolist()
             self.optimize_surrogate_model()
-            n_evals_since_s_opt = 0
 
         self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
 
@@ -299,7 +309,7 @@ class Experiment:
                                             old_selected_indices, new_selected_indices, self.x_train, fitness_scores)
                 assert self.active_set.selected_indices == self.surrogate_model.X.flatten().astype(int).tolist()
                 assert fitness_scores == self.surrogate_model.Y.flatten().tolist()
-                # self.optimize_surrogate_model()
+                self.optimize_surrogate_model()
             # Select kernels by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat, self.hyperpriors)
 
@@ -317,13 +327,6 @@ class Experiment:
             old_evaluated_kernels = [kernel for kernel in kernels if
                                      kernel.evaluated and kernel not in selected_kernels]
             kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
-            # if self.use_surrogate:
-            #     self.update_surrogate_model(kernels)
-            #     if n_evals_since_s_opt >= self.surrogate_opt_freq:
-            #         self.optimize_surrogate_model()
-            #         n_evals_since_s_opt = 0
-            #     else:
-            #         n_evals_since_s_opt += len(ind)
 
             kernels = self.prune_kernels(kernels, acq_scores, ind)
             kernels = self.select_offspring(kernels)
@@ -348,29 +351,6 @@ class Experiment:
         print(f'Avg. size = {np.mean(sizes)}')
         print(f'Best kernel: {best_kernel}')
         print('')
-
-    def update_surrogate_model(self, kernels):
-        all_evaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if kernel.evaluated]
-        all_evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
-        x_train = np.array(all_evaluated_kernels_ind)[:, None]
-        # x_train = encode_aks_kerns(all_evaluated_kernels)
-        y_train = np.array([aks_kernel.score for aks_kernel in all_evaluated_kernels])
-        y_train = y_train.reshape(-1, 1) if y_train.ndim == 1 else y_train
-        if self.surrogate_model is None:
-            # Update distance builder first
-            new_selected_ind = [i for i in range(len(kernels)) if kernels[i].evaluated]
-            all_candidates_ind = [i for i in range(len(kernels)) if i not in new_selected_ind]
-            builder = self.distance_builder
-            builder.update_multiple(kernels, [], all_candidates_ind, [],
-                                    new_selected_ind, data_X=self.x_train)
-            # then create kernel kernel
-            kernel_kernel = RBFDistanceBuilderKernelKernel(builder, n_models=len(kernels))
-            x_meta_train = np.array(new_selected_ind)[:, None]
-            y_meta_train = y_train
-            self.surrogate_model = self.surrogate_model_cls(x_meta_train, y_meta_train, kernel_kernel)
-        else:
-            self.surrogate_model.set_XY(X=x_train,
-                                        Y=y_train)
 
     def optimize_surrogate_model(self):
         if self.verbose:
@@ -940,10 +920,10 @@ class Experiment:
         init_qs = BOMSInitQueryStrategy()
         acq = ExpectedImprovementPerSec()
         qs = BestScoreStrategy(scoring_func=acq)
-        kernel = hellinger_kernel_kernel(x_train)
+        # kernel = hellinger_kernel_kernel(x_train)
         return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
                    eval_budget=50, hyperpriors=hyperpriors, init_query_strat=init_qs, query_strat=qs,
-                   kernel_kernel=kernel, use_surrogate=True, surrogate_opt_freq=10, **kwargs)
+                   use_surrogate=True, **kwargs)
 
     @classmethod
     def cks_experiment(cls, dataset, **kwargs):
@@ -1012,14 +992,14 @@ class Experiment:
         self.n_kernel_params.append(n_hyperparams)
         self.objective_times.append(time)
 
-    def create_hellinger_db(self, active_models, data_X):
+    def create_hellinger_db(self, active_models: ActiveSet, data_X):
         """Create Hellinger distance builder with all active models being candidates"""
         # todo: get this from boms hyperpriors
         lik_noise_std = np.log(0.01)
         lik_noise_mean = 1
         noise_prior = Gaussian(lik_noise_std, lik_noise_mean)
 
-        initial_model_indices = list(range(len(active_models)))
+        initial_model_indices = active_models.get_candidate_indices()
 
         num_samples = 20
         max_num_hyperparameters = 40

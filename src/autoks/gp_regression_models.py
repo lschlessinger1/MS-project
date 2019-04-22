@@ -3,9 +3,11 @@ from typing import List
 import numpy as np
 from GPy import likelihoods
 from GPy.core import GP
+from GPy.kern import RBFDistanceBuilderKernelKernel
 
 from src.autoks.active_set import ActiveSet
 from src.autoks.debugging import assert_valid_kernel_kernel
+from src.autoks.distance.distance import DistanceBuilder
 
 
 class KernelKernelGPRegression(GP):
@@ -34,8 +36,7 @@ class KernelKernelGPRegression(GP):
         :param data_X:
         :return:
         """
-        models = active_models.models
-        self.kern.distance_builder.update_multiple(models, new_candidates_indices, all_candidates_indices,
+        self.kern.distance_builder.update_multiple(active_models, new_candidates_indices, all_candidates_indices,
                                                    old_selected_indices, new_selected_indices, data_X)
         self.kern.n_models = len(active_models)
 
@@ -50,6 +51,16 @@ class KernelKernelGPRegression(GP):
         assert x_meta_train.size == y_meta_train.size
         assert x_meta_train.shape == y_meta_train.shape
         self.set_XY(X=x_meta_train, Y=y_meta_train)
+
+    @classmethod
+    def from_distance_builder(cls,
+                              builder: DistanceBuilder,
+                              active_set: ActiveSet,
+                              fitness_scores: List[int]):
+        kernel_kernel = RBFDistanceBuilderKernelKernel(builder, n_models=len(active_set))
+        x_meta_train = np.array(active_set.selected_indices)[:, None]
+        y_meta_train = np.array(fitness_scores)[:, None]
+        return cls(x_meta_train, y_meta_train, kernel_kernel)
 
     @staticmethod
     def from_gp(gp):
