@@ -23,7 +23,8 @@ class QueryStrategy(Selector, ABC):
         self.scoring_func = scoring_func
 
     def query(self,
-              kernels: List[AKSKernel],
+              unevaluated_kernels_ind: List[int],
+              all_kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -31,21 +32,25 @@ class QueryStrategy(Selector, ABC):
               **kwargs) -> Tuple[np.ndarray, List[float]]:
         """Query the next round of kernels using the acquisition function.
 
-        :param kernels:
+        :param unevaluated_kernels_ind:
+        :param all_kernels:
         :param x_train:
         :param y_train:
         :param hyperpriors:
         :param surrogate_model:
         :return:
         """
-        if len(kernels) == 0:
+        candidates = [all_kernels[i] for i in unevaluated_kernels_ind]
+        if len(candidates) == 0:
             return np.array([]), []
-        scores = self.score_kernels(kernels, x_train, y_train, hyperpriors, surrogate_model, **kwargs)
-        ind = self.arg_select(np.array(kernels), scores)
+        scores = self.score_kernels(unevaluated_kernels_ind, all_kernels, x_train, y_train, hyperpriors,
+                                    surrogate_model, **kwargs)
+        ind = self.arg_select(np.array(candidates), np.array(scores))
         return ind, scores
 
     def score_kernels(self,
-                      kernels: List[AKSKernel],
+                      unevaluated_kernels_ind: List[int],
+                      all_kernels: List[AKSKernel],
                       x_train: np.ndarray,
                       y_train: np.ndarray,
                       hyperpriors: Optional[Hyperpriors] = None,
@@ -60,8 +65,8 @@ class QueryStrategy(Selector, ABC):
         :param surrogate_model:
         :return:
         """
-        return [self.scoring_func.score(kernel, x_train, y_train, hyperpriors, surrogate_model, **kwargs) for kernel in
-                kernels]
+        return [self.scoring_func.score(ind, all_kernels, x_train, y_train, hyperpriors, surrogate_model, **kwargs)
+                for ind in unevaluated_kernels_ind]
 
 
 # Query Strategies

@@ -6,19 +6,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
 from GPy.core.parameterization.priors import Gaussian
-from GPy.kern import RBFKernelKernel
+from GPy.kern import RBFKernelKernel, RBFDistanceBuilderKernelKernel
 from GPy.models import GPRegression
 from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
 from src.autoks.acquisition_function import ExpectedImprovementPerSec
-from src.autoks.distance.distance import HellingerDistanceBuilder
+from src.autoks.active_set import ActiveSet
+from src.autoks.distance.distance import HellingerDistanceBuilder, DistanceBuilder
+from src.autoks.gp_regression_models import KernelKernelGPRegression
 from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
     AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
-    get_all_1d_kernels, encode_aks_kerns
+    get_all_1d_kernels
 from src.autoks.kernel_kernel import hellinger_kernel_kernel, euclidean_kernel_kernel
 from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
     evolutionary_kernel_selector
@@ -34,6 +36,7 @@ from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOpera
 
 
 class Experiment:
+    distance_builder: Optional[DistanceBuilder]
     grammar: BaseGrammar
     kernel_selector: KernelSelector
     objective: Callable[[GP], float]
@@ -189,9 +192,11 @@ class Experiment:
             else:
                 self.kernel_kernel = kernel_kernel
             # for now, force surrogate model class to be GP Regression
-            self.surrogate_model_cls = GPRegression
+            self.surrogate_model_cls = KernelKernelGPRegression
             self.surrogate_opt_freq = surrogate_opt_freq
             self.distance_builder = None
+            # TODO: ensure this matches distance builder limit
+            self.active_set = ActiveSet(max_n_models=1000)
 
         # Used for expected improvement per second.
         self.n_kernel_params = []
@@ -210,7 +215,8 @@ class Experiment:
 
         # create distance builder if using surrogate model
         if self.use_surrogate:
-            candidates = kernels
+            new_candidate_indices = self.active_set.update(kernels)
+            candidates = [self.active_set.models[i] for i in new_candidate_indices]
             # for now, it must be a Hellinger distance builder
             self.distance_builder = self.create_hellinger_db(candidates, self.x_train)
 
@@ -225,10 +231,10 @@ class Experiment:
         unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
         budget_left = self.eval_budget - self.n_evals
         newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels[:budget_left])
-        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
-        kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
+        old_evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
+        kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
 
-        n_evals_since_s_opt = len(evaluated_kernels)
+        # n_evals_since_s_opt = len(old_evaluated_kernels)
         if self.use_surrogate:
             self.update_surrogate_model(kernels)
             self.optimize_surrogate_model()
@@ -246,12 +252,12 @@ class Experiment:
             if self.verbose:
                 print(f'Iteration {depth}/{self.max_depth}')
                 print(f'Evaluated {self.n_evals}/{self.eval_budget}')
-                evaluated_kernels = [aks_kernel for aks_kernel in self.remove_nan_scored_kernels(kernels)
-                                     if aks_kernel.evaluated]
-                scores = [aks_kernel.score for aks_kernel in evaluated_kernels]
+                evaluated_aks_kernels = [aks_kernel for aks_kernel in self.remove_nan_scored_kernels(kernels)
+                                         if aks_kernel.evaluated]
+                scores = [aks_kernel.score for aks_kernel in evaluated_aks_kernels]
                 arg_max_score = int(np.argmax(scores))
-                best_kernel = evaluated_kernels[arg_max_score]
-                sizes = [len(aks_kernel.to_binary_tree()) for aks_kernel in evaluated_kernels]
+                best_kernel = evaluated_aks_kernels[arg_max_score]
+                sizes = [len(aks_kernel.to_binary_tree()) for aks_kernel in evaluated_aks_kernels]
                 print(f'Avg. objective = {np.mean(scores)}')
                 print(f'Best objective = {scores[arg_max_score]}')
                 print(f'Avg. size = {np.mean(sizes)}')
@@ -280,12 +286,32 @@ class Experiment:
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
-            n_before = len(kernels)
-            kernels = remove_duplicate_aks_kernels(kernels)
-            if self.verbose:
-                n_removed = n_before - len(kernels)
-                print(f'Removed {n_removed} duplicate kernels.\n')
+            if not self.use_surrogate:
+                n_before = len(kernels)
+                kernels = remove_duplicate_aks_kernels(kernels)
+                if self.verbose:
+                    n_removed = n_before - len(kernels)
+                    print(f'Removed {n_removed} duplicate kernels.\n')
 
+            # update distance builder:
+            if self.use_surrogate:
+                # update distance builder
+                new_candidate_indices = self.active_set.update(new_kernels)
+                new_selected_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel in
+                                        newly_evaluated_kernels]
+                old_selected_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel in
+                                        old_evaluated_kernels]
+                all_candidates_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel is not None
+                                          and not kernel.evaluated]
+                fitness_scores = [self.active_set.models[i].score for i in old_selected_indices] + \
+                                 [self.active_set.models[i].score for i in new_selected_indices]
+                assert self.active_set.selected_indices == old_selected_indices + new_selected_indices
+
+                self.surrogate_model.update(self.active_set, new_candidate_indices, all_candidates_indices,
+                                            old_selected_indices, new_selected_indices, self.x_train, fitness_scores)
+                assert self.active_set.selected_indices == self.surrogate_model.X.flatten().astype(int).tolist()
+                assert fitness_scores == self.surrogate_model.Y.flatten().tolist()
+                # self.optimize_surrogate_model()
             # Select kernels by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat, self.hyperpriors)
 
@@ -300,15 +326,16 @@ class Experiment:
             unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
             unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
             newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
-            evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
-            kernels = newly_evaluated_kernels + unselected_kernels + evaluated_kernels
-            if self.use_surrogate:
-                self.update_surrogate_model(kernels)
-                if n_evals_since_s_opt >= self.surrogate_opt_freq:
-                    self.optimize_surrogate_model()
-                    n_evals_since_s_opt = 0
-                else:
-                    n_evals_since_s_opt += len(ind)
+            old_evaluated_kernels = [kernel for kernel in kernels if
+                                     kernel.evaluated and kernel not in selected_kernels]
+            kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
+            # if self.use_surrogate:
+            #     self.update_surrogate_model(kernels)
+            #     if n_evals_since_s_opt >= self.surrogate_opt_freq:
+            #         self.optimize_surrogate_model()
+            #         n_evals_since_s_opt = 0
+            #     else:
+            #         n_evals_since_s_opt += len(ind)
 
             kernels = self.prune_kernels(kernels, acq_scores, ind)
             kernels = self.select_offspring(kernels)
@@ -320,15 +347,27 @@ class Experiment:
         return kernels
 
     def update_surrogate_model(self, kernels):
+        all_evaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if kernel.evaluated]
         all_evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
-        x_train = encode_aks_kerns(all_evaluated_kernels)
+        x_train = np.array(all_evaluated_kernels_ind)[:, None]
+        # x_train = encode_aks_kerns(all_evaluated_kernels)
         y_train = np.array([aks_kernel.score for aks_kernel in all_evaluated_kernels])
         y_train = y_train.reshape(-1, 1) if y_train.ndim == 1 else y_train
         if self.surrogate_model is None:
-            self.surrogate_model = self.surrogate_model_cls(x_train, y_train, kernel=self.kernel_kernel)
+            # Update distance builder first
+            new_selected_ind = [i for i in range(len(kernels)) if kernels[i].evaluated]
+            all_candidates_ind = [i for i in range(len(kernels)) if i not in new_selected_ind]
+            builder = self.distance_builder
+            builder.update_multiple(kernels, [], all_candidates_ind, [],
+                                    new_selected_ind, data_X=self.x_train)
+            # then create kernel kernel
+            kernel_kernel = RBFDistanceBuilderKernelKernel(builder, n_models=len(kernels))
+            x_meta_train = np.array(new_selected_ind)[:, None]
+            y_meta_train = y_train
+            self.surrogate_model = self.surrogate_model_cls(x_meta_train, y_meta_train, kernel_kernel)
         else:
-            self.surrogate_model.set_XY(X=np.vstack((self.surrogate_model.X, x_train)),
-                                        Y=np.vstack((self.surrogate_model.Y, y_train)))
+            self.surrogate_model.set_XY(X=x_train,
+                                        Y=y_train)
 
     def optimize_surrogate_model(self):
         if self.verbose:
@@ -348,12 +387,20 @@ class Experiment:
         :return:
         """
         t0 = time()
-        unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
-        ind, acq_scores = query_strategy.query(unevaluated_kernels, self.x_train, self.y_train, hyperpriors,
-                                               self.surrogate_model, durations=self.objective_times,
+        unevaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if not kernel.evaluated]
+        unevaluated_kernels = [kernels[i] for i in unevaluated_kernels_ind]
+        ind, acq_scores = query_strategy.query(unevaluated_kernels_ind, kernels, self.x_train, self.y_train,
+                                               hyperpriors, self.surrogate_model, durations=self.objective_times,
                                                n_hyperparams=self.n_kernel_params)
-        selected_kernels = query_strategy.select(np.array(unevaluated_kernels), acq_scores)
+        selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
         self.total_query_time += time() - t0
+
+        if self.use_surrogate:
+            selected_ind = [i for (i, m) in enumerate(self.active_set.models) if m in selected_kernels]
+            self.active_set.selected_indices += list(selected_ind)
+            # assert list(selected_kernels) in self.active_set.models
+            # TODO: set remove priority only for all candidates
+            self.active_set.remove_priority = [unevaluated_kernels_ind[i] for i in np.argsort(acq_scores)]
 
         if self.verbose:
             n_selected = len(ind)

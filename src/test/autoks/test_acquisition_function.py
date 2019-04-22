@@ -14,7 +14,7 @@ class TestAcquisitionFunction(TestCase):
         kernel = AKSKernel(RBF(1))
         x_train = np.array([[1, 2, 3], [4, 5, 6]])
         y_train = np.array([[5], [10]])
-        self.assertRaises(NotImplementedError, f_acq.score, kernel, x_train, y_train)
+        self.assertRaises(NotImplementedError, f_acq.score, 0, [kernel], x_train, y_train)
 
 
 class TestUniformScorer(TestCase):
@@ -24,6 +24,6 @@ class TestUniformScorer(TestCase):
         kernel = AKSKernel(RBF(1))
         x_train = np.array([[1, 2, 3], [4, 5, 6]])
         y_train = np.array([[5], [10]])
-        result = f_acq.score(kernel, x_train, y_train)
+        result = f_acq.score(0, [kernel], x_train, y_train)
         self.assertTrue(isinstance(result, float) or isinstance(result, int))
         self.assertEqual(result, UniformScorer.CONST_SCORE)

@@ -1,23 +1,25 @@
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 from scipy.stats import norm
 from sklearn.linear_model import LinearRegression
 
 from src.autoks.hyperprior import Hyperpriors
-from src.autoks.kernel import AKSKernel, n_base_kernels, encode_aks_kerns
+from src.autoks.kernel import AKSKernel, n_base_kernels
 
 
 class AcquisitionFunction:
     """Abstract base class for all acquisition functions."""
 
     @staticmethod
-    def score(kernel: AKSKernel,
-              x_train: np.ndarray,
-              y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
-              surrogate_model: Optional = None,
-              **kwargs) -> float:
+    def score(
+            ind: int,
+            all_kernels: List[AKSKernel],
+            x_train: np.ndarray,
+            y_train: np.ndarray,
+            hyperpriors: Optional[Hyperpriors] = None,
+            surrogate_model: Optional = None,
+            **kwargs) -> float:
         """Acquisition function score.
 
         :param kernel:
@@ -36,7 +38,8 @@ class UniformScorer(AcquisitionFunction):
     CONST_SCORE: float = 1
 
     @staticmethod
-    def score(kernel: AKSKernel,
+    def score(ind: int,
+              all_kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -57,7 +60,8 @@ class UniformScorer(AcquisitionFunction):
 class ExpectedImprovement(AcquisitionFunction):
 
     @staticmethod
-    def score(kernel: AKSKernel,
+    def score(ind: int,
+              all_kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -75,8 +79,7 @@ class ExpectedImprovement(AcquisitionFunction):
         :param surrogate_model:
         :return:
         """
-        # TODO: remove encoding here
-        x_test = encode_aks_kerns([kernel])
+        x_test = np.array([ind])[:, None]
         mu, cov = surrogate_model.predict(x_test)
         y_max = surrogate_model.predict(surrogate_model.X)[0].max()
 
@@ -94,7 +97,8 @@ class ExpectedImprovement(AcquisitionFunction):
 class ExpectedImprovementPerSec(AcquisitionFunction):
 
     @staticmethod
-    def score(kernel: AKSKernel,
+    def score(ind: int,
+              all_kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -102,8 +106,9 @@ class ExpectedImprovementPerSec(AcquisitionFunction):
               durations=None,
               n_hyperparams=None,
               **kwargs) -> float:
+        kernel = all_kernels[ind]
         scorer = ExpectedImprovement()
-        ei = scorer.score(kernel, x_train, y_train, hyperpriors, surrogate_model)
+        ei = scorer.score(ind, all_kernels, x_train, y_train, hyperpriors, surrogate_model)
         reg = LinearRegression()
         x = np.array(n_hyperparams)[:, None]
         y = np.log(durations)
@@ -117,7 +122,8 @@ class ExpectedImprovementPerSec(AcquisitionFunction):
 class RandomScorer(AcquisitionFunction):
 
     @staticmethod
-    def score(kernel: AKSKernel,
+    def score(ind: int,
+              all_kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -140,7 +146,8 @@ class RandomScorer(AcquisitionFunction):
 class ParamProportionalScorer(AcquisitionFunction):
 
     @staticmethod
-    def score(kernel: AKSKernel,
+    def score(ind: int,
+              all_kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -155,13 +162,15 @@ class ParamProportionalScorer(AcquisitionFunction):
         :param surrogate_model:
         :return:
         """
+        kernel = all_kernels[ind]
         return -kernel.kernel.size  # return the negative because we want to minimize this
 
 
 class OperandProportionalScorer(AcquisitionFunction):
 
     @staticmethod
-    def score(kernel: AKSKernel,
+    def score(ind: int,
+              all_kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -176,12 +185,14 @@ class OperandProportionalScorer(AcquisitionFunction):
         :param surrogate_model:
         :return:
         """
+        kernel = all_kernels[ind]
         return -n_base_kernels(kernel.kernel)  # return the negative because we want to minimize this
 
 
 class KernComplexityProportionalScorer(AcquisitionFunction):
     @staticmethod
-    def score(kernel: AKSKernel,
+    def score(ind: int,
+              all_kernels: List[AKSKernel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -196,6 +207,6 @@ class KernComplexityProportionalScorer(AcquisitionFunction):
         :param surrogate_model:
         :return:
         """
-        param_score = ParamProportionalScorer.score(kernel, x_train, y_train, hyperpriors)
-        operand_score = OperandProportionalScorer.score(kernel, x_train, y_train, hyperpriors)
+        param_score = ParamProportionalScorer.score(ind, all_kernels, x_train, y_train, hyperpriors)
+        operand_score = OperandProportionalScorer.score(ind, all_kernels, x_train, y_train, hyperpriors)
         return param_score + operand_score

@@ -4,8 +4,8 @@ import numpy as np
 from GPy import likelihoods
 from GPy.core import GP
 
+from src.autoks.active_set import ActiveSet
 from src.autoks.debugging import test_kernel
-from src.autoks.distance.distance import ActiveModels
 
 
 class KernelKernelGPRegression(GP):
@@ -17,12 +17,13 @@ class KernelKernelGPRegression(GP):
                          normalizer=normalizer, mean_function=mean_function)
 
     def update(self,
-               active_models: ActiveModels,
+               active_models: ActiveSet,
                new_candidates_indices: List[int],
                all_candidates_indices: List[int],
                old_selected_indices: List[int],
                new_selected_indices: List[int],
-               data_X: np.ndarray) -> None:
+               data_X: np.ndarray,
+               fitness_scores: List[float]) -> None:
         """Update kernel and distance builder
 
         :param active_models: models including evaluated and non-evaluated
@@ -33,13 +34,22 @@ class KernelKernelGPRegression(GP):
         :param data_X:
         :return:
         """
-        self.kern.distance_builder.update_multiple(active_models, new_candidates_indices, all_candidates_indices,
+        models = active_models.models
+        self.kern.distance_builder.update_multiple(models, new_candidates_indices, all_candidates_indices,
                                                    old_selected_indices, new_selected_indices, data_X)
         self.kern.n_models = len(active_models)
 
         # for debugging
         selected = old_selected_indices + new_selected_indices
         test_kernel(self.kern.distance_builder, len(active_models), selected, all_candidates_indices)
+
+        x_meta_train = np.array(list(selected))[:, None]
+        y_meta_train = np.array(list(fitness_scores))[:, None]
+        assert x_meta_train.ndim == 2
+        assert y_meta_train.ndim == 2
+        assert x_meta_train.size == y_meta_train.size
+        assert x_meta_train.shape == y_meta_train.shape
+        self.set_XY(X=x_meta_train, Y=y_meta_train)
 
     @staticmethod
     def from_gp(gp):

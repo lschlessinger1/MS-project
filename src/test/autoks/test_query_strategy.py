@@ -19,14 +19,14 @@ class TestQueryStrategy(TestCase):
     def test_query(self):
         scoring_func = MagicMock(name='acq_func')
         qs = QueryStrategy(1, scoring_func)
-        self.assertRaises(NotImplementedError, qs.query, self.kernels, self.x_train, self.y_train)
+        self.assertRaises(NotImplementedError, qs.query, [0], self.kernels, self.x_train, self.y_train)
 
     def test_score_kernels(self):
         score_const = 100
         scoring_func = MagicMock(name='acq_func')
         scoring_func.score.return_value = score_const
         qs = QueryStrategy(1, scoring_func)
-        result = qs.score_kernels(self.kernels, self.x_train, self.y_train)
+        result = qs.score_kernels(list(range(len(self.kernels))), self.kernels, self.x_train, self.y_train)
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), len(self.kernels))
         self.assertCountEqual(result, [score_const for _ in range(len(self.kernels))])
@@ -43,7 +43,7 @@ class TestNaiveQueryStrategy(TestCase):
 
     def test_query(self):
         # test all are selected and that scores are of some constant
-        result = self.qs.query(self.kernels, self.x_train, self.y_train)
+        result = self.qs.query(list(range(len(self.kernels))), self.kernels, self.x_train, self.y_train)
         self.assertIsInstance(result[0], np.ndarray)
         self.assertCountEqual(result[0].tolist(), [i for i in range(len(self.kernels))])
         self.assertIsInstance(result[1], list)
@@ -72,7 +72,7 @@ class TestBestScoreStrategy(TestCase):
         scores = [3, 20]
         scoring_func.score.side_effect = scores
         qs = BestScoreStrategy(scoring_func=scoring_func)
-        result = qs.query(self.kernels, self.x_train, self.y_train)
+        result = qs.query(list(range(len(self.kernels))), self.kernels, self.x_train, self.y_train)
         self.assertEqual(len(scores), scoring_func.score.call_count)
         self.assertListEqual(list(result[0]), [1])
         self.assertListEqual(result[1], scores)

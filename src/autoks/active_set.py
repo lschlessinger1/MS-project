@@ -14,6 +14,7 @@ class ActiveSet:
         self.max_n_models = max_n_models
         self._models = [None] * self.max_n_models
         self._remove_priority = []  # list of indices representing order in which to remove models
+        self.selected_indices = []
 
     @property
     def remove_priority(self):
@@ -73,6 +74,9 @@ class ActiveSet:
         self._models[idx] = model
 
         return idx, True
+
+    def get_selected_models(self):
+        return [self.models[i] for i in self.selected_indices]
 
     def __len__(self):
         return sum(1 for m in self.models if m is not None)
