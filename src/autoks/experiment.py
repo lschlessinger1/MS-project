@@ -250,19 +250,7 @@ class Experiment:
                 break
 
             if self.verbose:
-                print(f'Iteration {depth}/{self.max_depth}')
-                print(f'Evaluated {self.n_evals}/{self.eval_budget}')
-                evaluated_aks_kernels = [aks_kernel for aks_kernel in self.remove_nan_scored_kernels(kernels)
-                                         if aks_kernel.evaluated]
-                scores = [aks_kernel.score for aks_kernel in evaluated_aks_kernels]
-                arg_max_score = int(np.argmax(scores))
-                best_kernel = evaluated_aks_kernels[arg_max_score]
-                sizes = [len(aks_kernel.to_binary_tree()) for aks_kernel in evaluated_aks_kernels]
-                print(f'Avg. objective = {np.mean(scores)}')
-                print(f'Best objective = {scores[arg_max_score]}')
-                print(f'Avg. size = {np.mean(sizes)}')
-                print(f'Best kernel: {best_kernel}')
-                print('')
+                self.print_search_summary(depth, kernels)
 
             parents = self.select_parents(kernels)
 
@@ -345,6 +333,21 @@ class Experiment:
         self.total_kernel_search_time += time() - t_init
 
         return kernels
+
+    def print_search_summary(self, depth, kernels):
+        print(f'Iteration {depth}/{self.max_depth}')
+        print(f'Evaluated {self.n_evals}/{self.eval_budget}')
+        evaluated_aks_kernels = [aks_kernel for aks_kernel in self.remove_nan_scored_kernels(kernels)
+                                 if aks_kernel.evaluated]
+        scores = [aks_kernel.score for aks_kernel in evaluated_aks_kernels]
+        arg_max_score = int(np.argmax(scores))
+        best_kernel = evaluated_aks_kernels[arg_max_score]
+        sizes = [len(aks_kernel.to_binary_tree()) for aks_kernel in evaluated_aks_kernels]
+        print(f'Avg. objective = {np.mean(scores)}')
+        print(f'Best objective = {scores[arg_max_score]}')
+        print(f'Avg. size = {np.mean(sizes)}')
+        print(f'Best kernel: {best_kernel}')
+        print('')
 
     def update_surrogate_model(self, kernels):
         all_evaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if kernel.evaluated]
