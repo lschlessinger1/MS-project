@@ -101,7 +101,7 @@ class TestCKSGrammar(TestCase):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         # first, test 1d expansion of base kernel
         k = self.se0
-        result = grammar.expand_single_kernel(k, grammar.n_dims, grammar.base_kernel_names, grammar.hyperpriors)
+        result = grammar.expand_single_kernel(k)
 
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
                         self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
@@ -113,7 +113,7 @@ class TestCKSGrammar(TestCase):
 
         # test combination kernel expansion
         k = self.se1 * self.rq1
-        result = grammar.expand_single_kernel(k, grammar.n_dims, grammar.base_kernel_names, grammar.hyperpriors)
+        result = grammar.expand_single_kernel(k)
 
         kernel_types = [self.se1 * self.rq1 + self.se0, self.se1 * self.rq1 + self.rq0,
                         self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,
@@ -128,7 +128,7 @@ class TestCKSGrammar(TestCase):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         # first, test 1d expansion of base kernel
         k = self.se0
-        result = grammar.expand_full_kernel(k, grammar.n_dims, grammar.base_kernel_names, grammar.hyperpriors)
+        result = grammar.expand_full_kernel(k)
 
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
                         self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
@@ -140,7 +140,7 @@ class TestCKSGrammar(TestCase):
 
         # test combination kernel expansion
         k = self.se1 * self.rq1
-        result = grammar.expand_full_kernel(k, grammar.n_dims, grammar.base_kernel_names, grammar.hyperpriors)
+        result = grammar.expand_full_kernel(k)
 
         kernel_types = [self.se1 * self.rq1 + self.se0, self.se1 * self.rq1 + self.rq0,
                         self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,

@@ -42,7 +42,7 @@ class TestExperiment(TestCase):
 
         self.exp.objective.side_effect = get_score
 
-        def expand(parents, *args, **kwargs):
+        def get_candidates(parents, *args, **kwargs):
             new_kernels = []
             for parent in parents:
                 new_kernels.append(parent)
@@ -52,7 +52,7 @@ class TestExperiment(TestCase):
                 new_kernels.append(AKSKernel(parent.kernel * RationalQuadratic(1)))
             return new_kernels
 
-        self.exp.grammar.expand.side_effect = expand
+        self.exp.grammar.get_candidates.side_effect = get_candidates
 
         scoring_func = MagicMock(name='acq_func')
         scores = [10, 20, 30]
@@ -95,14 +95,15 @@ class TestExperiment(TestCase):
         n_evals = n_optimizations
         self.assertEqual(n_optimizations, self.exp.optimize_kernel.call_count)
         self.assertEqual(n_evals, self.exp.n_evals)
-        self.assertEqual(n_expansions, self.exp.grammar.expand.call_count)
+        self.assertEqual(n_expansions, self.exp.grammar.get_candidates.call_count)
 
         self.assertEqual(n_expansions, self.exp.kernel_selector.select_parents.call_count)
         self.assertEqual(n_expansions, self.exp.kernel_selector.select_offspring.call_count)
         self.assertEqual(n_expansions, self.exp.kernel_selector.prune_candidates.call_count)
 
         self.assertLessEqual(self.exp.n_evals, self.exp.eval_budget)
-        self.assertLessEqual(self.exp.max_depth, self.exp.grammar.expand.call_count)
+        self.assertLessEqual(self.exp.max_depth, self.exp.grammar.get_candidates.call_count)
+        self.assertLessEqual(self.exp.max_depth, self.exp.grammar.get_candidates.call_count)
         self.assertIsInstance(result, list)
 
     def test_query_kernels(self):
@@ -128,7 +129,7 @@ class TestExperiment(TestCase):
     def test_propose_new_kernels(self):
         expansion = [AKSKernel(kern) for kern in [RBF(1), RationalQuadratic(1), RBF(1) + RationalQuadratic(1), RBF(1)
                                                   * RationalQuadratic(1)]]
-        self.exp.grammar.expand.return_value = expansion
+        self.exp.grammar.get_candidates.return_value = expansion
         result = self.exp.propose_new_kernels(self.kernels)
         self.assertIsInstance(result, list)
         self.assertListEqual(result, expansion)

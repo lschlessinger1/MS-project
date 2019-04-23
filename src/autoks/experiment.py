@@ -425,7 +425,7 @@ class Experiment:
             parent.expanded = True
 
         t0_exp = time()
-        new_kernels = self.grammar.expand(parents, verbose=self.verbose)
+        new_kernels = self.grammar.get_candidates(parents, verbose=self.verbose)
         self.total_expansion_time += time() - t0_exp
 
         if self.additive_form:
@@ -928,8 +928,7 @@ class Experiment:
     def cks_experiment(cls, dataset, **kwargs):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         n_dims = x_train.shape[1]
-        base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
-        grammar = CKSGrammar(base_kernel_names, n_dims)
+        grammar = CKSGrammar(n_dims)
         kernel_selector = CKS_kernel_selector(n_parents=1)
 
         def negative_BIC(m):
@@ -982,8 +981,7 @@ class Experiment:
                           **kwargs):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         n_dims = x_train.shape[1]
-        base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
-        grammar = RandomGrammar(base_kernel_names, n_dims)
+        grammar = RandomGrammar(n_dims)
         objective = log_likelihood_normalized
         kernel_selector = CKS_kernel_selector(n_parents=1)
         return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test, eval_budget=50,

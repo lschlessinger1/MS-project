@@ -32,13 +32,24 @@ class BaseGrammar:
     def expand(self,
                seed_kernels: List[AKSKernel],
                verbose: bool = False) -> List[AKSKernel]:
-        """Get next round of candidate kernels from current kernels.
+        """Expand seed kernels.
 
         :param seed_kernels:
         :param verbose:
         :return:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
+
+    def get_candidates(self,
+                       seed_kernels: List[AKSKernel],
+                       verbose: bool = False) -> List[AKSKernel]:
+        """Get next round of candidate kernels from current kernels.
+
+        :param seed_kernels:
+        :param verbose:
+        :return:
+        """
+        return self.expand(seed_kernels, verbose=verbose)
 
     @staticmethod
     def _kernels_to_aks_kernels(kernels: List[Kern]) -> List[AKSKernel]:
@@ -130,7 +141,124 @@ class EvolutionaryGrammar(BaseGrammar):
             f'n_init_trees={self.n_init_trees!r})'
 
 
-class BOMSGrammar(BaseGrammar):
+class CKSGrammar(BaseGrammar):
+    """
+    Structure Discovery in Nonparametric Regression through Compositional Kernel Search (Duvenaud et al., 2013)
+    """
+
+    def __init__(self,
+                 n_dims: int,
+                 base_kernel_names: List[str] = None,
+                 hyperpriors: Optional[Hyperpriors] = None):
+        if base_kernel_names is None:
+            base_kernel_names = self.get_base_kernel_names(n_dims)
+        super().__init__(base_kernel_names, n_dims, hyperpriors)
+
+    @staticmethod
+    def get_base_kernel_names(n_dims: int) -> List[str]:
+        if n_dims > 1:
+            return ['SE', 'RQ']
+        else:
+            return ['SE', 'RQ', 'LIN', 'PER']
+
+    def initialize(self) -> List[AKSKernel]:
+        """Initialize with all base kernel families applied to all input dimensions.
+
+        :return:
+        """
+        return self._kernels_to_aks_kernels(self.base_kernels)
+
+    def expand(self,
+               seed_kernels: List[AKSKernel],
+               verbose: bool = False) -> List[AKSKernel]:
+        """Greedy expansion of nodes.
+
+        :param seed_kernels:
+        :param verbose:
+        :return:
+        """
+        # choose highest scoring kernel (using BIC) and expand it by applying all possible operators
+        # CFG:
+        # 1) Any subexpression S can be replaced with S + B, where B is any base kernel family.
+        # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
+        # 3) Any base kernel B may be replaced with any other base kernel family B'
+        if verbose:
+            pretty_print_aks_kernels(seed_kernels, 'Seed')
+
+        new_kernels = []
+        for aks_kernel in seed_kernels:
+            kernel = aks_kernel.kernel
+            kernels_expanded = self.expand_full_kernel(kernel)
+            new_kernels += kernels_expanded
+
+        new_kernels = remove_duplicate_kernels(new_kernels)
+        new_kernels = self._kernels_to_aks_kernels(new_kernels)
+
+        if verbose:
+            pretty_print_aks_kernels(new_kernels, 'Newly expanded')
+
+        return new_kernels
+
+    def expand_single_kernel(self, kernel: Kern) -> List[Kern]:
+        """Expand a single kernel.
+
+        :param kernel:
+        :return:
+        """
+        is_kernel = isinstance(kernel, Kern)
+        if not is_kernel:
+            raise TypeError(f'Unknown kernel type {kernel.__class__.__name__}')
+
+        kernels = []
+
+        is_combo_kernel = isinstance(kernel, CombinationKernel)
+        is_base_kernel = is_kernel and not is_combo_kernel
+
+        for op in self.operators:
+            for dim in range(self.n_dims):
+                for base_kernel_name in self.base_kernel_names:
+                    hyperprior = None if self.hyperpriors is None else self.hyperpriors[base_kernel_name]
+                    if op == '+':
+                        kernels.append(kernel + create_1d_kernel(base_kernel_name, dim, hyperpriors=hyperprior))
+                    elif op == '*':
+                        kernels.append(kernel * create_1d_kernel(base_kernel_name, dim, hyperpriors=hyperprior))
+                    else:
+                        raise ValueError(f'Unknown operation {op}')
+        for base_kernel_name in self.base_kernel_names:
+            if is_base_kernel:
+                hyperprior = None if self.hyperpriors is None else self.hyperpriors[base_kernel_name]
+                kernels.append(create_1d_kernel(base_kernel_name, kernel.active_dims[0], hyperpriors=hyperprior))
+        return kernels
+
+    def expand_full_kernel(self, kernel: Kern) -> List[Kern]:
+        """Expand full kernel.
+
+        :param kernel:
+        :return:
+        """
+        result = self.expand_single_kernel(kernel)
+        if kernel is None:
+            pass
+        elif isinstance(kernel, CombinationKernel):
+            for i, operand in enumerate(kernel.parts):
+                for e in self.expand_full_kernel(operand):
+                    new_operands = kernel.parts[:i] + [e] + kernel.parts[i + 1:]
+                    new_operands = [op.copy() for op in new_operands]
+                    if isinstance(kernel, Prod):
+                        result.append(Prod(new_operands))
+                    elif isinstance(kernel, Add):
+                        result.append(Add(new_operands))
+                    else:
+                        raise TypeError(f'Unknown combination kernel class {kernel.__class__.__name__}')
+        elif isinstance(kernel, Kern):
+            # base kernel
+            pass
+        else:
+            raise TypeError(f'Unknown kernel class {kernel.__class__.__name__}')
+        return result
+
+
+class BOMSGrammar(CKSGrammar):
     """
     Bayesian optimization for automated model selection (Malkomes et al., 2016)
     """
@@ -138,14 +266,12 @@ class BOMSGrammar(BaseGrammar):
     number_of_top_k_best: int
     number_of_random_walks: int
 
-    def __init__(self,
-                 base_kernel_names: List[str],
-                 n_dims: int,
-                 hyperpriors: Optional[Hyperpriors] = None):
+    def __init__(self, base_kernel_names: List[str], n_dims: int, hyperpriors: Optional[Hyperpriors] = None):
+
         if hyperpriors is None:
             hyperpriors = boms_hyperpriors()
 
-        super().__init__(base_kernel_names, n_dims, hyperpriors)
+        super().__init__(n_dims, base_kernel_names, hyperpriors)
 
         self.random_walk_geometric_dist_parameter = 1 / 3  # termination probability
         self.number_of_top_k_best = 3
@@ -158,9 +284,9 @@ class BOMSGrammar(BaseGrammar):
         """
         return self._kernels_to_aks_kernels(self.base_kernels)
 
-    def expand(self,
-               seed_kernels: List[AKSKernel],
-               verbose: bool = False) -> List[AKSKernel]:
+    def get_candidates(self,
+                       seed_kernels: List[AKSKernel],
+                       verbose: bool = False) -> List[AKSKernel]:
         """Greedy and exploratory expansion of kernels.
 
         :param seed_kernels: list of AKSKernels
@@ -206,8 +332,7 @@ class BOMSGrammar(BaseGrammar):
             kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
             random_kernel = np.random.choice(kernels)
             for i in range(1, n):
-                kernels = CKSGrammar.expand_full_kernel(random_kernel, self.n_dims, self.base_kernel_names,
-                                                        self.hyperpriors)
+                kernels = self.expand_full_kernel(random_kernel)
                 random_kernel = np.random.choice(kernels)
                 rw_kernels.append(random_kernel)
 
@@ -220,166 +345,25 @@ class BOMSGrammar(BaseGrammar):
         :param best_kernel:
         :return:
         """
-        new_kernels = CKSGrammar.expand_full_kernel(best_kernel.kernel, self.n_dims, self.base_kernel_names,
-                                                    self.hyperpriors)
+        new_kernels = self.expand_full_kernel(best_kernel.kernel)
 
         return new_kernels
 
 
-class CKSGrammar(BaseGrammar):
-    """
-    Structure Discovery in Nonparametric Regression through Compositional Kernel Search (Duvenaud et al., 2013)
-    """
+class RandomGrammar(CKSGrammar):
+    """Random grammar randomly expands nodes using a CKS expansion"""
 
     def __init__(self,
-                 base_kernel_names: List[str],
                  n_dims: int,
+                 base_kernel_names: List[str] = None,
                  hyperpriors: Optional[Hyperpriors] = None):
-        super().__init__(base_kernel_names, n_dims, hyperpriors)
+        super().__init__(n_dims, base_kernel_names, hyperpriors)
 
-    @staticmethod
-    def get_base_kernel_names(n_dims: int) -> List[str]:
-        if n_dims > 1:
-            return ['SE', 'RQ']
-        else:
-            return ['SE', 'RQ', 'LIN', 'PER']
+        self.max_n_kernels = 10
 
-    # def all_1d_aks_kernels(self):
-    #     return [AKSKernel(kernel) for kernel in self.base_kernels]
-
-    def initialize(self) -> List[AKSKernel]:
-        """Initialize with all base kernel families applied to all input dimensions.
-
-        :return:
-        """
-        return self._kernels_to_aks_kernels(self.base_kernels)
-
-    def expand(self,
-               seed_kernels: List[AKSKernel],
-               verbose: bool = False) -> List[AKSKernel]:
-        """Greedy expansion of nodes.
-
-        :param seed_kernels:
-        :param verbose:
-        :return:
-        """
-        # choose highest scoring kernel (using BIC) and expand it by applying all possible operators
-        # CFG:
-        # 1) Any subexpression S can be replaced with S + B, where B is any base kernel family.
-        # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
-        # 3) Any base kernel B may be replaced with any other base kernel family B'
-        if verbose:
-            pretty_print_aks_kernels(seed_kernels, 'Seed')
-
-        new_kernels = []
-        for aks_kernel in seed_kernels:
-            kernel = aks_kernel.kernel
-            kernels_expanded = CKSGrammar.expand_full_kernel(kernel, self.n_dims, self.base_kernel_names,
-                                                             self.hyperpriors)
-            new_kernels += kernels_expanded
-
-        new_kernels = remove_duplicate_kernels(new_kernels)
-        new_kernels = self._kernels_to_aks_kernels(new_kernels)
-
-        if verbose:
-            pretty_print_aks_kernels(new_kernels, 'Newly expanded')
-
-        return new_kernels
-
-    @staticmethod
-    def expand_single_kernel(kernel: Kern,
-                             n_dims: int,
-                             base_kernels: List[str],
-                             hyperpriors: Optional[Hyperpriors] = None) -> List[Kern]:
-        """Expand a single kernel.
-
-        :param kernel:
-        :param n_dims:
-        :param base_kernels:
-        :param hyperpriors:
-        :return:
-        """
-        is_kernel = isinstance(kernel, Kern)
-        if not is_kernel:
-            raise TypeError(f'Unknown kernel type {kernel.__class__.__name__}')
-
-        kernels = []
-
-        is_combo_kernel = isinstance(kernel, CombinationKernel)
-        is_base_kernel = is_kernel and not is_combo_kernel
-
-        for op in CKSGrammar.DEFAULT_OPERATORS:
-            for d in range(n_dims):
-                for base_kernel_name in base_kernels:
-                    hyperprior = None if hyperpriors is None else hyperpriors[base_kernel_name]
-                    if op == '+':
-                        kernels.append(kernel + create_1d_kernel(base_kernel_name, d, hyperpriors=hyperprior))
-                    elif op == '*':
-                        kernels.append(kernel * create_1d_kernel(base_kernel_name, d, hyperpriors=hyperprior))
-                    else:
-                        raise ValueError(f'Unknown operation {op}')
-        for base_kernel_name in base_kernels:
-            if is_base_kernel:
-                hyperprior = None if hyperpriors is None else hyperpriors[base_kernel_name]
-                kernels.append(create_1d_kernel(base_kernel_name, kernel.active_dims[0], hyperpriors=hyperprior))
-        return kernels
-
-    @staticmethod
-    def expand_full_kernel(kernel: Kern,
-                           n_dims: int,
-                           base_kernels: List[str],
-                           hyperpriors: Optional[Hyperpriors] = None) -> List[Kern]:
-        """Expand full kernel.
-
-        :param kernel:
-        :param n_dims:
-        :param base_kernels:
-        :param hyperpriors:
-        :return:
-        """
-        result = CKSGrammar.expand_single_kernel(kernel, n_dims, base_kernels, hyperpriors)
-        if kernel is None:
-            pass
-        elif isinstance(kernel, CombinationKernel):
-            for i, operand in enumerate(kernel.parts):
-                for e in CKSGrammar.expand_full_kernel(operand, n_dims, base_kernels, hyperpriors):
-                    new_operands = kernel.parts[:i] + [e] + kernel.parts[i + 1:]
-                    new_operands = [op.copy() for op in new_operands]
-                    if isinstance(kernel, Prod):
-                        result.append(Prod(new_operands))
-                    elif isinstance(kernel, Add):
-                        result.append(Add(new_operands))
-                    else:
-                        raise TypeError(f'Unknown combination kernel class {kernel.__class__.__name__}')
-        elif isinstance(kernel, Kern):
-            # base kernel
-            pass
-        else:
-            raise TypeError(f'Unknown kernel class {kernel.__class__.__name__}')
-        return result
-
-
-class RandomGrammar(BaseGrammar):
-    """Random grammar randomly expands nodes
-
-    """
-
-    def __init__(self,
-                 base_kernel_names: List[str],
-                 n_dims: int,
-                 hyperpriors: Optional[Hyperpriors] = None):
-        super().__init__(base_kernel_names, n_dims, hyperpriors)
-
-    def initialize(self) -> List[AKSKernel]:
-        """Same initialization as CKS and BOMS
-
-        :return:
-        """
-        return self._kernels_to_aks_kernels(self.base_kernels)
-
-    def expand(self,
-               seed_kernels: List[AKSKernel],
-               verbose: bool = False) -> List[AKSKernel]:
+    def get_candidates(self,
+                       seed_kernels: List[AKSKernel],
+                       verbose: bool = False) -> List[AKSKernel]:
         """Random expansion of nodes.
 
         :param seed_kernels:
@@ -389,17 +373,10 @@ class RandomGrammar(BaseGrammar):
         if verbose:
             pretty_print_aks_kernels(seed_kernels, 'Seed')
 
-        new_kernels = []
-
-        # For each kernel, select a kernel from one step of a CKS expansion uniformly at random.
-        for aks_kernel in seed_kernels:
-            k = aks_kernel.kernel
-            expansion = CKSGrammar.expand_full_kernel(k, self.n_dims, self.base_kernel_names)
-            k = np.random.choice(expansion)
-            new_kernels.append(k)
-
-        new_kernels = remove_duplicate_kernels(new_kernels)
-        new_kernels = self._kernels_to_aks_kernels(new_kernels)
+        # Select kernels from one step of a CKS expansion uniformly at random without replacement.
+        cks_expansion = self.expand(seed_kernels, verbose=False)
+        n_kernels = min(self.max_n_kernels, min(len(cks_expansion), self.max_n_kernels))
+        new_kernels = list(np.random.choice(cks_expansion, size=n_kernels, replace=False).tolist())
 
         if verbose:
             pretty_print_aks_kernels(new_kernels, 'Newly expanded')
