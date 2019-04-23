@@ -59,7 +59,7 @@ class TestCKSGrammar(TestCase):
         self.rq1 = RationalQuadratic(1, active_dims=[1])
 
     def test_initialize(self):
-        grammar = CKSGrammar(kernel_families=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         result = grammar.initialize()
         self.assertIsInstance(result, list)
 
@@ -74,7 +74,7 @@ class TestCKSGrammar(TestCase):
         nan_scored = [k.nan_scored for k in result]
         self.assertFalse(all(nan_scored))
 
-        grammar = CKSGrammar(kernel_families=['SE', 'RQ'], n_dims=1)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=1)
         result = grammar.initialize()
         self.assertIsInstance(result, list)
 
@@ -90,7 +90,7 @@ class TestCKSGrammar(TestCase):
         self.assertFalse(all(nan_scored))
 
     def test_expand(self):
-        grammar = CKSGrammar(kernel_families=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         scored_kernel = AKSKernel(self.se0)
         scored_kernel.score = 1
         result = grammar.expand([scored_kernel])
@@ -98,7 +98,7 @@ class TestCKSGrammar(TestCase):
         # TODO: test that expand_full_kernel is called with each kernel
 
     def test_expand_single_kernel(self):
-        grammar = CKSGrammar(kernel_families=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         # first, test 1d expansion of base kernel
         k = self.se0
         result = grammar.expand_single_kernel(k, grammar.n_dims, grammar.kernel_families, grammar.hyperpriors)
@@ -125,7 +125,7 @@ class TestCKSGrammar(TestCase):
         self.assertEqual(len(result), len(kernel_types))
 
     def test_expand_full_kernel(self):
-        grammar = CKSGrammar(kernel_families=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         # first, test 1d expansion of base kernel
         k = self.se0
         result = grammar.expand_full_kernel(k, grammar.n_dims, grammar.kernel_families, grammar.hyperpriors)

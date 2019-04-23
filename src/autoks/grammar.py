@@ -16,11 +16,11 @@ class BaseGrammar:
     operators: List[str]
 
     def __init__(self,
-                 kernel_families: List[str],
+                 base_kernel_names: List[str],
                  n_dims: int,
                  hyperpriors: Optional[Hyperpriors] = None):
         self.operators = BaseGrammar.DEFAULT_OPERATORS
-        self.kernel_families = kernel_families
+        self.kernel_families = base_kernel_names
         self.n_dims = n_dims
         self.hyperpriors = hyperpriors
 
@@ -49,13 +49,13 @@ class EvolutionaryGrammar(BaseGrammar):
     n_init_trees: Optional[int]
 
     def __init__(self,
-                 kernel_families: List[str],
+                 base_kernel_names: List[str],
                  n_dims: int,
                  population_operator,
                  initializer=None,
                  hyperpriors: Optional[Hyperpriors] = None,
                  n_init_trees=None):
-        super().__init__(kernel_families, n_dims, hyperpriors)
+        super().__init__(base_kernel_names, n_dims, hyperpriors)
         self.population_operator = population_operator
         self.initializer = initializer
         self.n_init_trees = n_init_trees
@@ -127,10 +127,10 @@ class BOMSGrammar(BaseGrammar):
     """
 
     def __init__(self,
-                 kernel_families: List[str],
+                 base_kernel_names: List[str],
                  n_dims: int,
                  hyperpriors: Optional[Hyperpriors] = None):
-        super().__init__(kernel_families, n_dims, hyperpriors)
+        super().__init__(base_kernel_names, n_dims, hyperpriors)
 
     def initialize(self) -> List[AKSKernel]:
         """Initialize kernels according to number of dimensions.
@@ -220,10 +220,10 @@ class CKSGrammar(BaseGrammar):
     """
 
     def __init__(self,
-                 kernel_families: List[str],
+                 base_kernel_names: List[str],
                  n_dims: int,
                  hyperpriors: Optional[Hyperpriors] = None):
-        super().__init__(kernel_families, n_dims, hyperpriors)
+        super().__init__(base_kernel_names, n_dims, hyperpriors)
 
     @staticmethod
     def get_base_kernel_names(n_dims: int) -> List[str]:
@@ -361,10 +361,10 @@ class RandomGrammar(BaseGrammar):
     """
 
     def __init__(self,
-                 kernel_families: List[str],
+                 base_kernel_names: List[str],
                  n_dims: int,
                  hyperpriors: Optional[Hyperpriors] = None):
-        super().__init__(kernel_families, n_dims, hyperpriors)
+        super().__init__(base_kernel_names, n_dims, hyperpriors)
 
     def initialize(self) -> List[AKSKernel]:
         """Same initialization as CKS and BOMS

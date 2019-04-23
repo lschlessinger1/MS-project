@@ -963,7 +963,7 @@ class Experiment:
         mut_variator = MutationVariator(mutator)
         variators = [cx_variator, mut_variator]
         pop_operator = CrossMutPopOperator(variators)
-        grammar = EvolutionaryGrammar(kernel_families=base_kernels_names, n_dims=n_dims,
+        grammar = EvolutionaryGrammar(base_kernel_names=base_kernels_names, n_dims=n_dims,
                                       population_operator=pop_operator)
         initializer = HalfAndHalfGenerator(binary_operators=grammar.operators, max_depth=1, operands=mutator.operands)
         grammar.initializer = initializer
