@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from src.autoks.experiment import Experiment
-from src.autoks.grammar import RandomGrammar, CKSGrammar
+from src.autoks.grammar import RandomGrammar
 from src.autoks.kernel_selection import CKS_kernel_selector
 from src.autoks.model import BIC
 from src.experiments.util.synthetic_data import CubicSine1dDataset
@@ -15,8 +15,7 @@ x, y = dataset.load_or_generate_data()
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
 n_dims = x.shape[1]
-base_kernels_names = CKSGrammar.get_base_kernel_names(n_dims)
-grammar = RandomGrammar(base_kernels_names, n_dims)
+grammar = RandomGrammar(n_dims)
 kernel_selector = CKS_kernel_selector(n_parents=1)
 
 
