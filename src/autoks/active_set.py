@@ -86,3 +86,7 @@ class ActiveSet:
 
     def __len__(self) -> int:
         return sum(1 for m in self.models if m is not None)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'max_n_models={self.max_n_models!r}, ' \
+            f'selected_indices={self.selected_indices!r})'

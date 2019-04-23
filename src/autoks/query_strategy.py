@@ -68,6 +68,8 @@ class QueryStrategy(Selector, ABC):
         return [self.scoring_func.score(ind, all_kernels, x_train, y_train, hyperpriors, surrogate_model, **kwargs)
                 for ind in unevaluated_kernels_ind]
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'operators={self.operators!r}, scoring_func={self.scoring_func!r})'
 
 # Query Strategies
 
