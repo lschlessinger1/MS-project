@@ -116,7 +116,7 @@ class EvolutionaryGrammar(BaseGrammar):
         kernels = [tree_to_kernel(tree) for tree in offspring]
 
         new_kernels = remove_duplicate_kernels(kernels)
-        new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
+        new_kernels = self._kernels_to_aks_kernels(new_kernels)
 
         if verbose:
             pretty_print_aks_kernels(new_kernels, 'Newly expanded')
@@ -183,7 +183,7 @@ class BOMSGrammar(BaseGrammar):
         greedy_kerns = remove_duplicate_kernels(greedy_kerns)
 
         new_kernels = rw_kerns + greedy_kerns
-        new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
+        new_kernels = self._kernels_to_aks_kernels(new_kernels)
 
         if verbose:
             pretty_print_aks_kernels(new_kernels, 'Newly expanded')
@@ -279,7 +279,7 @@ class CKSGrammar(BaseGrammar):
             new_kernels += kernels_expanded
 
         new_kernels = remove_duplicate_kernels(new_kernels)
-        new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
+        new_kernels = self._kernels_to_aks_kernels(new_kernels)
 
         if verbose:
             pretty_print_aks_kernels(new_kernels, 'Newly expanded')
@@ -399,7 +399,7 @@ class RandomGrammar(BaseGrammar):
             new_kernels.append(k)
 
         new_kernels = remove_duplicate_kernels(new_kernels)
-        new_kernels = [AKSKernel(kernel) for kernel in new_kernels]
+        new_kernels = self._kernels_to_aks_kernels(new_kernels)
 
         if verbose:
             pretty_print_aks_kernels(new_kernels, 'Newly expanded')
