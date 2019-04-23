@@ -100,9 +100,6 @@ class AllSelector(Selector):
         """
         return np.arange(population.shape[0])
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
-
 
 class UniformSelector(Selector):
 
@@ -133,8 +130,6 @@ class UniformSelector(Selector):
         ind = np.random.choice(pop_size, size=self.n_individuals, replace=True)
         return ind
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
 class StochasticUnivSampSelector(Selector):
@@ -164,8 +159,6 @@ class StochasticUnivSampSelector(Selector):
         """
         raise NotImplementedError("Stochastic Universal Sampling selection is not yet implemented.")
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
 class BoltzmannSelector(Selector):
@@ -238,8 +231,6 @@ class FitnessProportionalSelector(Selector, ProbabilityMixin):
     def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
         return raw_fitness / np.sum(raw_fitness)
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
 class SigmaScalingSelector(Selector, ProbabilityMixin):
@@ -291,9 +282,6 @@ class SigmaScalingSelector(Selector, ProbabilityMixin):
         probabilities = expected_cnts / np.sum(expected_cnts)
         return probabilities
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
-
 
 class TruncationSelector(Selector):
 
@@ -319,8 +307,6 @@ class TruncationSelector(Selector):
         ind = np.argpartition(fitness_list, -self.n_individuals)[-self.n_individuals:]
         return ind
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
 class LinearRankingSelector(Selector, ProbabilityMixin):
@@ -366,9 +352,6 @@ class LinearRankingSelector(Selector, ProbabilityMixin):
         rankings_asc = self.linear_rankings(raw_fitness)
         probabilities = rankings_asc / np.sum(rankings_asc)
         return probabilities
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'n_individuals={self.n_individuals!r})'
 
 
 class ExponentialRankingSelector(Selector, ProbabilityMixin):

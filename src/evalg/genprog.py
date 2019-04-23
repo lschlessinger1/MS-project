@@ -88,10 +88,6 @@ class GrowGenerator(BinaryTreeGenerator):
 
         return node
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'binary_operators={self.binary_operators!r}, operands=' \
-            f'{self.operands!r}, max_depth={self.max_depth!r})'
-
 
 class FullGenerator(BinaryTreeGenerator):
 
@@ -138,10 +134,6 @@ class FullGenerator(BinaryTreeGenerator):
 
         return node
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'binary_operators={self.binary_operators!r}, operands=' \
-            f'{self.operands!r}, max_depth={self.max_depth!r})'
-
 
 class HalfAndHalfGenerator(BinaryTreeGenerator):
 
@@ -161,9 +153,6 @@ class HalfAndHalfGenerator(BinaryTreeGenerator):
             root = tree_generator.grow(depth=0)
         return BinaryTree(root)
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'binary_operators={self.binary_operators!r}, operands=' \
-            f'{self.operands!r}, max_depth={self.max_depth!r})'
 
 
 class TreeMutator(Mutator, ABC):
@@ -236,9 +225,6 @@ class TreePointMutator(TreeMutator):
         node.value = new_val
 
         return tree
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'operands={self.operands!r})'
 
 
 class SubTreeExchangeMutator(TreeMutator, ABC):
@@ -318,8 +304,6 @@ class GrowMutator(SubTreeExchangeMutator):
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'operands={self.operands!r}, max_depth={self.max_depth!r})'
 
 
 class FullMutator(SubTreeExchangeMutator):
@@ -337,9 +321,6 @@ class FullMutator(SubTreeExchangeMutator):
         tree_generator = FullGenerator(operators, self.operands, self.max_depth)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'{self.operands!r}, max_depth={self.max_depth!r})'
 
 
 class HalfAndHalfMutator(SubTreeExchangeMutator):
@@ -366,8 +347,6 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'{self.operands!r}, max_depth={self.max_depth!r})'
 
 
 # Binary tree recombinators

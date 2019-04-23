@@ -157,6 +157,9 @@ class PopulationOperator:
             offspring = variator.vary(offspring)
         return offspring
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}('f'variators={self.variators!r})'
+
 
 class CrossMutPopOperator(PopulationOperator):
     """Perform both crossover then mutation to all individuals."""
