@@ -4,7 +4,7 @@ import numpy as np
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
-from src.autoks.hyperprior import Hyperpriors
+from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, \
     tree_to_kernel, pretty_print_aks_kernels, sort_kernel
 from src.evalg.genprog import BinaryTreeGenerator, OnePointRecombinatorBase
@@ -134,12 +134,22 @@ class BOMSGrammar(BaseGrammar):
     """
     Bayesian optimization for automated model selection (Malkomes et al., 2016)
     """
+    random_walk_geometric_dist_parameter: float
+    number_of_top_k_best: int
+    number_of_random_walks: int
 
     def __init__(self,
                  base_kernel_names: List[str],
                  n_dims: int,
                  hyperpriors: Optional[Hyperpriors] = None):
+        if hyperpriors is None:
+            hyperpriors = boms_hyperpriors()
+
         super().__init__(base_kernel_names, n_dims, hyperpriors)
+
+        self.random_walk_geometric_dist_parameter = 1 / 3  # termination probability
+        self.number_of_top_k_best = 3
+        self.number_of_random_walks = 15
 
     def initialize(self) -> List[AKSKernel]:
         """Initialize kernels according to number of dimensions.
@@ -180,18 +190,14 @@ class BOMSGrammar(BaseGrammar):
 
         return new_kernels
 
-    def random_walk_kernels(self,
-                            t_prob: float = 1 / 3.,
-                            n_walks: int = 15) -> List[Kern]:
+    def random_walk_kernels(self) -> List[Kern]:
         """Geometric random walk kernels.
 
-        :param t_prob: termination probability
-        :param n_walks: number of random walks
         :return:
         """
         # geometric random walk
         max_depth = 10
-        n_steps = np.random.geometric(p=t_prob, size=n_walks)
+        n_steps = np.random.geometric(p=self.random_walk_geometric_dist_parameter, size=self.number_of_random_walks)
         n_steps[n_steps > max_depth] = max_depth
 
         rw_kernels = []
