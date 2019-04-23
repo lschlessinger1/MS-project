@@ -18,12 +18,11 @@ class TestExperiment(TestCase):
         grammar = MagicMock()
         kernel_selector = MagicMock()
         objective = MagicMock()
-        kernel_families = MagicMock()
         x_train = np.array([[1, 2, 3], [4, 5, 6]])
         y_train = np.array([[5], [10]])
         x_test = np.array([[10, 20, 30], [40, 50, 60]])
         y_test = np.array([[2], [1]])
-        self.exp = Experiment(grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
+        self.exp = Experiment(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test,
                               use_surrogate=False)
 
     def test_kernel_search(self):

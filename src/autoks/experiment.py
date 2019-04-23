@@ -66,15 +66,14 @@ class Experiment:
     surrogate_model_cls: Type
     surrogate_opt_freq: int
 
-    def __init__(self, grammar, kernel_selector, objective, kernel_families, x_train, y_train, x_test, y_test,
+    def __init__(self, grammar, kernel_selector, objective, x_train, y_train, x_test, y_test,
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
-                 init_query_strat=None, query_strat=None, hyperpriors=None, additive_form=False, debug=False,
+                 init_query_strat=None, query_strat=None, additive_form=False, debug=False,
                  verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3, optimizer=None,
                  n_restarts_optimizer=10, use_surrogate=True):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
-        self.kernel_families = kernel_families
 
         self.x_train = x_train.reshape(-1, 1) if x_train.ndim == 1 else x_train
         # self.x_train = np.atleast_2d(x_train)
@@ -114,7 +113,7 @@ class Experiment:
         # statistics used for plotting
         self.n_hyperparams_name = 'n_hyperparameters'
         self.n_operands_name = 'n_operands'
-        self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in self.kernel_families]
+        self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in self.grammar.kernel_families]
         self.score_name = 'score'
         self.cov_dists_name = 'cov_dists'
         self.diversity_scores_name = 'diversity_scores'
@@ -123,7 +122,7 @@ class Experiment:
         shared_multi_stat_names = [self.n_hyperparams_name, self.n_operands_name] + self.base_kern_freq_names
 
         # raw value statistics
-        base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in self.kernel_families]
+        base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in self.grammar.kernel_families]
         shared_stats = [get_n_hyperparams, get_n_operands] + base_kern_stat_funcs
 
         self.evaluations_name = 'evaluations'
@@ -152,7 +151,7 @@ class Experiment:
         self.total_kernel_search_time = 0
         self.total_query_time = 0
 
-        self.hyperpriors = hyperpriors
+        # self.hyperpriors = hyperpriors
 
         if gp_model is not None:
             # do not use hyperpriors if gp model is given.
@@ -160,9 +159,9 @@ class Experiment:
         else:
             # default model is GP Regression
             self.gp_model = GPRegression(self.x_train, self.y_train)
-            if self.hyperpriors is not None:
+            if self.grammar.hyperpriors is not None:
                 # set likelihood hyperpriors
-                likelihood_priors = self.hyperpriors['GP']
+                likelihood_priors = self.grammar.hyperpriors['GP']
                 self.gp_model.likelihood = set_priors(self.gp_model.likelihood, likelihood_priors)
             # randomize likelihood
             self.gp_model.likelihood.randomize()
@@ -204,7 +203,7 @@ class Experiment:
         t_init = time()
 
         # initialize models
-        kernels = self.grammar.initialize(self.kernel_families, n_dims=self.n_dims, hyperpriors=self.hyperpriors)
+        kernels = self.grammar.initialize()
         kernels = self.randomize_kernels(kernels, verbose=self.verbose)
 
         # create distance builder if using surrogate model
@@ -221,7 +220,7 @@ class Experiment:
                 aks_kernel.to_additive_form()
 
         # Select kernels by acquisition function to be evaluated
-        selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat, self.hyperpriors)
+        selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat, self.grammar.hyperpriors)
         unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
         unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
         budget_left = self.eval_budget - self.n_evals
@@ -311,7 +310,7 @@ class Experiment:
                 assert fitness_scores == self.surrogate_model.Y.flatten().tolist()
                 self.optimize_surrogate_model()
             # Select kernels by acquisition function to be evaluated
-            selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat, self.hyperpriors)
+            selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat, self.grammar.hyperpriors)
 
             # Check for empty queries
             prev_n_queried.append(len(ind))
@@ -426,8 +425,7 @@ class Experiment:
             parent.expanded = True
 
         t0_exp = time()
-        new_kernels = self.grammar.expand(parents, self.kernel_families, self.n_dims, verbose=self.verbose,
-                                          hyperpriors=self.hyperpriors)
+        new_kernels = self.grammar.expand(parents, verbose=self.verbose)
         self.total_expansion_time += time() - t0_exp
 
         if self.additive_form:
@@ -906,30 +904,32 @@ class Experiment:
         :param aks_kernels:
         :return:
         """
-        stat_book.update_stat_book(data=aks_kernels, x=self.x_train, base_kernels=self.kernel_families,
+        stat_book.update_stat_book(data=aks_kernels, x=self.x_train, base_kernels=self.grammar.kernel_families,
                                    n_dims=self.n_dims)
 
     @classmethod
     def boms_experiment(cls, dataset, **kwargs):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
-        base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
-        grammar = BOMSGrammar()
-        kernel_selector = BOMS_kernel_selector(n_parents=1, max_candidates=600)
+        n_dims = x_train.shape[1]
+        base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
         hyperpriors = boms_hyperpriors()
+        grammar = BOMSGrammar(base_kernel_names, n_dims, hyperpriors)
+        kernel_selector = BOMS_kernel_selector(n_parents=1, max_candidates=600)
         objective = log_likelihood_normalized
         init_qs = BOMSInitQueryStrategy()
         acq = ExpectedImprovementPerSec()
         qs = BestScoreStrategy(scoring_func=acq)
         # kernel = hellinger_kernel_kernel(x_train)
-        return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
-                   eval_budget=50, hyperpriors=hyperpriors, init_query_strat=init_qs, query_strat=qs,
+        return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test,
+                   eval_budget=50, init_query_strat=init_qs, query_strat=qs,
                    use_surrogate=True, **kwargs)
 
     @classmethod
     def cks_experiment(cls, dataset, **kwargs):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
-        base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
-        grammar = CKSGrammar()
+        n_dims = x_train.shape[1]
+        base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
+        grammar = CKSGrammar(base_kernel_names, n_dims)
         kernel_selector = CKS_kernel_selector(n_parents=1)
 
         def negative_BIC(m):
@@ -941,7 +941,7 @@ class Experiment:
 
         # use conjugate gradient descent for CKS
         optimizer = 'scg'
-        return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test, max_depth=10,
+        return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test, max_depth=10,
                    optimizer=optimizer, use_surrogate=False, **kwargs)
 
     @classmethod
@@ -949,20 +949,22 @@ class Experiment:
                                 dataset,
                                 **kwargs):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
-        base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
+        n_dims = x_train.shape[1]
+        base_kernels_names = CKSGrammar.get_base_kernel_names(n_dims)
 
         pop_size = 25
         variation_pct = 0.61  # 60% of individuals created using crossover and 1% mutation
         n_offspring = int(variation_pct * pop_size)
         n_parents = n_offspring
 
-        mutator = HalfAndHalfMutator(operands=get_all_1d_kernels(base_kernels, x_train.shape[1]))
+        mutator = HalfAndHalfMutator(operands=get_all_1d_kernels(base_kernels_names, x_train.shape[1]))
         recombinator = OnePointRecombinator()
         cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring)
         mut_variator = MutationVariator(mutator)
         variators = [cx_variator, mut_variator]
         pop_operator = CrossMutPopOperator(variators)
-        grammar = EvolutionaryGrammar(population_operator=pop_operator)
+        grammar = EvolutionaryGrammar(kernel_families=base_kernels_names, n_dims=n_dims,
+                                      population_operator=pop_operator)
         initializer = HalfAndHalfGenerator(binary_operators=grammar.operators, max_depth=1, operands=mutator.operands)
         grammar.initializer = initializer
         grammar.n_init_trees = pop_size
@@ -970,7 +972,7 @@ class Experiment:
         kernel_selector = evolutionary_kernel_selector(n_parents=n_parents, max_offspring=pop_size)
         objective = log_likelihood_normalized
         budget = 50
-        return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test,
+        return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test,
                    tabu_search=False, eval_budget=budget, max_null_queries=budget, max_same_expansions=budget,
                    use_surrogate=False, **kwargs)
 
@@ -978,12 +980,13 @@ class Experiment:
     def random_experiment(cls,
                           dataset,
                           **kwargs):
-        grammar = RandomGrammar()
-        kernel_selector = CKS_kernel_selector(n_parents=1)
         x_train, x_test, y_train, y_test = dataset.split_train_test()
-        base_kernels = CKSGrammar.get_base_kernels(x_train.shape[1])
+        n_dims = x_train.shape[1]
+        base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
+        grammar = RandomGrammar(base_kernel_names, n_dims)
         objective = log_likelihood_normalized
-        return cls(grammar, kernel_selector, objective, base_kernels, x_train, y_train, x_test, y_test, eval_budget=50,
+        kernel_selector = CKS_kernel_selector(n_parents=1)
+        return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test, eval_budget=50,
                    use_surrogate=False, tabu_search=False, **kwargs)
 
     def update_object_time_predictor(self,
