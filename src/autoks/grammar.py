@@ -23,6 +23,7 @@ class BaseGrammar:
         self.base_kernel_names = base_kernel_names
         self.n_dims = n_dims
         self.hyperpriors = hyperpriors
+        self.base_kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, hyperpriors=self.hyperpriors)
 
     def initialize(self) -> List[AKSKernel]:
         """Initialize kernels."""
@@ -38,6 +39,10 @@ class BaseGrammar:
         :return:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
+
+    @staticmethod
+    def _kernels_to_aks_kernels(kernels: List[Kern]) -> List[AKSKernel]:
+        return [AKSKernel(kernel) for kernel in kernels]
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r})'
@@ -73,11 +78,11 @@ class EvolutionaryGrammar(BaseGrammar):
             # Generate trees and then convert to GPy kernels, then to AKSKernels
             trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
             kernels = [tree_to_kernel(tree) for tree in trees]
-            aks_kernels = [AKSKernel(kernel) for kernel in kernels]
+            aks_kernels = self._kernels_to_aks_kernels(kernels)
             return aks_kernels
         else:
             # Naive initialization of all SE_i and RQ_i (for every dimension).
-            return CKSGrammar.all_1d_aks_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
+            return self._kernels_to_aks_kernels(self.base_kernels)
 
     def expand(self,
                seed_kernels: List[AKSKernel],
@@ -137,7 +142,7 @@ class BOMSGrammar(BaseGrammar):
 
         :return:
         """
-        return CKSGrammar.all_1d_aks_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
+        return self._kernels_to_aks_kernels(self.base_kernels)
 
     def expand(self,
                seed_kernels: List[AKSKernel],
@@ -232,20 +237,15 @@ class CKSGrammar(BaseGrammar):
         else:
             return ['SE', 'RQ', 'LIN', 'PER']
 
-    @staticmethod
-    def all_1d_aks_kernels(kernel_families: List[str],
-                           n_dims: int,
-                           hyperpriors: Optional[Hyperpriors] = None):
-        kernels = get_all_1d_kernels(kernel_families, n_dims, hyperpriors=hyperpriors)
-        kernels = [AKSKernel(kernel) for kernel in kernels]
-        return kernels
+    # def all_1d_aks_kernels(self):
+    #     return [AKSKernel(kernel) for kernel in self.base_kernels]
 
     def initialize(self) -> List[AKSKernel]:
         """Initialize with all base kernel families applied to all input dimensions.
 
         :return:
         """
-        return self.all_1d_aks_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
+        return self._kernels_to_aks_kernels(self.base_kernels)
 
     def expand(self,
                seed_kernels: List[AKSKernel],
@@ -371,7 +371,7 @@ class RandomGrammar(BaseGrammar):
 
         :return:
         """
-        return CKSGrammar.all_1d_aks_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
+        return self._kernels_to_aks_kernels(self.base_kernels)
 
     def expand(self,
                seed_kernels: List[AKSKernel],
