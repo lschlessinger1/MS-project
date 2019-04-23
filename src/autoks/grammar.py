@@ -29,11 +29,11 @@ class BaseGrammar:
         raise NotImplementedError('initialize must implemented in a subclass')
 
     def expand(self,
-               kernels: List[AKSKernel],
+               seed_kernels: List[AKSKernel],
                verbose: bool = False) -> List[AKSKernel]:
         """Get next round of candidate kernels from current kernels.
 
-        :param kernels:
+        :param seed_kernels:
         :param verbose:
         :return:
         """
@@ -80,16 +80,16 @@ class EvolutionaryGrammar(BaseGrammar):
             return CKSGrammar.all_1d_aks_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
 
     def expand(self,
-               aks_kernels: List[AKSKernel],
+               seed_kernels: List[AKSKernel],
                verbose: bool = False) -> List[AKSKernel]:
         """Perform crossover and mutation.
 
-        :param aks_kernels: list of AKSKernels
+        :param seed_kernels: list of AKSKernels
         :param verbose:
         :return:
         """
         if verbose:
-            pretty_print_aks_kernels(aks_kernels, 'Seed')
+            pretty_print_aks_kernels(seed_kernels, 'Seed')
 
         using_1_pt_cx = any([isinstance(v.operator, OnePointRecombinatorBase) for v in
                              self.population_operator.variators])
@@ -97,11 +97,11 @@ class EvolutionaryGrammar(BaseGrammar):
             if verbose:
                 print('Using one-point crossover. Sorting kernels.\n')
             # Sort trees if performing one-point crossover for alignment of trees.
-            for aks_kernel in aks_kernels:
+            for aks_kernel in seed_kernels:
                 aks_kernel.kernel = sort_kernel(aks_kernel.kernel)
 
         # Convert GPy kernels to BinaryTrees
-        trees = [aks_kernel.to_binary_tree() for aks_kernel in aks_kernels]
+        trees = [aks_kernel.to_binary_tree() for aks_kernel in seed_kernels]
 
         # Mutate/Crossover Trees
         offspring = self.population_operator.create_offspring(trees)
@@ -140,16 +140,16 @@ class BOMSGrammar(BaseGrammar):
         return CKSGrammar.all_1d_aks_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
 
     def expand(self,
-               aks_kernels: List[AKSKernel],
+               seed_kernels: List[AKSKernel],
                verbose: bool = False) -> List[AKSKernel]:
         """Greedy and exploratory expansion of kernels.
 
-        :param aks_kernels: list of AKSKernels
+        :param seed_kernels: list of AKSKernels
         :param verbose:
         :return:
         """
         if verbose:
-            pretty_print_aks_kernels(aks_kernels, 'Seed')
+            pretty_print_aks_kernels(seed_kernels, 'Seed')
 
         # Explore:
         # Add 15 random walks (geometric dist w/ prob 1/3) from empty kernel to active set
@@ -158,7 +158,7 @@ class BOMSGrammar(BaseGrammar):
 
         # Exploit:
         # Add all neighbors (according to CKS grammar) of the best model seen thus far to active set
-        evaluated_kernels = [kernel for kernel in aks_kernels if kernel.evaluated]
+        evaluated_kernels = [kernel for kernel in seed_kernels if kernel.evaluated]
         best_kern = sorted(evaluated_kernels, key=lambda x: x.score, reverse=True)[0]
         greedy_kerns = self.greedy_kernels(best_kern)
         greedy_kerns = remove_duplicate_kernels(greedy_kerns)
@@ -248,11 +248,11 @@ class CKSGrammar(BaseGrammar):
         return self.all_1d_aks_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
 
     def expand(self,
-               aks_kernels: List[AKSKernel],
+               seed_kernels: List[AKSKernel],
                verbose: bool = False) -> List[AKSKernel]:
         """Greedy expansion of nodes.
 
-        :param aks_kernels:
+        :param seed_kernels:
         :param verbose:
         :return:
         """
@@ -262,10 +262,10 @@ class CKSGrammar(BaseGrammar):
         # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
         # 3) Any base kernel B may be replaced with any other base kernel family B'
         if verbose:
-            pretty_print_aks_kernels(aks_kernels, 'Seed')
+            pretty_print_aks_kernels(seed_kernels, 'Seed')
 
         new_kernels = []
-        for aks_kernel in aks_kernels:
+        for aks_kernel in seed_kernels:
             kernel = aks_kernel.kernel
             kernels_expanded = CKSGrammar.expand_full_kernel(kernel, self.n_dims, self.kernel_families,
                                                              self.hyperpriors)
@@ -374,21 +374,21 @@ class RandomGrammar(BaseGrammar):
         return CKSGrammar.all_1d_aks_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
 
     def expand(self,
-               aks_kernels: List[AKSKernel],
+               seed_kernels: List[AKSKernel],
                verbose: bool = False) -> List[AKSKernel]:
         """Random expansion of nodes.
 
-        :param aks_kernels:
+        :param seed_kernels:
         :param verbose:
         :return:
         """
         if verbose:
-            pretty_print_aks_kernels(aks_kernels, 'Seed')
+            pretty_print_aks_kernels(seed_kernels, 'Seed')
 
         new_kernels = []
 
         # For each kernel, select a kernel from one step of a CKS expansion uniformly at random.
-        for aks_kernel in aks_kernels:
+        for aks_kernel in seed_kernels:
             k = aks_kernel.kernel
             expansion = CKSGrammar.expand_full_kernel(k, self.n_dims, self.kernel_families)
             k = np.random.choice(expansion)
