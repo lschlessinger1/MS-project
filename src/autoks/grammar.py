@@ -45,7 +45,8 @@ class BaseGrammar:
         return [AKSKernel(kernel) for kernel in kernels]
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
+        return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
+            f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r})'
 
 
 class EvolutionaryGrammar(BaseGrammar):
@@ -123,7 +124,10 @@ class EvolutionaryGrammar(BaseGrammar):
         return new_kernels
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
+        return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
+            f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r},' \
+            f'population_operator={self.population_operator!r}, initializer={self.initializer!r}, ' \
+            f'n_init_trees={self.n_init_trees!r})'
 
 
 class BOMSGrammar(BaseGrammar):
@@ -214,9 +218,6 @@ class BOMSGrammar(BaseGrammar):
                                                     self.hyperpriors)
 
         return new_kernels
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
 
 
 class CKSGrammar(BaseGrammar):
@@ -351,9 +352,6 @@ class CKSGrammar(BaseGrammar):
             raise TypeError(f'Unknown kernel class {kernel.__class__.__name__}')
         return result
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
-
 
 class RandomGrammar(BaseGrammar):
     """Random grammar randomly expands nodes
@@ -401,6 +399,3 @@ class RandomGrammar(BaseGrammar):
             pretty_print_aks_kernels(new_kernels, 'Newly expanded')
 
         return new_kernels
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'operators={self.operators!r})'
