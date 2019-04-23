@@ -10,8 +10,9 @@ from src.autoks.kernel import sort_kernel, AKSKernel, get_all_1d_kernels, create
     remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, \
     decode_kernel, hd_kern_nodes, encode_kernel, encode_aks_kerns, encode_aks_kernel, additive_part_to_vec, \
     kernel_vec_avg_dist, all_pairs_avg_dist, \
-    kernels_to_kernel_vecs, get_priors
+    kernels_to_kernel_vecs, get_priors, tokens_to_kernel_symbols
 from src.autoks.kernel_kernel import shd_kernel_kernel, euclidean_kernel_kernel
+from src.autoks.symbolic.kernel_symbol import KernelSymbol
 from src.autoks.util import remove_duplicates
 from src.test.autoks.support.util import has_combo_kernel_type
 
@@ -244,6 +245,14 @@ class TestKernel(unittest.TestCase):
         self.assertIn('lengthscale', result)
         self.assertIn('3', result)
         self.assertIn('2', result)
+
+    def test_tokens_to_kernel_symbols(self):
+        k1 = RBF(1)
+        k2 = RationalQuadratic(1)
+        kernel_tokens = [k1, '+', k2]
+        actual = tokens_to_kernel_symbols(kernel_tokens)
+        expected = [KernelSymbol('SE_0', k1), '+', KernelSymbol('RQ_0', k2)]
+        self.assertListEqual(expected, actual)
 
     def test_additive_part_to_vec(self):
         base_kernels = ['SE', 'RQ']

@@ -8,8 +8,11 @@ from GPy.kern import RBF, Add, Prod, RationalQuadratic, LinScaleShift, \
     StandardPeriodic
 from GPy.kern.src.kern import CombinationKernel, Kern
 from scipy.spatial.distance import cdist, pdist
+from sympy import pprint
 
 from src.autoks.hyperprior import Hyperpriors, Hyperprior
+from src.autoks.symbolic.kernel_symbol import KernelSymbol
+from src.autoks.symbolic.util import postfix_tokens_to_symbol
 from src.autoks.util import remove_duplicates, arg_sort, join_operands, tokenize, flatten, remove_outer_parens
 from src.evalg.encoding import BinaryTree, BinaryTreeNode, infix_tokens_to_postfix_tokens, \
     postfix_tokens_to_binexp_tree
@@ -48,7 +51,7 @@ class KernelTree(BinaryTree):
 class AKSKernel:
     """AKS kernel wrapper
     """
-    kernel: Kern
+    _kernel: Kern
     lik_params: Optional[np.ndarray]
     evaluated: bool
     nan_scored: bool
@@ -72,6 +75,22 @@ class AKSKernel:
         # Update evaluated as well
         self.evaluated = True
 
+    @property
+    def kernel(self) -> Kern:
+        return self._kernel
+
+    @kernel.setter
+    def kernel(self, new_kernel: Kern) -> None:
+        self._kernel = new_kernel
+        # Set other kernel parameters
+        self.infix_tokens = kernel_to_infix_tokens(self.kernel)
+        self.postfix_tokens = infix_tokens_to_postfix_tokens(self.infix_tokens)
+        self.infix = tokens_to_str(self.infix_tokens, show_params=False)
+        self.postfix = tokens_to_str(self.postfix_tokens, show_params=False)
+        postfix_token_symbols = tokens_to_kernel_symbols(self.postfix_tokens)
+        self.symbolic_expr = postfix_tokens_to_symbol(postfix_token_symbols)
+        self.symbolic_expr_expanded = self.symbolic_expr.expand()
+
     def to_binary_tree(self) -> KernelTree:
         """Get the binary tree representation of the kernel
 
@@ -86,27 +105,44 @@ class AKSKernel:
         """
         self.kernel = additive_form(self.kernel)
 
+    def pprint_expr(self) -> None:
+        pprint(self.symbolic_expr)
+
     def pretty_print(self) -> None:
         """Pretty print the kernel.
 
         :return:
         """
-        print(str(self))
+        # print(str(self))
+        self.pprint_expr()
 
     def print_full(self) -> None:
         """Print the verbose version of the kernel.
 
         :return:
         """
-        print(kernel_to_infix(self.kernel, show_params=True))
+        infix_full = tokens_to_str(self.infix_tokens, show_params=True)
+        print(infix_full)
 
     def __str__(self):
-        return kernel_to_infix(self.kernel)
+        return str(self.symbolic_expr)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'kernel={kernel_to_infix(self.kernel, show_params=True)!r}, ' \
             f'lik_params={self.lik_params!r}, evaluated={self.evaluated!r}, nan_scored={self.nan_scored!r}, ' \
             f'expanded={self.expanded!r}, score={self.score!r}) '
+
+
+# Symbolic interface
+def tokens_to_kernel_symbols(tokens: List[Union[str, Kern]]) -> List[Union[str, KernelSymbol]]:
+    symbols = []
+    for token in tokens:
+        if isinstance(token, str):
+            symbols.append(token)
+        elif isinstance(token, Kern):
+            name = subkernel_expression(token)
+            symbols.append(KernelSymbol(name, token))
+    return symbols
 
 
 def pretty_print_aks_kernels(aks_kernels: List[AKSKernel],

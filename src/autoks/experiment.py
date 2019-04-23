@@ -348,7 +348,8 @@ class Experiment:
         print(f'Avg. objective = {np.mean(scores)}')
         print(f'Best objective = {scores[arg_max_score]}')
         print(f'Avg. size = {np.mean(sizes)}')
-        print(f'Best kernel: {best_kernel}')
+        print('Best kernel:')
+        best_kernel.pretty_print()
         print('')
 
     def optimize_surrogate_model(self):
@@ -391,7 +392,9 @@ class Experiment:
 
             acq_scores_selected = [s for i, s in enumerate(acq_scores) if i in ind]
             for kern, score in zip(selected_kernels, acq_scores_selected):
-                print(str(kern), 'acq. score =', score)
+                kern.pretty_print()
+                print('\tacq. score =', score)
+                # print(str(kern), 'acq. score =', score)
             print('')
 
         return selected_kernels, ind, acq_scores
@@ -514,7 +517,8 @@ class Experiment:
             print('Printing all results')
             # Sort kernels by scores with un-evaluated kernels last
             for k in sorted(evaluated_kernels, key=lambda x: (x.score is not None, x.score), reverse=True):
-                print(str(k), 'objective =', k.score)
+                k.pretty_print()
+                print('\tobjective =', k.score)
             print('')
         return evaluated_kernels
 
