@@ -113,7 +113,7 @@ class Experiment:
         # statistics used for plotting
         self.n_hyperparams_name = 'n_hyperparameters'
         self.n_operands_name = 'n_operands'
-        self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in self.grammar.kernel_families]
+        self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in self.grammar.base_kernel_names]
         self.score_name = 'score'
         self.cov_dists_name = 'cov_dists'
         self.diversity_scores_name = 'diversity_scores'
@@ -122,7 +122,7 @@ class Experiment:
         shared_multi_stat_names = [self.n_hyperparams_name, self.n_operands_name] + self.base_kern_freq_names
 
         # raw value statistics
-        base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in self.grammar.kernel_families]
+        base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in self.grammar.base_kernel_names]
         shared_stats = [get_n_hyperparams, get_n_operands] + base_kern_stat_funcs
 
         self.evaluations_name = 'evaluations'
@@ -904,7 +904,7 @@ class Experiment:
         :param aks_kernels:
         :return:
         """
-        stat_book.update_stat_book(data=aks_kernels, x=self.x_train, base_kernels=self.grammar.kernel_families,
+        stat_book.update_stat_book(data=aks_kernels, x=self.x_train, base_kernels=self.grammar.base_kernel_names,
                                    n_dims=self.n_dims)
 
     @classmethod

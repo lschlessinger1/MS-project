@@ -20,7 +20,7 @@ class BaseGrammar:
                  n_dims: int,
                  hyperpriors: Optional[Hyperpriors] = None):
         self.operators = BaseGrammar.DEFAULT_OPERATORS
-        self.kernel_families = base_kernel_names
+        self.base_kernel_names = base_kernel_names
         self.n_dims = n_dims
         self.hyperpriors = hyperpriors
 
@@ -77,7 +77,7 @@ class EvolutionaryGrammar(BaseGrammar):
             return aks_kernels
         else:
             # Naive initialization of all SE_i and RQ_i (for every dimension).
-            return CKSGrammar.all_1d_aks_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
+            return CKSGrammar.all_1d_aks_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
 
     def expand(self,
                seed_kernels: List[AKSKernel],
@@ -137,7 +137,7 @@ class BOMSGrammar(BaseGrammar):
 
         :return:
         """
-        return CKSGrammar.all_1d_aks_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
+        return CKSGrammar.all_1d_aks_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
 
     def expand(self,
                seed_kernels: List[AKSKernel],
@@ -188,10 +188,10 @@ class BOMSGrammar(BaseGrammar):
         rw_kernels = []
         for n in n_steps:
             # first expansion of empty kernel is all 1d kernels
-            kernels = get_all_1d_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
+            kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
             random_kernel = np.random.choice(kernels)
             for i in range(1, n):
-                kernels = CKSGrammar.expand_full_kernel(random_kernel, self.n_dims, self.kernel_families,
+                kernels = CKSGrammar.expand_full_kernel(random_kernel, self.n_dims, self.base_kernel_names,
                                                         self.hyperpriors)
                 random_kernel = np.random.choice(kernels)
                 rw_kernels.append(random_kernel)
@@ -205,7 +205,7 @@ class BOMSGrammar(BaseGrammar):
         :param best_kernel:
         :return:
         """
-        new_kernels = CKSGrammar.expand_full_kernel(best_kernel.kernel, self.n_dims, self.kernel_families,
+        new_kernels = CKSGrammar.expand_full_kernel(best_kernel.kernel, self.n_dims, self.base_kernel_names,
                                                     self.hyperpriors)
 
         return new_kernels
@@ -245,7 +245,7 @@ class CKSGrammar(BaseGrammar):
 
         :return:
         """
-        return self.all_1d_aks_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
+        return self.all_1d_aks_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
 
     def expand(self,
                seed_kernels: List[AKSKernel],
@@ -267,7 +267,7 @@ class CKSGrammar(BaseGrammar):
         new_kernels = []
         for aks_kernel in seed_kernels:
             kernel = aks_kernel.kernel
-            kernels_expanded = CKSGrammar.expand_full_kernel(kernel, self.n_dims, self.kernel_families,
+            kernels_expanded = CKSGrammar.expand_full_kernel(kernel, self.n_dims, self.base_kernel_names,
                                                              self.hyperpriors)
             new_kernels += kernels_expanded
 
@@ -371,7 +371,7 @@ class RandomGrammar(BaseGrammar):
 
         :return:
         """
-        return CKSGrammar.all_1d_aks_kernels(self.kernel_families, self.n_dims, self.hyperpriors)
+        return CKSGrammar.all_1d_aks_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
 
     def expand(self,
                seed_kernels: List[AKSKernel],
@@ -390,7 +390,7 @@ class RandomGrammar(BaseGrammar):
         # For each kernel, select a kernel from one step of a CKS expansion uniformly at random.
         for aks_kernel in seed_kernels:
             k = aks_kernel.kernel
-            expansion = CKSGrammar.expand_full_kernel(k, self.n_dims, self.kernel_families)
+            expansion = CKSGrammar.expand_full_kernel(k, self.n_dims, self.base_kernel_names)
             k = np.random.choice(expansion)
             new_kernels.append(k)
 
