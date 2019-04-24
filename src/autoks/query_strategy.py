@@ -5,7 +5,7 @@ import numpy as np
 
 from src.autoks.acquisition_function import AcquisitionFunction, UniformScorer
 from src.autoks.hyperprior import Hyperpriors
-from src.autoks.kernel import AKSKernel, get_kernel_mapping
+from src.autoks.kernel import AKSKernel
 from src.evalg.selection import Selector, AllSelector
 
 
@@ -82,16 +82,13 @@ class BOMSInitQueryStrategy(QueryStrategy):
         super().__init__(n_individuals, scoring_func)
 
     def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
-        """Select indices of all SE
+        """Select index of SE_0 + SE_0
 
         :param population:
         :param fitness_list:
         :return:
         """
-        k_map = get_kernel_mapping()
-        sq_exp_cls = k_map['SE']
-        return np.array([i for (i, aks_kernel) in enumerate(population.tolist())
-                         if isinstance(aks_kernel.kernel, sq_exp_cls)])
+        return np.array([0])
 
 
 class NaiveQueryStrategy(QueryStrategy, AllSelector):
