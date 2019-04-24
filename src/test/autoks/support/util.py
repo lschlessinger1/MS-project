@@ -34,6 +34,12 @@ def same_combo_type(k1: Kern, k2: Kern) -> bool:
     return isinstance(k1, Add) and isinstance(k2, Add) or isinstance(k1, Prod) and isinstance(k2, Prod)
 
 
+def base_kernel_eq(kern_1: Kern, kern_2: Kern) -> bool:
+    same_type = kern_1.name == kern_2.name
+    same_dim = len(kern_1.active_dims) == 1 and kern_1.active_dims[0] == kern_2.active_dims[0]
+    return same_type and same_dim
+
+
 def has_combo_kernel_type(kernels: Iterable[Kern], kern: Kern) -> bool:
     """Test if an iterable of kernels are the same combination kernel type as another kernel.
 
@@ -51,8 +57,6 @@ def has_combo_kernel_type(kernels: Iterable[Kern], kern: Kern) -> bool:
             if lists_equal_without_order(k_parts, part_list) and same_combo:
                 return True
         elif isinstance(kernel, Kern) and is_base_kernel:
-            same_type = kernel.name == kern.name
-            same_dim = len(kernel.active_dims) == 1 and kernel.active_dims[0] == kern.active_dims[0]
-            if same_type and same_dim:
+            if base_kernel_eq(kernel, kern):
                 return True
     return False

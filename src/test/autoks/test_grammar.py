@@ -1,10 +1,10 @@
 from unittest import TestCase
 
-from GPy.kern import RBF, RationalQuadratic, Add
+from GPy.kern import RBF, RationalQuadratic, Add, LinScaleShift
 
 from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels
 from src.autoks.kernel import AKSKernel
-from src.test.autoks.support.util import has_combo_kernel_type
+from src.test.autoks.support.util import has_combo_kernel_type, base_kernel_eq
 
 
 class TestGrammar(TestCase):
@@ -55,8 +55,45 @@ class TestCKSGrammar(TestCase):
     def setUp(self):
         self.se0 = RBF(1, active_dims=[0])
         self.se1 = RBF(1, active_dims=[1])
+        self.se2 = RBF(1, active_dims=[2])
         self.rq0 = RationalQuadratic(1, active_dims=[0])
         self.rq1 = RationalQuadratic(1, active_dims=[1])
+        self.rq2 = RationalQuadratic(1, active_dims=[2])
+        self.lin0 = LinScaleShift(1, active_dims=[0])
+
+    def test_create_grammar(self):
+        base_kernel_names = ['SE', 'RQ']
+        dim = 1
+
+        # Test with base kernel names and dimension arguments
+        grammar = CKSGrammar(base_kernel_names=base_kernel_names, n_dims=dim)
+
+        self.assertEqual(base_kernel_names, grammar.base_kernel_names)
+        self.assertEqual(len(base_kernel_names), len(grammar.base_kernel_names))
+        self.assertEqual(dim, grammar.n_dims)
+        self.assertEqual(None, grammar.hyperpriors)
+        self.assertTrue(base_kernel_eq(self.se0, grammar.base_kernels[0]))
+        self.assertTrue(base_kernel_eq(self.rq0, grammar.base_kernels[1]))
+        self.assertFalse(base_kernel_eq(self.se0, grammar.base_kernels[1]))
+
+    def test_mask_kernels_multi_d(self):
+        base_kernel_names = ['SE', 'RQ']
+        dim = 3
+
+        # Test with base kernel names and dimension arguments
+        grammar = CKSGrammar(base_kernel_names=base_kernel_names, n_dims=dim)
+
+        expected_kernels = [
+            self.se0,
+            self.se1,
+            self.se2,
+            self.rq0,
+            self.rq1,
+            self.rq2,
+        ]
+
+        for expected_kernel, actual_kernel in zip(expected_kernels, grammar.base_kernels):
+            self.assertTrue(base_kernel_eq(expected_kernel, actual_kernel))
 
     def test_initialize(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
@@ -97,15 +134,47 @@ class TestCKSGrammar(TestCase):
         self.assertIsInstance(result, list)
         # TODO: test that expand_full_kernel is called with each kernel
 
-    def test_expand_single_kernel(self):
+    def test_expand_one_dim(self):
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ', 'LIN'], n_dims=1)
+
+        # Expand SE
+        se = grammar.base_kernels[0]
+        expected_kernels = [
+            self.se0 + self.se0,
+            self.se0 * self.se0,
+            self.se0 + self.rq0,
+            self.se0 * self.rq0,
+            self.se0 + self.lin0,
+            self.se0 * self.lin0,
+        ]
+        new_kernels = grammar.expand_single_kernel(se)
+        k_types_exist = [has_combo_kernel_type(new_kernels, k_type) for k_type in expected_kernels]
+        self.assertTrue(all(k_types_exist))
+        self.assertEqual(len(expected_kernels), len(new_kernels))
+
+        # Expand SE + RQ
+        se_plus_rq = self.se0 + self.rq0
+        expected_kernels = [
+            (self.se0 + self.rq0) + self.se0,
+            (self.se0 + self.rq0) * self.se0,
+            (self.se0 + self.rq0) + self.rq0,
+            (self.se0 + self.rq0) * self.rq0,
+            (self.se0 + self.rq0) + self.lin0,
+            (self.se0 + self.rq0) * self.lin0,
+        ]
+        new_kernels = grammar.expand_single_kernel(se_plus_rq)
+        k_types_exist = [has_combo_kernel_type(new_kernels, k_type) for k_type in expected_kernels]
+        self.assertTrue(all(k_types_exist))
+        self.assertEqual(len(expected_kernels), len(new_kernels))
+
+    def test_expand_single_kernel_two_dims(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         # first, test 1d expansion of base kernel
         k = self.se0
         result = grammar.expand_single_kernel(k)
 
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
-                        self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
-                        self.se0, self.rq0]
+                        self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1]
         k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
 
         self.assertTrue(all(k_types_exist))
@@ -124,6 +193,56 @@ class TestCKSGrammar(TestCase):
         self.assertTrue(all(k_types_exist))
         self.assertEqual(len(result), len(kernel_types))
 
+    def test_expand_single_kernel_mutli_d(self):
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=3)
+
+        # Expand SE
+        se = grammar.base_kernels[0]
+        expected_kernels = [
+            self.se0 + self.se0,
+            self.se0 * self.se0,
+            self.se0 + self.se1,
+            self.se0 * self.se1,
+            self.se0 + self.se2,
+            self.se0 * self.se2,
+            self.se0 + self.rq0,
+            self.se0 * self.rq0,
+            self.se0 + self.rq1,
+            self.se0 * self.rq1,
+            self.se0 + self.rq2,
+            self.se0 * self.rq2,
+        ]
+        new_kernels = grammar.expand_single_kernel(se)
+        k_types_exist = [has_combo_kernel_type(new_kernels, k_type) for k_type in expected_kernels]
+        self.assertTrue(all(k_types_exist))
+        self.assertEqual(len(expected_kernels), len(new_kernels))
+
+    def test_expand_full_brute_force(self):
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        n = len(grammar.base_kernel_names)
+        n_dim = grammar.n_dims
+        max_number_of_models = 1000
+
+        level = 0
+        kernels = grammar.expand_full_brute_force(level, max_number_of_models)
+        expected = n * n_dim
+        self.assertEqual(expected, len(kernels))
+
+        level = 1
+        kernels = grammar.expand_full_brute_force(level, max_number_of_models)
+        expected = (n * n_dim + 1) * n * n_dim
+        self.assertEqual(expected, len(kernels))
+
+        level = 2
+        kernels = grammar.expand_full_brute_force(level, max_number_of_models)
+        expected = 134
+        self.assertEqual(expected, len(kernels))
+
+        level = 3
+        kernels = grammar.expand_full_brute_force(level, max_number_of_models)
+        expected = 834  # Question: should this be = max_number_of_models ?
+        self.assertEqual(expected, len(kernels))
+
     def test_expand_full_kernel(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         # first, test 1d expansion of base kernel
@@ -131,8 +250,7 @@ class TestCKSGrammar(TestCase):
         result = grammar.expand_full_kernel(k)
 
         kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
-                        self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1,
-                        self.se0, self.rq0]
+                        self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1]
         k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
 
         self.assertTrue(all(k_types_exist))
@@ -150,12 +268,12 @@ class TestCKSGrammar(TestCase):
                         (self.se1 + self.se1) * self.rq1, (self.se1 + self.rq1) * self.rq1,
                         (self.se1 * self.se0) * self.rq1, (self.se1 * self.rq0) * self.rq1,
                         (self.se1 * self.se1) * self.rq1, (self.se1 * self.rq1) * self.rq1,
-                        self.se1 * self.se1, self.rq1 * self.rq1,
+
                         self.se1 * (self.rq1 + self.se0), self.se1 * (self.rq1 + self.rq0),
                         self.se1 * (self.rq1 + self.se1), self.se1 * (self.rq1 + self.rq1),
                         self.se1 * (self.rq1 * self.se0), self.se1 * (self.rq1 * self.rq0),
                         self.se1 * (self.rq1 * self.se1), self.se1 * (self.rq1 * self.rq1),
-                        self.se1 * self.se1, self.se1 * self.rq1]
+                        ]
         k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
 
         self.assertTrue(all(k_types_exist))

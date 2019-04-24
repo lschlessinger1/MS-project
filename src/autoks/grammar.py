@@ -1,3 +1,4 @@
+import warnings
 from typing import List, Optional
 
 import numpy as np
@@ -5,7 +6,7 @@ from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
-from src.autoks.kernel import get_all_1d_kernels, create_1d_kernel, AKSKernel, remove_duplicate_kernels, \
+from src.autoks.kernel import get_all_1d_kernels, AKSKernel, remove_duplicate_kernels, \
     tree_to_kernel, pretty_print_aks_kernels, sort_kernel
 from src.evalg.genprog import BinaryTreeGenerator, OnePointRecombinatorBase
 from src.evalg.vary import PopulationOperator
@@ -187,10 +188,9 @@ class CKSGrammar(BaseGrammar):
 
         new_kernels = []
         for aks_kernel in seed_kernels:
-            kernel = aks_kernel.kernel
-            kernels_expanded = self.expand_full_kernel(kernel)
-            new_kernels += kernels_expanded
+            new_kernels += self.expand_full_kernel(aks_kernel.kernel)
 
+        new_kernels = [sort_kernel(kernel) for kernel in new_kernels]
         new_kernels = remove_duplicate_kernels(new_kernels)
         new_kernels = self._kernels_to_aks_kernels(new_kernels)
 
@@ -199,36 +199,19 @@ class CKSGrammar(BaseGrammar):
 
         return new_kernels
 
-    def expand_single_kernel(self, kernel: Kern) -> List[Kern]:
-        """Expand a single kernel.
+    def expand_single_kernel(self, seed_kernel: Kern) -> List[Kern]:
+        """Expand a seed kernel according to the CKS grammar.
 
-        :param kernel:
+        :param seed_kernel:
         :return:
         """
-        is_kernel = isinstance(kernel, Kern)
-        if not is_kernel:
-            raise TypeError(f'Unknown kernel type {kernel.__class__.__name__}')
+        number_of_base_kernels = len(self.base_kernels)
+        new_kernels = []
 
-        kernels = []
-
-        is_combo_kernel = isinstance(kernel, CombinationKernel)
-        is_base_kernel = is_kernel and not is_combo_kernel
-
-        for op in self.operators:
-            for dim in range(self.n_dims):
-                for base_kernel_name in self.base_kernel_names:
-                    hyperprior = None if self.hyperpriors is None else self.hyperpriors[base_kernel_name]
-                    if op == '+':
-                        kernels.append(kernel + create_1d_kernel(base_kernel_name, dim, hyperpriors=hyperprior))
-                    elif op == '*':
-                        kernels.append(kernel * create_1d_kernel(base_kernel_name, dim, hyperpriors=hyperprior))
-                    else:
-                        raise ValueError(f'Unknown operation {op}')
-        for base_kernel_name in self.base_kernel_names:
-            if is_base_kernel:
-                hyperprior = None if self.hyperpriors is None else self.hyperpriors[base_kernel_name]
-                kernels.append(create_1d_kernel(base_kernel_name, kernel.active_dims[0], hyperpriors=hyperprior))
-        return kernels
+        for i in range(number_of_base_kernels):
+            new_kernels.append(seed_kernel + self.base_kernels[i])
+            new_kernels.append(seed_kernel * self.base_kernels[i])
+        return new_kernels
 
     def expand_full_kernel(self, kernel: Kern) -> List[Kern]:
         """Expand full kernel.
@@ -257,6 +240,52 @@ class CKSGrammar(BaseGrammar):
             raise TypeError(f'Unknown kernel class {kernel.__class__.__name__}')
         return result
 
+    def expand_full_brute_force(self,
+                                level: int,
+                                max_number_of_models: int) -> List[Kern]:
+        """Enumerate all kernels in CKS grammar up to a depth with a size limit."""
+        if level >= 4:
+            warnings.warn('This is a brute-force implementation, use it for level < 4')
+
+        current_kernels = self.base_kernels
+        if level == 0:
+            return current_kernels
+
+        def remove_duplicates(new_kerns: List[Kern], all_kerns: List[Kern]):
+            unique_kernels = []
+            for new_kernel in new_kerns:
+                # TODO: this should be using a wrapper of Kern, not AKSKernel.
+                symbolic_expr_new_kern = AKSKernel(new_kernel).symbolic_expr
+                repeated = False
+                for kern in all_kerns:
+                    symbolic_expr_kern = AKSKernel(kern).symbolic_expr
+                    kerns_equal = symbolic_expr_new_kern == symbolic_expr_kern
+                    if kerns_equal:
+                        repeated = True
+                        break
+                if not repeated:
+                    unique_kernels.append(new_kernel)
+            return unique_kernels
+
+        all_kernels = []
+
+        while level > 0:
+            this_level = []
+            number_of_models = len(all_kernels)
+            for current_kernel in current_kernels:
+                new_kernels = self.expand_single_kernel(current_kernel)
+                unique_new_kernels = remove_duplicates(new_kernels, this_level)
+                this_level += unique_new_kernels
+                number_of_models = number_of_models + len(unique_new_kernels)
+                if number_of_models > max_number_of_models:
+                    all_kernels += this_level
+                    all_kernels = all_kernels[:max_number_of_models]
+                    return all_kernels
+            current_kernels = this_level
+            all_kernels += this_level
+            level -= 1
+        return all_kernels
+
 
 class BOMSGrammar(CKSGrammar):
     """
@@ -282,7 +311,10 @@ class BOMSGrammar(CKSGrammar):
 
         :return:
         """
-        return self._kernels_to_aks_kernels(self.base_kernels)
+        initial_level_depth = 2
+        max_number_of_initial_models = 500
+        initial_candidates = self.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
+        return self._kernels_to_aks_kernels(initial_candidates)
 
     def get_candidates(self,
                        seed_kernels: List[AKSKernel],
@@ -296,56 +328,68 @@ class BOMSGrammar(CKSGrammar):
         if verbose:
             pretty_print_aks_kernels(seed_kernels, 'Seed')
 
-        # Explore:
-        # Add 15 random walks (geometric dist w/ prob 1/3) from empty kernel to active set
-        rw_kerns = self.random_walk_kernels()
-        rw_kerns = remove_duplicate_kernels(rw_kerns)
+        # Exploration
+        total_num_walks = self.number_of_random_walks
+        candidates_random = self.expand_random(total_num_walks)
+        candidates_random = remove_duplicate_kernels(candidates_random)
 
-        # Exploit:
-        # Add all neighbors (according to CKS grammar) of the best model seen thus far to active set
+        # Exploitation
         evaluated_kernels = [kernel for kernel in seed_kernels if kernel.evaluated]
-        best_kern = sorted(evaluated_kernels, key=lambda x: x.score, reverse=True)[0]
-        greedy_kerns = self.greedy_kernels(best_kern)
-        greedy_kerns = remove_duplicate_kernels(greedy_kerns)
+        fitness_score = [k.score for k in evaluated_kernels]
+        candidates_best = self.expand_best(evaluated_kernels, fitness_score)
+        candidates_best = remove_duplicate_kernels(candidates_best)
 
-        new_kernels = rw_kerns + greedy_kerns
-        new_kernels = self._kernels_to_aks_kernels(new_kernels)
+        # Concatenate
+        candidates = candidates_best + candidates_random
+        new_kernels = self._kernels_to_aks_kernels(candidates)
 
         if verbose:
             pretty_print_aks_kernels(new_kernels, 'Newly expanded')
 
         return new_kernels
 
-    def random_walk_kernels(self) -> List[Kern]:
+    def expand_random(self, total_num_walks: int) -> List[Kern]:
         """Geometric random walk kernels.
 
         :return:
         """
-        # geometric random walk
-        max_depth = 10
-        n_steps = np.random.geometric(p=self.random_walk_geometric_dist_parameter, size=self.number_of_random_walks)
-        n_steps[n_steps > max_depth] = max_depth
+        parameter = self.random_walk_geometric_dist_parameter
+        new_kernels = []
+        for i in range(total_num_walks):
+            frontier = self.base_kernels
+            depth = np.random.geometric(parameter)
+            new_kernel = None
+            while depth >= 0:
+                new_kernel = np.random.choice(frontier)
+                frontier = self.expand_single_kernel(new_kernel)
+                depth -= 1
+            new_kernels.append(new_kernel)
 
-        rw_kernels = []
-        for n in n_steps:
-            # first expansion of empty kernel is all 1d kernels
-            kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, self.hyperpriors)
-            random_kernel = np.random.choice(kernels)
-            for i in range(1, n):
-                kernels = self.expand_full_kernel(random_kernel)
-                random_kernel = np.random.choice(kernels)
-                rw_kernels.append(random_kernel)
+        return new_kernels
 
-        return rw_kernels
-
-    def greedy_kernels(self,
-                       best_kernel: AKSKernel) -> List[Kern]:
+    def expand_best(self,
+                    selected_models: List[AKSKernel],
+                    fitness_score: List[float]) -> List[Kern]:
         """Single expansion of CKS Grammar.
 
-        :param best_kernel:
+        :param selected_models:
+        :param fitness_score:
         :return:
         """
-        new_kernels = self.expand_full_kernel(best_kernel.kernel)
+        new_kernels = []
+        num_exploit_top = self.number_of_top_k_best
+        if len(fitness_score) < 2:
+            return new_kernels
+
+        indices = np.argsort(fitness_score)[::-1]
+        last_index = min(num_exploit_top, len(fitness_score))
+        indices = indices[:last_index]
+
+        models_with_highest_score = [selected_models[i] for i in indices]
+        for model in models_with_highest_score:
+            kernel_to_expand = model.kernel
+            new_kernel_list = self.expand_single_kernel(kernel_to_expand)
+            new_kernels += new_kernel_list
 
         return new_kernels
 
@@ -359,7 +403,7 @@ class RandomGrammar(CKSGrammar):
                  hyperpriors: Optional[Hyperpriors] = None):
         super().__init__(n_dims, base_kernel_names, hyperpriors)
 
-        self.max_n_kernels = 10
+        self.max_n_kernels = 1
 
     def get_candidates(self,
                        seed_kernels: List[AKSKernel],
@@ -374,9 +418,14 @@ class RandomGrammar(CKSGrammar):
             pretty_print_aks_kernels(seed_kernels, 'Seed')
 
         # Select kernels from one step of a CKS expansion uniformly at random without replacement.
-        cks_expansion = self.expand(seed_kernels, verbose=False)
+        cks_expansion = []
+        for seed_kernel in seed_kernels:
+            cks_expansion += self.expand_single_kernel(seed_kernel.kernel)
+
         n_kernels = min(self.max_n_kernels, min(len(cks_expansion), self.max_n_kernels))
         new_kernels = list(np.random.choice(cks_expansion, size=n_kernels, replace=False).tolist())
+
+        new_kernels = self._kernels_to_aks_kernels(new_kernels)
 
         if verbose:
             pretty_print_aks_kernels(new_kernels, 'Newly expanded')
