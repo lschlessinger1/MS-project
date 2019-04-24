@@ -1,9 +1,10 @@
 from typing import Optional
 
-from GPy.kern.src.kern import CombinationKernel
-from sympy import pprint
+from graphviz import Source
+from sympy import pprint, latex, mathml, dotprint
 
-from src.autoks.backend.kernel import RawKernelType, kernel_to_infix_tokens, tokens_to_str, sort_kernel, additive_form
+from src.autoks.backend.kernel import RawKernelType, kernel_to_infix_tokens, tokens_to_str, sort_kernel, additive_form, \
+    is_base_kernel
 from src.autoks.core.kernel import tokens_to_kernel_symbols
 from src.autoks.core.kernel_encoding import KernelTree, kernel_to_tree
 from src.autoks.symbolic.util import postfix_tokens_to_symbol
@@ -67,7 +68,7 @@ class Covariance:
         print(self.infix_full)
 
     def is_base(self) -> bool:
-        return isinstance(self.raw_kernel, CombinationKernel)
+        return is_base_kernel(self.raw_kernel)
 
     def priors(self) -> Optional:
         raise NotImplementedError('This will be implemented soon')
@@ -75,9 +76,24 @@ class Covariance:
     def symbolically_equals(self, other):
         return self.symbolic_expr == other.symbolic_expr
 
+    def symbolic_expanded_equals(self, other):
+        return self.symbolic_expr_expanded == other.symbolic_expr_expanded
+
     def infix_equals(self, other):
         # naively compare based on infix
         return isinstance(other, Covariance) and other.infix == self.infix
+
+    def as_latex(self) -> str:
+        return latex(self.symbolic_expr)
+
+    def as_mathml(self) -> str:
+        return mathml(self.symbolic_expr)
+
+    def as_dot(self) -> str:
+        return dotprint(self.symbolic_expr)
+
+    def as_graph(self) -> Source:
+        return Source(self.as_dot())
 
     def __add__(self, other):
         return Covariance(self.raw_kernel + other.raw_kernel)
