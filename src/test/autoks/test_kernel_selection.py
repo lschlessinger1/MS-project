@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import numpy as np
 from GPy.kern import RBF
 
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import GPModel
 from src.autoks.kernel_selection import KernelSelector
 from src.evalg.selection import Selector
 
@@ -12,7 +12,7 @@ from src.evalg.selection import Selector
 class TestKernelSelector(TestCase):
 
     def setUp(self):
-        self.kernels = [AKSKernel(RBF(1)), AKSKernel(RBF(1))]
+        self.kernels = [GPModel(RBF(1)), GPModel(RBF(1))]
         self.scores = [21, 24]
         self.x_train = np.array([[1, 2, 3], [4, 5, 6]])
         self.y_train = np.array([[5], [10]])

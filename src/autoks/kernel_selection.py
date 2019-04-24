@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import GPModel
 from src.evalg.selection import Selector, TruncationSelector, AllSelector, LinearRankingSelector
 
 
@@ -17,9 +17,9 @@ class KernelSelector:
         self.kernel_pruner = kernel_pruner
 
     @staticmethod
-    def _select(kernels: List[AKSKernel],
+    def _select(kernels: List[GPModel],
                 scores: List[float],
-                selector: Selector) -> List[AKSKernel]:
+                selector: Selector) -> List[GPModel]:
         """Select a list of kernels possibly using scores.
 
         :param kernels:
@@ -30,8 +30,8 @@ class KernelSelector:
         return list(selector.select(np.array(kernels), np.array(scores)).tolist())
 
     def select_parents(self,
-                       kernels: List[AKSKernel],
-                       scores: List[float]) -> List[AKSKernel]:
+                       kernels: List[GPModel],
+                       scores: List[float]) -> List[GPModel]:
         """Select parent kernels.
 
         :param kernels:
@@ -41,8 +41,8 @@ class KernelSelector:
         return self._select(kernels, scores, self.parent_selector)
 
     def select_offspring(self,
-                         kernels: List[AKSKernel],
-                         scores: List[float]) -> List[AKSKernel]:
+                         kernels: List[GPModel],
+                         scores: List[float]) -> List[GPModel]:
         """Select next round of kernels.
 
         :param kernels:
@@ -52,8 +52,8 @@ class KernelSelector:
         return self._select(kernels, scores, self.offspring_selector)
 
     def prune_candidates(self,
-                         kernels: List[AKSKernel],
-                         scores: List[float]) -> List[AKSKernel]:
+                         kernels: List[GPModel],
+                         scores: List[float]) -> List[GPModel]:
         """Remove candidates from kernel list.
 
         :param kernels:

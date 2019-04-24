@@ -8,7 +8,7 @@ from numpy.linalg import LinAlgError
 
 from src.autoks.active_set import ActiveSet
 from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder, DistanceBuilder
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import GPModel
 
 
 class TestDistance(TestCase):
@@ -63,7 +63,7 @@ class TestDistanceBuilder(TestCase):
         p2 = LogGaussian(0, 1.1)
         self.cov_i.variance.set_prior(p1, warning=False)
         self.cov_i.lengthscale.set_prior(p2, warning=False)
-        models = [AKSKernel(self.cov_i)]
+        models = [GPModel(self.cov_i)]
         self.active_models = ActiveSet(max_n_models=3)
         self.active_models.models = models
         self.ind_init = [0]
@@ -116,7 +116,7 @@ class TestHellingerDistanceBuilder(TestCase):
         cov_3.variance.set_prior(p5, warning=False)
         cov_3.lengthscale.set_prior(p6, warning=False)
         cov_3.power.set_prior(p7, warning=False)
-        models = [AKSKernel(cov_1), AKSKernel(cov_2), AKSKernel(cov_3)]
+        models = [GPModel(cov_1), GPModel(cov_2), GPModel(cov_3)]
         self.active_models = ActiveSet(max_n_models=3)
         self.active_models.models = models
         self.ind_init = [0, 2]

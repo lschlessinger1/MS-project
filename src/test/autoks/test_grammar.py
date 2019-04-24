@@ -5,7 +5,7 @@ from GPy.kern import RBF, RationalQuadratic, Add, LinScaleShift, Kern
 from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels, BOMSGrammar
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import GPModel
 from src.test.autoks.support.util import has_combo_kernel_type, base_kernel_eq
 
 
@@ -48,7 +48,7 @@ class TestBaseGrammar(unittest.TestCase):
         self.assertRaises(NotImplementedError, self.grammar.initialize)
 
     def test_expand(self):
-        seed_kernel = AKSKernel(RBF(1))
+        seed_kernel = GPModel(RBF(1))
         self.assertRaises(NotImplementedError, self.grammar.expand, seed_kernel)
 
 
@@ -130,7 +130,7 @@ class TestCKSGrammar(unittest.TestCase):
 
     def test_expand(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
-        scored_kernel = AKSKernel(self.se0)
+        scored_kernel = GPModel(self.se0)
         scored_kernel.score = 1
         result = grammar.expand([scored_kernel])
         self.assertIsInstance(result, list)
@@ -337,13 +337,13 @@ class TestBomsGrammar(unittest.TestCase):
         kernels = grammar.expand_random(grammar.number_of_random_walks)
         fitness_score = np.random.permutation(len(kernels))
 
-        models = [AKSKernel(kernel) for kernel in kernels]
+        models = [GPModel(kernel) for kernel in kernels]
         for model, model_score in zip(models, fitness_score):
             model.score = model_score
 
         candidates = grammar.get_candidates(models)
         for candidate in candidates:
-            self.assertIsInstance(candidate, AKSKernel)
+            self.assertIsInstance(candidate, GPModel)
 
     def test_expand(self):
         base_kernel_names = ['SE', 'RQ']
@@ -373,9 +373,9 @@ class TestBomsGrammar(unittest.TestCase):
         fitness_score = list(np.random.permutation(len(kernels)).tolist())
 
         index = int(np.argmax(fitness_score))
-        kernel_to_expand = AKSKernel(kernels[index])
+        kernel_to_expand = GPModel(kernels[index])
 
-        models = [AKSKernel(kernel) for kernel in kernels]
+        models = [GPModel(kernel) for kernel in kernels]
         for model, model_score in zip(models, fitness_score):
             model.score = model_score
 

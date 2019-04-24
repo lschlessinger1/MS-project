@@ -5,14 +5,14 @@ import numpy as np
 from GPy.kern import RBF
 
 from src.autoks.acquisition_function import AcquisitionFunction
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import GPModel
 from src.autoks.query_strategy import QueryStrategy, NaiveQueryStrategy, BestScoreStrategy
 
 
 class TestQueryStrategy(TestCase):
 
     def setUp(self):
-        self.kernels = [AKSKernel(RBF(1)), AKSKernel(RBF(1))]
+        self.kernels = [GPModel(RBF(1)), GPModel(RBF(1))]
         self.x_train = np.array([[1, 2, 3], [4, 5, 6]])
         self.y_train = np.array([[5], [10]])
 
@@ -36,7 +36,7 @@ class TestQueryStrategy(TestCase):
 class TestNaiveQueryStrategy(TestCase):
 
     def setUp(self):
-        self.kernels = [AKSKernel(RBF(1)), AKSKernel(RBF(1))]
+        self.kernels = [GPModel(RBF(1)), GPModel(RBF(1))]
         self.x_train = np.array([[1, 2, 3], [4, 5, 6]])
         self.y_train = np.array([[5], [10]])
         self.qs = NaiveQueryStrategy()
@@ -62,7 +62,7 @@ class TestNaiveQueryStrategy(TestCase):
 class TestBestScoreStrategy(TestCase):
 
     def setUp(self):
-        self.kernels = [AKSKernel(RBF(1)), AKSKernel(RBF(1))]
+        self.kernels = [GPModel(RBF(1)), GPModel(RBF(1))]
         self.x_train = np.array([[1, 2, 3], [4, 5, 6]])
         self.y_train = np.array([[5], [10]])
 

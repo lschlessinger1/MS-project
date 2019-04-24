@@ -5,7 +5,7 @@ from scipy.stats import norm
 from sklearn.linear_model import LinearRegression
 
 from src.autoks.hyperprior import Hyperpriors
-from src.autoks.kernel import AKSKernel, n_base_kernels
+from src.autoks.kernel import GPModel, n_base_kernels
 
 
 class AcquisitionFunction:
@@ -14,7 +14,7 @@ class AcquisitionFunction:
     @staticmethod
     def score(
             ind: int,
-            all_kernels: List[AKSKernel],
+            all_kernels: List[GPModel],
             x_train: np.ndarray,
             y_train: np.ndarray,
             hyperpriors: Optional[Hyperpriors] = None,
@@ -39,7 +39,7 @@ class UniformScorer(AcquisitionFunction):
 
     @staticmethod
     def score(ind: int,
-              all_kernels: List[AKSKernel],
+              all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -61,7 +61,7 @@ class ExpectedImprovement(AcquisitionFunction):
 
     @staticmethod
     def score(ind: int,
-              all_kernels: List[AKSKernel],
+              all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -98,7 +98,7 @@ class ExpectedImprovementPerSec(AcquisitionFunction):
 
     @staticmethod
     def score(ind: int,
-              all_kernels: List[AKSKernel],
+              all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -123,7 +123,7 @@ class RandomScorer(AcquisitionFunction):
 
     @staticmethod
     def score(ind: int,
-              all_kernels: List[AKSKernel],
+              all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -147,7 +147,7 @@ class ParamProportionalScorer(AcquisitionFunction):
 
     @staticmethod
     def score(ind: int,
-              all_kernels: List[AKSKernel],
+              all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -170,7 +170,7 @@ class OperandProportionalScorer(AcquisitionFunction):
 
     @staticmethod
     def score(ind: int,
-              all_kernels: List[AKSKernel],
+              all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -192,7 +192,7 @@ class OperandProportionalScorer(AcquisitionFunction):
 class KernComplexityProportionalScorer(AcquisitionFunction):
     @staticmethod
     def score(ind: int,
-              all_kernels: List[AKSKernel],
+              all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,

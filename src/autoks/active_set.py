@@ -1,9 +1,9 @@
 from typing import List, Optional, Tuple
 
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import GPModel
 
 # We define a model to be this for the active set
-Model = AKSKernel
+Model = GPModel
 
 
 class ActiveSet:

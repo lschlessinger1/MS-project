@@ -5,7 +5,7 @@ import numpy as np
 
 from src.autoks.acquisition_function import AcquisitionFunction, UniformScorer
 from src.autoks.hyperprior import Hyperpriors
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import GPModel
 from src.evalg.selection import Selector, AllSelector
 
 
@@ -24,7 +24,7 @@ class QueryStrategy(Selector, ABC):
 
     def query(self,
               unevaluated_kernels_ind: List[int],
-              all_kernels: List[AKSKernel],
+              all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
               hyperpriors: Optional[Hyperpriors] = None,
@@ -50,7 +50,7 @@ class QueryStrategy(Selector, ABC):
 
     def score_kernels(self,
                       unevaluated_kernels_ind: List[int],
-                      all_kernels: List[AKSKernel],
+                      all_kernels: List[GPModel],
                       x_train: np.ndarray,
                       y_train: np.ndarray,
                       hyperpriors: Optional[Hyperpriors] = None,

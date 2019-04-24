@@ -48,8 +48,8 @@ class KernelTree(BinaryTree):
         super().__init__(root)
 
 
-class AKSKernel:
-    """AKS kernel wrapper
+class GPModel:
+    """GPy kernel wrapper
     """
     _kernel: Kern
     lik_params: Optional[np.ndarray]
@@ -145,9 +145,9 @@ def tokens_to_kernel_symbols(tokens: List[Union[str, Kern]]) -> List[Union[str, 
     return symbols
 
 
-def pretty_print_aks_kernels(aks_kernels: List[AKSKernel],
-                             kernel_type_label: Optional[str] = None):
-    n_kernels = len(aks_kernels)
+def pretty_print_gp_models(gp_models: List[GPModel],
+                           kernel_type_label: Optional[str] = None):
+    n_kernels = len(gp_models)
 
     plural_suffix = 's' if n_kernels > 1 else ''
     ending = f'kernel{plural_suffix}:'
@@ -157,7 +157,7 @@ def pretty_print_aks_kernels(aks_kernels: List[AKSKernel],
         message = f'{n_kernels} {ending}'
     message = message.capitalize()
     print(message)
-    for k in aks_kernels:
+    for k in gp_models:
         k.pretty_print()
     print('')
 
@@ -593,8 +593,8 @@ def remove_duplicate_kernels(kernels: List[Kern]) -> List[Kern]:
     return remove_duplicates([kernel_to_infix(k) for k in kernels], kernels)
 
 
-def remove_duplicate_aks_kernels(kernels: List[AKSKernel]) -> List[AKSKernel]:
-    """Remove duplicate AKSKernel's.
+def remove_duplicate_aks_kernels(kernels: List[GPModel]) -> List[GPModel]:
+    """Remove duplicate GPModel's.
 
     prioritizing when removing duplicates
         1. highest score
@@ -796,26 +796,26 @@ def encode_kernel(kern: Kern) -> str:
     return str(kern.to_dict())
 
 
-def encode_aks_kernel(aks_kernel: AKSKernel) -> List[str]:
-    """Encode AKSKernel
+def encode_gp_model(gp_model: GPModel) -> List[str]:
+    """Encode GPModel
 
-    :param aks_kernel:
+    :param gp_model:
     :return:
     """
     try:
-        prior_enc = [encode_prior(prior) for prior in get_priors(aks_kernel.kernel)]
+        prior_enc = [encode_prior(prior) for prior in get_priors(gp_model.kernel)]
     except ValueError:
         prior_enc = None
-    return [encode_kernel(aks_kernel.kernel), [prior_enc]]
+    return [encode_kernel(gp_model.kernel), [prior_enc]]
 
 
-def encode_aks_kerns(aks_kernels: List[AKSKernel]) -> np.ndarray:
-    """Encode a list of AKSKernels.
+def encode_gp_models(gp_models: List[GPModel]) -> np.ndarray:
+    """Encode a list of models.
 
-    :param aks_kernels: the AKSKernels to encode.
+    :param gp_models: the models to encode.
     :return: An array containing encodings of the kernels.
     """
-    enc = np.empty((len(aks_kernels), 1), dtype=np.object)
-    for i, aks_kernel in enumerate(aks_kernels):
-        enc[i, 0] = encode_aks_kernel(aks_kernel)
+    enc = np.empty((len(gp_models), 1), dtype=np.object)
+    for i, gp_model in enumerate(gp_models):
+        enc[i, 0] = encode_gp_model(gp_model)
     return enc

@@ -6,14 +6,14 @@ import numpy as np
 from GPy.kern import RationalQuadratic, RBF
 
 from src.autoks.experiment import Experiment
-from src.autoks.kernel import AKSKernel
+from src.autoks.kernel import GPModel
 from src.autoks.query_strategy import QueryStrategy
 
 
 class TestExperiment(TestCase):
 
     def setUp(self):
-        self.kernels = [AKSKernel(RationalQuadratic(1)), AKSKernel(RBF(1)), AKSKernel(RBF(1))]
+        self.kernels = [GPModel(RationalQuadratic(1)), GPModel(RBF(1)), GPModel(RBF(1))]
 
         grammar = MagicMock()
         kernel_selector = MagicMock()
@@ -34,8 +34,8 @@ class TestExperiment(TestCase):
         def return_arg(arg):
             return arg
 
-        self.exp.optimize_kernel = MagicMock()
-        self.exp.optimize_kernel.side_effect = return_arg
+        self.exp.optimize_model = MagicMock()
+        self.exp.optimize_model.side_effect = return_arg
 
         def get_score(*args, **kwargs):
             return 1
@@ -46,10 +46,10 @@ class TestExperiment(TestCase):
             new_kernels = []
             for parent in parents:
                 new_kernels.append(parent)
-                new_kernels.append(AKSKernel(parent.kernel + RBF(1)))
-                new_kernels.append(AKSKernel(parent.kernel + RationalQuadratic(1)))
-                new_kernels.append(AKSKernel(parent.kernel * RBF(1)))
-                new_kernels.append(AKSKernel(parent.kernel * RationalQuadratic(1)))
+                new_kernels.append(GPModel(parent.kernel + RBF(1)))
+                new_kernels.append(GPModel(parent.kernel + RationalQuadratic(1)))
+                new_kernels.append(GPModel(parent.kernel * RBF(1)))
+                new_kernels.append(GPModel(parent.kernel * RationalQuadratic(1)))
             return new_kernels
 
         self.exp.grammar.get_candidates.side_effect = get_candidates
@@ -72,17 +72,17 @@ class TestExperiment(TestCase):
         qs.arg_select.return_value = ind
         self.exp.query_strat = qs
 
-        def first_kernel(kernels: List[AKSKernel], _):
+        def first_kernel(kernels: List[GPModel], _):
             return [] if len(kernels) == 0 else [kernels[0]]
 
-        def all_but_first(kernels: List[AKSKernel], _):
+        def all_but_first(kernels: List[GPModel], _):
             return kernels[1:]
 
         self.exp.kernel_selector.select_parents.side_effect = first_kernel
         self.exp.kernel_selector.select_offspring.side_effect = all_but_first
         self.exp.kernel_selector.prune_candidates.side_effect = all_but_first
 
-        result = self.exp.kernel_search()
+        result = self.exp.model_search()
 
         self.exp.grammar.initialize.assert_called_once()
 
@@ -93,7 +93,7 @@ class TestExperiment(TestCase):
         n_expansions = max_depth + 1
         n_optimizations = len(ind_init) + len(ind) * n_expansions
         n_evals = n_optimizations
-        self.assertEqual(n_optimizations, self.exp.optimize_kernel.call_count)
+        self.assertEqual(n_optimizations, self.exp.optimize_model.call_count)
         self.assertEqual(n_evals, self.exp.n_evals)
         self.assertEqual(n_expansions, self.exp.grammar.get_candidates.call_count)
 
@@ -114,7 +114,7 @@ class TestExperiment(TestCase):
         qs.arg_select = MagicMock()
         ind = [1, 2]
         qs.arg_select.return_value = ind
-        result = self.exp.query_kernels(self.kernels, qs)
+        result = self.exp.query_models(self.kernels, qs)
         self.assertListEqual([self.kernels[i] for i in ind], result[0].tolist())
         self.assertListEqual(ind, result[1])
         self.assertListEqual(scores, result[2])
@@ -127,8 +127,8 @@ class TestExperiment(TestCase):
         self.assertListEqual(result, parents)
 
     def test_propose_new_kernels(self):
-        expansion = [AKSKernel(kern) for kern in [RBF(1), RationalQuadratic(1), RBF(1) + RationalQuadratic(1), RBF(1)
-                                                  * RationalQuadratic(1)]]
+        expansion = [GPModel(kern) for kern in [RBF(1), RationalQuadratic(1), RBF(1) + RationalQuadratic(1), RBF(1)
+                                                * RationalQuadratic(1)]]
         self.exp.grammar.get_candidates.return_value = expansion
         result = self.exp.propose_new_kernels(self.kernels)
         self.assertIsInstance(result, list)
@@ -151,20 +151,20 @@ class TestExperiment(TestCase):
 
     def test_opt_and_eval_kernels(self):
         # test that opt and eval is called for all kernels
-        self.exp.optimize_kernel = MagicMock()
-        self.exp.evaluate_kernel = MagicMock()
+        self.exp.optimize_model = MagicMock()
+        self.exp.evaluate_model = MagicMock()
         self.exp.update_stats = MagicMock()
 
-        self.exp.opt_and_eval_kernels(self.kernels)
+        self.exp.opt_and_eval_models(self.kernels)
 
-        self.assertEqual(len(self.kernels), self.exp.optimize_kernel.call_count)
-        self.assertEqual(len(self.kernels), self.exp.evaluate_kernel.call_count)
-        self.exp.optimize_kernel.assert_has_calls([call(k) for k in self.kernels], any_order=True)
-        # self.exp.evaluate_kernel.assert_has_calls([call(k) for k in self.kernels], any_order=True)
+        self.assertEqual(len(self.kernels), self.exp.optimize_model.call_count)
+        self.assertEqual(len(self.kernels), self.exp.evaluate_model.call_count)
+        self.exp.optimize_model.assert_has_calls([call(k) for k in self.kernels], any_order=True)
+        # self.exp.evaluate_model.assert_has_calls([call(k) for k in self.kernels], any_order=True)
 
     def test_optimize_kernel(self):
         self.exp.gp_model = MagicMock()
-        self.exp.optimize_kernel(self.kernels[0])
+        self.exp.optimize_model(self.kernels[0])
         self.assertEqual(1, self.exp.gp_model.optimize.call_count)
         self.assertEqual(1, self.exp.gp_model.optimize_restarts.call_count)
 
@@ -172,15 +172,15 @@ class TestExperiment(TestCase):
         score = 10
         self.exp.objective.return_value = score
         kern = self.kernels[0]
-        self.exp.evaluate_kernel(kern)
+        self.exp.evaluate_model(kern)
         self.exp.objective.assert_called_once_with(self.exp.gp_model)
         self.assertEqual(kern.score, score)
         self.assertFalse(kern.nan_scored)
         self.assertTrue(kern.evaluated)
 
     def test_remove_nan_scored_kernels(self):
-        kernels = [AKSKernel(RationalQuadratic(1), nan_scored=True), AKSKernel(RBF(1)),
-                   AKSKernel(RBF(1), nan_scored=True)]
-        result = self.exp.remove_nan_scored_kernels(kernels)
+        kernels = [GPModel(RationalQuadratic(1), nan_scored=True), GPModel(RBF(1)),
+                   GPModel(RBF(1), nan_scored=True)]
+        result = self.exp.remove_nan_scored_models(kernels)
         self.assertIsInstance(result, list)
         self.assertListEqual(result, [kernels[1]])

@@ -19,7 +19,7 @@ from src.autoks.gp_regression_models import KernelKernelGPRegression
 from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
-    AKSKernel, pretty_print_aks_kernels, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
+    GPModel, pretty_print_gp_models, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
     get_all_1d_kernels
 from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
     evolutionary_kernel_selector
@@ -148,7 +148,7 @@ class Experiment:
         self.total_optimization_time = 0
         self.total_eval_time = 0
         self.total_expansion_time = 0
-        self.total_kernel_search_time = 0
+        self.total_model_search_time = 0
         self.total_query_time = 0
 
         # self.hyperpriors = hyperpriors
@@ -195,16 +195,16 @@ class Experiment:
         self.n_kernel_params = []
         self.objective_times = []
 
-    def kernel_search(self) -> List[AKSKernel]:
+    def model_search(self) -> List[GPModel]:
         """Perform automated kernel search.
 
-        :return: list of kernels
+        :return: list of models
         """
         t_init = time()
 
         # initialize models
         kernels = self.grammar.initialize()
-        kernels = self.randomize_kernels(kernels, verbose=self.verbose)
+        kernels = self.randomize_models(kernels)
 
         # create distance builder if using surrogate model
         if self.use_surrogate:
@@ -220,11 +220,11 @@ class Experiment:
                 aks_kernel.to_additive_form()
 
         # Select kernels by acquisition function to be evaluated
-        selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.init_query_strat, self.grammar.hyperpriors)
+        selected_kernels, ind, acq_scores = self.query_models(kernels, self.init_query_strat, self.grammar.hyperpriors)
         unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
         unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
         budget_left = self.eval_budget - self.n_evals
-        newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels[:budget_left])
+        newly_evaluated_kernels = self.opt_and_eval_models(selected_kernels[:budget_left])
         old_evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
 
@@ -265,7 +265,7 @@ class Experiment:
 
             # Fix each parent before expansion for use in and initialization optimization, skipping nan-evaluated
             # kernels
-            for parent in self.remove_nan_scored_kernels(parents):
+            for parent in self.remove_nan_scored_models(parents):
                 parent.kernel.fix()
 
             new_kernels = self.propose_new_kernels(parents)
@@ -279,7 +279,7 @@ class Experiment:
             else:
                 prev_expansions = self.update_kernel_infix_set(new_kernels, prev_expansions, self.max_same_expansions)
 
-            new_kernels = self.randomize_kernels(new_kernels, verbose=self.verbose)
+            new_kernels = self.randomize_models(new_kernels)
             kernels += new_kernels
 
             # evaluate, prune, and optimize kernels
@@ -310,7 +310,7 @@ class Experiment:
                 assert fitness_scores == self.surrogate_model.Y.flatten().tolist()
                 self.optimize_surrogate_model()
             # Select kernels by acquisition function to be evaluated
-            selected_kernels, ind, acq_scores = self.query_kernels(kernels, self.query_strat, self.grammar.hyperpriors)
+            selected_kernels, ind, acq_scores = self.query_models(kernels, self.query_strat, self.grammar.hyperpriors)
 
             # Check for empty queries
             prev_n_queried.append(len(ind))
@@ -322,7 +322,7 @@ class Experiment:
 
             unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
             unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
-            newly_evaluated_kernels = self.opt_and_eval_kernels(selected_kernels)
+            newly_evaluated_kernels = self.opt_and_eval_models(selected_kernels)
             old_evaluated_kernels = [kernel for kernel in kernels if
                                      kernel.evaluated and kernel not in selected_kernels]
             kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
@@ -332,19 +332,19 @@ class Experiment:
             self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
             depth += 1
 
-        self.total_kernel_search_time += time() - t_init
+        self.total_model_search_time += time() - t_init
 
         return kernels
 
     def print_search_summary(self, depth, kernels):
         print(f'Iteration {depth}/{self.max_depth}')
         print(f'Evaluated {self.n_evals}/{self.eval_budget}')
-        evaluated_aks_kernels = [aks_kernel for aks_kernel in self.remove_nan_scored_kernels(kernels)
-                                 if aks_kernel.evaluated]
-        scores = [aks_kernel.score for aks_kernel in evaluated_aks_kernels]
+        evaluated_gp_models = [aks_kernel for aks_kernel in self.remove_nan_scored_models(kernels)
+                               if aks_kernel.evaluated]
+        scores = [aks_kernel.score for aks_kernel in evaluated_gp_models]
         arg_max_score = int(np.argmax(scores))
-        best_kernel = evaluated_aks_kernels[arg_max_score]
-        sizes = [len(aks_kernel.to_binary_tree()) for aks_kernel in evaluated_aks_kernels]
+        best_kernel = evaluated_gp_models[arg_max_score]
+        sizes = [len(aks_kernel.to_binary_tree()) for aks_kernel in evaluated_gp_models]
         print(f'Avg. objective = {np.mean(scores)}')
         print(f'Best objective = {scores[arg_max_score]}')
         print(f'Avg. size = {np.mean(sizes)}')
@@ -357,11 +357,11 @@ class Experiment:
             print('Optimizing surrogate model\n')
         self.surrogate_model.optimize()
 
-    def query_kernels(self,
-                      kernels: List[AKSKernel],
-                      query_strategy: QueryStrategy,
-                      hyperpriors: Optional[Hyperpriors] = None) \
-            -> Tuple[List[AKSKernel], List[int], List[float]]:
+    def query_models(self,
+                     kernels: List[GPModel],
+                     query_strategy: QueryStrategy,
+                     hyperpriors: Optional[Hyperpriors] = None) \
+            -> Tuple[List[GPModel], List[int], List[float]]:
         """Select kernels using the acquisition function of the query strategy.
 
         :param kernels:
@@ -399,7 +399,7 @@ class Experiment:
 
         return selected_kernels, ind, acq_scores
 
-    def select_parents(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+    def select_parents(self, kernels: List[GPModel]) -> List[GPModel]:
         """Choose parents to later expand.
 
         :param kernels:
@@ -413,11 +413,11 @@ class Experiment:
         parents = self.kernel_selector.select_parents(evaluated_kernels, kernel_scores)
         # Print parent (seed) kernels
         if self.debug:
-            pretty_print_aks_kernels(parents, 'Parent')
+            pretty_print_gp_models(parents, 'Parent')
 
         return parents
 
-    def propose_new_kernels(self, parents: List[AKSKernel]) -> List[AKSKernel]:
+    def propose_new_kernels(self, parents: List[GPModel]) -> List[GPModel]:
         """Propose new kernels using the grammar given a list of parent kernels.
 
         :param parents:
@@ -432,15 +432,15 @@ class Experiment:
         self.total_expansion_time += time() - t0_exp
 
         if self.additive_form:
-            for aks_kernel in new_kernels:
-                aks_kernel.to_additive_form()
+            for gp_model in new_kernels:
+                gp_model.to_additive_form()
 
         return new_kernels
 
     def prune_kernels(self,
-                      kernels: List[AKSKernel],
+                      kernels: List[GPModel],
                       acq_scores: List[float],
-                      ind: List[int]) -> List[AKSKernel]:
+                      ind: List[int]) -> List[GPModel]:
         """Remove un-evaluated kernels if necessary.
 
         :param kernels:
@@ -464,7 +464,7 @@ class Experiment:
 
         return kernels
 
-    def select_offspring(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+    def select_offspring(self, kernels: List[GPModel]) -> List[GPModel]:
         """Select next round of kernels.
 
         :param kernels:
@@ -483,57 +483,57 @@ class Experiment:
 
         return offspring
 
-    def opt_and_eval_kernels(self, kernels: List[AKSKernel]) -> List[AKSKernel]:
+    def opt_and_eval_models(self, models: List[GPModel]) -> List[GPModel]:
         """Optimize and evaluate all kernels
 
-        :param kernels:
+        :param models:
         :return:
         """
-        evaluated_kernels = []
+        evaluated_models = []
 
-        for aks_kernel in kernels:
+        for gp_model in models:
             if self.n_evals >= self.eval_budget:
                 if self.verbose:
                     print('Stopping optimization and evaluation. Evaluation budget reached.\n')
                 break
             t0 = time()
 
-            optimized_kernel = self.optimize_kernel(aks_kernel)
+            optimized_model = self.optimize_model(gp_model)
 
             t1 = time()
             self.total_optimization_time += t1 - t0
 
-            evaluated_kernel = self.evaluate_kernel(optimized_kernel)
+            evaluated_model = self.evaluate_model(optimized_model)
 
             self.total_eval_time += time() - t1
-            evaluated_kernels.append(evaluated_kernel)
+            evaluated_models.append(evaluated_model)
 
-            if not evaluated_kernel.nan_scored:
-                self.update_stat_book(self.stat_book_collection.stat_books[self.evaluations_name], [evaluated_kernel])
+            if not evaluated_model.nan_scored:
+                self.update_stat_book(self.stat_book_collection.stat_books[self.evaluations_name], [evaluated_model])
 
-        evaluated_kernels = self.remove_nan_scored_kernels(evaluated_kernels)
+        evaluated_models = self.remove_nan_scored_models(evaluated_models)
 
         if self.verbose:
             print('Printing all results')
-            # Sort kernels by scores with un-evaluated kernels last
-            for k in sorted(evaluated_kernels, key=lambda x: (x.score is not None, x.score), reverse=True):
+            # Sort models by scores with un-evaluated models last
+            for k in sorted(evaluated_models, key=lambda x: (x.score is not None, x.score), reverse=True):
                 k.pretty_print()
                 print('\tobjective =', k.score)
             print('')
-        return evaluated_kernels
+        return evaluated_models
 
-    def optimize_kernel(self, aks_kernel: AKSKernel) -> AKSKernel:
-        """Optimize the hyperparameters of the kernel
+    def optimize_model(self, gp_model: GPModel) -> GPModel:
+        """Optimize the hyperparameters of the model
 
-        All of the parameters which were part of the previous parent parent kernel are initialized to their previous
+        All of the parameters which were part of the previous parent model are initialized to their previous
         values. All parameterized are then optimized, randomly restarting the newly introduced parameters.
 
-        :param aks_kernel:
+        :param gp_model:
         :return:
         """
-        if not aks_kernel.evaluated:
+        if not gp_model.evaluated:
             try:
-                kernel = aks_kernel.kernel
+                kernel = gp_model.kernel
                 t0 = time()
                 k_unfixed = kernel.copy()
                 k_unfixed.unfix()
@@ -556,91 +556,91 @@ class Experiment:
                 # Unfix all params and set kernel
                 k_fixed.unfix()
                 set_model_kern(self.gp_model, k_fixed)
-                aks_kernel.kernel = self.gp_model.kern
-                aks_kernel.lik_params = self.gp_model.likelihood[:].copy()
+                gp_model.kernel = self.gp_model.kern
+                gp_model.lik_params = self.gp_model.likelihood[:].copy()
                 delta_t = time() - t0
                 self.update_object_time_predictor(kernel.size, delta_t)
             except LinAlgError:
-                warnings.warn('Y covariance of kernel %s is not positive semi-definite' % aks_kernel)
+                warnings.warn('Y covariance of kernel %s is not positive definite' % gp_model)
         else:
             raise RuntimeError('already optimized')
-        return aks_kernel
+        return gp_model
 
-    def evaluate_kernel(self, aks_kernel: AKSKernel) -> AKSKernel:
-        """Evaluate a given kernel using the objective function
+    def evaluate_model(self, gp_model: GPModel) -> GPModel:
+        """Evaluate a given model using the objective function
 
-        :param aks_kernel:
+        :param gp_model:
         :return:
         """
-        if not aks_kernel.evaluated:
-            set_model_kern(self.gp_model, aks_kernel.kernel)
-            self.gp_model.likelihood[:] = aks_kernel.lik_params
+        if not gp_model.evaluated:
+            set_model_kern(self.gp_model, gp_model.kernel)
+            self.gp_model.likelihood[:] = gp_model.lik_params
 
             # Check if parameters are well-defined:
-            aks_kernel.nan_scored = is_nan_model(self.gp_model)
-            if not aks_kernel.nan_scored:
+            gp_model.nan_scored = is_nan_model(self.gp_model)
+            if not gp_model.nan_scored:
                 score = self.objective(self.gp_model)
                 self.n_evals += 1
-                # aks_kernel.evaluated = True
-                aks_kernel.score = score
+                # gp_model.evaluated = True
+                gp_model.score = score
             else:
-                aks_kernel.score = np.nan
+                gp_model.score = np.nan
                 # also count a nan-evaluated kernel as an evaluation
                 self.n_evals += 1
 
-        return aks_kernel
+        return gp_model
 
-    def all_same_expansion(self, new_kernels: List[AKSKernel],
+    def all_same_expansion(self,
+                           new_kernels: List[GPModel],
                            prev_expansions: List[FrozenSet[str]],
                            max_expansions: int) -> bool:
-        kernels_infix_new = self.kernel_to_infix_set(new_kernels)
+        kernels_infix_new = self.model_to_infix_set(new_kernels)
         all_same = all([s == kernels_infix_new for s in prev_expansions])
         return all_same and len(prev_expansions) == max_expansions
 
-    def kernel_to_infix_set(self, aks_kernels: List[AKSKernel]) -> FrozenSet[str]:
-        kernels_sorted = [sort_kernel(aks_kernel.kernel) for aks_kernel in aks_kernels]
+    def model_to_infix_set(self, gp_models: List[GPModel]) -> FrozenSet[str]:
+        kernels_sorted = [sort_kernel(aks_kernel.kernel) for aks_kernel in gp_models]
         return frozenset([kernel_to_infix(kernel) for kernel in kernels_sorted])
 
-    def update_kernel_infix_set(self, new_kernels: List[AKSKernel],
+    def update_kernel_infix_set(self, new_kernels: List[GPModel],
                                 prev_expansions: List[FrozenSet[str]],
                                 max_expansions: int) -> List[FrozenSet[str]]:
         expansions = prev_expansions.copy()
         if len(prev_expansions) == max_expansions:
             expansions = expansions[1:]
         elif len(prev_expansions) < max_expansions:
-            expansions += [self.kernel_to_infix_set(new_kernels)]
+            expansions += [self.model_to_infix_set(new_kernels)]
 
         return expansions
 
     @staticmethod
-    def randomize_kernels(aks_kernels: List[AKSKernel],
-                          verbose: bool = False) -> List[AKSKernel]:
-        for aks_kernel in aks_kernels:
-            aks_kernel.kernel.randomize()
+    def randomize_models(gp_models: List[GPModel]) -> List[GPModel]:
+        for gp_model in gp_models:
+            gp_model.kernel.randomize()
 
-        return aks_kernels
+        return gp_models
 
-    def remove_nan_scored_kernels(self, aks_kernels: List[AKSKernel]) -> List[AKSKernel]:
-        """Remove all kernels that have NaN scores.
+    def remove_nan_scored_models(self, gp_models: List[GPModel]) -> List[GPModel]:
+        """Remove all models that have NaN scores.
 
-        :param aks_kernels:
+        :param gp_model:
         :return:
         """
-        return [aks_kernel for aks_kernel in aks_kernels if not aks_kernel.nan_scored]
+        return [gp_model for gp_model in gp_models if not gp_model.nan_scored]
 
-    def summarize(self, aks_kernels: List[AKSKernel]) -> None:
+    def summarize(self, gp_model: List[GPModel]) -> None:
         """Summarize the experiment.
 
-        :param aks_kernels:
+        :param gp_model:
         :return:
         """
-        evaluated_kernels = [kernel for kernel in aks_kernels if kernel.evaluated]
-        sorted_aks_kernels = sorted(evaluated_kernels, key=lambda x: x.score, reverse=True)
-        best_aks_kernel = sorted_aks_kernels[0]
-        best_kernel = best_aks_kernel.kernel
+        evaluated_gp_models = [model for model in gp_model if model.evaluated]
+        sorted_gp_models = sorted(evaluated_gp_models, key=lambda x: x.score, reverse=True)
+        best_gp_model = sorted_gp_models[0]
+        best_kernel = best_gp_model.kernel
         best_model = self.gp_model.__class__(self.x_train, self.y_train, kernel=best_kernel)
         # Set the likelihood parameters.
-        best_model.likelihood[:] = best_aks_kernel.lik_params
+        best_model.likelihood[:] = best_gp_model.lik_params
 
         # If training data is 1D, show a plot.
         if best_model.input_dim == 1:
@@ -651,18 +651,18 @@ class Experiment:
         for stat_book in self.stat_book_collection.stat_book_list():
             self.plot_stat_book(stat_book)
 
-        # Plot the kernel tree of the best kernel
-        self.plot_kernel_tree(best_aks_kernel)
+        # Plot the kernel tree of the best model
+        self.plot_kernel_tree(best_gp_model)
 
         print('')
         self.timing_report()
         print('')
 
-        print('Best kernel:')
-        best_aks_kernel.pretty_print()
+        print('Best model:')
+        best_gp_model.pretty_print()
 
         print('In full form:')
-        best_aks_kernel.print_full()
+        best_gp_model.print_full()
         print('')
 
         # Summarize model
@@ -697,26 +697,26 @@ class Experiment:
     def run(self,
             summarize: bool = True,
             create_report: bool = True,
-            **kwargs) -> List[AKSKernel]:
-        """Run the kernel search and optionally summarize and create a report
+            **kwargs) -> List[GPModel]:
+        """Run the model search and optionally summarize and create a report
 
         :param summarize:
         :param create_report:
         :param kwargs:
         :return:
         """
-        aks_kernels = self.kernel_search()
+        gp_model = self.model_search()
         if summarize:
-            self.summarize(aks_kernels)
+            self.summarize(gp_model)
 
         if create_report:
             if self.verbose:
                 print('')
                 print('Creating report...')
-            report_gen = ExperimentReportGenerator(self, aks_kernels, self.x_test, self.y_test)
+            report_gen = ExperimentReportGenerator(self, gp_model, self.x_test, self.y_test)
             report_gen.summarize_experiment(**kwargs)
 
-        return aks_kernels
+        return gp_model
 
     def plot_stat_book(self, stat_book: StatBook):
         ms = stat_book.multi_stats
@@ -856,17 +856,17 @@ class Experiment:
         plt.gcf().subplots_adjust(top=0.88)
         plt.show()
 
-    def plot_kernel_tree(self, aks_kernel: AKSKernel,
+    def plot_kernel_tree(self, gp_model: GPModel,
                          graph_name: str = 'best_kernel_tree',
                          directory: str = '../results/figures') -> None:
         """Create a kernel tree file and plot it.
 
-        :param aks_kernel:
+        :param gp_model:
         :param graph_name:
         :param directory:
         :return:
         """
-        graph = aks_kernel.to_binary_tree().create_graph(name=graph_name)
+        graph = gp_model.to_binary_tree().create_graph(name=graph_name)
         graph.format = 'png'  # only tested with PNG
         graph.render(f"{graph_name}.gv", directory, view=False, cleanup=True)
         img = plt.imread(graph.filepath + '.' + graph.format)
@@ -882,7 +882,7 @@ class Experiment:
         opt_time = self.total_optimization_time
         expansion_time = self.total_expansion_time
         query_time = self.total_query_time
-        total_time = self.total_kernel_search_time
+        total_time = self.total_model_search_time
         other_time = total_time - eval_time - opt_time - expansion_time - query_time
 
         labels = ['Evaluation', 'Optimization', 'Expansion', 'Query', 'Other']
@@ -892,7 +892,7 @@ class Experiment:
         return labels, x, x_pct
 
     def timing_report(self) -> None:
-        """Print a runtime report of the kernel search.
+        """Print a runtime report of the model search.
 
         :return:
         """
@@ -901,14 +901,14 @@ class Experiment:
         for pct, sec, label in sorted(zip(x_pct, x, labels), key=lambda v: v[1], reverse=True):
             print('%s: %0.2f%% (%0.2fs)' % (label, pct, sec))
 
-    def update_stat_book(self, stat_book: StatBook, aks_kernels: List[AKSKernel]) -> None:
-        """Update kernel population statistics.
+    def update_stat_book(self, stat_book: StatBook, gp_models: List[GPModel]) -> None:
+        """Update model population statistics.
 
         :param stat_book:
-        :param aks_kernels:
+        :param gp_models:
         :return:
         """
-        stat_book.update_stat_book(data=aks_kernels, x=self.x_train, base_kernels=self.grammar.base_kernel_names,
+        stat_book.update_stat_book(data=gp_models, x=self.x_train, base_kernels=self.grammar.base_kernel_names,
                                    n_dims=self.n_dims)
 
     @classmethod
@@ -1017,54 +1017,54 @@ class Experiment:
 
 
 # stats functions
-def get_model_scores(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[float]:
-    return [aks_kernel.score for aks_kernel in aks_kernels if aks_kernel.evaluated]
+def get_model_scores(gp_models: List[GPModel], *args, **kwargs) -> List[float]:
+    return [gp_model.score for gp_model in gp_models if gp_model.evaluated]
 
 
-def get_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
-    return [n_base_kernels(aks_kernel.kernel) for aks_kernel in aks_kernels]
+def get_n_operands(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
+    return [n_base_kernels(gp_model.kernel) for gp_model in gp_models]
 
 
-def get_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
-    return [aks_kernel.kernel.size for aks_kernel in aks_kernels]
+def get_n_hyperparams(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
+    return [gp_model.kernel.size for gp_model in gp_models]
 
 
-def get_cov_dists(aks_kernels: List[AKSKernel], *args, **kwargs) -> Union[np.ndarray, List[int]]:
-    kernels = [aks_kernel.kernel for aks_kernel in aks_kernels]
+def get_cov_dists(gp_models: List[GPModel], *args, **kwargs) -> Union[np.ndarray, List[int]]:
+    kernels = [gp_model.kernel for gp_model in gp_models]
     if len(kernels) >= 2:
         x = kwargs.get('x')
         return covariance_distance(kernels, x)
     else:
-        return [0] * len(aks_kernels)
+        return [0] * len(gp_models)
 
 
-def get_diversity_scores(aks_kernels: List[AKSKernel], *args, **kwargs) -> Union[float, List[int]]:
-    kernels = [aks_kernel.kernel for aks_kernel in aks_kernels]
+def get_diversity_scores(gp_models: List[GPModel], *args, **kwargs) -> Union[float, List[int]]:
+    kernels = [gp_model.kernel for gp_model in gp_models]
     if len(kernels) >= 2:
         base_kernels = kwargs.get('base_kernels')
         n_dims = kwargs.get('n_dims')
         return all_pairs_avg_dist(kernels, base_kernels, n_dims)
     else:
-        return [0] * len(aks_kernels)
+        return [0] * len(gp_models)
 
 
-def get_best_n_operands(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
-    model_scores = get_model_scores(aks_kernels, *args, **kwargs)
-    n_operands = get_n_operands(aks_kernels)
+def get_best_n_operands(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
+    model_scores = get_model_scores(gp_models, *args, **kwargs)
+    n_operands = get_n_operands(gp_models)
     score_arg_max = int(np.argmax(model_scores))
     return [n_operands[score_arg_max]]
 
 
-def get_best_n_hyperparams(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
-    model_scores = get_model_scores(aks_kernels, *args, **kwargs)
-    n_hyperparams = get_n_hyperparams(aks_kernels, *args, **kwargs)
+def get_best_n_hyperparams(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
+    model_scores = get_model_scores(gp_models, *args, **kwargs)
+    n_hyperparams = get_n_hyperparams(gp_models, *args, **kwargs)
     score_arg_max = int(np.argmax(model_scores))
     return [n_hyperparams[score_arg_max]]
 
 
-def base_kern_freq(base_kern: str) -> Callable[[List[AKSKernel], Any, Any], List[int]]:
-    def get_frequency(aks_kernels: List[AKSKernel], *args, **kwargs) -> List[int]:
+def base_kern_freq(base_kern: str) -> Callable[[List[GPModel], Any, Any], List[int]]:
+    def get_frequency(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
         cls = get_kernel_mapping()[base_kern]
-        return [type_count(aks_kernel.to_binary_tree(), cls) for aks_kernel in aks_kernels]
+        return [type_count(gp_model.to_binary_tree(), cls) for gp_model in gp_models]
 
     return get_frequency
