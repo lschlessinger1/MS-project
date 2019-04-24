@@ -4,6 +4,7 @@ import numpy as np
 from GPy.core.parameterization.priors import Prior, Gaussian
 from GPy.kern import Kern
 from numpy.linalg import LinAlgError
+from statsmodels.stats.correlation_tools import cov_nearest
 
 from src.autoks.active_set import ActiveSet
 from src.autoks.distance.util import probability_samples, prior_sample
@@ -221,12 +222,7 @@ def fix_numerical_problem(k: np.ndarray,
     :param tolerance:
     :return:
     """
-    d, v = np.linalg.eig(k)
-    new_diagonal = d
-    new_diagonal[new_diagonal < tolerance] = tolerance
-    new_diagonal = np.diag(new_diagonal)
-    k = v @ new_diagonal @ v.T
-    k = (k + k.T) / 2
+    k = cov_nearest(k, threshold=tolerance)
     chol_k = np.linalg.cholesky(k).T
     return chol_k
 
