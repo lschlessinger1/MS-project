@@ -5,7 +5,7 @@ import numpy as np
 from GPy.kern import RBF
 
 from src.autoks.core.gp_model import GPModel
-from src.autoks.kernel_selection import KernelSelector
+from src.autoks.core.kernel_selection import KernelSelector
 from src.evalg.selection import Selector
 
 

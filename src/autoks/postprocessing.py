@@ -16,7 +16,7 @@ from sklearn.svm import SVR
 
 from src.autoks.backend.model import AIC, BIC, pl2, log_likelihood_normalized
 from src.autoks.core.gp_model import GPModel
-from src.autoks.kernel import kernel_to_infix
+from src.autoks.core.kernel import kernel_to_infix
 from src.evalg.plotting import plot_distribution, plot_best_so_far
 
 

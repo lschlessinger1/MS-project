@@ -6,7 +6,7 @@ from GPy.core.parameterization.priors import LogGaussian, Gaussian
 from GPy.kern import RBF, RationalQuadratic
 from numpy.linalg import LinAlgError
 
-from src.autoks.active_set import ActiveSet
+from src.autoks.core.active_set import ActiveSet
 from src.autoks.core.gp_model import GPModel
 from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder, DistanceBuilder
 

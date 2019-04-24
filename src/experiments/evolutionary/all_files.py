@@ -1,4 +1,4 @@
-from src.autoks.experiment import Experiment
+from src.autoks.core.experiment import Experiment
 from src.experiments.util.experiment_runner import FileExperimentRunner
 
 exp_runner = FileExperimentRunner(Experiment.evolutionary_experiment)

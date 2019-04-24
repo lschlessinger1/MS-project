@@ -8,7 +8,7 @@ from GPy.kern import Add, Prod
 from GPy.kern import Kern, RationalQuadratic, RBF, LinScaleShift, StandardPeriodic
 from GPy.kern.src.kern import CombinationKernel
 
-from src.autoks.hyperprior import Hyperprior, Hyperpriors
+from src.autoks.core.hyperprior import Hyperprior, Hyperpriors
 from src.autoks.util import tokenize, flatten, remove_outer_parens, join_operands, arg_sort
 from src.evalg.encoding import BinaryTreeNode, BinaryTree
 

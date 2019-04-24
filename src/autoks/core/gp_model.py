@@ -6,8 +6,8 @@ from sympy import pprint
 
 from src.autoks.backend.kernel import kernel_to_infix_tokens, tokens_to_str, additive_form, kernel_to_infix, \
     encode_prior, get_priors, encode_kernel
+from src.autoks.core.kernel import tokens_to_kernel_symbols
 from src.autoks.core.kernel_encoding import KernelTree, kernel_to_tree
-from src.autoks.kernel import tokens_to_kernel_symbols
 from src.autoks.symbolic.util import postfix_tokens_to_symbol
 from src.autoks.util import remove_duplicates
 from src.evalg.encoding import infix_tokens_to_postfix_tokens

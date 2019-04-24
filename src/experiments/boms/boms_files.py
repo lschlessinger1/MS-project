@@ -1,4 +1,4 @@
-from src.autoks.experiment import Experiment
+from src.autoks.core.experiment import Experiment
 from src.experiments.util.experiment_runner import BOMSFilesExperimentRunner
 
 exp_runner = BOMSFilesExperimentRunner(Experiment.boms_experiment)

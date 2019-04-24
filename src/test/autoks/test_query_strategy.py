@@ -4,9 +4,9 @@ from unittest.mock import MagicMock
 import numpy as np
 from GPy.kern import RBF
 
-from src.autoks.acquisition_function import AcquisitionFunction
+from src.autoks.core.acquisition_function import AcquisitionFunction
 from src.autoks.core.gp_model import GPModel
-from src.autoks.query_strategy import QueryStrategy, NaiveQueryStrategy, BestScoreStrategy
+from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy, BestScoreStrategy
 
 
 class TestQueryStrategy(TestCase):

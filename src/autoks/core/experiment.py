@@ -12,21 +12,21 @@ from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
-from src.autoks.acquisition_function import ExpectedImprovementPerSec
-from src.autoks.active_set import ActiveSet
 from src.autoks.backend.kernel import set_priors, sort_kernel, get_all_1d_kernels, n_base_kernels, get_kernel_mapping
 from src.autoks.backend.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
+from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
+from src.autoks.core.active_set import ActiveSet
 from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, pretty_print_gp_models
+from src.autoks.core.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
+from src.autoks.core.hyperprior import Hyperpriors, boms_hyperpriors
+from src.autoks.core.kernel import covariance_distance, all_pairs_avg_dist, kernel_to_infix
+from src.autoks.core.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
+    evolutionary_kernel_selector
+from src.autoks.core.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy, BestScoreStrategy
 from src.autoks.distance.distance import HellingerDistanceBuilder, DistanceBuilder
 from src.autoks.gp_regression_models import KernelKernelGPRegression
-from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
-from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
-from src.autoks.kernel import covariance_distance, all_pairs_avg_dist, kernel_to_infix
-from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
-    evolutionary_kernel_selector
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
-from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy, BestScoreStrategy
 from src.autoks.statistics import StatBookCollection, Statistic, StatBook
 from src.autoks.util import type_count, pretty_time_delta
 from src.evalg.genprog import HalfAndHalfMutator, OnePointRecombinator, HalfAndHalfGenerator

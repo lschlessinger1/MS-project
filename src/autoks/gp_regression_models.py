@@ -5,7 +5,7 @@ from GPy import likelihoods
 from GPy.core import GP
 from GPy.kern import RBFDistanceBuilderKernelKernel
 
-from src.autoks.active_set import ActiveSet
+from src.autoks.core.active_set import ActiveSet
 from src.autoks.debugging import assert_valid_kernel_kernel
 from src.autoks.distance.distance import DistanceBuilder
 

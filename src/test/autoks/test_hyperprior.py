@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from GPy.core.parameterization.priors import LogGaussian
 
-from src.autoks.hyperprior import boms_hyperpriors
+from src.autoks.core.hyperprior import boms_hyperpriors
 
 
 class TestGrammar(TestCase):

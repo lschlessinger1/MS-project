@@ -4,9 +4,10 @@ import numpy as np
 from GPy.kern import RBF, RationalQuadratic, RBFKernelKernel
 
 from src.autoks.core.gp_model import encode_gp_models, GPModel
+from src.autoks.core.kernel import kernel_vec_avg_dist, all_pairs_avg_dist, kernels_to_kernel_vecs, \
+    tokens_to_kernel_symbols
+from src.autoks.core.kernel_kernel import shd_kernel_kernel, euclidean_kernel_kernel
 from src.autoks.distance.metrics import shd_metric, euclidean_metric
-from src.autoks.kernel import kernel_vec_avg_dist, all_pairs_avg_dist, kernels_to_kernel_vecs, tokens_to_kernel_symbols
-from src.autoks.kernel_kernel import shd_kernel_kernel, euclidean_kernel_kernel
 from src.autoks.symbolic.kernel_symbol import KernelSymbol
 from src.autoks.util import remove_duplicates
 

@@ -5,7 +5,7 @@ from GPy.kern import RBF, RationalQuadratic, Add, LinScaleShift, Kern
 from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.core.gp_model import GPModel
-from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels, BOMSGrammar
+from src.autoks.core.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels, BOMSGrammar
 from src.test.autoks.support.util import has_combo_kernel_type, base_kernel_eq
 
 

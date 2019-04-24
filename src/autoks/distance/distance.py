@@ -6,8 +6,8 @@ from GPy.kern import Kern
 from numpy.linalg import LinAlgError
 from statsmodels.stats.correlation_tools import cov_nearest
 
-from src.autoks.active_set import ActiveSet
 from src.autoks.backend.kernel import get_priors
+from src.autoks.core.active_set import ActiveSet
 from src.autoks.distance.util import probability_samples, prior_sample
 
 # Adapted from Malkomes, 2016

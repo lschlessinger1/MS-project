@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 from GPy.kern import RBF
 
-from src.autoks.acquisition_function import AcquisitionFunction, UniformScorer
+from src.autoks.core.acquisition_function import AcquisitionFunction, UniformScorer
 from src.autoks.core.gp_model import GPModel
 
 

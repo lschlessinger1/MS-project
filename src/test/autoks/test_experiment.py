@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, call
 import numpy as np
 from GPy.kern import RationalQuadratic, RBF
 
+from src.autoks.core.experiment import Experiment
 from src.autoks.core.gp_model import GPModel
-from src.autoks.experiment import Experiment
-from src.autoks.query_strategy import QueryStrategy
+from src.autoks.core.query_strategy import QueryStrategy
 
 
 class TestExperiment(TestCase):

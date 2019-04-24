@@ -2,9 +2,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from src.autoks.backend.model import BIC
-from src.autoks.experiment import Experiment
-from src.autoks.grammar import RandomGrammar
-from src.autoks.kernel_selection import CKS_kernel_selector
+from src.autoks.core.experiment import Experiment
+from src.autoks.core.grammar import RandomGrammar
+from src.autoks.core.kernel_selection import CKS_kernel_selector
 from src.experiments.util.synthetic_data import CubicSine1dDataset
 
 # Set random seed for reproducibility.

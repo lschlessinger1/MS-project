@@ -3,9 +3,9 @@ from typing import List, Tuple, Optional
 
 import numpy as np
 
-from src.autoks.acquisition_function import AcquisitionFunction, UniformScorer
+from src.autoks.core.acquisition_function import AcquisitionFunction, UniformScorer
 from src.autoks.core.gp_model import GPModel
-from src.autoks.hyperprior import Hyperpriors
+from src.autoks.core.hyperprior import Hyperpriors
 from src.evalg.selection import Selector, AllSelector
 
 

@@ -2,7 +2,7 @@ from typing import Optional, List, Callable
 
 from numpy import ndarray
 
-from src.autoks.hyperprior import Hyperpriors
+from src.autoks.core.hyperprior import Hyperpriors
 
 
 class Problem:
