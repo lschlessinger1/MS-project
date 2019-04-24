@@ -5,10 +5,10 @@ import numpy as np
 from GPy.kern import Kern, Prod, Add
 from GPy.kern.src.kern import CombinationKernel
 
+from src.autoks.backend.kernel import get_all_1d_kernels, tree_to_kernel, sort_kernel
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
-from src.autoks.kernel import get_all_1d_kernels, remove_duplicate_kernels, \
-    tree_to_kernel, sort_kernel
+from src.autoks.kernel import remove_duplicate_kernels
 from src.evalg.genprog import BinaryTreeGenerator, OnePointRecombinatorBase
 from src.evalg.vary import PopulationOperator
 

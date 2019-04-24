@@ -2,7 +2,8 @@ from typing import Union, Optional
 
 from GPy.kern import Kern
 
-from src.autoks.kernel import subkernel_expression, kernel_to_infix_tokens
+from src.autoks.backend.kernel import kernel_to_infix_tokens
+from src.autoks.kernel import subkernel_expression
 from src.evalg.encoding import BinaryTreeNode, BinaryTree, infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree
 
 

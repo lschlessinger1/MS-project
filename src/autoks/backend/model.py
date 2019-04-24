@@ -5,7 +5,7 @@ from GPy.core import GP
 from GPy.core.model import Model
 from GPy.kern import Kern
 
-from src.autoks.kernel import kernel_to_infix_tokens, tokens_to_str
+from src.autoks.backend.kernel import kernel_to_infix_tokens, tokens_to_str
 from src.evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTree
 from src.evalg.fitness import covariant_parsimony_pressure
 

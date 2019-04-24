@@ -3,10 +3,11 @@ from typing import List, Callable
 import numpy as np
 from GPy.core.parameterization.priors import Gaussian
 
+from src.autoks.backend.kernel import decode_kernel, decode_prior, set_priors
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.kernel_encoding import kernel_to_tree, hd_kern_nodes
 from src.autoks.distance.distance import HellingerDistanceBuilder
-from src.autoks.kernel import decode_kernel, all_pairs_avg_dist, kernel_l2_dist, set_priors, decode_prior
+from src.autoks.kernel import all_pairs_avg_dist, kernel_l2_dist
 from src.evalg.fitness import structural_hamming_dist
 
 

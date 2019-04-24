@@ -7,8 +7,8 @@ from numpy.linalg import LinAlgError
 from statsmodels.stats.correlation_tools import cov_nearest
 
 from src.autoks.active_set import ActiveSet
+from src.autoks.backend.kernel import get_priors
 from src.autoks.distance.util import probability_samples, prior_sample
-from src.autoks.kernel import get_priors
 
 # Adapted from Malkomes, 2016
 # Bayesian optimization for automated model selection (BOMS)

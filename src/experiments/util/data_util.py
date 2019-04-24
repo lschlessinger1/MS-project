@@ -5,7 +5,8 @@ import numpy as np
 from GPy.kern import Kern
 from sklearn.model_selection import train_test_split
 
-from src.autoks.kernel import kernel_to_infix, create_1d_kernel
+from src.autoks.backend.kernel import create_1d_kernel
+from src.autoks.kernel import kernel_to_infix
 
 
 class Dataset:
