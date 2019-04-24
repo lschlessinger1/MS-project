@@ -9,6 +9,7 @@ install:
   - pip install coveralls
   - pip install codecov
 script:
+  - export PYTHONWARNINGS="ignore::DeprecationWarning"
   - pytest --cov=src/
 after_success:
   - codecov
