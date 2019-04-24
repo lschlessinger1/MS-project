@@ -302,7 +302,6 @@ def tree_to_kernel(tree: BinaryTree) -> Kern:
     return eval_binexp_tree(tree.root)
 
 
-
 def is_base_kernel(kernel: Kern) -> bool:
     return isinstance(kernel, Kern) and not isinstance(kernel, CombinationKernel)
 
@@ -596,8 +595,6 @@ def decode_kernel(kern_dict_str: str) -> Kern:
     """
     k_dict = eval(kern_dict_str)
     return Kern.from_dict(k_dict)
-
-
 
 
 def encode_kernel(kern: Kern) -> str:
