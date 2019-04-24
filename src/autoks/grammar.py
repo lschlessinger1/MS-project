@@ -205,12 +205,12 @@ class CKSGrammar(BaseGrammar):
         :param seed_kernel:
         :return:
         """
-        number_of_base_kernels = len(self.base_kernels)
         new_kernels = []
 
-        for i in range(number_of_base_kernels):
-            new_kernels.append(seed_kernel + self.base_kernels[i])
-            new_kernels.append(seed_kernel * self.base_kernels[i])
+        for base_kernel in self.base_kernels:
+            new_kernels.append(seed_kernel + base_kernel)
+            new_kernels.append(seed_kernel * base_kernel)
+
         return new_kernels
 
     def expand_full_kernel(self, kernel: Kern) -> List[Kern]:
