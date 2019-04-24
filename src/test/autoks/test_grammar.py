@@ -1,8 +1,10 @@
 import unittest
 
-from GPy.kern import RBF, RationalQuadratic, Add, LinScaleShift
+import numpy as np
+from GPy.kern import RBF, RationalQuadratic, Add, LinScaleShift, Kern
+from GPy.kern.src.kern import CombinationKernel
 
-from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels
+from src.autoks.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels, BOMSGrammar
 from src.autoks.kernel import AKSKernel
 from src.test.autoks.support.util import has_combo_kernel_type, base_kernel_eq
 
@@ -289,3 +291,100 @@ class TestCKSGrammar(unittest.TestCase):
 
         self.assertTrue(all(k_types_exist))
         self.assertEqual(len(result), len(kernel_types))
+
+
+class TestBomsGrammar(unittest.TestCase):
+
+    def test_create(self):
+        base_kernel_names = ['SE', 'RQ']
+        n_dim = 2
+
+        # No optional arguments
+        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        self.assertEqual(base_kernel_names, grammar.base_kernel_names)
+        self.assertEqual(n_dim, grammar.n_dims)
+        self.assertIsNotNone(grammar.hyperpriors)
+
+        self.assertIsNotNone(grammar.random_walk_geometric_dist_parameter)
+        self.assertIsNotNone(grammar.number_of_top_k_best)
+        self.assertIsNotNone(grammar.number_of_random_walks)
+
+    def test_get_candidates_empty(self):
+        base_kernel_names = ['SE', 'RQ']
+        n_dim = 2
+
+        # No optional arguments
+        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+
+        seed = np.random.randint(100)
+        np.random.seed(seed)
+        candidates = grammar.get_candidates([])
+
+        np.random.seed(seed)
+        total_num_walks = grammar.number_of_random_walks
+        expected_candidates = grammar.expand_random(total_num_walks)
+
+        self.assertEqual(len(expected_candidates), len(candidates))
+
+    def test_get_candidates(self):
+        base_kernel_names = ['SE', 'RQ']
+        n_dim = 2
+
+        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+
+        grammar.number_of_top_k_best = 1
+        grammar.num_random_walks = 5
+        kernels = grammar.expand_random(grammar.number_of_random_walks)
+        fitness_score = np.random.permutation(len(kernels))
+
+        models = [AKSKernel(kernel) for kernel in kernels]
+        for model, model_score in zip(models, fitness_score):
+            model.score = model_score
+
+        candidates = grammar.get_candidates(models)
+        for candidate in candidates:
+            self.assertIsInstance(candidate, AKSKernel)
+
+    def test_expand(self):
+        base_kernel_names = ['SE', 'RQ']
+        n_dim = 2
+        num_random_walks = 5
+
+        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar.random_walk_geometric_dist_parameter = 1 / 3
+        grammar.number_of_random_walks = 1
+
+        np.random.seed(5)
+        new_kernels = grammar.expand_random(num_random_walks)
+        self.assertEqual(len(new_kernels), num_random_walks)
+        self.assertIsInstance(new_kernels[0], Kern)
+        self.assertNotIsInstance(new_kernels[0], CombinationKernel)
+
+    def test_expand_best(self):
+        base_kernel_names = ['SE', 'RQ']
+        n_dim = 1
+
+        np.random.seed(5)
+        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+
+        grammar.number_of_top_k_best = 1
+        num_random_walks = 5
+        kernels = grammar.expand_random(num_random_walks)
+        fitness_score = list(np.random.permutation(len(kernels)).tolist())
+
+        index = int(np.argmax(fitness_score))
+        kernel_to_expand = AKSKernel(kernels[index])
+
+        models = [AKSKernel(kernel) for kernel in kernels]
+        for model, model_score in zip(models, fitness_score):
+            model.score = model_score
+
+        new_kernels = grammar.expand_best(models, fitness_score)
+
+        expanded_kernels = grammar.expand([kernel_to_expand])
+
+        for i in range(len(expanded_kernels)):
+            self.assertTrue(has_combo_kernel_type([new_kernels[i]], expanded_kernels[i].kernel))
+
+    def tearDown(self) -> None:
+        np.random.seed()

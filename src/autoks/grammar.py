@@ -331,13 +331,11 @@ class BOMSGrammar(CKSGrammar):
         # Exploration
         total_num_walks = self.number_of_random_walks
         candidates_random = self.expand_random(total_num_walks)
-        candidates_random = remove_duplicate_kernels(candidates_random)
 
         # Exploitation
         evaluated_kernels = [kernel for kernel in seed_kernels if kernel.evaluated]
         fitness_score = [k.score for k in evaluated_kernels]
         candidates_best = self.expand_best(evaluated_kernels, fitness_score)
-        candidates_best = remove_duplicate_kernels(candidates_best)
 
         # Concatenate
         candidates = candidates_best + candidates_random
@@ -354,15 +352,14 @@ class BOMSGrammar(CKSGrammar):
         :return:
         """
         parameter = self.random_walk_geometric_dist_parameter
+        depths = np.random.geometric(parameter, size=total_num_walks)
         new_kernels = []
-        for i in range(total_num_walks):
+        for depth in depths:
             frontier = self.base_kernels
-            depth = np.random.geometric(parameter)
-            new_kernel = None
-            while depth >= 0:
+            new_kernel = np.random.choice(frontier)
+            for i in range(depth - 1):
                 new_kernel = np.random.choice(frontier)
                 frontier = self.expand_single_kernel(new_kernel)
-                depth -= 1
             new_kernels.append(new_kernel)
 
         return new_kernels
