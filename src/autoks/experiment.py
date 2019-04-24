@@ -14,16 +14,16 @@ from sklearn.preprocessing import StandardScaler
 
 from src.autoks.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.active_set import ActiveSet
+from src.autoks.backend.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
+from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, pretty_print_gp_models
 from src.autoks.distance.distance import HellingerDistanceBuilder, DistanceBuilder
 from src.autoks.gp_regression_models import KernelKernelGPRegression
 from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
-from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_gp_models, all_pairs_avg_dist, \
-    GPModel, pretty_print_gp_models, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
-    get_all_1d_kernels
+from src.autoks.kernel import n_base_kernels, covariance_distance, all_pairs_avg_dist, kernel_to_infix, sort_kernel, \
+    set_priors, get_kernel_mapping, get_all_1d_kernels
 from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
     evolutionary_kernel_selector
-from src.autoks.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
 from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy, BestScoreStrategy

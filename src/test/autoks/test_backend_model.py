@@ -1,10 +1,10 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from src.autoks.model import cov_parsimony_pressure
+from src.autoks.backend.model import cov_parsimony_pressure
 
 
-class TestModel(TestCase):
+class TestBackendModel(TestCase):
 
     def test_cov_parsimony_pressure(self):
         model = MagicMock()

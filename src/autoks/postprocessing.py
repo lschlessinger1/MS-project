@@ -14,8 +14,9 @@ from sklearn.metrics import mean_squared_error
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
 
-from src.autoks.kernel import kernel_to_infix, GPModel
-from src.autoks.model import AIC, BIC, pl2, log_likelihood_normalized
+from src.autoks.backend.model import AIC, BIC, pl2, log_likelihood_normalized
+from src.autoks.core.gp_model import GPModel
+from src.autoks.kernel import kernel_to_infix
 from src.evalg.plotting import plot_distribution, plot_best_so_far
 
 

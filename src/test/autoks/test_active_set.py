@@ -3,7 +3,7 @@ from unittest import TestCase
 from GPy.kern import RBF, RationalQuadratic
 
 from src.autoks.active_set import ActiveSet
-from src.autoks.kernel import GPModel
+from src.autoks.core.gp_model import GPModel
 
 
 class TestActiveSet(TestCase):

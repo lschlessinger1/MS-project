@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from src.autoks.kernel import GPModel
+from src.autoks.core.gp_model import GPModel
 
 # We define a model to be this for the active set
 Model = GPModel

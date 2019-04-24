@@ -5,7 +5,7 @@ import numpy as np
 from GPy.kern import RBF
 
 from src.autoks.acquisition_function import AcquisitionFunction
-from src.autoks.kernel import GPModel
+from src.autoks.core.gp_model import GPModel
 from src.autoks.query_strategy import QueryStrategy, NaiveQueryStrategy, BestScoreStrategy
 
 

@@ -4,8 +4,9 @@ import numpy as np
 from scipy.stats import norm
 from sklearn.linear_model import LinearRegression
 
+from src.autoks.core.gp_model import GPModel
 from src.autoks.hyperprior import Hyperpriors
-from src.autoks.kernel import GPModel, n_base_kernels
+from src.autoks.kernel import n_base_kernels
 
 
 class AcquisitionFunction:

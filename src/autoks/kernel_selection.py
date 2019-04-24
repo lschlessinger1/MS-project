@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 
-from src.autoks.kernel import GPModel
+from src.autoks.core.gp_model import GPModel
 from src.evalg.selection import Selector, TruncationSelector, AllSelector, LinearRankingSelector
 
 
