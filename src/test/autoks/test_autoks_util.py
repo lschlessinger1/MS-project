@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from src.autoks.util import arg_sort, arg_unique, remove_duplicates, tokenize, flatten, remove_outer_parens, \
-    join_operands, type_count
+    join_operands, type_count, pretty_time_delta
 
 
 class TestUtil(TestCase):
@@ -60,3 +60,54 @@ class TestUtil(TestCase):
         self.assertEqual(1, result)
         result = type_count([1, 2, 3, '4'], int)
         self.assertEqual(3, result)
+
+    def test_pretty_time_delta(self):
+        seconds = 172800  # 2 days
+        actual = pretty_time_delta(seconds)
+        expected = '2d0h0m0s'
+        self.assertEqual(expected, actual)
+
+        seconds = 172801  # 2 days, 1 second
+        actual = pretty_time_delta(seconds)
+        expected = '2d0h0m1s'
+        self.assertEqual(expected, actual)
+
+        seconds = 172861  # 2 days, 1 minute, 1 second
+        actual = pretty_time_delta(seconds)
+        expected = '2d0h1m1s'
+        self.assertEqual(expected, actual)
+
+        seconds = 176461  # 2 days, 1 hour, 1 minute, 1 second
+        actual = pretty_time_delta(seconds)
+        expected = '2d1h1m1s'
+        self.assertEqual(expected, actual)
+
+        seconds = 3661  # 1 hour, 1 minute, 1 second
+        actual = pretty_time_delta(seconds)
+        expected = '1h1m1s'
+        self.assertEqual(expected, actual)
+
+        seconds = 3601  # 1 hour, 1 second
+        actual = pretty_time_delta(seconds)
+        expected = '1h0m1s'
+        self.assertEqual(expected, actual)
+
+        seconds = 61
+        actual = pretty_time_delta(seconds)
+        expected = '1m1s'
+        self.assertEqual(expected, actual)
+
+        seconds = 33
+        actual = pretty_time_delta(seconds)
+        expected = '33s'
+        self.assertEqual(expected, actual)
+
+        seconds = 0.01
+        actual = pretty_time_delta(seconds)
+        expected = '10.0ms'
+        self.assertEqual(expected, actual)
+
+        seconds = 0.00001
+        actual = pretty_time_delta(seconds)
+        expected = '0.0ms'
+        self.assertEqual(expected, actual)

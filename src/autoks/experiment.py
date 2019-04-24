@@ -28,7 +28,7 @@ from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin
     ExperimentReportGenerator
 from src.autoks.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy, BestScoreStrategy
 from src.autoks.statistics import StatBookCollection, Statistic, StatBook
-from src.autoks.util import type_count
+from src.autoks.util import type_count, pretty_time_delta
 from src.evalg.genprog import HalfAndHalfMutator, OnePointRecombinator, HalfAndHalfGenerator
 from src.evalg.plotting import plot_best_so_far, plot_distribution
 from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
@@ -899,7 +899,7 @@ class Experiment:
         labels, x, x_pct = self.get_timing_report()
         print('Runtimes:')
         for pct, sec, label in sorted(zip(x_pct, x, labels), key=lambda v: v[1], reverse=True):
-            print('%s: %0.2f%% (%0.2fs)' % (label, pct, sec))
+            print('%s: %0.2f%% (%s)' % (label, pct, pretty_time_delta(sec)))
 
     def update_stat_book(self, stat_book: StatBook, gp_models: List[GPModel]) -> None:
         """Update model population statistics.

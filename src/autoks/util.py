@@ -110,3 +110,28 @@ def type_count(a: Iterable,
     :return:
     """
     return sum(isinstance(x, cls) for x in a)
+
+
+def pretty_time_delta(seconds: float) -> str:
+    """Return a human-readable string of a duration in seconds.
+
+    modified from: https://gist.github.com/thatalextaylor/7408395
+
+    :param seconds:
+    :return:
+    """
+    ms = float(seconds * 1000)
+    seconds = int(seconds)
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    if days > 0:
+        return '%dd%dh%dm%ds' % (days, hours, minutes, seconds)
+    elif hours > 0:
+        return '%dh%dm%ds' % (hours, minutes, seconds)
+    elif minutes > 0:
+        return '%dm%ds' % (minutes, seconds)
+    elif seconds > 0:
+        return '%ds' % (seconds)
+    else:
+        return '%.1fms' % (ms)
