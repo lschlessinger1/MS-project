@@ -4,7 +4,8 @@ import numpy as np
 from GPy.kern import RationalQuadratic, RBF
 
 from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, encode_gp_model, encode_gp_models
-from src.autoks.kernel import encode_kernel, KernelTree
+from src.autoks.core.kernel_encoding import KernelTree
+from src.autoks.kernel import encode_kernel
 
 
 class TestGPModel(TestCase):

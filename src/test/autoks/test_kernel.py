@@ -8,8 +8,8 @@ from GPy.kern import Add, Prod, RBF, RationalQuadratic, RBFKernelKernel
 from src.autoks.core.gp_model import encode_gp_models, GPModel
 from src.autoks.distance.metrics import shd_metric, euclidean_metric
 from src.autoks.kernel import sort_kernel, get_all_1d_kernels, create_1d_kernel, \
-    set_priors, KernelTree, KernelNode, subkernel_expression, \
-    decode_kernel, hd_kern_nodes, encode_kernel, additive_part_to_vec, \
+    set_priors, subkernel_expression, \
+    decode_kernel, encode_kernel, additive_part_to_vec, \
     kernel_vec_avg_dist, all_pairs_avg_dist, \
     kernels_to_kernel_vecs, get_priors, tokens_to_kernel_symbols
 from src.autoks.kernel_kernel import shd_kernel_kernel, euclidean_kernel_kernel
@@ -86,8 +86,6 @@ class TestKernel(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             remove_duplicates([1, 2, 3], ['1', 2])
-
-
 
     def test_get_all_1d_kernels(self):
         result = get_all_1d_kernels(['SE', 'RQ'], n_dims=2)
@@ -261,29 +259,6 @@ class TestKernel(unittest.TestCase):
         self.assertEqual(result.input_dim, 1)
         self.assertDictEqual(result.to_dict(), kern_dict)
 
-    def test_hd_kern_nodes(self):
-        node_1 = KernelNode(RBF(1, active_dims=[0]))
-        node_2 = KernelNode(RBF(1, active_dims=[0]))
-        result = hd_kern_nodes(node_1, node_2)
-        self.assertEqual(result, 0)
-
-        node_1 = KernelNode(RBF(1, active_dims=[0]))
-        node_2 = KernelNode(RationalQuadratic(1, active_dims=[0]))
-        result = hd_kern_nodes(node_1, node_2)
-        self.assertEqual(result, 1)
-
-        node_1 = KernelNode(RBF(1, active_dims=[0]))
-        node_2 = KernelNode(RBF(1, active_dims=[1]))
-        result = hd_kern_nodes(node_1, node_2)
-        self.assertEqual(result, 1)
-
-        node_1 = KernelNode(RBF(1, active_dims=[0]))
-        node_1.add_left('U')
-        node_1.add_right('V')
-        node_2 = KernelNode(RBF(1, active_dims=[0]))
-        result = hd_kern_nodes(node_1, node_2)
-        self.assertEqual(result, 1)
-
     def test_encode_kernel(self):
         kern = RBF(1, active_dims=[0])
         result = encode_kernel(kern)
@@ -324,39 +299,6 @@ class TestKernel(unittest.TestCase):
         result = euclidean_kernel_kernel(x_train)
         self.assertIsInstance(result, RBFKernelKernel)
         self.assertEqual(result.dist_metric, euclidean_metric)
-
-
-
-
-
-class TestKernelNode(unittest.TestCase):
-
-    def test_init(self):
-        kern = RBF(1)
-        result = KernelNode(kern)
-        self.assertEqual(result.value, kern)
-        self.assertEqual(result.label, 'SE_0')
-        self.assertIsNone(result.parent)
-        self.assertIsNone(result.left)
-        self.assertIsNone(result.right)
-
-    def test__value_to_label(self):
-        mock_kern = RBF(1)
-        node = KernelNode(mock_kern)
-        result = node._value_to_label(mock_kern)
-        self.assertIsInstance(result, str)
-        self.assertEqual(result, 'SE_0')
-
-
-class TestKernelTree(unittest.TestCase):
-
-    def test_init(self):
-        kern = RBF(1)
-        root = KernelNode(kern)
-        result = KernelTree(root)
-        self.assertEqual(result.root, root)
-        self.assertEqual(result.root.label, 'SE_0')
-        self.assertEqual(result.root.value, kern)
 
 
 if __name__ == '__main__':
