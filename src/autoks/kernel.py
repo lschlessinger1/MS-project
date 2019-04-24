@@ -593,7 +593,7 @@ def remove_duplicate_kernels(kernels: List[Kern]) -> List[Kern]:
     return remove_duplicates([kernel_to_infix(k) for k in kernels], kernels)
 
 
-def remove_duplicate_aks_kernels(kernels: List[GPModel]) -> List[GPModel]:
+def remove_duplicate_gp_models(kernels: List[GPModel]) -> List[GPModel]:
     """Remove duplicate GPModel's.
 
     prioritizing when removing duplicates
@@ -612,8 +612,8 @@ def remove_duplicate_aks_kernels(kernels: List[GPModel]) -> List[GPModel]:
     sorted_evaluated_kernels = sorted(evaluated_kernels, key=lambda k: k.score, reverse=True)
 
     # Assume precedence by order.
-    aks_kernels = sorted_evaluated_kernels + nan_scored_kernels + unevaluated_kernels
-    return remove_duplicates([kernel_to_infix(aks_kernel.kernel) for aks_kernel in aks_kernels], aks_kernels)
+    gp_models = sorted_evaluated_kernels + nan_scored_kernels + unevaluated_kernels
+    return remove_duplicates([kernel_to_infix(gp_model.kernel) for gp_model in gp_models], gp_models)
 
 
 def additive_form(kernel: Kern) -> Kern:

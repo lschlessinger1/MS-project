@@ -7,7 +7,7 @@ from GPy.kern import Add, Prod, RBF, RationalQuadratic, RBFKernelKernel
 
 from src.autoks.distance.metrics import shd_metric, euclidean_metric
 from src.autoks.kernel import sort_kernel, GPModel, get_all_1d_kernels, create_1d_kernel, \
-    remove_duplicate_aks_kernels, set_priors, KernelTree, KernelNode, subkernel_expression, \
+    remove_duplicate_gp_models, set_priors, KernelTree, KernelNode, subkernel_expression, \
     decode_kernel, hd_kern_nodes, encode_kernel, encode_gp_models, encode_gp_model, additive_part_to_vec, \
     kernel_vec_avg_dist, all_pairs_avg_dist, \
     kernels_to_kernel_vecs, get_priors, tokens_to_kernel_symbols
@@ -86,7 +86,7 @@ class TestKernel(unittest.TestCase):
         with self.assertRaises(ValueError):
             remove_duplicates([1, 2, 3], ['1', 2])
 
-    def test_remove_duplicate_aks_kernels(self):
+    def test_remove_duplicate_gp_models(self):
         k1 = GPModel(RBF(1))
         k1.score = 10
 
@@ -106,70 +106,70 @@ class TestKernel(unittest.TestCase):
         k7 = GPModel(RationalQuadratic(1))
 
         # Always keep k1 then k2 then k3 etc.
-        result = remove_duplicate_aks_kernels([k1, k2, k3, k4, k5, k6, k7])
+        result = remove_duplicate_gp_models([k1, k2, k3, k4, k5, k6, k7])
         self.assertListEqual(result, [k1, k7])
 
-        result = remove_duplicate_aks_kernels([k1, k2, k3, k4, k5, k7])
+        result = remove_duplicate_gp_models([k1, k2, k3, k4, k5, k7])
         self.assertListEqual(result, [k1, k7])
 
-        result = remove_duplicate_aks_kernels([k1, k2, k3, k4, k7])
+        result = remove_duplicate_gp_models([k1, k2, k3, k4, k7])
         self.assertListEqual(result, [k1, k7])
 
-        result = remove_duplicate_aks_kernels([k1, k2, k3, k7])
+        result = remove_duplicate_gp_models([k1, k2, k3, k7])
         self.assertListEqual(result, [k1, k7])
 
-        result = remove_duplicate_aks_kernels([k1, k2, k7])
+        result = remove_duplicate_gp_models([k1, k2, k7])
         self.assertListEqual(result, [k1, k7])
 
-        result = remove_duplicate_aks_kernels([k1, k7])
+        result = remove_duplicate_gp_models([k1, k7])
         self.assertListEqual(result, [k1, k7])
 
-        result = remove_duplicate_aks_kernels([k2, k3, k4, k5, k6, k7])
+        result = remove_duplicate_gp_models([k2, k3, k4, k5, k6, k7])
         self.assertListEqual(result, [k2, k7])
 
-        result = remove_duplicate_aks_kernels([k2, k3, k4, k5, k7])
+        result = remove_duplicate_gp_models([k2, k3, k4, k5, k7])
         self.assertListEqual(result, [k2, k7])
 
-        result = remove_duplicate_aks_kernels([k2, k3, k4, k7])
+        result = remove_duplicate_gp_models([k2, k3, k4, k7])
         self.assertListEqual(result, [k2, k7])
 
-        result = remove_duplicate_aks_kernels([k2, k3, k7])
+        result = remove_duplicate_gp_models([k2, k3, k7])
         self.assertListEqual(result, [k2, k7])
 
-        result = remove_duplicate_aks_kernels([k2, k7])
+        result = remove_duplicate_gp_models([k2, k7])
         self.assertListEqual(result, [k2, k7])
 
-        result = remove_duplicate_aks_kernels([k3, k4, k5, k6, k7])
+        result = remove_duplicate_gp_models([k3, k4, k5, k6, k7])
         self.assertTrue(result == [k3, k7] or result == [k4, k7])
 
-        result = remove_duplicate_aks_kernels([k3, k4, k5, k7])
+        result = remove_duplicate_gp_models([k3, k4, k5, k7])
         self.assertTrue(result == [k3, k7] or result == [k4, k7])
 
-        result = remove_duplicate_aks_kernels([k4, k3, k5, k6, k7])
+        result = remove_duplicate_gp_models([k4, k3, k5, k6, k7])
         self.assertTrue(result == [k3, k7] or result == [k4, k7])
 
-        result = remove_duplicate_aks_kernels([k4, k3, k5, k7])
+        result = remove_duplicate_gp_models([k4, k3, k5, k7])
         self.assertTrue(result == [k3, k7] or result == [k4, k7])
 
-        result = remove_duplicate_aks_kernels([k3, k4, k5, k7])
+        result = remove_duplicate_gp_models([k3, k4, k5, k7])
         self.assertTrue(result == [k3, k7] or result == [k4, k7])
 
-        result = remove_duplicate_aks_kernels([k3, k4, k7])
+        result = remove_duplicate_gp_models([k3, k4, k7])
         self.assertTrue(result == [k3, k7] or result == [k4, k7])
 
-        result = remove_duplicate_aks_kernels([k4, k3, k7])
+        result = remove_duplicate_gp_models([k4, k3, k7])
         self.assertTrue(result == [k3, k7] or result == [k4, k7])
 
-        result = remove_duplicate_aks_kernels([k3, k7])
+        result = remove_duplicate_gp_models([k3, k7])
         self.assertListEqual(result, [k3, k7])
 
-        result = remove_duplicate_aks_kernels([k4, k7])
+        result = remove_duplicate_gp_models([k4, k7])
         self.assertListEqual(result, [k4, k7])
 
-        result = remove_duplicate_aks_kernels([k5, k6, k7])
+        result = remove_duplicate_gp_models([k5, k6, k7])
         self.assertTrue(result == [k5, k7] or result == [k6, k7])
 
-        result = remove_duplicate_aks_kernels([k6, k5, k7])
+        result = remove_duplicate_gp_models([k6, k5, k7])
         self.assertTrue(result == [k5, k7] or result == [k6, k7])
 
     def test_get_all_1d_kernels(self):

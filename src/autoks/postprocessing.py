@@ -116,14 +116,14 @@ def rmse_knn(x_train: np.ndarray,
 
 
 class ExperimentReportGenerator:
-    aks_kernels: List[GPModel]
+    gp_models: List[GPModel]
     x_test: np.ndarray
     y_test: np.ndarray
     results_dir_name: str
 
-    def __init__(self, experiment, aks_kernels, x_test, y_test, results_dir_name='results'):
+    def __init__(self, experiment, gp_models, x_test, y_test, results_dir_name='results'):
         self.experiment = experiment
-        self.aks_kernels = aks_kernels
+        self.gp_models = gp_models
         self.results_dir_name = results_dir_name
 
         self.x_train = self.experiment.x_train
@@ -131,10 +131,10 @@ class ExperimentReportGenerator:
         self.x_test = x_test
         self.y_test = y_test
 
-        scored_kernels = [kernel for kernel in self.aks_kernels if kernel.evaluated]
-        sorted_aks_kernels = sorted(scored_kernels, key=lambda k: k.score, reverse=True)
-        self.best_aks_kernel = sorted_aks_kernels[0]
-        self.best_kernel = self.best_aks_kernel.kernel
+        scored_kernels = [kernel for kernel in self.gp_models if kernel.evaluated]
+        sorted_gp_models = sorted(scored_kernels, key=lambda k: k.score, reverse=True)
+        self.best_gp_model = sorted_gp_models[0]
+        self.best_kernel = self.best_gp_model.kernel
         self.best_model = self.experiment.gp_model.__class__(self.x_train, self.y_train, kernel=self.best_kernel)
 
         self.width = r'1\textwidth'
@@ -155,8 +155,8 @@ class ExperimentReportGenerator:
             doc.append(VerticalSpace("10pt"))
             doc.append(LineBreak())
 
-            best_kern_short = str(self.best_aks_kernel)
-            best_kern_long = kernel_to_infix(self.best_aks_kernel.kernel, show_params=True)
+            best_kern_short = str(self.best_gp_model)
+            best_kern_long = kernel_to_infix(self.best_gp_model.kernel, show_params=True)
 
             with doc.create(MiniPage()):
                 doc.append(bold("Best Kernel:"))

@@ -18,7 +18,7 @@ from src.autoks.distance.distance import HellingerDistanceBuilder, DistanceBuild
 from src.autoks.gp_regression_models import KernelKernelGPRegression
 from src.autoks.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.hyperprior import Hyperpriors, boms_hyperpriors
-from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_aks_kernels, all_pairs_avg_dist, \
+from src.autoks.kernel import n_base_kernels, covariance_distance, remove_duplicate_gp_models, all_pairs_avg_dist, \
     GPModel, pretty_print_gp_models, kernel_to_infix, sort_kernel, set_priors, get_kernel_mapping, \
     get_all_1d_kernels
 from src.autoks.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
@@ -285,7 +285,7 @@ class Experiment:
             # evaluate, prune, and optimize kernels
             if not self.use_surrogate:
                 n_before = len(kernels)
-                kernels = remove_duplicate_aks_kernels(kernels)
+                kernels = remove_duplicate_gp_models(kernels)
                 if self.verbose:
                     n_removed = n_before - len(kernels)
                     print(f'Removed {n_removed} duplicate kernels.\n')
