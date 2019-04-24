@@ -1,4 +1,4 @@
-from unittest import TestCase
+import unittest
 
 from GPy.kern import RBF, RationalQuadratic, Add, LinScaleShift
 
@@ -7,7 +7,7 @@ from src.autoks.kernel import AKSKernel
 from src.test.autoks.support.util import has_combo_kernel_type, base_kernel_eq
 
 
-class TestGrammar(TestCase):
+class TestGrammar(unittest.TestCase):
 
     def setUp(self):
         self.se0 = RBF(1, active_dims=[0])
@@ -37,7 +37,7 @@ class TestGrammar(TestCase):
             self.assertEqual(part.active_dims[0], dim)
 
 
-class TestBaseGrammar(TestCase):
+class TestBaseGrammar(unittest.TestCase):
 
     def setUp(self):
         self.grammar = BaseGrammar(['SE', 'RQ'], 1)
@@ -50,7 +50,7 @@ class TestBaseGrammar(TestCase):
         self.assertRaises(NotImplementedError, self.grammar.expand, seed_kernel)
 
 
-class TestCKSGrammar(TestCase):
+class TestCKSGrammar(unittest.TestCase):
 
     def setUp(self):
         self.se0 = RBF(1, active_dims=[0])
@@ -217,7 +217,7 @@ class TestCKSGrammar(TestCase):
         self.assertTrue(all(k_types_exist))
         self.assertEqual(len(expected_kernels), len(new_kernels))
 
-    def test_expand_full_brute_force(self):
+    def test_expand_full_brute_force_level_0(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         n = len(grammar.base_kernel_names)
         n_dim = grammar.n_dims
@@ -228,10 +228,21 @@ class TestCKSGrammar(TestCase):
         expected = n * n_dim
         self.assertEqual(expected, len(kernels))
 
+    def test_expand_full_brute_force_level_1(self):
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        n = len(grammar.base_kernel_names)
+        n_dim = grammar.n_dims
+        max_number_of_models = 1000
+
         level = 1
         kernels = grammar.expand_full_brute_force(level, max_number_of_models)
         expected = (n * n_dim + 1) * n * n_dim
         self.assertEqual(expected, len(kernels))
+
+    @unittest.skip("Skipping expand full brute force test level 2 and 3 in the interest of time.")
+    def test_expand_full_brute_force_level_2_and_3(self):
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        max_number_of_models = 1000
 
         level = 2
         kernels = grammar.expand_full_brute_force(level, max_number_of_models)

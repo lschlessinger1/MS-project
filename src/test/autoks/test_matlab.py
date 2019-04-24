@@ -1,8 +1,7 @@
-from unittest import TestCase
+import unittest
 
 import numpy as np
 
-has_matlab_lib = False
 try:
     import matlab.engine
     from matlab.engine.matlabengine import MatlabEngine
@@ -12,16 +11,11 @@ try:
     print('Starting MATLAB engine...')
     eng = start_matlab()
 except ImportError:
-    from warnings import warn
-
-    warn('Could not import MATLAB engine. Skipping MATLAB unit tests.')
+    has_matlab_lib = False
 
 
-class TestMatlab(TestCase):
-
-    def setUp(self) -> None:
-        if not has_matlab_lib:
-            self.skipTest('MATLAB engine could not be imported.')
+@unittest.skipIf(not has_matlab_lib, 'Could not import MATLAB engine. Skipping MATLAB unit tests.')
+class TestMatlab(unittest.TestCase):
 
     def test_prob_samples_matlab(self):
         m = 15
