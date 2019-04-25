@@ -6,7 +6,7 @@ from GPy.kern import Kern
 from sklearn.model_selection import train_test_split
 
 from src.autoks.backend.kernel import create_1d_kernel
-from src.autoks.core.kernel import kernel_to_infix
+from src.autoks.core.covariance import Covariance
 
 
 class Dataset:
@@ -67,7 +67,7 @@ class FileDataset(Dataset):
 
 
 class KnownGPDataset(Dataset):
-    kernel: Kern
+    kernel: Covariance
     noise_var: float
     n_pts: int
 
@@ -77,11 +77,11 @@ class KnownGPDataset(Dataset):
         self.n_pts = n_pts
 
     def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
-        x, y = sample_gp(self.kernel, self.n_pts, self.noise_var)
+        x, y = sample_gp(self.kernel.raw_kernel, self.n_pts, self.noise_var)
         return x, y
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'kernel={kernel_to_infix(self.kernel, show_params=True)!r}, n=' \
+        return f'{self.__class__.__name__}('f'kernel={self.kernel.infix_full!r}, n=' \
             f'{self.n_pts!r}, noise={self.noise_var!r})'
 
 

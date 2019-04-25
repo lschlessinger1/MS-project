@@ -46,7 +46,7 @@ class UniformScorer(AcquisitionFunction):
               hyperpriors: Optional[Hyperpriors] = None,
               surrogate_model: Optional = None,
               **kwargs) -> float:
-        """Same score for all kernels.
+        """Same score for all gp_models.
 
         :param kernel:
         :param x_train:
@@ -114,7 +114,7 @@ class ExpectedImprovementPerSec(AcquisitionFunction):
         x = np.array(n_hyperparams)[:, None]
         y = np.log(durations)
         reg.fit(x, y)
-        t = reg.predict(np.array([[kernel.kernel.size]]))
+        t = reg.predict(np.array([[kernel.covariance.raw_kernel.size]]))
         eps = np.spacing(1)
         t[t <= 0] = eps
         return ei / t[0]
@@ -164,7 +164,7 @@ class ParamProportionalScorer(AcquisitionFunction):
         :return:
         """
         kernel = all_kernels[ind]
-        return -kernel.kernel.size  # return the negative because we want to minimize this
+        return -kernel.covariance.raw_kernel.size  # return the negative because we want to minimize this
 
 
 class OperandProportionalScorer(AcquisitionFunction):
@@ -177,7 +177,7 @@ class OperandProportionalScorer(AcquisitionFunction):
               hyperpriors: Optional[Hyperpriors] = None,
               surrogate_model: Optional = None,
               **kwargs) -> float:
-        """Score proportional to the number of 1D kernels (operands).
+        """Score proportional to the number of 1D gp_models (operands).
 
         :param kernel:
         :param x_train:
@@ -187,7 +187,7 @@ class OperandProportionalScorer(AcquisitionFunction):
         :return:
         """
         kernel = all_kernels[ind]
-        return -n_base_kernels(kernel.kernel)  # return the negative because we want to minimize this
+        return -n_base_kernels(kernel.covariance.raw_kernel)  # return the negative because we want to minimize this
 
 
 class KernComplexityProportionalScorer(AcquisitionFunction):

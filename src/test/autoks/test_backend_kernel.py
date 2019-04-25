@@ -7,7 +7,7 @@ from GPy.kern import RBF, RationalQuadratic, Add, Prod
 
 from src.autoks.backend.kernel import get_kernel_mapping, get_allowable_kernels, get_matching_kernels, create_1d_kernel, \
     get_priors, set_priors, subkernel_expression, sort_kernel, get_all_1d_kernels, additive_part_to_vec, decode_kernel, \
-    encode_kernel
+    encode_kernel, kernels_to_kernel_vecs
 from src.test.autoks.support.util import has_combo_kernel_type
 
 
@@ -157,6 +157,18 @@ class TestBackendKernel(TestCase):
         self.assertEqual(len(result), len(kernel_types))
         k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
         self.assertTrue(all(k_types_exist))
+
+    def test_kernels_to_kernel_vecs(self):
+        base_kernels = ['SE', 'RQ']
+        n_dims = 2
+        kerns = [self.se0, self.se0 * self.se0 + self.se1]
+        result = kernels_to_kernel_vecs(kerns, base_kernels, n_dims)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], np.ndarray)
+        self.assertIsInstance(result[1], np.ndarray)
+        np.testing.assert_array_equal(result[0], np.array([[1, 0, 0, 0]]))
+        np.testing.assert_array_equal(result[1], np.array([[2, 0, 0, 0],
+                                                           [0, 1, 0, 0]]))
 
     def test_additive_part_to_vec(self):
         base_kernels = ['SE', 'RQ']

@@ -7,6 +7,7 @@ from GPy.kern import RBF, RationalQuadratic
 from numpy.linalg import LinAlgError
 
 from src.autoks.core.active_set import ActiveSet
+from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
 from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder, DistanceBuilder
 
@@ -97,25 +98,25 @@ class TestHellingerDistanceBuilder(TestCase):
         self.x = np.array([[1, 2], [4, 5], [6, 7], [8, 9], [10, 11]])
 
         self.noise_prior = Gaussian(mu=np.log(0.01), sigma=1)
-        cov_1 = RBF(1)
+        cov_1 = Covariance(RBF(1))
         p1 = LogGaussian(20, 1)
         p2 = LogGaussian(0, 1.1)
-        cov_1.variance.set_prior(p1, warning=False)
-        cov_1.lengthscale.set_prior(p2, warning=False)
+        cov_1.raw_kernel.variance.set_prior(p1, warning=False)
+        cov_1.raw_kernel.lengthscale.set_prior(p2, warning=False)
 
-        cov_2 = RBF(1)
+        cov_2 = Covariance(RBF(1))
         p3 = LogGaussian(11, 1)
         p4 = LogGaussian(1, 1.21)
-        cov_2.variance.set_prior(p3, warning=False)
-        cov_2.lengthscale.set_prior(p4, warning=False)
+        cov_2.raw_kernel.variance.set_prior(p3, warning=False)
+        cov_2.raw_kernel.lengthscale.set_prior(p4, warning=False)
 
-        cov_3 = RationalQuadratic(1)
+        cov_3 = Covariance(RationalQuadratic(1))
         p5 = LogGaussian(4, 1)
         p6 = LogGaussian(1.2, 1.21)
         p7 = LogGaussian(13, 1.21)
-        cov_3.variance.set_prior(p5, warning=False)
-        cov_3.lengthscale.set_prior(p6, warning=False)
-        cov_3.power.set_prior(p7, warning=False)
+        cov_3.raw_kernel.variance.set_prior(p5, warning=False)
+        cov_3.raw_kernel.lengthscale.set_prior(p6, warning=False)
+        cov_3.raw_kernel.power.set_prior(p7, warning=False)
         models = [GPModel(cov_1), GPModel(cov_2), GPModel(cov_3)]
         self.active_models = ActiveSet(max_n_models=3)
         self.active_models.models = models
@@ -167,18 +168,18 @@ class TestHellingerDistanceBuilder(TestCase):
         np.testing.assert_allclose(builder._average_distance, builder._average_distance.T, atol=1e-8)
 
     def test_hellinger_distance(self):
-        cov_i = RBF(1)
+        cov_i = Covariance(RBF(1))
         p1 = LogGaussian(20, 1)
         p2 = LogGaussian(0, 1.1)
-        cov_i.variance.set_prior(p1, warning=False)
-        cov_i.lengthscale.set_prior(p2, warning=False)
+        cov_i.raw_kernel.variance.set_prior(p1, warning=False)
+        cov_i.raw_kernel.lengthscale.set_prior(p2, warning=False)
 
-        cov_j = RationalQuadratic(1)
+        cov_j = Covariance(RationalQuadratic(1))
         p3 = LogGaussian(11, 2)
         p4 = LogGaussian(2, 1.12)
-        cov_j.variance.set_prior(p3, warning=False)
-        cov_j.lengthscale.set_prior(p4, warning=False)
-        cov_j.power.set_prior(p2, warning=False)
+        cov_j.raw_kernel.variance.set_prior(p3, warning=False)
+        cov_j.raw_kernel.lengthscale.set_prior(p4, warning=False)
+        cov_j.raw_kernel.power.set_prior(p2, warning=False)
 
         x = np.array([[1, 2], [4, 5], [6, 7], [8, 9], [10, 11]])
         noise_prior = Gaussian(mu=np.log(0.01), sigma=1)
@@ -197,11 +198,11 @@ class TestHellingerDistanceBuilder(TestCase):
         builder = HellingerDistanceBuilder(noise_prior, num_samples, max_num_hyperparameters=40, max_num_kernels=10,
                                            active_models=MagicMock(), initial_model_indices=MagicMock(), data_X=x)
 
-        cov = RBF(1)
+        cov = Covariance(RBF(1))
         p1 = LogGaussian(20, 1)
         p2 = LogGaussian(0, 1.1)
-        cov.variance.set_prior(p1, warning=False)
-        cov.lengthscale.set_prior(p2, warning=False)
+        cov.raw_kernel.variance.set_prior(p1, warning=False)
+        cov.raw_kernel.lengthscale.set_prior(p2, warning=False)
 
         result = builder.create_precomputed_info(cov, x)
         self.assertIsInstance(result, tuple)

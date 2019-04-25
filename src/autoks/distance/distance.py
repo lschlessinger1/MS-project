@@ -2,12 +2,13 @@ from typing import Tuple, List
 
 import numpy as np
 from GPy.core.parameterization.priors import Prior, Gaussian
-from GPy.kern import Kern
+# from GPy.kern import Kern
 from numpy.linalg import LinAlgError
 from statsmodels.stats.correlation_tools import cov_nearest
 
 from src.autoks.backend.kernel import get_priors
 from src.autoks.core.active_set import ActiveSet
+from src.autoks.core.covariance import Covariance
 from src.autoks.distance.util import probability_samples, prior_sample
 
 # Adapted from Malkomes, 2016
@@ -62,7 +63,7 @@ class DistanceBuilder:
         """
         for i in new_candidates_indices:
             # covariance = active_models.models[i].covariance
-            covariance = active_models.models[i].kernel
+            covariance = active_models.models[i].covariance
             precomputed_info = self.create_precomputed_info(covariance, data_X)
             # active_models.models[i].info = precomputed_info
             active_models.models[i].info = precomputed_info
@@ -82,7 +83,7 @@ class DistanceBuilder:
         new_evaluated_models = new_selected_ind
         all_old_candidates_indices = np.setdiff1d(all_candidates_ind, new_candidates_ind)
 
-        # compute distance between evaluated kernels
+        # compute distance between evaluated gp_models
         if len(new_evaluated_models) > 1:
             self.compute_distance(active_models, new_evaluated_models, new_evaluated_models)
 
@@ -136,7 +137,7 @@ class DistanceBuilder:
         raise NotImplementedError
 
     def create_precomputed_info(self,
-                                covariance: Kern,
+                                covariance: Covariance,
                                 data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError
 
@@ -188,7 +189,7 @@ class HellingerDistanceBuilder(DistanceBuilder):
                 self._average_distance[j, i] = dist
 
     def create_precomputed_info(self,
-                                covariance: Kern,
+                                covariance: Covariance,
                                 data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         n = data_X.shape[0]
         tolerance = 1e-6
@@ -196,15 +197,15 @@ class HellingerDistanceBuilder(DistanceBuilder):
         log_det = np.full(self.num_samples, np.nan)
         mini_gram_matrices = np.full((n, n, self.num_samples), np.nan)
 
-        cov_priors = get_priors(covariance)
+        cov_priors = get_priors(covariance.raw_kernel)
         hyperparameters = prior_sample(cov_priors, self.probability_samples)
 
         for i in range(hyperparameters.shape[0]):
             hyp = hyperparameters[i, :]
             lmbda = self.hyperparameter_data_noise_samples[i]
 
-            covariance[:] = hyp
-            k = covariance.K(data_X, data_X)
+            covariance.raw_kernel[:] = hyp
+            k = covariance.raw_kernel.K(data_X, data_X)
             k = k + lmbda * np.eye(k.shape[0])
 
             mini_gram_matrices[:, :, i] = k

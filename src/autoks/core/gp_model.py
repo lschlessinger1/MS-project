@@ -1,29 +1,24 @@
 from typing import Optional, List
 
 import numpy as np
-from GPy.kern import Kern
-from sympy import pprint
 
-from src.autoks.backend.kernel import kernel_to_infix_tokens, tokens_to_str, additive_form, kernel_to_infix, \
+from src.autoks.backend.kernel import kernel_to_infix, \
     encode_prior, get_priors, encode_kernel
-from src.autoks.core.kernel import tokens_to_kernel_symbols
-from src.autoks.core.kernel_encoding import KernelTree, kernel_to_tree
-from src.autoks.symbolic.util import postfix_tokens_to_symbol
+from src.autoks.core.covariance import Covariance
 from src.autoks.util import remove_duplicates
-from src.evalg.encoding import infix_tokens_to_postfix_tokens
 
 
 class GPModel:
     """GPy kernel wrapper
     """
-    _kernel: Kern
+    covariance: Covariance
     lik_params: Optional[np.ndarray]
     evaluated: bool
     nan_scored: bool
     expanded: bool
 
-    def __init__(self, kernel, lik_params=None, evaluated=False, nan_scored=False, expanded=False):
-        self.kernel = kernel
+    def __init__(self, covariance: Covariance, lik_params=None, evaluated=False, nan_scored=False, expanded=False):
+        self.covariance = covariance
         self.lik_params = lik_params
         self.evaluated = evaluated
         self.nan_scored = nan_scored
@@ -40,62 +35,13 @@ class GPModel:
         # Update evaluated as well
         self.evaluated = True
 
-    @property
-    def kernel(self) -> Kern:
-        return self._kernel
-
-    @kernel.setter
-    def kernel(self, new_kernel: Kern) -> None:
-        self._kernel = new_kernel
-        # Set other kernel parameters
-        self.infix_tokens = kernel_to_infix_tokens(self.kernel)
-        self.postfix_tokens = infix_tokens_to_postfix_tokens(self.infix_tokens)
-        self.infix = tokens_to_str(self.infix_tokens, show_params=False)
-        self.postfix = tokens_to_str(self.postfix_tokens, show_params=False)
-        postfix_token_symbols = tokens_to_kernel_symbols(self.postfix_tokens)
-        self.symbolic_expr = postfix_tokens_to_symbol(postfix_token_symbols)
-        self.symbolic_expr_expanded = self.symbolic_expr.expand()
-
-    def to_binary_tree(self) -> KernelTree:
-        """Get the binary tree representation of the kernel
-
-        :return:
-        """
-        return kernel_to_tree(self.kernel)
-
-    def to_additive_form(self) -> None:
-        """Convert the kernel to additive form.
-
-        :return:
-        """
-        self.kernel = additive_form(self.kernel)
-
-    def pprint_expr(self) -> None:
-        pprint(self.symbolic_expr)
-
-    def pretty_print(self) -> None:
-        """Pretty print the kernel.
-
-        :return:
-        """
-        # print(str(self))
-        self.pprint_expr()
-
-    def print_full(self) -> None:
-        """Print the verbose version of the kernel.
-
-        :return:
-        """
-        infix_full = tokens_to_str(self.infix_tokens, show_params=True)
-        print(infix_full)
-
     def __str__(self):
-        return str(self.symbolic_expr)
+        return str(self.covariance.symbolic_expr)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'kernel={kernel_to_infix(self.kernel, show_params=True)!r}, ' \
-            f'lik_params={self.lik_params!r}, evaluated={self.evaluated!r}, nan_scored={self.nan_scored!r}, ' \
-            f'expanded={self.expanded!r}, score={self.score!r}) '
+        return f'{self.__class__.__name__}('f'covariance={self.covariance!r}, lik_params={self.lik_params!r}, ' \
+            f'evaluated={self.evaluated!r}, nan_scored={self.nan_scored!r}, expanded={self.expanded!r}, ' \
+            f'score={self.score!r}) '
 
 
 def pretty_print_gp_models(gp_models: List[GPModel],
@@ -111,7 +57,7 @@ def pretty_print_gp_models(gp_models: List[GPModel],
     message = message.capitalize()
     print(message)
     for k in gp_models:
-        k.pretty_print()
+        k.covariance.pretty_print()
     print('')
 
 
@@ -135,7 +81,7 @@ def remove_duplicate_gp_models(kernels: List[GPModel]) -> List[GPModel]:
 
     # Assume precedence by order.
     gp_models = sorted_evaluated_kernels + nan_scored_kernels + unevaluated_kernels
-    return remove_duplicates([kernel_to_infix(gp_model.kernel) for gp_model in gp_models], gp_models)
+    return remove_duplicates([kernel_to_infix(gp_model.covariance.raw_kernel) for gp_model in gp_models], gp_models)
 
 
 def encode_gp_model(gp_model: GPModel) -> List[str]:
@@ -145,17 +91,17 @@ def encode_gp_model(gp_model: GPModel) -> List[str]:
     :return:
     """
     try:
-        prior_enc = [encode_prior(prior) for prior in get_priors(gp_model.kernel)]
+        prior_enc = [encode_prior(prior) for prior in get_priors(gp_model.covariance.raw_kernel)]
     except ValueError:
         prior_enc = None
-    return [encode_kernel(gp_model.kernel), [prior_enc]]
+    return [encode_kernel(gp_model.covariance.raw_kernel), [prior_enc]]
 
 
 def encode_gp_models(gp_models: List[GPModel]) -> np.ndarray:
     """Encode a list of models.
 
     :param gp_models: the models to encode.
-    :return: An array containing encodings of the kernels.
+    :return: An array containing encodings of the gp_models.
     """
     enc = np.empty((len(gp_models), 1), dtype=np.object)
     for i, gp_model in enumerate(gp_models):

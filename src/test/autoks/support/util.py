@@ -25,7 +25,7 @@ def lists_equal_without_order(a: list, b: list) -> bool:
 
 
 def same_combo_type(k1: Kern, k2: Kern) -> bool:
-    """Test if two kernels are the same type of combination kernel.
+    """Test if two gp_models are the same type of combination kernel.
 
     :param k1:
     :param k2:
@@ -41,7 +41,7 @@ def base_kernel_eq(kern_1: Kern, kern_2: Kern) -> bool:
 
 
 def has_combo_kernel_type(kernels: Iterable[Kern], kern: Kern) -> bool:
-    """Test if an iterable of kernels are the same combination kernel type as another kernel.
+    """Test if an iterable of gp_models are the same combination kernel type as another kernel.
 
     :param kernels:
     :param kern:

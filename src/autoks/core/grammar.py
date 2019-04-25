@@ -2,13 +2,12 @@ import warnings
 from typing import List, Optional
 
 import numpy as np
-from GPy.kern import Kern, Prod, Add
-from GPy.kern.src.kern import CombinationKernel
 
-from src.autoks.backend.kernel import get_all_1d_kernels, tree_to_kernel, sort_kernel
+from src.autoks.backend.kernel import get_all_1d_kernels, sort_kernel
+from src.autoks.core.covariance import Covariance, remove_duplicate_kernels
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.hyperprior import Hyperpriors, boms_hyperpriors
-from src.autoks.core.kernel import remove_duplicate_kernels
+from src.autoks.core.kernel_encoding import tree_to_kernel
 from src.evalg.genprog import BinaryTreeGenerator, OnePointRecombinatorBase
 from src.evalg.vary import PopulationOperator
 
@@ -25,16 +24,17 @@ class BaseGrammar:
         self.base_kernel_names = base_kernel_names
         self.n_dims = n_dims
         self.hyperpriors = hyperpriors
-        self.base_kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, hyperpriors=self.hyperpriors)
+        raw_kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, hyperpriors=self.hyperpriors)
+        self.base_kernels = [Covariance(kernel) for kernel in raw_kernels]
 
     def initialize(self) -> List[GPModel]:
-        """Initialize kernels."""
+        """Initialize gp_models."""
         raise NotImplementedError('initialize must implemented in a subclass')
 
     def expand(self,
                seed_kernels: List[GPModel],
                verbose: bool = False) -> List[GPModel]:
-        """Expand seed kernels.
+        """Expand seed gp_models.
 
         :param seed_kernels:
         :param verbose:
@@ -45,7 +45,7 @@ class BaseGrammar:
     def get_candidates(self,
                        seed_kernels: List[GPModel],
                        verbose: bool = False) -> List[GPModel]:
-        """Get next round of candidate kernels from current kernels.
+        """Get next round of candidate gp_models from current gp_models.
 
         :param seed_kernels:
         :param verbose:
@@ -54,8 +54,8 @@ class BaseGrammar:
         return self.expand(seed_kernels, verbose=verbose)
 
     @staticmethod
-    def _kernels_to_gp_models(kernels: List[Kern]) -> List[GPModel]:
-        return [GPModel(kernel) for kernel in kernels]
+    def _covariances_to_gp_models(covariances: List[Covariance]) -> List[GPModel]:
+        return [GPModel(covariance) for covariance in covariances]
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
@@ -89,14 +89,15 @@ class EvolutionaryGrammar(BaseGrammar):
             if self.n_init_trees is not None:
                 self.n_init_trees = n_init_trees
 
-            # Generate trees and then convert to GPy kernels, then to AKSKernels
+            # Generate trees and then convert to GPy gp_models, then to AKSKernels
             trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
             kernels = [tree_to_kernel(tree) for tree in trees]
-            aks_kernels = self._kernels_to_gp_models(kernels)
-            return aks_kernels
+            covariances = [Covariance(k) for k in kernels]
+            gp_models = self._covariances_to_gp_models(covariances)
+            return gp_models
         else:
             # Naive initialization of all SE_i and RQ_i (for every dimension).
-            return self._kernels_to_gp_models(self.base_kernels)
+            return self._covariances_to_gp_models(self.base_kernels)
 
     def expand(self,
                seed_kernels: List[GPModel],
@@ -114,22 +115,24 @@ class EvolutionaryGrammar(BaseGrammar):
                              self.population_operator.variators])
         if using_1_pt_cx:
             if verbose:
-                print('Using one-point crossover. Sorting kernels.\n')
+                print('Using one-point crossover. Sorting gp_models.\n')
             # Sort trees if performing one-point crossover for alignment of trees.
-            for aks_kernel in seed_kernels:
-                aks_kernel.kernel = sort_kernel(aks_kernel.kernel)
+            for a in seed_kernels:
+                a.kernel = sort_kernel(a.kernel)
 
-        # Convert GPy kernels to BinaryTrees
-        trees = [aks_kernel.to_binary_tree() for aks_kernel in seed_kernels]
+        # Convert GPy gp_models to BinaryTrees
+        trees = [gp_model.covariance.to_binary_tree() for gp_model in seed_kernels]
 
         # Mutate/Crossover Trees
         offspring = self.population_operator.create_offspring(trees)
 
-        # Convert Trees back to GPy kernels, then to AKSKernels
+        # Convert Trees back to GPy gp_models, then to GPModels
         kernels = [tree_to_kernel(tree) for tree in offspring]
 
-        new_kernels = remove_duplicate_kernels(kernels)
-        new_kernels = self._kernels_to_gp_models(new_kernels)
+        covariances = [Covariance(k) for k in kernels]
+
+        new_kernels = remove_duplicate_kernels(covariances)
+        new_kernels = self._covariances_to_gp_models(new_kernels)
 
         if verbose:
             pretty_print_gp_models(new_kernels, 'Newly expanded')
@@ -168,7 +171,7 @@ class CKSGrammar(BaseGrammar):
 
         :return:
         """
-        return self._kernels_to_gp_models(self.base_kernels)
+        return self._covariances_to_gp_models(self.base_kernels)
 
     def expand(self,
                seed_kernels: List[GPModel],
@@ -188,19 +191,19 @@ class CKSGrammar(BaseGrammar):
             pretty_print_gp_models(seed_kernels, 'Seed')
 
         new_kernels = []
-        for aks_kernel in seed_kernels:
-            new_kernels += self.expand_full_kernel(aks_kernel.kernel)
+        for gp_model in seed_kernels:
+            new_kernels += self.expand_full_kernel(gp_model.covariance)
 
         new_kernels = [sort_kernel(kernel) for kernel in new_kernels]
         new_kernels = remove_duplicate_kernels(new_kernels)
-        new_kernels = self._kernels_to_gp_models(new_kernels)
+        new_kernels = self._covariances_to_gp_models(new_kernels)
 
         if verbose:
             pretty_print_gp_models(new_kernels, 'Newly expanded')
 
         return new_kernels
 
-    def expand_single_kernel(self, seed_kernel: Kern) -> List[Kern]:
+    def expand_single_kernel(self, seed_kernel: Covariance) -> List[Covariance]:
         """Expand a seed kernel according to the CKS grammar.
 
         :param seed_kernel:
@@ -214,7 +217,7 @@ class CKSGrammar(BaseGrammar):
 
         return new_kernels
 
-    def expand_full_kernel(self, kernel: Kern) -> List[Kern]:
+    def expand_full_kernel(self, kernel: Covariance) -> List[Covariance]:
         """Expand full kernel.
 
         :param kernel:
@@ -223,28 +226,31 @@ class CKSGrammar(BaseGrammar):
         result = self.expand_single_kernel(kernel)
         if kernel is None:
             pass
-        elif isinstance(kernel, CombinationKernel):
-            for i, operand in enumerate(kernel.parts):
-                for e in self.expand_full_kernel(operand):
-                    new_operands = kernel.parts[:i] + [e] + kernel.parts[i + 1:]
+        elif not kernel.is_base():
+            for i, operand in enumerate(kernel.raw_kernel.parts):
+                covariance_operand = Covariance(operand)
+                for e in self.expand_full_kernel(covariance_operand):
+                    new_operands = kernel.raw_kernel.parts[:i] + [e.raw_kernel] + kernel.raw_kernel.parts[i + 1:]
                     new_operands = [op.copy() for op in new_operands]
-                    if isinstance(kernel, Prod):
-                        result.append(Prod(new_operands))
-                    elif isinstance(kernel, Add):
-                        result.append(Add(new_operands))
+                    if kernel.is_prod():
+                        prod_kern = new_operands[0]
+                        for part in new_operands[1:]:
+                            prod_kern *= part
+                        result.append(Covariance(prod_kern))
+                    elif kernel.is_sum():
+                        prod_kern = new_operands[0]
+                        for part in new_operands[1:]:
+                            prod_kern += part
+                        result.append(Covariance(prod_kern))
                     else:
                         raise TypeError(f'Unknown combination kernel class {kernel.__class__.__name__}')
-        elif isinstance(kernel, Kern):
-            # base kernel
-            pass
-        else:
-            raise TypeError(f'Unknown kernel class {kernel.__class__.__name__}')
+
         return result
 
     def expand_full_brute_force(self,
                                 level: int,
-                                max_number_of_models: int) -> List[Kern]:
-        """Enumerate all kernels in CKS grammar up to a depth with a size limit."""
+                                max_number_of_models: int) -> List[Covariance]:
+        """Enumerate all gp_models in CKS grammar up to a depth with a size limit."""
         if level >= 4:
             warnings.warn('This is a brute-force implementation, use it for level < 4')
 
@@ -252,16 +258,12 @@ class CKSGrammar(BaseGrammar):
         if level == 0:
             return current_kernels
 
-        def remove_duplicates(new_kerns: List[Kern], all_kerns: List[Kern]):
+        def remove_duplicates(new_kerns: List[Covariance], all_kerns: List[Covariance]):
             unique_kernels = []
             for new_kernel in new_kerns:
-                # TODO: this should be using a wrapper of Kern, not GPModel.
-                symbolic_expr_new_kern = GPModel(new_kernel).symbolic_expr
                 repeated = False
                 for kern in all_kerns:
-                    symbolic_expr_kern = GPModel(kern).symbolic_expr
-                    kerns_equal = symbolic_expr_new_kern == symbolic_expr_kern
-                    if kerns_equal:
+                    if new_kernel.symbolic_expanded_equals(kern):
                         repeated = True
                         break
                 if not repeated:
@@ -308,19 +310,19 @@ class BOMSGrammar(CKSGrammar):
         self.number_of_random_walks = 15
 
     def initialize(self) -> List[GPModel]:
-        """Initialize kernels according to number of dimensions.
+        """Initialize gp_models according to number of dimensions.
 
         :return:
         """
         initial_level_depth = 2
         max_number_of_initial_models = 500
         initial_candidates = self.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
-        return self._kernels_to_gp_models(initial_candidates)
+        return self._covariances_to_gp_models(initial_candidates)
 
     def get_candidates(self,
                        seed_kernels: List[GPModel],
                        verbose: bool = False) -> List[GPModel]:
-        """Greedy and exploratory expansion of kernels.
+        """Greedy and exploratory expansion of gp_models.
 
         :param seed_kernels: list of AKSKernels
         :param verbose:
@@ -340,15 +342,15 @@ class BOMSGrammar(CKSGrammar):
 
         # Concatenate
         candidates = candidates_best + candidates_random
-        new_kernels = self._kernels_to_gp_models(candidates)
+        new_kernels = self._covariances_to_gp_models(candidates)
 
         if verbose:
             pretty_print_gp_models(new_kernels, 'Newly expanded')
 
         return new_kernels
 
-    def expand_random(self, total_num_walks: int) -> List[Kern]:
-        """Geometric random walk kernels.
+    def expand_random(self, total_num_walks: int) -> List[Covariance]:
+        """Geometric random walk gp_models.
 
         :return:
         """
@@ -367,7 +369,7 @@ class BOMSGrammar(CKSGrammar):
 
     def expand_best(self,
                     selected_models: List[GPModel],
-                    fitness_score: List[float]) -> List[Kern]:
+                    fitness_score: List[float]) -> List[Covariance]:
         """Single expansion of CKS Grammar.
 
         :param selected_models:
@@ -385,7 +387,7 @@ class BOMSGrammar(CKSGrammar):
 
         models_with_highest_score = [selected_models[i] for i in indices]
         for model in models_with_highest_score:
-            kernel_to_expand = model.kernel
+            kernel_to_expand = model.covariance
             new_kernel_list = self.expand_single_kernel(kernel_to_expand)
             new_kernels += new_kernel_list
 
@@ -415,15 +417,15 @@ class RandomGrammar(CKSGrammar):
         if verbose:
             pretty_print_gp_models(seed_kernels, 'Seed')
 
-        # Select kernels from one step of a CKS expansion uniformly at random without replacement.
+        # Select gp_models from one step of a CKS expansion uniformly at random without replacement.
         cks_expansion = []
         for seed_kernel in seed_kernels:
-            cks_expansion += self.expand_single_kernel(seed_kernel.kernel)
+            cks_expansion += self.expand_single_kernel(seed_kernel.covariance)
 
         n_kernels = min(self.max_n_kernels, min(len(cks_expansion), self.max_n_kernels))
         new_kernels = list(np.random.choice(cks_expansion, size=n_kernels, replace=False).tolist())
 
-        new_kernels = self._kernels_to_gp_models(new_kernels)
+        new_kernels = self._covariances_to_gp_models(new_kernels)
 
         if verbose:
             pretty_print_gp_models(new_kernels, 'Newly expanded')

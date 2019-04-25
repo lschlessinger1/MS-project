@@ -10,13 +10,12 @@ from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.core.hyperprior import Hyperprior, Hyperpriors
 from src.autoks.util import tokenize, flatten, remove_outer_parens, join_operands, arg_sort
-from src.evalg.encoding import BinaryTreeNode, BinaryTree
 
 RawKernelType = Kern
 
 
 def get_kernel_mapping() -> Dict[str, Type[RawKernelType]]:
-    """Get the map from allowable kernels to the corresponding class.
+    """Get the map from allowable gp_models to the corresponding class.
 
     :return:
     """
@@ -74,7 +73,7 @@ def create_1d_kernel(kernel_family: str,
 def get_all_1d_kernels(base_kernels: List[str],
                        n_dims: int,
                        hyperpriors: Optional[Hyperpriors] = None) -> List[RawKernelType]:
-    """Get all possible 1-D kernels.
+    """Get all possible 1-D gp_models.
 
     :param base_kernels:
     :param n_dims: number of dimensions
@@ -245,57 +244,20 @@ def kernel_to_infix(kernel: RawKernelType,
     return tokens_to_str(kernel_to_infix_tokens(kernel), show_params=show_params)
 
 
-def apply_op(left: RawKernelType,
-             right: RawKernelType,
-             operator: str) -> RawKernelType:
-    """Apply binary operator to two kernels.
-
-    :param left:
-    :param right:
-    :param operator:
-    :return:
-    """
-    if operator == '+':
-        return left + right
-    elif operator == '*':
-        return left * right
-    else:
-        raise ValueError(f'Unknown operator {operator}')
-
-
-def eval_binexp_tree(root: BinaryTreeNode) -> RawKernelType:
-    """Evaluate a binary expression tree.
-
-    :param root:
-    :return:
-    """
-    if root is not None:
-        if isinstance(root.value, Kern):
-            return root.value
-
-        left_node = eval_binexp_tree(root.left)
-        right_node = eval_binexp_tree(root.right)
-
-        operator = root.value
-
-        return apply_op(left_node, right_node, operator)
-
-
-def tree_to_kernel(tree: BinaryTree) -> RawKernelType:
-    """Convert a binary tree to a kernel.
-
-    :param tree:
-    :return:
-    """
-    return eval_binexp_tree(tree.root)
-
-
 def is_base_kernel(kernel: RawKernelType) -> bool:
     return isinstance(kernel, Kern) and not isinstance(kernel, CombinationKernel)
 
 
+def is_sum_kernel(kernel: RawKernelType) -> bool:
+    return isinstance(kernel, Add)
+
+
+def is_prod_kernel(kernel: RawKernelType) -> bool:
+    return isinstance(kernel, Prod)
+
+
 def n_base_kernels(kernel: RawKernelType) -> int:
-    """Count the number of base kernels.
+    """Count the number of base gp_models.
 
     :param kernel:
     :return:
@@ -304,7 +266,7 @@ def n_base_kernels(kernel: RawKernelType) -> int:
 
 
 def n_sum_kernels(kernel: RawKernelType) -> int:
-    """Count the number of sum kernels.
+    """Count the number of sum gp_models.
 
     :param kernel:
     :return:
@@ -313,7 +275,7 @@ def n_sum_kernels(kernel: RawKernelType) -> int:
 
 
 def n_prod_kernels(kernel: RawKernelType) -> int:
-    """Count the number of product kernels.
+    """Count the number of product gp_models.
 
     :param kernel:
     :return:
@@ -323,7 +285,7 @@ def n_prod_kernels(kernel: RawKernelType) -> int:
 
 def count_kernel_types(kernel: RawKernelType,
                        k_type_fn: Callable[[RawKernelType], bool]):
-    """Count the number of kernels of given type.
+    """Count the number of gp_models of given type.
 
     :param kernel:
     :param k_type_fn:
@@ -401,7 +363,7 @@ def sort_combination_kernel(kernel: RawKernelType,
     unsorted_kernel_names = []
     for operand in new_ops:
         if isinstance(operand, CombinationKernel):
-            # to sort multiple combination kernels of the same type, use the parameter string
+            # to sort multiple combination gp_models of the same type, use the parameter string
             param_str = ''.join(str(x) for x in operand.param_array)
             unsorted_kernel_names.append((kmap_inv[operand.__class__] + param_str))
         elif isinstance(operand, Kern):

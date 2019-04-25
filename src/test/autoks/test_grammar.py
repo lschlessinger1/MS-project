@@ -1,42 +1,12 @@
 import unittest
 
 import numpy as np
-from GPy.kern import RBF, RationalQuadratic, Add, LinScaleShift, Kern
+from GPy.kern import RBF, RationalQuadratic, LinScaleShift
 from GPy.kern.src.kern import CombinationKernel
 
+from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.grammar import BaseGrammar, CKSGrammar, remove_duplicate_kernels, BOMSGrammar
-from src.test.autoks.support.util import has_combo_kernel_type, base_kernel_eq
-
-
-class TestGrammar(unittest.TestCase):
-
-    def setUp(self):
-        self.se0 = RBF(1, active_dims=[0])
-        self.se1 = RBF(1, active_dims=[1])
-        self.rq0 = RationalQuadratic(1, active_dims=[0])
-        self.rq1 = RationalQuadratic(1, active_dims=[1])
-
-    def test_remove_duplicate_kernels(self):
-        kernels = [self.se0 + self.se0, self.se1, self.se0, self.se0, self.se1 + self.se0, self.se0 + self.se1]
-        kernels_pruned = remove_duplicate_kernels(kernels)
-        # should be SE0 + SE0, SE1, SE0, SE1 + SE0
-        kernel_types_outer = [(Add, [0]), (RBF, [1]), (RBF, [0]), (Add, [0, 1])]
-        for (k_class, dims), part in zip(kernel_types_outer, kernels_pruned):
-            self.assertIsInstance(part, k_class)
-            self.assertEqual(part.active_dims.tolist(), dims)
-
-        kernel_types_inner_1 = [(RBF, 0), (RBF, 0)]
-        sum_1 = kernels_pruned[0]
-        for (k_class, dim), part in zip(kernel_types_inner_1, sum_1.parts):
-            self.assertIsInstance(part, k_class)
-            self.assertEqual(part.active_dims[0], dim)
-
-        kernel_types_inner_2 = [(RBF, 1), (RBF, 0)]
-        sum_2 = kernels_pruned[3]
-        for (k_class, dim), part in zip(kernel_types_inner_2, sum_2.parts):
-            self.assertIsInstance(part, k_class)
-            self.assertEqual(part.active_dims[0], dim)
+from src.autoks.core.grammar import BaseGrammar, CKSGrammar, BOMSGrammar
 
 
 class TestBaseGrammar(unittest.TestCase):
@@ -55,13 +25,13 @@ class TestBaseGrammar(unittest.TestCase):
 class TestCKSGrammar(unittest.TestCase):
 
     def setUp(self):
-        self.se0 = RBF(1, active_dims=[0])
-        self.se1 = RBF(1, active_dims=[1])
-        self.se2 = RBF(1, active_dims=[2])
-        self.rq0 = RationalQuadratic(1, active_dims=[0])
-        self.rq1 = RationalQuadratic(1, active_dims=[1])
-        self.rq2 = RationalQuadratic(1, active_dims=[2])
-        self.lin0 = LinScaleShift(1, active_dims=[0])
+        self.se0 = Covariance(RBF(1, active_dims=[0]))
+        self.se1 = Covariance(RBF(1, active_dims=[1]))
+        self.se2 = Covariance(RBF(1, active_dims=[2]))
+        self.rq0 = Covariance(RationalQuadratic(1, active_dims=[0]))
+        self.rq1 = Covariance(RationalQuadratic(1, active_dims=[1]))
+        self.rq2 = Covariance(RationalQuadratic(1, active_dims=[2]))
+        self.lin0 = Covariance(LinScaleShift(1, active_dims=[0]))
 
     def test_create_grammar(self):
         base_kernel_names = ['SE', 'RQ']
@@ -74,9 +44,9 @@ class TestCKSGrammar(unittest.TestCase):
         self.assertEqual(len(base_kernel_names), len(grammar.base_kernel_names))
         self.assertEqual(dim, grammar.n_dims)
         self.assertEqual(None, grammar.hyperpriors)
-        self.assertTrue(base_kernel_eq(self.se0, grammar.base_kernels[0]))
-        self.assertTrue(base_kernel_eq(self.rq0, grammar.base_kernels[1]))
-        self.assertFalse(base_kernel_eq(self.se0, grammar.base_kernels[1]))
+        self.assertEqual(self.se0.infix, grammar.base_kernels[0].infix)
+        self.assertEqual(self.rq0.infix, grammar.base_kernels[1].infix)
+        self.assertNotEqual(self.se0.infix, grammar.base_kernels[1].infix)
 
     def test_mask_kernels_multi_d(self):
         base_kernel_names = ['SE', 'RQ']
@@ -95,37 +65,35 @@ class TestCKSGrammar(unittest.TestCase):
         ]
 
         for expected_kernel, actual_kernel in zip(expected_kernels, grammar.base_kernels):
-            self.assertTrue(base_kernel_eq(expected_kernel, actual_kernel))
+            self.assertEqual(expected_kernel.infix, actual_kernel.infix)
 
     def test_initialize(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
-        result = grammar.initialize()
-        self.assertIsInstance(result, list)
 
-        kernel_types = [self.se0, self.se1, self.rq0, self.rq1]
-        self.assertEqual(len(result), len(kernel_types))
-        kernels = [k.kernel for k in result]
-        k_types_exist = [has_combo_kernel_type(kernels, k_type) for k_type in kernel_types]
-        self.assertTrue(all(k_types_exist))
+        actual = grammar.initialize()
+        expected = [self.se0, self.se1, self.rq0, self.rq1]
+        self.assertIsInstance(actual, list)
+        self.assertEqual(len(expected), len(actual))
+        for expected_cov, actual_cov in zip(expected, actual):
+            self.assertEqual(expected_cov.infix, actual_cov.covariance.infix)
 
-        scored = [k.evaluated for k in result]
+        scored = [k.evaluated for k in actual]
         self.assertFalse(all(scored))
-        nan_scored = [k.nan_scored for k in result]
+        nan_scored = [k.nan_scored for k in actual]
         self.assertFalse(all(nan_scored))
 
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=1)
-        result = grammar.initialize()
-        self.assertIsInstance(result, list)
 
-        kernel_types = [self.se0, self.rq0]
-        self.assertEqual(len(result), len(kernel_types))
-        kernels = [k.kernel for k in result]
-        k_types_exist = [has_combo_kernel_type(kernels, k_type) for k_type in kernel_types]
-        self.assertTrue(all(k_types_exist))
+        actual = grammar.initialize()
+        expected = [self.se0, self.rq0]
+        self.assertIsInstance(actual, list)
+        self.assertEqual(len(expected), len(actual))
+        for expected_cov, actual_cov in zip(expected, actual):
+            self.assertEqual(expected_cov.infix, actual_cov.covariance.infix)
 
-        scored = [k.evaluated for k in result]
+        scored = [k.evaluated for k in actual]
         self.assertFalse(all(scored))
-        nan_scored = [k.nan_scored for k in result]
+        nan_scored = [k.nan_scored for k in actual]
         self.assertFalse(all(nan_scored))
 
     def test_expand(self):
@@ -150,9 +118,10 @@ class TestCKSGrammar(unittest.TestCase):
             self.se0 * self.lin0,
         ]
         new_kernels = grammar.expand_single_kernel(se)
-        k_types_exist = [has_combo_kernel_type(new_kernels, k_type) for k_type in expected_kernels]
-        self.assertTrue(all(k_types_exist))
+        self.assertIsInstance(new_kernels, list)
         self.assertEqual(len(expected_kernels), len(new_kernels))
+        for expected_cov, actual_cov in zip(expected_kernels, new_kernels):
+            self.assertEqual(expected_cov.infix, actual_cov.infix)
 
         # Expand SE + RQ
         se_plus_rq = self.se0 + self.rq0
@@ -165,35 +134,36 @@ class TestCKSGrammar(unittest.TestCase):
             (self.se0 + self.rq0) * self.lin0,
         ]
         new_kernels = grammar.expand_single_kernel(se_plus_rq)
-        k_types_exist = [has_combo_kernel_type(new_kernels, k_type) for k_type in expected_kernels]
-        self.assertTrue(all(k_types_exist))
+        self.assertIsInstance(new_kernels, list)
         self.assertEqual(len(expected_kernels), len(new_kernels))
+        for expected_cov, actual_cov in zip(expected_kernels, new_kernels):
+            self.assertEqual(expected_cov.infix, actual_cov.infix)
 
     def test_expand_single_kernel_two_dims(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         # first, test 1d expansion of base kernel
         k = self.se0
-        result = grammar.expand_single_kernel(k)
+        expected_kernels = grammar.expand_single_kernel(k)
 
-        kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
-                        self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1]
-        k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
-
-        self.assertTrue(all(k_types_exist))
-        self.assertEqual(len(result), len(kernel_types))
+        new_kernels = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
+                       self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1]
+        self.assertIsInstance(new_kernels, list)
+        self.assertEqual(len(expected_kernels), len(new_kernels))
+        new_kernels_infixes = [k.infix for k in new_kernels]
+        expected_infixes = [k.infix for k in expected_kernels]
+        self.assertCountEqual(expected_infixes, new_kernels_infixes)
 
         # test combination kernel expansion
         k = self.se1 * self.rq1
-        result = grammar.expand_single_kernel(k)
+        new_kernels = grammar.expand_single_kernel(k)
 
-        kernel_types = [self.se1 * self.rq1 + self.se0, self.se1 * self.rq1 + self.rq0,
-                        self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,
-                        self.se1 * self.rq1 * self.se0, self.se1 * self.rq1 * self.rq0,
-                        self.se1 * self.rq1 * self.se1, self.se1 * self.rq1 * self.rq1]
-        k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
-
-        self.assertTrue(all(k_types_exist))
-        self.assertEqual(len(result), len(kernel_types))
+        expected_kernels = [self.se1 * self.rq1 + self.se0, self.se1 * self.rq1 + self.rq0,
+                            self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,
+                            self.se1 * self.rq1 * self.se0, self.se1 * self.rq1 * self.rq0,
+                            self.se1 * self.rq1 * self.se1, self.se1 * self.rq1 * self.rq1]
+        new_kernels_infixes = [k.infix for k in new_kernels]
+        expected_infixes = [k.infix for k in expected_kernels]
+        self.assertCountEqual(expected_infixes, new_kernels_infixes)
 
     def test_expand_single_kernel_mutli_d(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=3)
@@ -215,9 +185,10 @@ class TestCKSGrammar(unittest.TestCase):
             self.se0 * self.rq2,
         ]
         new_kernels = grammar.expand_single_kernel(se)
-        k_types_exist = [has_combo_kernel_type(new_kernels, k_type) for k_type in expected_kernels]
-        self.assertTrue(all(k_types_exist))
+        self.assertIsInstance(new_kernels, list)
         self.assertEqual(len(expected_kernels), len(new_kernels))
+        for expected_cov, actual_cov in zip(expected_kernels, new_kernels):
+            self.assertEqual(expected_cov.infix, actual_cov.infix)
 
     def test_expand_full_brute_force_level_0(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
@@ -260,37 +231,35 @@ class TestCKSGrammar(unittest.TestCase):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
         # first, test 1d expansion of base kernel
         k = self.se0
-        result = grammar.expand_full_kernel(k)
+        new_kernels = grammar.expand_full_kernel(k)
 
-        kernel_types = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
-                        self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1]
-        k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
-
-        self.assertTrue(all(k_types_exist))
-        self.assertEqual(len(result), len(kernel_types))
+        expected_kernels = [self.se0 + self.se0, self.se0 + self.rq0, self.se0 + self.se1, self.se0 + self.rq1,
+                            self.se0 * self.se0, self.se0 * self.rq0, self.se0 * self.se1, self.se0 * self.rq1]
+        new_kernels_infixes = [k.infix for k in new_kernels]
+        expected_infixes = [k.infix for k in expected_kernels]
+        self.assertCountEqual(expected_infixes, new_kernels_infixes)
 
         # test combination kernel expansion
         k = self.se1 * self.rq1
-        result = grammar.expand_full_kernel(k)
+        new_kernels = grammar.expand_full_kernel(k)
 
-        kernel_types = [self.se1 * self.rq1 + self.se0, self.se1 * self.rq1 + self.rq0,
-                        self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,
-                        self.se1 * self.rq1 * self.se0, self.se1 * self.rq1 * self.rq0,
-                        self.se1 * self.rq1 * self.se1, self.se1 * self.rq1 * self.rq1,
-                        (self.se1 + self.se0) * self.rq1, (self.se1 + self.rq0) * self.rq1,
-                        (self.se1 + self.se1) * self.rq1, (self.se1 + self.rq1) * self.rq1,
-                        (self.se1 * self.se0) * self.rq1, (self.se1 * self.rq0) * self.rq1,
-                        (self.se1 * self.se1) * self.rq1, (self.se1 * self.rq1) * self.rq1,
+        expected_kernels = [self.se1 * self.rq1 + self.se0, self.se1 * self.rq1 + self.rq0,
+                            self.se1 * self.rq1 + self.se1, self.se1 * self.rq1 + self.rq1,
+                            self.se1 * self.rq1 * self.se0, self.se1 * self.rq1 * self.rq0,
+                            self.se1 * self.rq1 * self.se1, self.se1 * self.rq1 * self.rq1,
+                            (self.se1 + self.se0) * self.rq1, (self.se1 + self.rq0) * self.rq1,
+                            (self.se1 + self.se1) * self.rq1, (self.se1 + self.rq1) * self.rq1,
+                            (self.se1 * self.se0) * self.rq1, (self.se1 * self.rq0) * self.rq1,
+                            (self.se1 * self.se1) * self.rq1, (self.se1 * self.rq1) * self.rq1,
 
-                        self.se1 * (self.rq1 + self.se0), self.se1 * (self.rq1 + self.rq0),
-                        self.se1 * (self.rq1 + self.se1), self.se1 * (self.rq1 + self.rq1),
-                        self.se1 * (self.rq1 * self.se0), self.se1 * (self.rq1 * self.rq0),
-                        self.se1 * (self.rq1 * self.se1), self.se1 * (self.rq1 * self.rq1),
-                        ]
-        k_types_exist = [has_combo_kernel_type(result, k_type) for k_type in kernel_types]
-
-        self.assertTrue(all(k_types_exist))
-        self.assertEqual(len(result), len(kernel_types))
+                            self.se1 * (self.rq1 + self.se0), self.se1 * (self.rq1 + self.rq0),
+                            self.se1 * (self.rq1 + self.se1), self.se1 * (self.rq1 + self.rq1),
+                            self.se1 * (self.rq1 * self.se0), self.se1 * (self.rq1 * self.rq0),
+                            self.se1 * (self.rq1 * self.se1), self.se1 * (self.rq1 * self.rq1),
+                            ]
+        new_kernels_infixes = [k.infix for k in new_kernels]
+        expected_infixes = [k.infix for k in expected_kernels]
+        self.assertCountEqual(expected_infixes, new_kernels_infixes)
 
 
 class TestBomsGrammar(unittest.TestCase):
@@ -357,7 +326,7 @@ class TestBomsGrammar(unittest.TestCase):
         np.random.seed(5)
         new_kernels = grammar.expand_random(num_random_walks)
         self.assertEqual(len(new_kernels), num_random_walks)
-        self.assertIsInstance(new_kernels[0], Kern)
+        self.assertIsInstance(new_kernels[0], Covariance)
         self.assertNotIsInstance(new_kernels[0], CombinationKernel)
 
     def test_expand_best(self):
@@ -373,7 +342,7 @@ class TestBomsGrammar(unittest.TestCase):
         fitness_score = list(np.random.permutation(len(kernels)).tolist())
 
         index = int(np.argmax(fitness_score))
-        kernel_to_expand = GPModel(kernels[index])
+        kernel_to_expand = kernels[index]
 
         models = [GPModel(kernel) for kernel in kernels]
         for model, model_score in zip(models, fitness_score):
@@ -381,10 +350,10 @@ class TestBomsGrammar(unittest.TestCase):
 
         new_kernels = grammar.expand_best(models, fitness_score)
 
-        expanded_kernels = grammar.expand([kernel_to_expand])
+        expanded_kernels = grammar.expand_single_kernel(kernel_to_expand)
 
         for i in range(len(expanded_kernels)):
-            self.assertTrue(has_combo_kernel_type([new_kernels[i]], expanded_kernels[i].kernel))
+            self.assertEqual(new_kernels[i].infix, expanded_kernels[i].infix)
 
     def tearDown(self) -> None:
         np.random.seed()

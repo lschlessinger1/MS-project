@@ -20,7 +20,7 @@ class KernelSelector:
     def _select(kernels: List[GPModel],
                 scores: List[float],
                 selector: Selector) -> List[GPModel]:
-        """Select a list of kernels possibly using scores.
+        """Select a list of gp_models possibly using scores.
 
         :param kernels:
         :param scores:
@@ -32,7 +32,7 @@ class KernelSelector:
     def select_parents(self,
                        kernels: List[GPModel],
                        scores: List[float]) -> List[GPModel]:
-        """Select parent kernels.
+        """Select parent gp_models.
 
         :param kernels:
         :param scores:
@@ -43,7 +43,7 @@ class KernelSelector:
     def select_offspring(self,
                          kernels: List[GPModel],
                          scores: List[float]) -> List[GPModel]:
-        """Select next round of kernels.
+        """Select next round of gp_models.
 
         :param kernels:
         :param scores:

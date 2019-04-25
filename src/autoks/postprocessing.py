@@ -16,7 +16,6 @@ from sklearn.svm import SVR
 
 from src.autoks.backend.model import AIC, BIC, pl2, log_likelihood_normalized
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.kernel import kernel_to_infix
 from src.evalg.plotting import plot_distribution, plot_best_so_far
 
 
@@ -135,8 +134,8 @@ class ExperimentReportGenerator:
         scored_kernels = [kernel for kernel in self.gp_models if kernel.evaluated]
         sorted_gp_models = sorted(scored_kernels, key=lambda k: k.score, reverse=True)
         self.best_gp_model = sorted_gp_models[0]
-        self.best_kernel = self.best_gp_model.kernel
-        self.best_model = self.experiment.gp_model.__class__(self.x_train, self.y_train, kernel=self.best_kernel)
+        self.best_covariance = self.best_gp_model.covariance
+        self.best_model = self.experiment.gp_model.__class__(self.x_train, self.y_train, kernel=self.best_covariance)
 
         self.width = r'1\textwidth'
         self.dpi = 300
@@ -157,7 +156,7 @@ class ExperimentReportGenerator:
             doc.append(LineBreak())
 
             best_kern_short = str(self.best_gp_model)
-            best_kern_long = kernel_to_infix(self.best_gp_model.kernel, show_params=True)
+            best_kern_long = self.best_gp_model.covariance.infix_full
 
             with doc.create(MiniPage()):
                 doc.append(bold("Best Kernel:"))
@@ -225,7 +224,7 @@ class ExperimentReportGenerator:
         :return:
         """
         with doc.create(Subsection(title)):
-            doc.append('A summary of the structure of kernels searched.')
+            doc.append('A summary of the structure of gp_models searched.')
             with doc.create(Figure(position='h!')) as plot:
                 with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as left:
@@ -242,9 +241,9 @@ class ExperimentReportGenerator:
                                       self.experiment.std_n_operands, self.experiment.best_n_operands,
                                       value_name='median', metric_name='# Operands')
                     right.add_plot(width=NoEscape(width), *args, **kwargs)
-                    right.add_caption('A plot of the number of operands (number of 1-D kernels) over time including \
+                    right.add_caption('A plot of the number of operands (number of 1-D gp_models) over time including \
                     the best model, the median number of operands, and the standard deviation.')
-                plot.add_caption('These two figures show how the structure of the compositional kernels changed over \
+                plot.add_caption('These two figures show how the structure of the compositional gp_models changed over \
                 time. The left figure shows the hyperparameter distribution and the right one shows operand \
                 distribution.')
 
@@ -264,7 +263,7 @@ class ExperimentReportGenerator:
         :return:
         """
         with doc.create(Subsection(title)):
-            doc.append('A summary of the population of kernels searched.')
+            doc.append('A summary of the population of gp_models searched.')
             with doc.create(Figure(position='h!')) as plot:
                 with doc.create(SubFigure(position='t',
                                           width=NoEscape(r'0.45\linewidth'))) as left:

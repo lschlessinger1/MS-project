@@ -30,7 +30,7 @@ class QueryStrategy(Selector, ABC):
               hyperpriors: Optional[Hyperpriors] = None,
               surrogate_model: Optional = None,
               **kwargs) -> Tuple[np.ndarray, List[float]]:
-        """Query the next round of kernels using the acquisition function.
+        """Query the next round of gp_models using the acquisition function.
 
         :param unevaluated_kernels_ind:
         :param all_kernels:
@@ -56,7 +56,7 @@ class QueryStrategy(Selector, ABC):
                       hyperpriors: Optional[Hyperpriors] = None,
                       surrogate_model: Optional = None,
                       **kwargs) -> List[float]:
-        """Score all kernels using the scoring function.
+        """Score all gp_models using the scoring function.
 
         :param kernels:
         :param x_train:

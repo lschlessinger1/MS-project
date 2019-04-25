@@ -25,6 +25,16 @@ class TestUtil(TestCase):
         self.assertIsInstance(result, list)
         self.assertListEqual(result, ['5', '2', '1', '3', '9'])
 
+    def test_remove_duplicates_multi_type(self):
+        # simple example
+        data = [1, 1, 1, 2, 3, 4, 'a', 'b', True]
+        values = [10, 9, 8, '7', '6', False, 4, 3, 2]
+        result = remove_duplicates(data, values)
+        self.assertEqual(result, [10, '7', '6', False, 4, 3])
+
+        with self.assertRaises(ValueError):
+            remove_duplicates([1, 2, 3], ['1', 2])
+
     def test_tokenize(self):
         result = tokenize([])
         self.assertListEqual(result, [])
