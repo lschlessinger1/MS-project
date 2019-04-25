@@ -340,9 +340,9 @@ class Experiment:
     def print_search_summary(self, depth, kernels):
         print(f'Iteration {depth}/{self.max_depth}')
         print(f'Evaluated {self.n_evals}/{self.eval_budget}')
-        evaluated_gp_models = [aks_kernel for aks_kernel in self.remove_nan_scored_models(kernels)
-                               if aks_kernel.evaluated]
-        scores = [aks_kernel.score for aks_kernel in evaluated_gp_models]
+        evaluated_gp_models = [gp_model for gp_model in self.remove_nan_scored_models(kernels)
+                               if gp_model.evaluated]
+        scores = [gp_model.score for gp_model in evaluated_gp_models]
         arg_max_score = int(np.argmax(scores))
         best_kernel = evaluated_gp_models[arg_max_score]
         sizes = [len(gp_model.covariance.to_binary_tree()) for gp_model in evaluated_gp_models]
@@ -624,7 +624,7 @@ class Experiment:
     def remove_nan_scored_models(self, gp_models: List[GPModel]) -> List[GPModel]:
         """Remove all models that have NaN scores.
 
-        :param gp_model:
+        :param gp_models:
         :return:
         """
         return [gp_model for gp_model in gp_models if not gp_model.nan_scored]
