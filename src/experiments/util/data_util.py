@@ -113,7 +113,7 @@ def sample_gp(kernel: Kern,
     # additive Gaussian noise
     gaussian_noise_mean = 0
     gaussian_noise_std = np.sqrt(noise_var)
-    gaussian_noise = np.random.normal(gaussian_noise_mean, gaussian_noise_std, n_pts)
+    gaussian_noise = np.random.normal(gaussian_noise_mean, gaussian_noise_std, (n_pts, 1))
     y = f_true + gaussian_noise
 
     return x, y
