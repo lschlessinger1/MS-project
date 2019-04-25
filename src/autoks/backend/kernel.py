@@ -13,18 +13,12 @@ from src.autoks.util import tokenize, flatten, remove_outer_parens, join_operand
 
 RawKernelType = Kern
 
-
-def get_kernel_mapping() -> Dict[str, Type[RawKernelType]]:
-    """Get the map from allowable gp_models to the corresponding class.
-
-    :return:
-    """
-    return {
-        'SE': RBF,
-        'RQ': RationalQuadratic,
-        'LIN': LinScaleShift,
-        'PER': StandardPeriodic
-    }
+KERNEL_DICT = dict(
+    SE=RBF,
+    RQ=RationalQuadratic,
+    LIN=LinScaleShift,
+    PER=StandardPeriodic
+)
 
 
 def get_allowable_kernels() -> List[str]:
@@ -32,7 +26,7 @@ def get_allowable_kernels() -> List[str]:
 
     :return:
     """
-    return list(get_kernel_mapping().keys())
+    return list(KERNEL_DICT.keys())
 
 
 def get_matching_kernels() -> List[Type[RawKernelType]]:
@@ -40,7 +34,7 @@ def get_matching_kernels() -> List[Type[RawKernelType]]:
 
     :return:
     """
-    return list(get_kernel_mapping().values())
+    return list(KERNEL_DICT.values())
 
 
 def create_1d_kernel(kernel_family: str,
@@ -58,7 +52,7 @@ def create_1d_kernel(kernel_family: str,
     :return:
     """
     if not kernel_mapping:
-        kernel_mapping = get_kernel_mapping()
+        kernel_mapping = KERNEL_DICT
         if not kernel_cls:
             kernel_cls = kernel_mapping[kernel_family]
 
@@ -80,7 +74,7 @@ def get_all_1d_kernels(base_kernels: List[str],
     :param hyperpriors:
     :return: list of models of size len(base_kernels) * n_dims
     """
-    kernel_mapping = get_kernel_mapping()
+    kernel_mapping = KERNEL_DICT
     models = []
 
     for kern_fam in base_kernels:
@@ -140,7 +134,7 @@ def subkernel_expression(kernel: Kern,
     :return:
     """
     kernel_families = get_allowable_kernels()
-    kernel_mapping = get_kernel_mapping()
+    kernel_mapping = KERNEL_DICT
     matching_base_kerns = [kern_fam for kern_fam in kernel_families if isinstance(kernel, kernel_mapping[kern_fam])]
     # assume only 1 active dimension
     dim = kernel.active_dims[0]
@@ -354,7 +348,7 @@ def sort_combination_kernel(kernel: RawKernelType,
     :return:
     """
     # first sort by kernel name, then by active dim
-    kmap = get_kernel_mapping()
+    kmap = KERNEL_DICT
     kmap_inv = {v: k for k, v in kmap.items()}
     # add sum and product entries
     kmap_inv[Prod] = 'PROD'
