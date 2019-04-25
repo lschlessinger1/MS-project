@@ -3,6 +3,7 @@ from typing import List, Callable, Optional, Sequence
 
 import numpy as np
 
+from src.autoks.core.covariance import Covariance
 from src.experiments.util.data_util import KnownGPDataset, FileDataset, Dataset, cks_known_kernels
 
 EXP_FACTORY = Callable
@@ -41,7 +42,8 @@ class KnownGPExperimentRunner(ExperimentRunner):
     def get_datasets(self) -> List[KnownGPDataset]:
         # Create synthetic dataset generators
         noise_vars = [10 ** i for i in range(-1, 2)]
-        datasets = [KnownGPDataset(kernel, var, 100) for var in noise_vars for kernel in cks_known_kernels()]
+        true_kernels = [Covariance(true_kernel) for true_kernel in cks_known_kernels()]
+        datasets = [KnownGPDataset(kernel, var, 100) for var in noise_vars for kernel in true_kernels]
         return datasets
 
 

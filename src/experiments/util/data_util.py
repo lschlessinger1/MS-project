@@ -80,9 +80,14 @@ class KnownGPDataset(Dataset):
         x, y = sample_gp(self.kernel.raw_kernel, self.n_pts, self.noise_var)
         return x, y
 
+    def snr(self):
+        # assume signal variance always = 1
+        signal_variance = 1
+        return signal_variance / self.noise_var
+
     def __repr__(self):
         return f'{self.__class__.__name__}('f'kernel={self.kernel.infix_full!r}, n=' \
-            f'{self.n_pts!r}, noise={self.noise_var!r})'
+            f'{self.n_pts!r}, SNR={self.snr() !r})'
 
 
 def sample_gp(kernel: Kern,
@@ -102,11 +107,14 @@ def sample_gp(kernel: Kern,
     prior_cov = kernel.K(x, x)
 
     # Generate a sample path
-    z = np.random.multivariate_normal(prior_mean, prior_cov)
+    f_true = np.random.multivariate_normal(prior_mean, prior_cov)
+    f_true = f_true[:, None]
 
     # additive Gaussian noise
-    noise = np.random.randn(n_pts, 1) * np.sqrt(noise_var)
-    y = z.reshape(-1, 1) + noise
+    gaussian_noise_mean = 0
+    gaussian_noise_std = np.sqrt(noise_var)
+    gaussian_noise = np.random.normal(gaussian_noise_mean, gaussian_noise_std, (n_pts, 1))
+    y = f_true + gaussian_noise
 
     return x, y
 
