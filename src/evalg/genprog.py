@@ -154,7 +154,6 @@ class HalfAndHalfGenerator(BinaryTreeGenerator):
         return BinaryTree(root)
 
 
-
 class TreeMutator(Mutator, ABC):
     operands: list
 
@@ -305,7 +304,6 @@ class GrowMutator(SubTreeExchangeMutator):
         return tree
 
 
-
 class FullMutator(SubTreeExchangeMutator):
 
     def __init__(self, operands, max_depth=2):
@@ -346,7 +344,6 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
         tree_generator = HalfAndHalfGenerator(operators, self.operands, self.max_depth)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
-
 
 
 # Binary tree recombinators
