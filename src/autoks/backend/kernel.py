@@ -137,7 +137,7 @@ def subkernel_expression(kernel: Kern,
     kernel_mapping = KERNEL_DICT
     matching_base_kerns = [kern_fam for kern_fam in kernel_families if isinstance(kernel, kernel_mapping[kern_fam])]
     # assume only 1 active dimension
-    dim = kernel.active_dims[0]
+    dim = kernel.active_dims[0] + 1
     # assume only 1 matching base kernel
     base_kernel = matching_base_kerns[0]
 
