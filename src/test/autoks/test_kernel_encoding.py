@@ -11,7 +11,7 @@ class TestKernelNode(TestCase):
         kern = RBF(1)
         result = KernelNode(kern)
         self.assertEqual(result.value, kern)
-        self.assertEqual(result.label, 'SE_0')
+        self.assertEqual(result.label, 'SE_1')
         self.assertIsNone(result.parent)
         self.assertIsNone(result.left)
         self.assertIsNone(result.right)
@@ -21,7 +21,7 @@ class TestKernelNode(TestCase):
         node = KernelNode(mock_kern)
         result = node._value_to_label(mock_kern)
         self.assertIsInstance(result, str)
-        self.assertEqual(result, 'SE_0')
+        self.assertEqual(result, 'SE_1')
 
 
 class TestKernelTree(TestCase):
@@ -31,7 +31,7 @@ class TestKernelTree(TestCase):
         root = KernelNode(kern)
         result = KernelTree(root)
         self.assertEqual(result.root, root)
-        self.assertEqual(result.root.label, 'SE_0')
+        self.assertEqual(result.root.label, 'SE_1')
         self.assertEqual(result.root.value, kern)
 
 

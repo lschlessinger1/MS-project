@@ -16,7 +16,7 @@ class TestGPModel(TestCase):
         gp_model = GPModel(kernel)
         result = gp_model.covariance.to_binary_tree()
         self.assertIsInstance(result, KernelTree)
-        self.assertCountEqual(result.postfix_tokens(), ['SE_0', 'SE_0', '*', 'RQ_0', '+'])
+        self.assertCountEqual(result.postfix_tokens(), ['SE_1', 'SE_1', '*', 'RQ_1', '+'])
 
 
 class TestGPModelModule(TestCase):

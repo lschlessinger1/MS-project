@@ -33,8 +33,8 @@ class TestCovariance(TestCase):
         self.assertListEqual([kern], cov.infix_tokens)
         self.assertIsInstance(cov.infix, str)
         self.assertIsInstance(cov.infix_full, str)
-        self.assertEqual('SE_0', cov.infix)
-        self.assertEqual('SE_0', cov.postfix)
+        self.assertEqual('SE_1', cov.infix)
+        self.assertEqual('SE_1', cov.postfix)
         self.assertListEqual([kern], cov.postfix_tokens)
         self.assertIsInstance(cov.symbolic_expr, KernelSymbol)
         self.assertEqual(kern, cov.symbolic_expr.kernel_one_d)
@@ -281,7 +281,7 @@ class TestCovariance(TestCase):
         cov_2 = Covariance(kern_2)
 
         cov = cov_1 + cov_2
-        self.assertEqual('SE_0 + SE_0', cov.infix)
+        self.assertEqual('SE_1 + SE_1', cov.infix)
 
     def test_multiply(self):
         kern_1 = self.se_0
@@ -290,7 +290,7 @@ class TestCovariance(TestCase):
         cov_2 = Covariance(kern_2)
 
         cov = cov_1 * cov_2
-        self.assertEqual('SE_0 * SE_0', cov.infix)
+        self.assertEqual('SE_1 * SE_1', cov.infix)
 
     def test_as_latex(self):
         kern = self.se_0
@@ -344,7 +344,7 @@ class TestCovarianceModule(TestCase):
         k2 = RationalQuadratic(1)
         kernel_tokens = [k1, '+', k2]
         actual = tokens_to_kernel_symbols(kernel_tokens)
-        expected = [KernelSymbol('SE_0', k1), '+', KernelSymbol('RQ_0', k2)]
+        expected = [KernelSymbol('SE_1', k1), '+', KernelSymbol('RQ_1', k2)]
         self.assertListEqual(expected, actual)
 
     def test_kernel_vec_avg_dist(self):
