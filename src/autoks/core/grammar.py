@@ -117,8 +117,8 @@ class EvolutionaryGrammar(BaseGrammar):
             if verbose:
                 print('Using one-point crossover. Sorting gp_models.\n')
             # Sort trees if performing one-point crossover for alignment of trees.
-            for a in seed_kernels:
-                a.kernel = sort_kernel(a.kernel)
+            for seed_model in seed_kernels:
+                seed_model.covariance.raw_kernel = seed_model.covariance.canonical()
 
         # Convert GPy gp_models to BinaryTrees
         trees = [gp_model.covariance.to_binary_tree() for gp_model in seed_kernels]
