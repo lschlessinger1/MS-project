@@ -12,8 +12,8 @@ from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
-from src.autoks.backend.kernel import set_priors, sort_kernel, get_all_1d_kernels, n_base_kernels, get_kernel_mapping, \
-    kernel_to_infix
+from src.autoks.backend.kernel import set_priors, sort_kernel, get_all_1d_kernels, n_base_kernels, \
+    kernel_to_infix, KERNEL_DICT
 from src.autoks.backend.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.active_set import ActiveSet
@@ -1065,7 +1065,7 @@ def get_best_n_hyperparams(gp_models: List[GPModel], *args, **kwargs) -> List[in
 
 def base_kern_freq(base_kern: str) -> Callable[[List[GPModel], Any, Any], List[int]]:
     def get_frequency(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
-        cls = get_kernel_mapping()[base_kern]
+        cls = KERNEL_DICT[base_kern]
         return [type_count(gp_model.covariance.to_binary_tree(), cls) for gp_model in gp_models]
 
     return get_frequency

@@ -23,6 +23,8 @@ class KernelNode(BinaryTreeNode):
     def _value_to_html(self, value) -> str:
         if isinstance(value, RawKernelType):
             return subkernel_expression(value, html_like=True)
+        elif value == '*':
+            return '<&times;>'
         else:
             return '<' + str(value) + '>'
 
