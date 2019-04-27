@@ -17,10 +17,10 @@ class TestBinaryTreeGenerator(TestCase):
         self.operators = ['+', '*']
         self.operands = [1, 2, 3]
         self.max_depth = 3
-        self.generator = BinaryTreeGenerator(self.operators, self.operands, self.max_depth)
+        self.generator = BinaryTreeGenerator(self.operators, self.operands, self.max_depth, BinaryTreeNode)
 
     def test_max_depth(self):
-        generator = BinaryTreeGenerator(self.operators, self.operands, max_depth=2)
+        generator = BinaryTreeGenerator(self.operators, self.operands, max_depth=2, binary_tree_node_cls=BinaryTreeNode)
         with self.assertRaises(ValueError):
             generator.max_depth = -2
 
@@ -120,7 +120,8 @@ class TestSubTreeExchangeMutator(TestCase):
 
     def test_max_depth(self):
         operands = ['A', 'B', 'C', 'D']
-        self.assertRaises(ValueError, SubTreeExchangeMutator, operands, max_depth=-2)
+        self.assertRaises(ValueError, SubTreeExchangeMutator, operands, max_depth=-2,
+                          binary_tree_node_cls=BinaryTreeNode)
 
     def test__mutate_subtree_exchange(self):
         max_depth = 2

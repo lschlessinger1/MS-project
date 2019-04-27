@@ -21,6 +21,7 @@ from src.autoks.core.covariance import covariance_distance, all_pairs_avg_dist
 from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, pretty_print_gp_models
 from src.autoks.core.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors, boms_hyperpriors
+from src.autoks.core.kernel_encoding import KernelNode
 from src.autoks.core.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector, \
     evolutionary_kernel_selector
 from src.autoks.core.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy, BestScoreStrategy
@@ -961,7 +962,8 @@ class Experiment:
         n_offspring = int(variation_pct * pop_size)
         n_parents = n_offspring
 
-        mutator = HalfAndHalfMutator(operands=[k for k in get_all_1d_kernels(base_kernels_names, n_dims)])
+        mutator = HalfAndHalfMutator(operands=[k for k in get_all_1d_kernels(base_kernels_names, n_dims)],
+                                     binary_tree_node_cls=KernelNode)
         recombinator = OnePointRecombinator()
         cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring)
         mut_variator = MutationVariator(mutator)
