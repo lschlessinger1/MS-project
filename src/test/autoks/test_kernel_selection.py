@@ -30,8 +30,7 @@ class TestKernelSelector(TestCase):
         parent_selector.select.return_value = np.array([self.kernels[1]])
 
         offspring_selector = MagicMock()
-        kernel_pruner = MagicMock()
-        ks = KernelSelector(parent_selector, offspring_selector, kernel_pruner)
+        ks = KernelSelector(parent_selector, offspring_selector)
         result = ks.select_parents(self.kernels, self.scores)
         self.assertEqual(result, [self.kernels[1]])
 
@@ -41,18 +40,6 @@ class TestKernelSelector(TestCase):
         offspring_selector.select.return_value = np.array([self.kernels[1]])
 
         parent_selector = MagicMock()
-        kernel_pruner = MagicMock()
-        ks = KernelSelector(parent_selector, offspring_selector, kernel_pruner)
+        ks = KernelSelector(parent_selector, offspring_selector)
         result = ks.select_offspring(self.kernels, self.scores)
-        self.assertEqual(result, [self.kernels[1]])
-
-    def test_prune_candidates(self):
-        kernel_pruner = Selector(1)
-        kernel_pruner.select = MagicMock()
-        kernel_pruner.select.return_value = np.array([self.kernels[1]])
-
-        parent_selector = MagicMock()
-        offspring_selector = MagicMock()
-        ks = KernelSelector(parent_selector, offspring_selector, kernel_pruner)
-        result = ks.prune_candidates(self.kernels, self.scores)
         self.assertEqual(result, [self.kernels[1]])

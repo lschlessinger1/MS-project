@@ -11,10 +11,9 @@ class KernelSelector:
     offspring_selector: Selector
     kernel_pruner: Selector
 
-    def __init__(self, parent_selector, offspring_selector, kernel_pruner):
+    def __init__(self, parent_selector, offspring_selector):
         self.parent_selector = parent_selector
         self.offspring_selector = offspring_selector
-        self.kernel_pruner = kernel_pruner
 
     @staticmethod
     def _select(kernels: List[GPModel],
@@ -51,20 +50,8 @@ class KernelSelector:
         """
         return self._select(kernels, scores, self.offspring_selector)
 
-    def prune_candidates(self,
-                         kernels: List[GPModel],
-                         scores: List[float]) -> List[GPModel]:
-        """Remove candidates from kernel list.
 
-        :param kernels:
-        :param scores:
-        :return:
-        """
-        return self._select(kernels, scores, self.kernel_pruner)
-
-
-def BOMS_kernel_selector(n_parents: int = 1,
-                         max_candidates: int = 600):
+def BOMS_kernel_selector(n_parents: int = 1):
     """Construct a default BOMS kernel selector.
 
     :param n_parents: Number of parents to expand each round
@@ -73,8 +60,7 @@ def BOMS_kernel_selector(n_parents: int = 1,
     """
     parent_selector = TruncationSelector(n_parents)
     offspring_selector = AllSelector()
-    kernel_pruner = TruncationSelector(max_candidates)
-    return KernelSelector(parent_selector, offspring_selector, kernel_pruner)
+    return KernelSelector(parent_selector, offspring_selector)
 
 
 def CKS_kernel_selector(n_parents: int = 1):
@@ -85,8 +71,7 @@ def CKS_kernel_selector(n_parents: int = 1):
     """
     parent_selector = TruncationSelector(n_parents)
     offspring_selector = AllSelector()
-    kernel_pruner = AllSelector()
-    return KernelSelector(parent_selector, offspring_selector, kernel_pruner)
+    return KernelSelector(parent_selector, offspring_selector)
 
 
 def evolutionary_kernel_selector(n_parents: int = 1,
@@ -99,5 +84,4 @@ def evolutionary_kernel_selector(n_parents: int = 1,
     """
     parent_selector = LinearRankingSelector(n_parents)
     offspring_selector = TruncationSelector(max_offspring)
-    kernel_pruner = AllSelector()
-    return KernelSelector(parent_selector, offspring_selector, kernel_pruner)
+    return KernelSelector(parent_selector, offspring_selector)

@@ -185,12 +185,8 @@ class Experiment:
 
         self.use_surrogate = use_surrogate
         self.surrogate_model = None
-        if self.use_surrogate:
-            # for now, force surrogate model class to be GP Regression
-            self.surrogate_model_cls = KernelKernelGPRegression
-            self.distance_builder = None
-            # TODO: ensure this matches distance builder limit
-            self.active_set = ActiveSet(max_n_models=1000)
+        # TODO: ensure this matches distance builder limit
+        self.active_set = ActiveSet(max_n_models=1000)
 
         # Used for expected improvement per second.
         self.n_kernel_params = []
@@ -207,18 +203,17 @@ class Experiment:
         kernels = self.grammar.initialize()
         kernels = self.randomize_models(kernels)
 
-        # create distance builder if using surrogate model
-        if self.use_surrogate:
-            new_candidate_indices = self.active_set.update(kernels)
-            assert new_candidate_indices == self.active_set.get_candidate_indices()
-
-            # for now, it must be a Hellinger distance builder
-            self.distance_builder = self.create_hellinger_db(self.active_set, self.x_train)
-
         # convert to additive form if necessary
         if self.additive_form:
             for gp_model in kernels:
                 gp_model.covariance.to_additive_form()
+
+        # create distance builder if using surrogate model
+        if self.use_surrogate:
+            new_candidate_indices = self.active_set.update(kernels)
+            assert new_candidate_indices == self.active_set.get_candidate_indices()
+            # for now, it must be a Hellinger distance builder
+            self.distance_builder = self.create_hellinger_db(self.active_set, self.x_train)
 
         # Select gp_models by acquisition function to be evaluated
         selected_kernels, ind, acq_scores = self.query_models(kernels, self.init_query_strat, self.grammar.hyperpriors)
@@ -328,7 +323,6 @@ class Experiment:
                                      kernel.evaluated and kernel not in selected_kernels]
             kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
 
-            kernels = self.prune_kernels(kernels, acq_scores, ind)
             kernels = self.select_offspring(kernels)
             self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
             depth += 1
@@ -437,33 +431,6 @@ class Experiment:
                 gp_model.covariance.to_additive_form()
 
         return new_kernels
-
-    def prune_kernels(self,
-                      kernels: List[GPModel],
-                      acq_scores: List[float],
-                      ind: List[int]) -> List[GPModel]:
-        """Remove un-evaluated gp_models if necessary.
-
-        :param kernels:
-        :param acq_scores:
-        :param ind:
-        :return:
-        """
-        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
-        unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
-
-        # acquisition scores of un-evaluated gp_models
-        acq_scores_unevaluated = [s for i, s in enumerate(acq_scores) if i not in ind]
-
-        pruned_candidates = self.kernel_selector.prune_candidates(unevaluated_kernels, acq_scores_unevaluated)
-        kernels = evaluated_kernels + pruned_candidates
-
-        if self.verbose:
-            n_before_prune = len(unevaluated_kernels)
-            n_pruned = n_before_prune - len(pruned_candidates)
-            print(f'Kernel pruner removed {n_pruned}/{n_before_prune} un-evaluated gp_models\n')
-
-        return kernels
 
     def select_offspring(self, kernels: List[GPModel]) -> List[GPModel]:
         """Select next round of gp_models.
@@ -919,7 +886,7 @@ class Experiment:
         base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
         hyperpriors = boms_hyperpriors()
         grammar = BOMSGrammar(base_kernel_names, n_dims, hyperpriors)
-        kernel_selector = BOMS_kernel_selector(n_parents=1, max_candidates=600)
+        kernel_selector = BOMS_kernel_selector(n_parents=1)
         objective = log_likelihood_normalized
         init_qs = BOMSInitQueryStrategy()
         acq = ExpectedImprovementPerSec()
@@ -957,14 +924,16 @@ class Experiment:
         base_kernels_names = CKSGrammar.get_base_kernel_names(n_dims)
 
         pop_size = 25
-        variation_pct = 0.61  # 60% of individuals created using crossover and 1% mutation
+        m_prob = 0.10
+        cx_prob = 0.60
+        variation_pct = m_prob + cx_prob  # 60% of individuals created using crossover and 10% mutation
         n_offspring = int(variation_pct * pop_size)
         n_parents = n_offspring
 
         mutator = HalfAndHalfMutator(operands=[k for k in get_all_1d_kernels(base_kernels_names, n_dims)])
         recombinator = OnePointRecombinator()
-        cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring)
-        mut_variator = MutationVariator(mutator)
+        cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring, c_prob=cx_prob)
+        mut_variator = MutationVariator(mutator, m_prob=m_prob)
         variators = [cx_variator, mut_variator]
         pop_operator = CrossMutPopOperator(variators)
         grammar = EvolutionaryGrammar(base_kernel_names=base_kernels_names, n_dims=n_dims,

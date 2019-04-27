@@ -82,7 +82,6 @@ class TestExperiment(TestCase):
 
         self.exp.kernel_selector.select_parents.side_effect = first_kernel
         self.exp.kernel_selector.select_offspring.side_effect = all_but_first
-        self.exp.kernel_selector.prune_candidates.side_effect = all_but_first
 
         result = self.exp.model_search()
 
@@ -101,7 +100,6 @@ class TestExperiment(TestCase):
 
         self.assertEqual(n_expansions, self.exp.kernel_selector.select_parents.call_count)
         self.assertEqual(n_expansions, self.exp.kernel_selector.select_offspring.call_count)
-        self.assertEqual(n_expansions, self.exp.kernel_selector.prune_candidates.call_count)
 
         self.assertLessEqual(self.exp.n_evals, self.exp.eval_budget)
         self.assertLessEqual(self.exp.max_depth, self.exp.grammar.get_candidates.call_count)
@@ -137,14 +135,6 @@ class TestExperiment(TestCase):
         result = self.exp.propose_new_kernels(self.gp_models)
         self.assertIsInstance(result, list)
         self.assertListEqual(result, expansion)
-
-    def test_prune_kernels(self):
-        ind = [0, 1]
-        pruned = [self.gp_models[i] for i in ind]
-        self.exp.kernel_selector.prune_candidates.return_value = pruned
-        result = self.exp.prune_kernels(self.gp_models, [0.1, 0.2, 0.3], ind)
-        self.assertIsInstance(result, list)
-        self.assertListEqual(result, pruned)
 
     def test_select_offspring(self):
         offspring = self.gp_models[:2]
