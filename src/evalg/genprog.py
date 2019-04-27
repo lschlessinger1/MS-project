@@ -13,10 +13,11 @@ class BinaryTreeGenerator:
     operands: list
     _max_depth: int
 
-    def __init__(self, binary_operators, operands, max_depth: int):
+    def __init__(self, binary_operators, operands, max_depth: int, binary_tree_node_cls: type):
         self.binary_operators = binary_operators
         self.operands = operands
         self._max_depth = max_depth
+        self.binary_tree_node_cls = binary_tree_node_cls
 
     @property
     def max_depth(self) -> int:
@@ -44,8 +45,8 @@ class BinaryTreeGenerator:
 
 class GrowGenerator(BinaryTreeGenerator):
 
-    def __init__(self, binary_operators, operands, max_depth: int):
-        super().__init__(binary_operators, operands, max_depth)
+    def __init__(self, binary_operators, operands, max_depth: int, binary_tree_node_cls: type = BinaryTreeNode):
+        super().__init__(binary_operators, operands, max_depth, binary_tree_node_cls)
 
     def generate(self) -> BinaryTree:
         """Grow a random binary tree.
@@ -72,7 +73,7 @@ class GrowGenerator(BinaryTreeGenerator):
         n_children = 2
         if depth < self.max_depth:
             primitives = terminals + internals
-            node = BinaryTreeNode(np.random.choice(primitives))
+            node = self.binary_tree_node_cls(np.random.choice(primitives))
 
             if node.value in internals:
                 for i in range(0, n_children):
@@ -84,15 +85,16 @@ class GrowGenerator(BinaryTreeGenerator):
                         node.right = child_i
                         node.right.parent = node
         else:
-            node = BinaryTreeNode(np.random.choice(terminals))
+            node = self.binary_tree_node_cls(np.random.choice(terminals))
 
         return node
 
 
 class FullGenerator(BinaryTreeGenerator):
 
-    def __init__(self, binary_operators, operands, max_depth: int):
-        super().__init__(binary_operators, operands, max_depth)
+    def __init__(self, binary_operators, operands, max_depth: int,
+                 binary_tree_node_cls: type = BinaryTreeNode):
+        super().__init__(binary_operators, operands, max_depth, binary_tree_node_cls)
 
     def generate(self) -> BinaryTree:
         """Generate a full binary tree.
@@ -118,7 +120,7 @@ class FullGenerator(BinaryTreeGenerator):
         # 2 children for binary trees
         n_children = 2
         if depth < self.max_depth:
-            node = BinaryTreeNode(np.random.choice(internals))
+            node = self.binary_tree_node_cls(np.random.choice(internals))
 
             if node.value in internals:
                 for i in range(0, n_children):
@@ -130,15 +132,16 @@ class FullGenerator(BinaryTreeGenerator):
                         node.right = child_i
                         node.right.parent = node
         else:
-            node = BinaryTreeNode(np.random.choice(terminals))
+            node = self.binary_tree_node_cls(np.random.choice(terminals))
 
         return node
 
 
 class HalfAndHalfGenerator(BinaryTreeGenerator):
 
-    def __init__(self, binary_operators, operands, max_depth: int):
-        super().__init__(binary_operators, operands, max_depth)
+    def __init__(self, binary_operators, operands, max_depth: int,
+                 binary_tree_node_cls: type = BinaryTreeNode):
+        super().__init__(binary_operators, operands, max_depth, binary_tree_node_cls)
 
     def generate(self) -> BinaryTree:
         """Generate a full binary tree.
@@ -146,10 +149,10 @@ class HalfAndHalfGenerator(BinaryTreeGenerator):
         :return:
         """
         if np.random.rand() > 0.5:
-            tree_generator = FullGenerator(operators, self.operands, self.max_depth)
+            tree_generator = FullGenerator(operators, self.operands, self.max_depth, self.binary_tree_node_cls)
             root = tree_generator.full(depth=0)
         else:
-            tree_generator = GrowGenerator(operators, self.operands, self.max_depth)
+            tree_generator = GrowGenerator(operators, self.operands, self.max_depth, self.binary_tree_node_cls)
             root = tree_generator.grow(depth=0)
         return BinaryTree(root)
 
@@ -157,12 +160,13 @@ class HalfAndHalfGenerator(BinaryTreeGenerator):
 class TreeMutator(Mutator, ABC):
     operands: list
 
-    def __init__(self, operands):
+    def __init__(self, operands, binary_tree_node_cls: type):
         """
 
         :param operands: the possible operands to choose from
         """
         self.operands = operands
+        self.binary_tree_node_cls = binary_tree_node_cls
 
     def mutate(self, individual: BinaryTree) -> BinaryTree:
         """Mutate a binary tree.
@@ -194,8 +198,8 @@ class TreePointMutator(TreeMutator):
     arguments as the node it is replacing.
     """
 
-    def __init__(self, operands):
-        super().__init__(operands)
+    def __init__(self, operands, binary_tree_node_cls: type = BinaryTreeNode):
+        super().__init__(operands, binary_tree_node_cls)
 
     def mutate(self, individual: BinaryTree) -> BinaryTree:
         """Point mutation.
@@ -229,13 +233,13 @@ class TreePointMutator(TreeMutator):
 class SubTreeExchangeMutator(TreeMutator, ABC):
     max_depth: int
 
-    def __init__(self, operands, max_depth):
+    def __init__(self, operands, max_depth, binary_tree_node_cls: type):
         """
 
         :param operands:
         :param max_depth:
         """
-        super().__init__(operands)
+        super().__init__(operands, binary_tree_node_cls)
         if max_depth < 0:
             raise ValueError('max depth must be nonnegative')
         self.max_depth = max_depth
@@ -289,8 +293,8 @@ class SubTreeExchangeMutator(TreeMutator, ABC):
 
 class GrowMutator(SubTreeExchangeMutator):
 
-    def __init__(self, operands, max_depth=2):
-        super().__init__(operands, max_depth)
+    def __init__(self, operands, max_depth=2, binary_tree_node_cls: type = BinaryTreeNode):
+        super().__init__(operands, max_depth, binary_tree_node_cls)
 
     def mutate(self, individual: BinaryTree) -> BinaryTree:
         """Mutate a grown binary tree.
@@ -299,15 +303,15 @@ class GrowMutator(SubTreeExchangeMutator):
         :return:
         """
         tree = individual
-        tree_generator = GrowGenerator(operators, self.operands, self.max_depth)
+        tree_generator = GrowGenerator(operators, self.operands, self.max_depth, self.binary_tree_node_cls)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
 
 class FullMutator(SubTreeExchangeMutator):
 
-    def __init__(self, operands, max_depth=2):
-        super().__init__(operands, max_depth)
+    def __init__(self, operands, max_depth=2, binary_tree_node_cls: type = BinaryTreeNode):
+        super().__init__(operands, max_depth, binary_tree_node_cls)
 
     def mutate(self, individual: BinaryTree) -> BinaryTree:
         """Full mutation applied to a binary tree
@@ -316,7 +320,7 @@ class FullMutator(SubTreeExchangeMutator):
         :return:
         """
         tree = individual
-        tree_generator = FullGenerator(operators, self.operands, self.max_depth)
+        tree_generator = FullGenerator(operators, self.operands, self.max_depth, self.binary_tree_node_cls)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
@@ -328,8 +332,8 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
     selection. Vol. 1. MIT press, 1992.
     """
 
-    def __init__(self, operands, max_depth=2):
-        super().__init__(operands, max_depth)
+    def __init__(self, operands, max_depth=2, binary_tree_node_cls: type = BinaryTreeNode):
+        super().__init__(operands, max_depth, binary_tree_node_cls)
 
     def mutate(self, individual: BinaryTree) -> BinaryTree:
         """Half and half mutation applied to a binary tree.
@@ -341,7 +345,7 @@ class HalfAndHalfMutator(SubTreeExchangeMutator):
         :return:
         """
         tree = individual
-        tree_generator = HalfAndHalfGenerator(operators, self.operands, self.max_depth)
+        tree_generator = HalfAndHalfGenerator(operators, self.operands, self.max_depth, self.binary_tree_node_cls)
         tree = self._mutate_subtree_exchange(tree, tree_generator)
         return tree
 
