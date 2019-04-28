@@ -2,8 +2,7 @@ from typing import Optional, List
 
 import numpy as np
 
-from src.autoks.backend.kernel import kernel_to_infix, \
-    encode_prior, get_priors, encode_kernel
+from src.autoks.backend.kernel import encode_prior, get_priors, encode_kernel
 from src.autoks.core.covariance import Covariance
 from src.autoks.util import remove_duplicates
 
@@ -81,7 +80,7 @@ def remove_duplicate_gp_models(kernels: List[GPModel]) -> List[GPModel]:
 
     # Assume precedence by order.
     gp_models = sorted_evaluated_kernels + nan_scored_kernels + unevaluated_kernels
-    return remove_duplicates([kernel_to_infix(gp_model.covariance.raw_kernel) for gp_model in gp_models], gp_models)
+    return remove_duplicates([gp_model.covariance.symbolic_expr_expanded for gp_model in gp_models], gp_models)
 
 
 def encode_gp_model(gp_model: GPModel) -> List[str]:
