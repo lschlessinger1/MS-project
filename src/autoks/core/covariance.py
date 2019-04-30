@@ -19,8 +19,6 @@ class Covariance:
     """A wrapper for a GPy Kern"""
 
     def __init__(self, kernel: RawKernelType):
-        if not isinstance(kernel, RawKernelType):
-            raise TypeError(f'kernel must be {RawKernelType.__name__}. Found type {kernel.__class__.__name__}.')
         self.raw_kernel = kernel
 
     @property
@@ -29,6 +27,8 @@ class Covariance:
 
     @raw_kernel.setter
     def raw_kernel(self, new_kernel: RawKernelType) -> None:
+        if not isinstance(new_kernel, RawKernelType):
+            raise TypeError(f'kernel must be {RawKernelType.__name__}. Found type {new_kernel.__class__.__name__}.')
         self._raw_kernel = new_kernel
         # Set other raw_kernel parameters
         self.infix_tokens = kernel_to_infix_tokens(self.raw_kernel)
