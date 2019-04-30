@@ -535,7 +535,7 @@ class Experiment:
                 # Unfix all params and set kernel
                 k_fixed.unfix()
                 set_model_kern(self.gp_model, k_fixed)
-                gp_model.kernel = self.gp_model.kern
+                gp_model.covariance.raw_kernel = self.gp_model.kern
                 gp_model.lik_params = self.gp_model.likelihood[:].copy()
                 delta_t = time() - t0
                 self.update_object_time_predictor(kernel.size, delta_t)
