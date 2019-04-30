@@ -461,7 +461,7 @@ class Experiment:
         offspring = self.kernel_selector.select_offspring(kernels, augmented_scores)
 
         if self.verbose:
-            print(f'Offspring selector kept {len(kernels)}/{len(offspring)} gp_models\n')
+            print(f'Offspring selector kept {len(offspring)}/{len(kernels)} gp_models\n')
 
         return offspring
 
