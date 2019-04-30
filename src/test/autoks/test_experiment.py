@@ -14,7 +14,7 @@ from src.autoks.core.query_strategy import QueryStrategy
 class TestExperiment(TestCase):
 
     def setUp(self):
-        self.gp_models = [GPModel(Covariance(RationalQuadratic(1))), GPModel(Covariance(RBF(1))),
+        self.gp_models = [GPModel(Covariance(RationalQuadratic(1))), GPModel(Covariance(RBF(1) + RBF(1))),
                           GPModel(Covariance(RBF(1)))]
 
         grammar = MagicMock()

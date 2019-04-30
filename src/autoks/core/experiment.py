@@ -31,7 +31,8 @@ from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin
     ExperimentReportGenerator
 from src.autoks.statistics import StatBookCollection, Statistic, StatBook
 from src.autoks.util import type_count, pretty_time_delta
-from src.evalg.genprog import HalfAndHalfMutator, OnePointRecombinator, HalfAndHalfGenerator
+from src.evalg.genprog import HalfAndHalfMutator, HalfAndHalfGenerator, \
+    SubtreeExchangeLeafBiasedRecombinator
 from src.evalg.plotting import plot_best_so_far, plot_distribution
 from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
 
@@ -79,22 +80,30 @@ class Experiment:
 
         self.x_train = x_train.reshape(-1, 1) if x_train.ndim == 1 else x_train
         # self.x_train = np.atleast_2d(x_train)
-        self.x_test = x_test.reshape(-1, 1) if x_test.ndim == 1 else x_test
+        if x_test is not None:
+            self.x_test = x_test.reshape(-1, 1) if x_test.ndim == 1 else x_test
+        else:
+            self.x_test = None
         # self.x_test = np.atleast_2d(x_test)
         # Make y >= 2-dimensional
         self.y_train = y_train.reshape(-1, 1) if y_train.ndim == 1 else y_train
         # self.y_train = np.atleast_2d(y_train)
-        self.y_test = y_test.reshape(-1, 1) if y_test.ndim == 1 else y_test
+        if y_test is not None:
+            self.y_test = y_test.reshape(-1, 1) if y_test.ndim == 1 else y_test
+        else:
+            self.y_test = None
         # self.y_test = np.atleast_2d(y_test)
         # only save scaled version of data
         if standardize_x or standardize_y:
             scaler = StandardScaler()
             if standardize_x:
                 self.x_train = scaler.fit_transform(self.x_train)
-                self.x_test = scaler.transform(self.x_test)
+                if self.x_test is not None:
+                    self.x_test = scaler.transform(self.x_test)
             if standardize_y:
                 self.y_train = scaler.fit_transform(self.y_train)
-                self.y_test = scaler.transform(self.y_test)
+                if self.y_test is not None:
+                    self.y_test = scaler.transform(self.y_test)
         self.n_dims = self.x_train.shape[1]
 
         self.eval_budget = eval_budget  # number of model evaluations (budget)
@@ -202,6 +211,7 @@ class Experiment:
 
         # initialize models
         kernels = self.grammar.initialize()
+        kernels = remove_duplicate_gp_models(kernels)  # TODO: clean up
         kernels = self.randomize_models(kernels)
 
         # convert to additive form if necessary
@@ -555,7 +565,7 @@ class Experiment:
             else:
                 gp_model.score = np.nan
                 # also count a nan-evaluated kernel as an evaluation
-                self.n_evals += 1
+                # self.n_evals += 1
 
         return gp_model
 
@@ -637,7 +647,10 @@ class Experiment:
         # Summarize model
         nll = -best_model.log_likelihood()
         nll_norm = log_likelihood_normalized(best_model)
-        mean_nlpd = np.mean(-best_model.log_predictive_density(self.x_test, self.y_test))
+        if self.x_test is not None:
+            mean_nlpd = np.mean(-best_model.log_predictive_density(self.x_test, self.y_test))
+        else:
+            mean_nlpd = np.nan
         aic = AIC(best_model)
         bic = BIC(best_model)
         pl2_score = pl2(best_model)
@@ -651,17 +664,18 @@ class Experiment:
         print('')
 
         # Compare RMSE of best model to other models
-        best_model_rmse = compute_gpy_model_rmse(best_model, self.x_test, self.y_test)
-        svm_rmse = rmse_svr(self.x_train, self.y_train, self.x_test, self.y_test)
-        lr_rmse = rmse_lin_reg(self.x_train, self.y_train, self.x_test, self.y_test)
-        se_rmse = rmse_rbf(self.x_train, self.y_train, self.x_test, self.y_test)
-        knn_rmse = rmse_knn(self.x_train, self.y_train, self.x_test, self.y_test)
+        if self.x_test is not None and self.y_test is not None:
+            best_model_rmse = compute_gpy_model_rmse(best_model, self.x_test, self.y_test)
+            svm_rmse = rmse_svr(self.x_train, self.y_train, self.x_test, self.y_test)
+            lr_rmse = rmse_lin_reg(self.x_train, self.y_train, self.x_test, self.y_test)
+            se_rmse = rmse_rbf(self.x_train, self.y_train, self.x_test, self.y_test)
+            knn_rmse = rmse_knn(self.x_train, self.y_train, self.x_test, self.y_test)
 
-        print('RMSE Best Model = %.3f' % best_model_rmse)
-        print('RMSE Linear Regression = %.3f' % lr_rmse)
-        print('RMSE SVM = %.3f' % svm_rmse)
-        print('RMSE RBF = %.3f' % se_rmse)
-        print('RMSE k-NN = %.3f' % knn_rmse)
+            print('RMSE Best Model = %.3f' % best_model_rmse)
+            print('RMSE Linear Regression = %.3f' % lr_rmse)
+            print('RMSE SVM = %.3f' % svm_rmse)
+            print('RMSE RBF = %.3f' % se_rmse)
+            print('RMSE k-NN = %.3f' % knn_rmse)
 
     def run(self,
             summarize: bool = True,
@@ -920,8 +934,9 @@ class Experiment:
     def evolutionary_experiment(cls,
                                 dataset,
                                 **kwargs):
-        x_train, x_test, y_train, y_test = dataset.split_train_test()
-        n_dims = x_train.shape[1]
+        # x_train, x_test, y_train, y_test = dataset.split_train_test()
+        x, y = dataset.load_or_generate_data()
+        n_dims = x.shape[1]
         base_kernels_names = CKSGrammar.get_base_kernel_names(n_dims)
 
         pop_size = 25
@@ -932,8 +947,8 @@ class Experiment:
         n_parents = n_offspring
 
         mutator = HalfAndHalfMutator(operands=[k for k in get_all_1d_kernels(base_kernels_names, n_dims)],
-                                     binary_tree_node_cls=KernelNode)
-        recombinator = OnePointRecombinator()
+                                     binary_tree_node_cls=KernelNode, max_depth=1)
+        recombinator = SubtreeExchangeLeafBiasedRecombinator()
         cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring, c_prob=cx_prob)
         mut_variator = MutationVariator(mutator, m_prob=m_prob)
         variators = [cx_variator, mut_variator]
@@ -947,7 +962,7 @@ class Experiment:
         kernel_selector = evolutionary_kernel_selector(n_parents=n_parents, max_offspring=pop_size)
         objective = log_likelihood_normalized
         budget = 50
-        return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test,
+        return cls(grammar, kernel_selector, objective, x, y, x_test=None, y_test=None,
                    tabu_search=False, eval_budget=budget, max_null_queries=budget, max_same_expansions=budget,
                    use_surrogate=False, **kwargs)
 

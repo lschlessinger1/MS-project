@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 
 from src.autoks.core.gp_model import GPModel
-from src.evalg.selection import Selector, TruncationSelector, AllSelector, LinearRankingSelector
+from src.evalg.selection import Selector, TruncationSelector, AllSelector, ExponentialRankingSelector
 
 
 class KernelSelector:
@@ -82,6 +82,6 @@ def evolutionary_kernel_selector(n_parents: int = 1,
     :param max_offspring: Max. number of models to keep each round
     :return:
     """
-    parent_selector = LinearRankingSelector(n_parents)
+    parent_selector = ExponentialRankingSelector(n_parents, c=0.7)
     offspring_selector = TruncationSelector(max_offspring)
     return KernelSelector(parent_selector, offspring_selector)

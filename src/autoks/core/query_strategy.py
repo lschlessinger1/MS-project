@@ -69,7 +69,7 @@ class QueryStrategy(Selector, ABC):
                 for ind in unevaluated_kernels_ind]
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'operators={self.operators!r}, scoring_func={self.scoring_func!r})'
+        return f'{self.__class__.__name__}('f'scoring_func={self.scoring_func!r})'
 
 # Query Strategies
 

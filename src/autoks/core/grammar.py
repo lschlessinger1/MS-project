@@ -394,16 +394,14 @@ class BOMSGrammar(CKSGrammar):
         return new_kernels
 
 
-class RandomGrammar(CKSGrammar):
+class RandomGrammar(BOMSGrammar):
     """Random grammar randomly expands nodes using a CKS expansion"""
 
     def __init__(self,
                  n_dims: int,
                  base_kernel_names: List[str] = None,
                  hyperpriors: Optional[Hyperpriors] = None):
-        super().__init__(n_dims, base_kernel_names, hyperpriors)
-
-        self.max_n_kernels = 1
+        super().__init__(base_kernel_names, n_dims, hyperpriors)
 
     def get_candidates(self,
                        seed_kernels: List[GPModel],
@@ -417,14 +415,7 @@ class RandomGrammar(CKSGrammar):
         if verbose:
             pretty_print_gp_models(seed_kernels, 'Seed')
 
-        # Select gp_models from one step of a CKS expansion uniformly at random without replacement.
-        cks_expansion = []
-        for seed_kernel in seed_kernels:
-            cks_expansion += self.expand_single_kernel(seed_kernel.covariance)
-
-        n_kernels = min(self.max_n_kernels, min(len(cks_expansion), self.max_n_kernels))
-        new_kernels = list(np.random.choice(cks_expansion, size=n_kernels, replace=False).tolist())
-
+        new_kernels = self.expand_random(self.number_of_random_walks)
         new_kernels = self._covariances_to_gp_models(new_kernels)
 
         if verbose:
