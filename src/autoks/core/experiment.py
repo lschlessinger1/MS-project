@@ -94,16 +94,19 @@ class Experiment:
             self.y_test = None
         # self.y_test = np.atleast_2d(y_test)
         # only save scaled version of data
-        if standardize_x or standardize_y:
+        self.standardize_x = standardize_x
+        self.standardize_y = standardize_y
+        if standardize_x:
             scaler = StandardScaler()
             if standardize_x:
                 self.x_train = scaler.fit_transform(self.x_train)
                 if self.x_test is not None:
                     self.x_test = scaler.transform(self.x_test)
-            if standardize_y:
-                self.y_train = scaler.fit_transform(self.y_train)
-                if self.y_test is not None:
-                    self.y_test = scaler.transform(self.y_test)
+            # this is handled in Model!
+            # if standardize_y:
+            #     self.y_train = scaler.fit_transform(self.y_train)
+            #     if self.y_test is not None:
+            #         self.y_test = scaler.transform(self.y_test)
         self.n_dims = self.x_train.shape[1]
 
         self.eval_budget = eval_budget  # number of model evaluations (budget)
@@ -169,7 +172,7 @@ class Experiment:
             self.gp_model = gp_model
         else:
             # default model is GP Regression
-            self.gp_model = GPRegression(self.x_train, self.y_train)
+            self.gp_model = GPRegression(self.x_train, self.y_train, normalizer=standardize_y)
             if self.grammar.hyperpriors is not None:
                 # set likelihood hyperpriors
                 likelihood_priors = self.grammar.hyperpriors['GP']
@@ -530,7 +533,7 @@ class Experiment:
 
                 set_model_kern(self.gp_model, k_fixed)
                 self.gp_model.optimize_restarts(ipython_notebook=False, optimizer=self.optimizer,
-                                                num_restarts=self.n_restarts_optimizer, verbose=False)
+                                                num_restarts=self.n_restarts_optimizer, verbose=False, robust=True)
 
                 # Unfix all params and set kernel
                 k_fixed.unfix()
@@ -617,7 +620,8 @@ class Experiment:
         sorted_gp_models = sorted(evaluated_gp_models, key=lambda x: x.score, reverse=True)
         best_gp_model = sorted_gp_models[0]
         best_kernel = best_gp_model.covariance.raw_kernel
-        best_model = self.gp_model.__class__(self.x_train, self.y_train, kernel=best_kernel)
+        best_model = self.gp_model.__class__(self.x_train, self.y_train, kernel=best_kernel,
+                                             normalizer=self.standardize_y)
         # Set the likelihood parameters.
         best_model.likelihood[:] = best_gp_model.lik_params
 
