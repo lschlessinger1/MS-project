@@ -205,6 +205,9 @@ class Experiment:
         self.n_kernel_params = []
         self.objective_times = []
 
+        # visited set of all expanded kernel expressions previously evaluated
+        self.visited = set()
+
     def model_search(self) -> List[GPModel]:
         """Perform automated kernel search.
 
@@ -237,6 +240,8 @@ class Experiment:
         newly_evaluated_kernels = self.opt_and_eval_models(selected_kernels[:budget_left])
         old_evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
         kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
+        for gp_model in newly_evaluated_kernels:
+            self.visited.add(gp_model.covariance.symbolic_expr_expanded)
 
         if self.use_surrogate:
             new_candidate_indices = []
@@ -336,6 +341,8 @@ class Experiment:
             old_evaluated_kernels = [kernel for kernel in kernels if
                                      kernel.evaluated and kernel not in selected_kernels]
             kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
+            for gp_model in newly_evaluated_kernels:
+                self.visited.add(gp_model.covariance.symbolic_expr_expanded)
 
             kernels = self.select_offspring(kernels)
             self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
@@ -478,6 +485,12 @@ class Experiment:
                 if self.verbose:
                     print('Stopping optimization and evaluation. Evaluation budget reached.\n')
                 break
+            elif gp_model.covariance.symbolic_expr_expanded in self.visited:
+                if self.verbose:
+                    print('Skipping model because it was previously evaluated')
+                    gp_model.covariance.pretty_print()
+                    print()
+                continue
             t0 = time()
 
             optimized_model = self.optimize_model(gp_model)
