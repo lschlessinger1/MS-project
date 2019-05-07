@@ -3,7 +3,8 @@ import numpy as np
 
 # the following were mostly taken or modified from:
 # https://gpy.readthedocs.io/en/deploy/_modules/GPy/examples/regression.html
-from src.experiments.util.data_util import SyntheticDataset, Input1DSyntheticDataset
+from src.autoks.core.covariance import Covariance
+from src.experiments.util.data_util import SyntheticDataset, Input1DSyntheticDataset, KnownGPDataset
 
 
 class Sinosoid1Dataset(SyntheticDataset):
@@ -231,3 +232,24 @@ class BraninGenerator(SyntheticDataset):
 
         y = self.branin(x)[:, None]
         return x, y
+
+
+class SePlusRQ(KnownGPDataset):
+    def __init__(self):
+        se_1 = Covariance(GPy.kern.RBF(input_dim=1, lengthscale=0.1))
+        rq_1 = Covariance(GPy.kern.RationalQuadratic(input_dim=1, lengthscale=0.1))
+        super().__init__(se_1 + rq_1, noise_var=0.01)
+
+
+class SePlusPER(KnownGPDataset):
+    def __init__(self):
+        se_1 = Covariance(GPy.kern.RBF(input_dim=1, lengthscale=0.1))
+        rq_1 = Covariance(GPy.kern.RationalQuadratic(input_dim=1, lengthscale=0.1))
+        super().__init__(se_1 + rq_1, noise_var=0.01)
+
+
+class LinTimesLinTimesPer(KnownGPDataset):
+    def __init__(self):
+        per_1 = Covariance(GPy.kern.StandardPeriodic(input_dim=1, lengthscale=0.1))
+        lin_1 = Covariance(GPy.kern.LinScaleShift(input_dim=1))
+        super().__init__(lin_1 * lin_1 * per_1, noise_var=0.01)
