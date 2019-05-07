@@ -535,7 +535,8 @@ class Experiment:
 
                 # Optimize unfixed kernel (all params unfixed)
                 set_model_kern(self.gp_model, k_unfixed)
-                self.gp_model.optimize(ipython_notebook=False, optimizer=self.optimizer)
+                self.gp_model.optimize_restarts(ipython_notebook=False, optimizer=self.optimizer,
+                                                num_restarts=1, verbose=False, robust=True)
 
                 # Optimize (with restarts) the newly added parameters
                 k_fixed = kernel
