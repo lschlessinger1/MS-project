@@ -159,8 +159,7 @@ class TestExperiment(TestCase):
     def test_optimize_kernel(self):
         self.exp.gp_model = MagicMock()
         self.exp.optimize_model(self.gp_models[0])
-        self.assertEqual(1, self.exp.gp_model.optimize.call_count)
-        self.assertEqual(1, self.exp.gp_model.optimize_restarts.call_count)
+        self.assertEqual(2, self.exp.gp_model.optimize_restarts.call_count)
 
     def test_evaluate_kernel(self):
         score = 10
