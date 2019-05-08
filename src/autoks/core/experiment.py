@@ -46,8 +46,8 @@ class Experiment:
     kernel_families: List[str]
     x_train: np.ndarray
     y_train: np.ndarray
-    x_test: np.ndarray
-    y_test: np.ndarray
+    x_test: Optional[np.ndarray]
+    y_test: Optional[np.ndarray]
     standardize_x: bool
     standardize_y: bool
     eval_budget: int
@@ -80,20 +80,16 @@ class Experiment:
         self.objective = objective
 
         self.x_train = x_train.reshape(-1, 1) if x_train.ndim == 1 else x_train
-        # self.x_train = np.atleast_2d(x_train)
         if x_test is not None:
             self.x_test = x_test.reshape(-1, 1) if x_test.ndim == 1 else x_test
         else:
             self.x_test = None
-        # self.x_test = np.atleast_2d(x_test)
         # Make y >= 2-dimensional
         self.y_train = y_train.reshape(-1, 1) if y_train.ndim == 1 else y_train
-        # self.y_train = np.atleast_2d(y_train)
         if y_test is not None:
             self.y_test = y_test.reshape(-1, 1) if y_test.ndim == 1 else y_test
         else:
             self.y_test = None
-        # self.y_test = np.atleast_2d(y_test)
         # only save scaled version of data
         self.standardize_x = standardize_x
         self.standardize_y = standardize_y
@@ -103,11 +99,7 @@ class Experiment:
                 self.x_train = scaler.fit_transform(self.x_train)
                 if self.x_test is not None:
                     self.x_test = scaler.transform(self.x_test)
-            # this is handled in Model!
-            # if standardize_y:
-            #     self.y_train = scaler.fit_transform(self.y_train)
-            #     if self.y_test is not None:
-            #         self.y_test = scaler.transform(self.y_test)
+
         self.n_dims = self.x_train.shape[1]
 
         self.eval_budget = eval_budget  # number of model evaluations (budget)
@@ -157,16 +149,12 @@ class Experiment:
 
         sb_evals = self.stat_book_collection.stat_books[self.evaluations_name]
         sb_evals.add_raw_value_stat(self.score_name, get_model_scores)
-        # sb_evals.multi_stats[n_hyperparams_name].add_statistic(Statistic(best_stat_name, get_best_n_hyperparams))
-        # sb_evals.multi_stats[n_operands_name].add_statistic(Statistic(best_stat_name, get_best_n_operands))
 
         self.total_optimization_time = 0
         self.total_eval_time = 0
         self.total_expansion_time = 0
         self.total_model_search_time = 0
         self.total_query_time = 0
-
-        # self.hyperpriors = hyperpriors
 
         if gp_model is not None:
             # do not use hyperpriors if gp model is given.
@@ -402,7 +390,6 @@ class Experiment:
         if self.use_surrogate:
             selected_ind = [i for (i, m) in enumerate(self.active_set.models) if m in selected_kernels]
             self.active_set.selected_indices += list(selected_ind)
-            # assert list(selected_kernels) in self.active_set.models
             # TODO: set remove priority only for all candidates
             self.active_set.remove_priority = [unevaluated_kernels_ind[i] for i in np.argsort(acq_scores)]
 
@@ -415,7 +402,6 @@ class Experiment:
             for kern, score in zip(selected_kernels, acq_scores_selected):
                 kern.covariance.pretty_print()
                 print('\tacq. score =', score)
-                # print(str(kern), 'acq. score =', score)
             print('')
 
         return selected_kernels, ind, acq_scores
@@ -464,10 +450,7 @@ class Experiment:
         :param kernels:
         :return:
         """
-        # scores = [kernel.score for kernel in gp_models]
-
         # Prioritize keeping evaluated models.
-        # TODO: Check correctness
         augmented_scores = [k.score if k.evaluated and not k.nan_scored else -np.inf for k in kernels]
 
         offspring = self.kernel_selector.select_offspring(kernels, augmented_scores)
@@ -582,12 +565,9 @@ class Experiment:
             if not gp_model.nan_scored:
                 score = self.objective(self.gp_model)
                 self.n_evals += 1
-                # gp_model.evaluated = True
                 gp_model.score = score
             else:
                 gp_model.score = np.nan
-                # also count a nan-evaluated kernel as an evaluation
-                # self.n_evals += 1
 
         return gp_model
 
@@ -599,7 +579,8 @@ class Experiment:
         all_same = all([s == kernels_infix_new for s in prev_expansions])
         return all_same and len(prev_expansions) == max_expansions
 
-    def model_to_infix_set(self, gp_models: List[GPModel]) -> FrozenSet[str]:
+    @staticmethod
+    def model_to_infix_set(gp_models: List[GPModel]) -> FrozenSet[str]:
         kernels_sorted = [sort_kernel(gp_model.covariance.raw_kernel) for gp_model in gp_models]
         return frozenset([kernel_to_infix(kernel) for kernel in kernels_sorted])
 
@@ -621,7 +602,8 @@ class Experiment:
 
         return gp_models
 
-    def remove_nan_scored_models(self, gp_models: List[GPModel]) -> List[GPModel]:
+    @staticmethod
+    def remove_nan_scored_models(gp_models: List[GPModel]) -> List[GPModel]:
         """Remove all models that have NaN scores.
 
         :param gp_models:
