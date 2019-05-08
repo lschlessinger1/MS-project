@@ -9,7 +9,6 @@ from GPy.core.parameterization.priors import Gaussian
 from GPy.inference.latent_function_inference import Laplace
 from GPy.kern import RBFKernelKernel
 from GPy.models import GPRegression
-from matplotlib.ticker import MaxNLocator
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
@@ -28,13 +27,14 @@ from src.autoks.core.kernel_selection import KernelSelector, BOMS_kernel_selecto
 from src.autoks.core.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy, BestScoreStrategy
 from src.autoks.distance.distance import HellingerDistanceBuilder, DistanceBuilder
 from src.autoks.gp_regression_models import KernelKernelGPRegression
+from src.autoks.plotting import plot_kernel_diversity_summary, plot_best_scores, plot_score_summary, \
+    plot_n_hyperparams_summary, plot_n_operands_summary, plot_base_kernel_freqs, plot_cov_dist_summary, plot_kernel_tree
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
     ExperimentReportGenerator
 from src.autoks.statistics import StatBookCollection, Statistic, StatBook
 from src.autoks.util import type_count, pretty_time_delta
 from src.evalg.genprog import HalfAndHalfMutator, HalfAndHalfGenerator, \
     SubtreeExchangeLeafBiasedRecombinator
-from src.evalg.plotting import plot_best_so_far, plot_distribution
 from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
 
 
@@ -654,7 +654,7 @@ class Experiment:
             self.plot_stat_book(stat_book)
 
         # Plot the kernel tree of the best model
-        self.plot_kernel_tree(best_gp_model)
+        plot_kernel_tree(best_gp_model)
 
         print('')
         self.timing_report()
@@ -726,158 +726,20 @@ class Experiment:
 
     def plot_stat_book(self, stat_book: StatBook):
         ms = stat_book.multi_stats
+        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
         if self.score_name in ms:
-            self.plot_best_scores(stat_book)
-            self.plot_score_summary(stat_book)
+            plot_best_scores(self.score_name, self.evaluations_name, stat_book)
+            plot_score_summary(self.score_name, self.evaluations_name, stat_book)
         if self.n_hyperparams_name in ms:
-            self.plot_n_hyperparams_summary(stat_book)
+            plot_n_hyperparams_summary(self.n_hyperparams_name, self.best_stat_name, stat_book, x_label)
         if self.n_operands_name in ms:
-            self.plot_n_operands_summary(stat_book)
+            plot_n_operands_summary(self.n_operands_name, self.best_stat_name, stat_book, x_label)
         if all(key in ms for key in self.base_kern_freq_names):
-            self.plot_base_kernel_freqs(stat_book)
+            plot_base_kernel_freqs(self.base_kern_freq_names, stat_book, x_label)
         if self.cov_dists_name in ms:
-            self.plot_cov_dist_summary(stat_book)
+            plot_cov_dist_summary(self.cov_dists_name, stat_book, x_label)
         if self.diversity_scores_name in ms:
-            self.plot_kernel_diversity_summary(stat_book)
-
-    def plot_best_scores(self, stat_book: StatBook) -> None:
-        """Plot the best models scores
-
-        :return:
-        """
-        if stat_book.name == self.evaluations_name:
-            best_scores = stat_book.running_max(self.score_name)
-            x_label = ' evaluations'
-        else:
-            best_scores = stat_book.maximum(self.score_name)
-            x_label = 'generation'
-
-        plot_best_so_far(best_scores, x_label=x_label)
-        plt.gcf().suptitle(f'{stat_book.label}', y=1)
-        plt.gcf().subplots_adjust(top=0.88)
-        plt.show()
-
-    def plot_score_summary(self, stat_book: StatBook) -> None:
-        """Plot a summary of model scores
-
-        :return:
-        """
-        if stat_book.name == self.evaluations_name:
-            best_scores = stat_book.running_max(self.score_name)
-            mean_scores = stat_book.running_mean(self.score_name)
-            std_scores = stat_book.running_std(self.score_name)
-            x_label = 'evaluations'
-        else:
-            best_scores = stat_book.maximum(self.score_name)
-            mean_scores = stat_book.mean(self.score_name)
-            std_scores = stat_book.std(self.score_name)
-            x_label = 'generation'
-
-        plot_distribution(mean_scores, std_scores, best_scores, x_label=x_label)
-        plt.gcf().suptitle(f'{stat_book.label}', y=1)
-        plt.gcf().subplots_adjust(top=0.88)
-        plt.show()
-
-    def plot_n_hyperparams_summary(self, stat_book: StatBook) -> None:
-        """Plot a summary of the number of hyperparameters
-
-        :return:
-        """
-        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
-        if self.best_stat_name in stat_book.multi_stats[self.n_hyperparams_name].stats:
-            best_n_hyperparameters = stat_book.multi_stats[self.n_hyperparams_name].stats[self.best_stat_name].data
-        else:
-            best_n_hyperparameters = None
-        median_n_hyperparameters = stat_book.median(self.n_hyperparams_name)
-        std_n_hyperparameters = stat_book.std(self.n_hyperparams_name)
-        plot_distribution(median_n_hyperparameters, std_n_hyperparameters, best_n_hyperparameters,
-                          value_name='median', metric_name='# Hyperparameters', x_label=x_label)
-        plt.gcf().suptitle(f'{stat_book.label}', y=1)
-        plt.gcf().subplots_adjust(top=0.88)
-        plt.show()
-
-    def plot_n_operands_summary(self, stat_book: StatBook) -> None:
-        """Plot a summary of the number of operands
-
-        :return:
-        """
-        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
-        if self.best_stat_name in stat_book.multi_stats[self.n_operands_name].stats:
-            best_n_operands = stat_book.multi_stats[self.n_operands_name].stats[self.best_stat_name].data
-        else:
-            best_n_operands = None
-        median_n_operands = stat_book.median(self.n_operands_name)
-        std_n_operands = stat_book.std(self.n_operands_name)
-        plot_distribution(median_n_operands, std_n_operands, best_n_operands, value_name='median',
-                          metric_name='# Operands', x_label=x_label)
-        plt.gcf().suptitle(f'{stat_book.label}', y=1)
-        plt.gcf().subplots_adjust(top=0.88)
-        plt.show()
-
-    def plot_base_kernel_freqs(self, stat_book: StatBook) -> None:
-        """Plot base kernel frequency across generations.
-
-        :param stat_book:
-        :return:
-        """
-        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
-        freqs = [(stat_book.sum(key), key) for key in self.base_kern_freq_names]
-
-        plt.title('Base Kernel Frequency')
-        plt.xlabel(x_label)
-        plt.ylabel('Frequency')
-        ax = plt.gca()
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))  # x-axis will have integer ticks
-        for freq, key in freqs:
-            plt.plot(freq, label=key, marker='o', markerfacecolor='black')
-        plt.legend()
-        plt.gcf().suptitle(f'{stat_book.label}', y=1)
-        plt.gcf().subplots_adjust(top=0.88)
-        plt.show()
-
-    def plot_cov_dist_summary(self, stat_book: StatBook) -> None:
-        """Plot a summary of the homogeneity of models over each generation.
-
-        :return:
-        """
-        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
-        mean_cov_dists = stat_book.mean(self.cov_dists_name)
-        std_cov_dists = stat_book.std(self.cov_dists_name)
-        plot_distribution(mean_cov_dists, std_cov_dists, metric_name='covariance distance', x_label=x_label)
-        plt.gcf().suptitle(f'{stat_book.label}', y=1)
-        plt.gcf().subplots_adjust(top=0.88)
-        plt.show()
-
-    def plot_kernel_diversity_summary(self, stat_book: StatBook) -> None:
-        """Plot a summary of the diversity of models over each generation.
-
-        :return:
-        """
-        x_label = 'evaluations' if stat_book.name == self.evaluations_name else 'generation'
-        mean_diversity_scores = stat_book.running_mean(self.diversity_scores_name)
-        std_diversity_scores = stat_book.running_std(self.diversity_scores_name)
-        plot_distribution(mean_diversity_scores, std_diversity_scores, metric_name='diversity',
-                          value_name='population', x_label=x_label)
-        plt.gcf().suptitle(f'{stat_book.label}', y=1)
-        plt.gcf().subplots_adjust(top=0.88)
-        plt.show()
-
-    def plot_kernel_tree(self, gp_model: GPModel,
-                         graph_name: str = 'best_kernel_tree',
-                         directory: str = '../results/figures') -> None:
-        """Create a kernel tree file and plot it.
-
-        :param gp_model:
-        :param graph_name:
-        :param directory:
-        :return:
-        """
-        graph = gp_model.covariance.to_binary_tree().create_graph(name=graph_name)
-        graph.format = 'png'  # only tested with PNG
-        graph.render(f"{graph_name}.gv", directory, view=False, cleanup=True)
-        img = plt.imread(graph.filepath + '.' + graph.format)
-        plt.imshow(img)
-        plt.show()
+            plot_kernel_diversity_summary(self.diversity_scores_name, stat_book, x_label)
 
     def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
         """Get the runtime report of the kernel search.
