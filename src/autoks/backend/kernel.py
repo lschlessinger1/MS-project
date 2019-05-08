@@ -295,22 +295,12 @@ def count_kernel_types(kernel: RawKernelType,
     return count[0]
 
 
-def euclidean_distance(x: np.ndarray,
-                       y: np.ndarray) -> float:
-    return np.linalg.norm(x - y)
-
-
-def kernel_l2_dist(kernel_1: RawKernelType,
-                   kernel_2: RawKernelType,
-                   x: np.ndarray) -> float:
-    """Euclidean distance between two kernel matrices.
-
-    :param kernel_1:
-    :param kernel_2:
-    :param x:
-    :return:
-    """
-    return euclidean_distance(kernel_1.K(x, x), kernel_2.K(x, x))
+def compute_kernel(kernel: RawKernelType,
+                   x: np.ndarray,
+                   x2: Optional[np.ndarray] = None) -> np.ndarray:
+    if x2 is None:
+        x2 = x
+    return kernel.K(x, x2)
 
 
 def sort_kernel(kernel: RawKernelType) -> Optional[RawKernelType]:

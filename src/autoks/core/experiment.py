@@ -18,7 +18,7 @@ from src.autoks.backend.kernel import set_priors, sort_kernel, get_all_1d_kernel
 from src.autoks.backend.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.active_set import ActiveSet
-from src.autoks.core.covariance import covariance_distance, all_pairs_avg_dist
+from src.autoks.core.covariance import all_pairs_avg_dist, pairwise_centered_alignments
 from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, pretty_print_gp_models
 from src.autoks.core.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors, boms_hyperpriors
@@ -1042,7 +1042,7 @@ def get_cov_dists(gp_models: List[GPModel], *args, **kwargs) -> Union[np.ndarray
     kernels = [gp_model.covariance for gp_model in gp_models]
     if len(kernels) >= 2:
         x = kwargs.get('x')
-        return covariance_distance(kernels, x)
+        return pairwise_centered_alignments(kernels, x)
     else:
         return [0] * len(gp_models)
 
