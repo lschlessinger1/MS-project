@@ -1,6 +1,6 @@
 import warnings
 from time import time
-from typing import Callable, List, Tuple, Optional, FrozenSet, Union, Any, Type
+from typing import Callable, List, Tuple, Optional, Union, Any, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,13 +12,14 @@ from GPy.models import GPRegression
 from numpy.linalg import LinAlgError
 from sklearn.preprocessing import StandardScaler
 
-from src.autoks.backend.kernel import set_priors, sort_kernel, get_all_1d_kernels, n_base_kernels, \
-    kernel_to_infix, KERNEL_DICT
+from src.autoks.backend.kernel import set_priors, get_all_1d_kernels, n_base_kernels, \
+    KERNEL_DICT
 from src.autoks.backend.model import set_model_kern, is_nan_model, log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.active_set import ActiveSet
 from src.autoks.core.covariance import all_pairs_avg_dist, pairwise_centered_alignments
-from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, pretty_print_gp_models
+from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, pretty_print_gp_models, randomize_models, \
+    remove_nan_scored_models, all_same_expansion, update_kernel_infix_set
 from src.autoks.core.grammar import BaseGrammar, BOMSGrammar, CKSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.core.kernel_encoding import KernelNode
@@ -211,7 +212,7 @@ class Experiment:
         # initialize models
         kernels = self.grammar.initialize()
         kernels = remove_duplicate_gp_models(kernels)  # TODO: clean up
-        kernels = self.randomize_models(kernels)
+        kernels = randomize_models(kernels)
 
         # convert to additive form if necessary
         if self.additive_form:
@@ -273,21 +274,21 @@ class Experiment:
 
             # Fix each parent before expansion for use in and initialization optimization, skipping nan-evaluated
             # gp_models
-            for parent in self.remove_nan_scored_models(parents):
+            for parent in remove_nan_scored_models(parents):
                 parent.covariance.raw_kernel.fix()
 
             new_kernels = self.propose_new_kernels(parents)
             self.update_stat_book(self.stat_book_collection.stat_books[self.expansion_name], new_kernels)
             # Check for same expansions
-            if self.all_same_expansion(new_kernels, prev_expansions, self.max_same_expansions):
+            if all_same_expansion(new_kernels, prev_expansions, self.max_same_expansions):
                 if self.verbose:
                     print(f'Terminating kernel search. The last {self.max_same_expansions} expansions proposed the same'
                           f' gp_models.')
                 break
             else:
-                prev_expansions = self.update_kernel_infix_set(new_kernels, prev_expansions, self.max_same_expansions)
+                prev_expansions = update_kernel_infix_set(new_kernels, prev_expansions, self.max_same_expansions)
 
-            new_kernels = self.randomize_models(new_kernels)
+            new_kernels = randomize_models(new_kernels)
             kernels += new_kernels
 
             # evaluate, prune, and optimize gp_models
@@ -348,7 +349,7 @@ class Experiment:
     def print_search_summary(self, depth, kernels):
         print(f'Iteration {depth}/{self.max_depth}')
         print(f'Evaluated {self.n_evals}/{self.eval_budget}')
-        evaluated_gp_models = [gp_model for gp_model in self.remove_nan_scored_models(kernels)
+        evaluated_gp_models = [gp_model for gp_model in remove_nan_scored_models(kernels)
                                if gp_model.evaluated]
         scores = [gp_model.score for gp_model in evaluated_gp_models]
         arg_max_score = int(np.argmax(scores))
@@ -494,7 +495,7 @@ class Experiment:
             if not evaluated_model.nan_scored:
                 self.update_stat_book(self.stat_book_collection.stat_books[self.evaluations_name], [evaluated_model])
 
-        evaluated_models = self.remove_nan_scored_models(evaluated_models)
+        evaluated_models = remove_nan_scored_models(evaluated_models)
 
         if self.verbose:
             print('Printing all results')
@@ -570,46 +571,6 @@ class Experiment:
                 gp_model.score = np.nan
 
         return gp_model
-
-    def all_same_expansion(self,
-                           new_kernels: List[GPModel],
-                           prev_expansions: List[FrozenSet[str]],
-                           max_expansions: int) -> bool:
-        kernels_infix_new = self.model_to_infix_set(new_kernels)
-        all_same = all([s == kernels_infix_new for s in prev_expansions])
-        return all_same and len(prev_expansions) == max_expansions
-
-    @staticmethod
-    def model_to_infix_set(gp_models: List[GPModel]) -> FrozenSet[str]:
-        kernels_sorted = [sort_kernel(gp_model.covariance.raw_kernel) for gp_model in gp_models]
-        return frozenset([kernel_to_infix(kernel) for kernel in kernels_sorted])
-
-    def update_kernel_infix_set(self, new_kernels: List[GPModel],
-                                prev_expansions: List[FrozenSet[str]],
-                                max_expansions: int) -> List[FrozenSet[str]]:
-        expansions = prev_expansions.copy()
-        if len(prev_expansions) == max_expansions:
-            expansions = expansions[1:]
-        elif len(prev_expansions) < max_expansions:
-            expansions += [self.model_to_infix_set(new_kernels)]
-
-        return expansions
-
-    @staticmethod
-    def randomize_models(gp_models: List[GPModel]) -> List[GPModel]:
-        for gp_model in gp_models:
-            gp_model.covariance.raw_kernel.randomize()
-
-        return gp_models
-
-    @staticmethod
-    def remove_nan_scored_models(gp_models: List[GPModel]) -> List[GPModel]:
-        """Remove all models that have NaN scores.
-
-        :param gp_models:
-        :return:
-        """
-        return [gp_model for gp_model in gp_models if not gp_model.nan_scored]
 
     def summarize(self, gp_model: List[GPModel]) -> None:
         """Summarize the experiment.

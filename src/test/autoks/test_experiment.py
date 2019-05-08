@@ -170,10 +170,3 @@ class TestExperiment(TestCase):
         self.assertEqual(kern.score, score)
         self.assertFalse(kern.nan_scored)
         self.assertTrue(kern.evaluated)
-
-    def test_remove_nan_scored_kernels(self):
-        kernels = [GPModel(Covariance(RationalQuadratic(1)), nan_scored=True), GPModel(RBF(1)),
-                   GPModel(Covariance(RBF(1)), nan_scored=True)]
-        result = self.exp.remove_nan_scored_models(kernels)
-        self.assertIsInstance(result, list)
-        self.assertListEqual(result, [kernels[1]])

@@ -1,8 +1,8 @@
-from typing import Optional, List
+from typing import Optional, List, FrozenSet
 
 import numpy as np
 
-from src.autoks.backend.kernel import encode_prior, get_priors, encode_kernel
+from src.autoks.backend.kernel import encode_prior, get_priors, encode_kernel, sort_kernel, kernel_to_infix
 from src.autoks.core.covariance import Covariance
 from src.autoks.util import remove_duplicates
 
@@ -81,6 +81,47 @@ def remove_duplicate_gp_models(kernels: List[GPModel]) -> List[GPModel]:
     # Assume precedence by order.
     gp_models = sorted_evaluated_kernels + nan_scored_kernels + unevaluated_kernels
     return remove_duplicates([gp_model.covariance.symbolic_expr_expanded for gp_model in gp_models], gp_models)
+
+
+def all_same_expansion(new_kernels: List[GPModel],
+                       prev_expansions: List[FrozenSet[str]],
+                       max_expansions: int) -> bool:
+    kernels_infix_new = model_to_infix_set(new_kernels)
+    all_same = all([s == kernels_infix_new for s in prev_expansions])
+    return all_same and len(prev_expansions) == max_expansions
+
+
+def model_to_infix_set(gp_models: List[GPModel]) -> FrozenSet[str]:
+    kernels_sorted = [sort_kernel(gp_model.covariance.raw_kernel) for gp_model in gp_models]
+    return frozenset([kernel_to_infix(kernel) for kernel in kernels_sorted])
+
+
+def update_kernel_infix_set(new_kernels: List[GPModel],
+                            prev_expansions: List[FrozenSet[str]],
+                            max_expansions: int) -> List[FrozenSet[str]]:
+    expansions = prev_expansions.copy()
+    if len(prev_expansions) == max_expansions:
+        expansions = expansions[1:]
+    elif len(prev_expansions) < max_expansions:
+        expansions += [model_to_infix_set(new_kernels)]
+
+    return expansions
+
+
+def randomize_models(gp_models: List[GPModel]) -> List[GPModel]:
+    for gp_model in gp_models:
+        gp_model.covariance.raw_kernel.randomize()
+
+    return gp_models
+
+
+def remove_nan_scored_models(gp_models: List[GPModel]) -> List[GPModel]:
+    """Remove all models that have NaN scores.
+
+    :param gp_models:
+    :return:
+    """
+    return [gp_model for gp_model in gp_models if not gp_model.nan_scored]
 
 
 def encode_gp_model(gp_model: GPModel) -> List[str]:
