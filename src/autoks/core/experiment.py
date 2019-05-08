@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from GPy.core import GP
 from GPy.core.parameterization.priors import Gaussian
+from GPy.inference.latent_function_inference import Laplace
 from GPy.kern import RBFKernelKernel
 from GPy.models import GPRegression
 from matplotlib.ticker import MaxNLocator
@@ -73,7 +74,7 @@ class Experiment:
                  standardize_x=True, standardize_y=True, eval_budget=50, max_depth=None, gp_model=None,
                  init_query_strat=None, query_strat=None, additive_form=False, debug=False,
                  verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3, optimizer=None,
-                 n_restarts_optimizer=10, use_surrogate=True):
+                 n_restarts_optimizer=10, use_surrogate=True, use_laplace=True):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -173,6 +174,10 @@ class Experiment:
         else:
             # default model is GP Regression
             self.gp_model = GPRegression(self.x_train, self.y_train, normalizer=standardize_y)
+
+            if use_laplace:
+                self.gp_model.inference_method = Laplace()
+
             if self.grammar.hyperpriors is not None:
                 # set likelihood hyperpriors
                 likelihood_priors = self.grammar.hyperpriors['GP']
@@ -925,9 +930,8 @@ class Experiment:
         acq = ExpectedImprovementPerSec()
         qs = BestScoreStrategy(scoring_func=acq)
         # kernel = hellinger_kernel_kernel(x_train)
-        return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test,
-                   eval_budget=50, init_query_strat=init_qs, query_strat=qs,
-                   use_surrogate=True, **kwargs)
+        return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test, eval_budget=50,
+                   init_query_strat=init_qs, query_strat=qs, use_surrogate=True, use_laplace=True, **kwargs)
 
     @classmethod
     def cks_experiment(cls, dataset, **kwargs):
@@ -946,7 +950,7 @@ class Experiment:
         # use conjugate gradient descent for CKS
         optimizer = 'scg'
         return cls(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test, max_depth=10,
-                   optimizer=optimizer, use_surrogate=False, **kwargs)
+                   optimizer=optimizer, use_surrogate=False, use_laplace=False, **kwargs)
 
     @classmethod
     def evolutionary_experiment(cls,
