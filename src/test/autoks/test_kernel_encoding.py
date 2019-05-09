@@ -38,24 +38,24 @@ class TestKernelTree(TestCase):
 class TestKernelEncoding(TestCase):
 
     def test_hd_kern_nodes(self):
-        node_1 = KernelNode(RBF(1, active_dims=[0]))
-        node_2 = KernelNode(RBF(1, active_dims=[0]))
+        node_1 = KernelNode(RBF(1, active_dims=[0]).to_dict())
+        node_2 = KernelNode(RBF(1, active_dims=[0]).to_dict())
         result = hd_kern_nodes(node_1, node_2)
         self.assertEqual(result, 0)
 
-        node_1 = KernelNode(RBF(1, active_dims=[0]))
-        node_2 = KernelNode(RationalQuadratic(1, active_dims=[0]))
+        node_1 = KernelNode(RBF(1, active_dims=[0]).to_dict())
+        node_2 = KernelNode(RationalQuadratic(1, active_dims=[0]).to_dict())
         result = hd_kern_nodes(node_1, node_2)
         self.assertEqual(result, 1)
 
-        node_1 = KernelNode(RBF(1, active_dims=[0]))
-        node_2 = KernelNode(RBF(1, active_dims=[1]))
+        node_1 = KernelNode(RBF(1, active_dims=[0]).to_dict())
+        node_2 = KernelNode(RBF(1, active_dims=[1]).to_dict())
         result = hd_kern_nodes(node_1, node_2)
         self.assertEqual(result, 1)
 
-        node_1 = KernelNode(RBF(1, active_dims=[0]))
+        node_1 = KernelNode(RBF(1, active_dims=[0]).to_dict())
         node_1.add_left('U')
         node_1.add_right('V')
-        node_2 = KernelNode(RBF(1, active_dims=[0]))
+        node_2 = KernelNode(RBF(1, active_dims=[0]).to_dict())
         result = hd_kern_nodes(node_1, node_2)
         self.assertEqual(result, 1)

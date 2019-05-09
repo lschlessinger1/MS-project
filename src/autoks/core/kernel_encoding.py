@@ -1,6 +1,7 @@
 from typing import Union, Optional
 
-from src.autoks.backend.kernel import subkernel_expression, RawKernelType, kernel_to_infix_tokens
+from src.autoks.backend.kernel import subkernel_expression, RawKernelType, kernel_to_infix_tokens, kern_tokens_to_dict, \
+    dict_to_kern
 from src.evalg.encoding import BinaryTreeNode, BinaryTree, postfix_tokens_to_binexp_tree, infix_tokens_to_postfix_tokens
 
 
@@ -17,12 +18,18 @@ class KernelNode(BinaryTreeNode):
     def _value_to_label(self, value: Union[RawKernelType, str]) -> str:
         if isinstance(value, RawKernelType):
             return subkernel_expression(value)
+        elif isinstance(value, dict):
+            kern = dict_to_kern(value)
+            return subkernel_expression(kern)
         else:
             return str(value)
 
     def _value_to_html(self, value) -> str:
         if isinstance(value, RawKernelType):
             return subkernel_expression(value, html_like=True)
+        elif isinstance(value, dict):
+            kern = dict_to_kern(value)
+            return subkernel_expression(kern, html_like=True)
         elif value == '*':
             return '<&times;>'
         else:
@@ -38,6 +45,7 @@ class KernelTree(BinaryTree):
 
 def kernel_to_tree(kernel: RawKernelType) -> KernelTree:
     infix_tokens = kernel_to_infix_tokens(kernel)
+    infix_tokens = kern_tokens_to_dict(infix_tokens)
     postfix_tokens = infix_tokens_to_postfix_tokens(infix_tokens)
     return postfix_tokens_to_binexp_tree(postfix_tokens, bin_tree_node_cls=KernelNode, bin_tree_cls=KernelTree)
 
@@ -69,6 +77,8 @@ def eval_binexp_tree(root: BinaryTreeNode) -> RawKernelType:
     if root is not None:
         if isinstance(root.value, RawKernelType):
             return root.value
+        elif isinstance(root.value, dict):
+            return dict_to_kern(root.value)
 
         left_node = eval_binexp_tree(root.left)
         right_node = eval_binexp_tree(root.right)
@@ -99,8 +109,8 @@ def hd_kern_nodes(node_1: KernelNode,
     :return: The Hamming distance between nodes.
     """
     if node_1.is_leaf() and node_2.is_leaf():
-        kern_1 = node_1.value
-        kern_2 = node_2.value
+        kern_1 = dict_to_kern(node_1.value)
+        kern_2 = dict_to_kern(node_2.value)
         same_dims = kern_1.active_dims == kern_2.active_dims
         same_cls = kern_1.__class__ == kern_2.__class__
         # consider gp_models equal if they have the same active dimension and class

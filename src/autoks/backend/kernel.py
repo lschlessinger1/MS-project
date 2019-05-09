@@ -1,5 +1,5 @@
 import warnings
-from typing import Type, Dict, List, Optional, Callable
+from typing import Type, Dict, List, Optional, Callable, Union
 
 import numpy as np
 from GPy import Parameterized
@@ -190,6 +190,20 @@ def in_order(root: Kern,
             tokens += [root]
 
     return tokens
+
+
+def kern_tokens_to_dict(tokens: List[Union[str, RawKernelType]]) -> List[Union[str, dict]]:
+    new_tokens = []
+    for token in tokens:
+        new_token = token
+        if isinstance(token, RawKernelType):
+            new_token = token.to_dict()
+        new_tokens.append(new_token)
+    return new_tokens
+
+
+def dict_to_kern(input_dict: dict) -> RawKernelType:
+    return Kern.from_dict(input_dict)
 
 
 def kernel_to_infix_tokens(kernel: RawKernelType) -> List[str]:
