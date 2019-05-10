@@ -27,7 +27,6 @@ from src.autoks.core.kernel_selection import KernelSelector, BOMS_kernel_selecto
     evolutionary_kernel_selector
 from src.autoks.core.query_strategy import NaiveQueryStrategy, QueryStrategy, BOMSInitQueryStrategy, BestScoreStrategy
 from src.autoks.distance.distance import HellingerDistanceBuilder, DistanceBuilder
-from src.autoks.gp_regression_models import KernelKernelGPRegression
 from src.autoks.plotting import plot_kernel_diversity_summary, plot_best_scores, plot_score_summary, \
     plot_n_hyperparams_summary, plot_n_operands_summary, plot_base_kernel_freqs, plot_cov_dist_summary, plot_kernel_tree
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, \
@@ -219,44 +218,9 @@ class Experiment:
             for gp_model in kernels:
                 gp_model.covariance.to_additive_form()
 
-        # create distance builder if using surrogate model
-        if self.use_surrogate:
-            new_candidate_indices = self.active_set.update(kernels)
-            assert new_candidate_indices == self.active_set.get_candidate_indices()
-            # for now, it must be a Hellinger distance builder
-            self.distance_builder = self.create_hellinger_db(self.active_set, self.x_train)
-
         # Select gp_models by acquisition function to be evaluated
         selected_kernels, ind, acq_scores = self.query_models(kernels, self.init_query_strat, self.grammar.hyperpriors)
-        unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
-        unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
-        budget_left = self.eval_budget - self.n_evals
-        newly_evaluated_kernels = self.opt_and_eval_models(selected_kernels[:budget_left])
-        old_evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated and kernel not in selected_kernels]
-        kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
-        for gp_model in newly_evaluated_kernels:
-            self.visited.add(gp_model.covariance.symbolic_expr_expanded)
-
-        if self.use_surrogate:
-            new_candidate_indices = []
-            new_selected_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel in
-                                    newly_evaluated_kernels]
-            old_selected_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel in
-                                    old_evaluated_kernels]
-            all_candidates_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel is not None
-                                      and not kernel.evaluated]
-            fitness_scores = [self.active_set.models[i].score for i in old_selected_indices] + \
-                             [self.active_set.models[i].score for i in new_selected_indices]
-            assert self.active_set.selected_indices == old_selected_indices + new_selected_indices
-            builder = self.distance_builder
-            builder.update_multiple(self.active_set, new_candidate_indices, all_candidates_indices,
-                                    old_selected_indices,
-                                    new_selected_indices, data_X=self.x_train)
-            self.surrogate_model = KernelKernelGPRegression.from_distance_builder(builder, self.active_set,
-                                                                                  fitness_scores)
-            assert self.active_set.selected_indices == self.surrogate_model.X.flatten().astype(int).tolist()
-            assert fitness_scores == self.surrogate_model.Y.flatten().tolist()
-            self.optimize_surrogate_model()
+        kernels = self.train_models(kernels, selected_kernels, ind)
 
         self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
 
@@ -292,32 +256,12 @@ class Experiment:
             kernels += new_kernels
 
             # evaluate, prune, and optimize gp_models
-            if not self.use_surrogate:
-                n_before = len(kernels)
-                kernels = remove_duplicate_gp_models(kernels)
-                if self.verbose:
-                    n_removed = n_before - len(kernels)
-                    print(f'Removed {n_removed} duplicate gp_models.\n')
+            n_before = len(kernels)
+            kernels = remove_duplicate_gp_models(kernels)
+            if self.verbose:
+                n_removed = n_before - len(kernels)
+                print(f'Removed {n_removed} duplicate gp_models.\n')
 
-            # update distance builder:
-            if self.use_surrogate:
-                # update distance builder
-                new_candidate_indices = self.active_set.update(new_kernels)
-                new_selected_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel in
-                                        newly_evaluated_kernels]
-                old_selected_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel in
-                                        old_evaluated_kernels]
-                all_candidates_indices = [i for (i, kernel) in enumerate(self.active_set.models) if kernel is not None
-                                          and not kernel.evaluated]
-                fitness_scores = [self.active_set.models[i].score for i in old_selected_indices] + \
-                                 [self.active_set.models[i].score for i in new_selected_indices]
-                assert self.active_set.selected_indices == old_selected_indices + new_selected_indices
-
-                self.surrogate_model.update(self.active_set, new_candidate_indices, all_candidates_indices,
-                                            old_selected_indices, new_selected_indices, self.x_train, fitness_scores)
-                assert self.active_set.selected_indices == self.surrogate_model.X.flatten().astype(int).tolist()
-                assert fitness_scores == self.surrogate_model.Y.flatten().tolist()
-                self.optimize_surrogate_model()
             # Select gp_models by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_models(kernels, self.query_strat, self.grammar.hyperpriors)
 
@@ -329,14 +273,7 @@ class Experiment:
                     print(f'Terminating kernel search. The last {self.max_null_queries} queries were empty.')
                 break
 
-            unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
-            unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in ind]
-            newly_evaluated_kernels = self.opt_and_eval_models(selected_kernels)
-            old_evaluated_kernels = [kernel for kernel in kernels if
-                                     kernel.evaluated and kernel not in selected_kernels]
-            kernels = newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
-            for gp_model in newly_evaluated_kernels:
-                self.visited.add(gp_model.covariance.symbolic_expr_expanded)
+            kernels = self.train_models(kernels, selected_kernels, ind)
 
             kernels = self.select_offspring(kernels)
             self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels)
@@ -362,11 +299,6 @@ class Experiment:
         best_kernel.covariance.pretty_print()
         print('')
 
-    def optimize_surrogate_model(self):
-        if self.verbose:
-            print('Optimizing surrogate model\n')
-        self.surrogate_model.optimize()
-
     def query_models(self,
                      kernels: List[GPModel],
                      query_strategy: QueryStrategy,
@@ -387,12 +319,6 @@ class Experiment:
                                                n_hyperparams=self.n_kernel_params)
         selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
         self.total_query_time += time() - t0
-
-        if self.use_surrogate:
-            selected_ind = [i for (i, m) in enumerate(self.active_set.models) if m in selected_kernels]
-            self.active_set.selected_indices += list(selected_ind)
-            # TODO: set remove priority only for all candidates
-            self.active_set.remove_priority = [unevaluated_kernels_ind[i] for i in np.argsort(acq_scores)]
 
         if self.verbose:
             n_selected = len(ind)
@@ -460,6 +386,19 @@ class Experiment:
             print(f'Offspring selector kept {len(offspring)}/{len(kernels)} gp_models\n')
 
         return offspring
+
+    def train_models(self,
+                     all_models: List[GPModel],
+                     chosen_models: List[GPModel],
+                     indices: List[int]):
+        unevaluated_kernels = [kernel for kernel in all_models if not kernel.evaluated]
+        unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in indices]
+        newly_evaluated_kernels = self.opt_and_eval_models(chosen_models)
+        for gp_model in newly_evaluated_kernels:
+            self.visited.add(gp_model.covariance.symbolic_expr_expanded)
+        old_evaluated_kernels = [kernel for kernel in all_models if
+                                 kernel.evaluated and kernel not in chosen_models]
+        return newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
 
     def opt_and_eval_models(self, models: List[GPModel]) -> List[GPModel]:
         """Optimize and evaluate all gp_models
