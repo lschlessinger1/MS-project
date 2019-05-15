@@ -2,9 +2,10 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from src.autoks.backend.model import BIC
-from src.autoks.core.experiment import Experiment
 from src.autoks.core.grammar import RandomGrammar
 from src.autoks.core.kernel_selection import CKS_kernel_selector
+from src.autoks.core.model_search_experiment import ModelSearchExperiment
+from src.autoks.core.model_selection import RandomModelSelector
 from src.experiments.util.synthetic_data import CubicSine1dDataset
 
 # Set random seed for reproducibility.
@@ -27,6 +28,9 @@ def negative_BIC(m):
 # Use the negative BIC because we want to maximize the objective.
 objective = negative_BIC
 
-experiment = Experiment(grammar, kernel_selector, objective, x_train, y_train, x_test, y_test,
-                        eval_budget=8, debug=True, verbose=True, additive_form=False, use_surrogate=False)
-experiment.run(title='Fast Experiment', create_report=False)
+standardize_y = True
+model_selector = RandomModelSelector(standardize_y, grammar, kernel_selector, objective, eval_budget=8,
+                                     tabu_search=False, debug=True, verbose=True, additive_form=False)
+
+experiment = ModelSearchExperiment(x_train, y_train, model_selector, x_test, y_test)
+experiment.run()

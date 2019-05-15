@@ -34,7 +34,7 @@ class ExperimentRunner:
         for ds in datasets:
             print(f'Performing experiment on \n {ds}')
             experiment = exp_factory(ds, **kwargs)
-            experiment.run(title='Random Experiment', create_report=False)
+            experiment.run()
 
 
 class KnownGPExperimentRunner(ExperimentRunner):
