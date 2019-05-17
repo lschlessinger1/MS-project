@@ -71,25 +71,8 @@ class QueryStrategy(Selector, ABC):
     def __repr__(self):
         return f'{self.__class__.__name__}('f'scoring_func={self.scoring_func!r})'
 
+
 # Query Strategies
-
-
-class BOMSInitQueryStrategy(QueryStrategy):
-
-    def __init__(self, n_individuals=None, scoring_func=None):
-        if scoring_func is None:
-            scoring_func = UniformScorer()
-        super().__init__(n_individuals, scoring_func)
-
-    def arg_select(self, population: np.ndarray, fitness_list: np.ndarray) -> np.ndarray:
-        """Select index of SE_0 + SE_0
-
-        :param population:
-        :param fitness_list:
-        :return:
-        """
-        return np.array([0])
-
 
 class NaiveQueryStrategy(QueryStrategy, AllSelector):
     scoring_func: Optional[AcquisitionFunction]

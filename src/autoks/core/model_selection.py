@@ -30,7 +30,7 @@ class ModelSelector:
     max_depth: Optional[int]
     hyperpriors: Optional[Hyperpriors]
     init_query_strat: Optional[QueryStrategy]
-    query_strat: Optional[QueryStrategy]
+    query_strategy: Optional[QueryStrategy]
     gp_model: Optional[GP]
     additive_form: bool
     debug: bool
@@ -84,9 +84,9 @@ class ModelSelector:
         self.model_dict = default_model_dict
 
         if query_strategy is not None:
-            self.query_strat = query_strategy
+            self.query_strategy = query_strategy
         else:
-            self.query_strat = NaiveQueryStrategy()
+            self.query_strategy = NaiveQueryStrategy()
 
         self.tabu_search = tabu_search
 
@@ -191,7 +191,7 @@ class ModelSelector:
                 print(f'Removed {n_removed} duplicate gp_models.\n')
 
             # Select gp_models by acquisition function to be evaluated
-            selected_kernels, ind, acq_scores = self.query_models(kernels, self.query_strat, x, y,
+            selected_kernels, ind, acq_scores = self.query_models(kernels, self.query_strategy, x, y,
                                                                   self.grammar.hyperpriors)
 
             # Check for empty queries
@@ -476,6 +476,14 @@ class BomsModelSelector(ModelSelector):
         max_number_of_initial_models = 500
         initial_candidates = self.grammar.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
         return initial_candidates
+
+    def initialize(self, x, y) -> List[GPModel]:
+        # initialize models
+        initial_candidates = self.get_initial_candidates()
+        indices = [0]
+        initial_models = [initial_candidates[i] for i in indices]
+        initial_models = self.train_models(initial_candidates, initial_models, indices, x, y)
+        return initial_models
 
 
 class CKSModelSelector(ModelSelector):

@@ -14,7 +14,7 @@ from src.autoks.core.kernel_encoding import KernelNode
 from src.autoks.core.kernel_selection import BOMS_kernel_selector, CKS_kernel_selector, evolutionary_kernel_selector
 from src.autoks.core.model_selection import ModelSelector, EvolutionaryModelSelector, BomsModelSelector, \
     CKSModelSelector, RandomModelSelector
-from src.autoks.core.query_strategy import BOMSInitQueryStrategy, BestScoreStrategy
+from src.autoks.core.query_strategy import BestScoreStrategy
 from src.autoks.plotting import plot_kernel_tree, plot_best_scores, plot_score_summary, plot_n_hyperparams_summary, \
     plot_n_operands_summary, plot_base_kernel_freqs, plot_cov_dist_summary, plot_kernel_diversity_summary
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_lin_reg, rmse_svr, rmse_rbf, rmse_knn
@@ -138,11 +138,10 @@ class ModelSearchExperiment(BaseExperiment):
         grammar = BOMSGrammar(base_kernel_names, n_dims, hyperpriors)
         kernel_selector = BOMS_kernel_selector(n_parents=1)
         objective = log_likelihood_normalized
-        init_qs = BOMSInitQueryStrategy()
         acq = ExpectedImprovementPerSec()
         qs = BestScoreStrategy(scoring_func=acq)
-        model_selector = BomsModelSelector(grammar, kernel_selector, objective, eval_budget=50,
-                                           init_query_strat=init_qs, query_strategy=qs, use_laplace=True, **kwargs)
+        model_selector = BomsModelSelector(grammar, kernel_selector, objective, eval_budget=50, query_strategy=qs,
+                                           use_laplace=True, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test)
 
