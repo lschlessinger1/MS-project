@@ -47,12 +47,14 @@ class TestModelSelector(TestCase):
         self.assertListEqual(result, parents)
 
     def test_propose_new_kernels(self):
-        expansion = [Covariance(RBF(1)), Covariance(RationalQuadratic(1)), Covariance(RBF(1) + RationalQuadratic(1)),
-                     Covariance(RBF(1) * RationalQuadratic(1))]
-        self.model_selector.grammar.get_candidates.return_value = expansion
-        result = self.model_selector.propose_new_kernels(self.gp_models)
-        self.assertIsInstance(result, list)
-        self.assertListEqual(result, expansion)
+        expected = [Covariance(RBF(1)), Covariance(RationalQuadratic(1)), Covariance(RBF(1) + RationalQuadratic(1)),
+                    Covariance(RBF(1) * RationalQuadratic(1))]
+        self.model_selector.grammar.get_candidates.return_value = expected
+        actual = self.model_selector.propose_new_kernels(self.gp_models)
+        self.assertIsInstance(actual, list)
+        self.assertEqual(len(expected), len(actual))
+        for expected_cov, actual_cov in zip(expected, actual):
+            self.assertEqual(expected_cov.infix, actual_cov.covariance.infix)
 
     def test_select_offspring(self):
         offspring = self.gp_models[:2]
