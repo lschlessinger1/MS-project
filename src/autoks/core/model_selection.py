@@ -142,6 +142,10 @@ class ModelSelector:
         # initialize models
         initial_models = self.get_initial_candidates()
         initial_models = remove_duplicate_gp_models(initial_models)
+
+        if self.debug:
+            pretty_print_gp_models(initial_models, 'Initial candidate')
+
         indices = list(range(len(initial_models)))
         initial_models = self.train_models(initial_models, initial_models, indices, x, y)
         return initial_models
