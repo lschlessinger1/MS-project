@@ -160,17 +160,16 @@ class ModelSearchExperiment(BaseExperiment):
         # Use the negative BIC because we want to maximize the objective.
         objective = negative_BIC
 
-        # use conjugate gradient descent for CKS
+        # Use scaled conjugate gradient descent for CKS.
         optimizer = 'scg'
-        model_selector = CKSModelSelector(grammar, kernel_selector, objective, max_depth=10,
-                                          optimizer=optimizer, use_laplace=False, **kwargs)
+        model_selector = CKSModelSelector(grammar, kernel_selector, objective, max_depth=10, optimizer=optimizer,
+                                          use_laplace=False, **kwargs)
         return cls(x_train, y_train, model_selector, x_test, y_test)
 
     @classmethod
     def evolutionary_experiment(cls,
                                 dataset,
                                 **kwargs):
-        # x_train, x_test, y_train, y_test = dataset.split_train_test()
         x, y = dataset.load_or_generate_data()
         n_dims = x.shape[1]
         base_kernels_names = CKSGrammar.get_base_kernel_names(n_dims)
@@ -192,15 +191,13 @@ class ModelSearchExperiment(BaseExperiment):
         grammar = EvolutionaryGrammar(base_kernel_names=base_kernels_names, n_dims=n_dims,
                                       population_operator=pop_operator)
         initializer = HalfAndHalfGenerator(binary_operators=grammar.operators, max_depth=1, operands=mutator.operands)
-        grammar.initializer = initializer
-        grammar.n_init_trees = pop_size
 
         kernel_selector = evolutionary_kernel_selector(n_parents=n_parents, max_offspring=pop_size)
         objective = log_likelihood_normalized
         budget = 50
-        model_selector = EvolutionaryModelSelector(grammar, kernel_selector, objective,
-                                                   tabu_search=False, eval_budget=budget, max_null_queries=budget,
-                                                   max_same_expansions=budget, **kwargs)
+        model_selector = EvolutionaryModelSelector(grammar, kernel_selector, objective, initializer=initializer,
+                                                   n_init_trees=10, tabu_search=False, eval_budget=budget,
+                                                   max_null_queries=budget, max_same_expansions=budget, **kwargs)
         return cls(x, y, model_selector)
 
     @classmethod
@@ -213,7 +210,7 @@ class ModelSearchExperiment(BaseExperiment):
         objective = log_likelihood_normalized
         kernel_selector = CKS_kernel_selector(n_parents=1)
 
-        model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=50,
-                                             tabu_search=False, **kwargs)
+        model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=50, tabu_search=False,
+                                             **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test, )

@@ -7,11 +7,12 @@ from GPy.core import GP
 from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.kernel import set_priors, n_base_kernels, KERNEL_DICT
-from src.autoks.core.covariance import pairwise_centered_alignments, all_pairs_avg_dist
+from src.autoks.core.covariance import pairwise_centered_alignments, all_pairs_avg_dist, Covariance
 from src.autoks.core.gp_model import GPModel, remove_nan_scored_models, pretty_print_gp_models, \
     remove_duplicate_gp_models, update_kernel_infix_set, all_same_expansion
-from src.autoks.core.grammar import BaseGrammar
+from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors
+from src.autoks.core.kernel_encoding import tree_to_kernel
 from src.autoks.core.kernel_selection import KernelSelector
 from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy
 from src.autoks.statistics import StatBook, StatBookCollection, Statistic
@@ -144,8 +145,8 @@ class ModelSelector:
         t_init = time()
 
         # initialize models
-        kernels = self.grammar.initialize()
-        kernels = remove_duplicate_gp_models(kernels)  # TODO: clean up
+        kernels = self.get_initial_candidates()
+        kernels = remove_duplicate_gp_models(kernels)
         self.set_model_dicts(kernels)
 
         # convert to additive form if necessary
@@ -229,6 +230,13 @@ class ModelSelector:
 
     def score(self, x, y) -> float:
         pass
+
+    def get_initial_candidates(self) -> List[GPModel]:
+        initial_covariances = self.get_initial_candidate_covariances()
+        return [GPModel(covariance) for covariance in initial_covariances]
+
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        raise NotImplementedError
 
     def initialize(self):
         raise NotImplementedError
@@ -435,20 +443,36 @@ class ModelSelector:
 
 
 class EvolutionaryModelSelector(ModelSelector):
+    grammar: EvolutionaryGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50,
+    def __init__(self, grammar, kernel_selector, objective, initializer=None, n_init_trees=10, eval_budget=50,
                  max_depth=None, init_query_strat=None, query_strat=None, additive_form=False,
                  debug=False, verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3,
                  optimizer=None, n_restarts_optimizer=10, use_laplace=True):
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, init_query_strat,
-                         query_strat, additive_form, debug, verbose, tabu_search,
-                         max_null_queries, max_same_expansions, optimizer, n_restarts_optimizer, use_laplace)
+                         query_strat, additive_form, debug, verbose, tabu_search, max_null_queries,
+                         max_same_expansions, optimizer, n_restarts_optimizer, use_laplace)
+        self.initializer = initializer
+        self.n_init_trees = n_init_trees
+
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        if self.initializer is not None:
+            # Generate trees
+            trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
+            kernels = [tree_to_kernel(tree) for tree in trees]
+            covariances = [Covariance(k) for k in kernels]
+
+            return covariances
+        else:
+            return self.grammar.base_kernels
 
     def initialize(self):
         pass
 
 
 class BomsModelSelector(ModelSelector):
+    grammar: BOMSGrammar
+
     def __init__(self, grammar, kernel_selector, objective, eval_budget=50,
                  max_depth=None, init_query_strat=None, query_strat=None, additive_form=False,
                  debug=False, verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3,
@@ -456,12 +480,20 @@ class BomsModelSelector(ModelSelector):
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, init_query_strat,
                          query_strat, additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions,
                          optimizer, n_restarts_optimizer, use_laplace)
+
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        initial_level_depth = 2
+        max_number_of_initial_models = 500
+        initial_candidates = self.grammar.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
+        return initial_candidates
 
     def initialize(self):
         pass
 
 
 class CKSModelSelector(ModelSelector):
+    grammar: CKSGrammar
+
     def __init__(self, grammar, kernel_selector, objective, eval_budget=50,
                  max_depth=None, init_query_strat=None, query_strat=None, additive_form=False,
                  debug=False, verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3,
@@ -470,19 +502,25 @@ class CKSModelSelector(ModelSelector):
                          query_strat, additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions,
                          optimizer, n_restarts_optimizer, use_laplace)
 
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        return self.grammar.base_kernels
+
     def initialize(self):
         pass
 
 
 class RandomModelSelector(ModelSelector):
+    grammar: RandomGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50,
-                 max_depth=None, init_query_strat=None, query_strat=None, additive_form=False, debug=False,
-                 verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, init_query_strat,
-                         query_strat, additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions,
-                         optimizer, n_restarts_optimizer, use_laplace)
+    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, init_query_strat=None,
+                 query_strat=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
+                 max_null_queries=3, max_same_expansions=3, optimizer=None, n_restarts_optimizer=10, use_laplace=True):
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, init_query_strat, query_strat,
+                         additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions, optimizer,
+                         n_restarts_optimizer, use_laplace)
+
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        return self.grammar.base_kernels
 
     def initialize(self):
         pass

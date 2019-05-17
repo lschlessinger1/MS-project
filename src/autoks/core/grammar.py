@@ -8,7 +8,7 @@ from src.autoks.core.covariance import Covariance, remove_duplicate_kernels
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.core.kernel_encoding import tree_to_kernel
-from src.evalg.genprog import BinaryTreeGenerator, OnePointRecombinatorBase
+from src.evalg.genprog import OnePointRecombinatorBase
 from src.evalg.vary import PopulationOperator
 
 
@@ -26,10 +26,6 @@ class BaseGrammar:
         self.hyperpriors = hyperpriors
         raw_kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, hyperpriors=self.hyperpriors)
         self.base_kernels = [Covariance(kernel) for kernel in raw_kernels]
-
-    def initialize(self) -> List[GPModel]:
-        """Initialize gp_models."""
-        raise NotImplementedError('initialize must implemented in a subclass')
 
     def expand(self,
                seed_kernels: List[GPModel],
@@ -64,40 +60,14 @@ class BaseGrammar:
 
 class EvolutionaryGrammar(BaseGrammar):
     population_operator: PopulationOperator
-    initializer: Optional[BinaryTreeGenerator]
-    n_init_trees: Optional[int]
 
     def __init__(self,
                  base_kernel_names: List[str],
                  n_dims: int,
                  population_operator,
-                 initializer=None,
-                 hyperpriors: Optional[Hyperpriors] = None,
-                 n_init_trees=None):
+                 hyperpriors: Optional[Hyperpriors] = None):
         super().__init__(base_kernel_names, n_dims, hyperpriors)
         self.population_operator = population_operator
-        self.initializer = initializer
-        self.n_init_trees = n_init_trees
-
-    def initialize(self) -> List[GPModel]:
-        """Initialize using initializer or same as CKS.
-
-        :return:
-        """
-        if self.initializer is not None:
-            n_init_trees = 10
-            if self.n_init_trees is not None:
-                self.n_init_trees = n_init_trees
-
-            # Generate trees and then convert to GPy gp_models, then to AKSKernels
-            trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
-            kernels = [tree_to_kernel(tree) for tree in trees]
-            covariances = [Covariance(k) for k in kernels]
-            gp_models = self._covariances_to_gp_models(covariances)
-            return gp_models
-        else:
-            # Naive initialization of all SE_i and RQ_i (for every dimension).
-            return self._covariances_to_gp_models(self.base_kernels)
 
     def expand(self,
                seed_kernels: List[GPModel],
@@ -142,8 +112,7 @@ class EvolutionaryGrammar(BaseGrammar):
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
             f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r},' \
-            f'population_operator={self.population_operator!r}, initializer={self.initializer!r}, ' \
-            f'n_init_trees={self.n_init_trees!r})'
+            f'population_operator={self.population_operator!r})'
 
 
 class CKSGrammar(BaseGrammar):
@@ -165,13 +134,6 @@ class CKSGrammar(BaseGrammar):
             return ['SE', 'RQ']
         else:
             return ['SE', 'RQ', 'LIN', 'PER']
-
-    def initialize(self) -> List[GPModel]:
-        """Initialize with all base kernel families applied to all input dimensions.
-
-        :return:
-        """
-        return self._covariances_to_gp_models(self.base_kernels)
 
     def expand(self,
                seed_kernels: List[GPModel],
@@ -308,16 +270,6 @@ class BOMSGrammar(CKSGrammar):
         self.random_walk_geometric_dist_parameter = 1 / 3  # termination probability
         self.number_of_top_k_best = 3
         self.number_of_random_walks = 15
-
-    def initialize(self) -> List[GPModel]:
-        """Initialize gp_models according to number of dimensions.
-
-        :return:
-        """
-        initial_level_depth = 2
-        max_number_of_initial_models = 500
-        initial_candidates = self.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
-        return self._covariances_to_gp_models(initial_candidates)
 
     def get_candidates(self,
                        seed_kernels: List[GPModel],

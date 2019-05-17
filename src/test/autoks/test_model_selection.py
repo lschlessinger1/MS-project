@@ -2,11 +2,12 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 import numpy as np
-from GPy.kern import RationalQuadratic, RBF
+from GPy.kern import RationalQuadratic, RBF, LinScaleShift
 
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.model_selection import ModelSelector
+from src.autoks.core.grammar import CKSGrammar
+from src.autoks.core.model_selection import ModelSelector, CKSModelSelector
 from src.autoks.core.query_strategy import QueryStrategy
 
 
@@ -46,10 +47,10 @@ class TestModelSelector(TestCase):
         self.assertListEqual(result, parents)
 
     def test_propose_new_kernels(self):
-        expansion = [GPModel(kern) for kern in [Covariance(RBF(1)), Covariance(RationalQuadratic(1)),
-                                                Covariance(RBF(1) + RationalQuadratic(1)), Covariance(RBF(1)
-                                                                                                      * RationalQuadratic(
-                1))]]
+        expansion = [GPModel(kern) for kern in [Covariance(RBF(1)),
+                                                Covariance(RationalQuadratic(1)),
+                                                Covariance(RBF(1) + RationalQuadratic(1)),
+                                                Covariance(RBF(1) * RationalQuadratic(1))]]
         self.model_selector.grammar.get_candidates.return_value = expansion
         result = self.model_selector.propose_new_kernels(self.gp_models)
         self.assertIsInstance(result, list)
@@ -61,3 +62,36 @@ class TestModelSelector(TestCase):
         result = self.model_selector.select_offspring(self.gp_models)
         self.assertIsInstance(result, list)
         self.assertListEqual(result, offspring)
+
+
+class TestCKSModelSelector(TestCase):
+
+    def setUp(self):
+        self.se0 = Covariance(RBF(1, active_dims=[0]))
+        self.se1 = Covariance(RBF(1, active_dims=[1]))
+        self.se2 = Covariance(RBF(1, active_dims=[2]))
+        self.rq0 = Covariance(RationalQuadratic(1, active_dims=[0]))
+        self.rq1 = Covariance(RationalQuadratic(1, active_dims=[1]))
+        self.rq2 = Covariance(RationalQuadratic(1, active_dims=[2]))
+        self.lin0 = Covariance(LinScaleShift(1, active_dims=[0]))
+
+    def test_get_initial_candidate_covariances(self):
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        model_selector = CKSModelSelector(grammar, MagicMock(), MagicMock())
+
+        actual = model_selector.get_initial_candidate_covariances()
+        expected = [self.se0, self.se1, self.rq0, self.rq1]
+        self.assertIsInstance(actual, list)
+        self.assertEqual(len(expected), len(actual))
+        for expected_cov, actual_cov in zip(expected, actual):
+            self.assertEqual(expected_cov.infix, actual_cov.infix)
+
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=1)
+        model_selector = CKSModelSelector(grammar, MagicMock(), MagicMock())
+
+        actual = model_selector.get_initial_candidate_covariances()
+        expected = [self.se0, self.rq0]
+        self.assertIsInstance(actual, list)
+        self.assertEqual(len(expected), len(actual))
+        for expected_cov, actual_cov in zip(expected, actual):
+            self.assertEqual(expected_cov.infix, actual_cov.infix)

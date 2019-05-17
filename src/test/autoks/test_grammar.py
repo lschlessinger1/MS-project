@@ -14,9 +14,6 @@ class TestBaseGrammar(unittest.TestCase):
     def setUp(self):
         self.grammar = BaseGrammar(['SE', 'RQ'], 1)
 
-    def test_initialize(self):
-        self.assertRaises(NotImplementedError, self.grammar.initialize)
-
     def test_expand(self):
         seed_kernel = GPModel(RBF(1))
         self.assertRaises(NotImplementedError, self.grammar.expand, seed_kernel)
@@ -66,35 +63,6 @@ class TestCKSGrammar(unittest.TestCase):
 
         for expected_kernel, actual_kernel in zip(expected_kernels, grammar.base_kernels):
             self.assertEqual(expected_kernel.infix, actual_kernel.infix)
-
-    def test_initialize(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
-
-        actual = grammar.initialize()
-        expected = [self.se0, self.se1, self.rq0, self.rq1]
-        self.assertIsInstance(actual, list)
-        self.assertEqual(len(expected), len(actual))
-        for expected_cov, actual_cov in zip(expected, actual):
-            self.assertEqual(expected_cov.infix, actual_cov.covariance.infix)
-
-        scored = [k.evaluated for k in actual]
-        self.assertFalse(all(scored))
-        nan_scored = [k.nan_scored for k in actual]
-        self.assertFalse(all(nan_scored))
-
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=1)
-
-        actual = grammar.initialize()
-        expected = [self.se0, self.rq0]
-        self.assertIsInstance(actual, list)
-        self.assertEqual(len(expected), len(actual))
-        for expected_cov, actual_cov in zip(expected, actual):
-            self.assertEqual(expected_cov.infix, actual_cov.covariance.infix)
-
-        scored = [k.evaluated for k in actual]
-        self.assertFalse(all(scored))
-        nan_scored = [k.nan_scored for k in actual]
-        self.assertFalse(all(nan_scored))
 
     def test_expand(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
