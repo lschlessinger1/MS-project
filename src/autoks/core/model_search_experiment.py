@@ -5,16 +5,14 @@ import numpy as np
 
 from src.autoks.backend.kernel import get_all_1d_kernels
 from src.autoks.backend.model import log_likelihood_normalized, AIC, BIC, pl2
-from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.experiment import BaseExperiment
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.grammar import CKSGrammar, BOMSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.core.hyperprior import boms_hyperpriors
 from src.autoks.core.kernel_encoding import KernelNode
-from src.autoks.core.kernel_selection import BOMS_kernel_selector, CKS_kernel_selector, evolutionary_kernel_selector
+from src.autoks.core.kernel_selection import CKS_kernel_selector, evolutionary_kernel_selector
 from src.autoks.core.model_selection import ModelSelector, EvolutionaryModelSelector, BomsModelSelector, \
     CKSModelSelector, RandomModelSelector
-from src.autoks.core.query_strategy import BestScoreStrategy
 from src.autoks.plotting import plot_kernel_tree, plot_best_scores, plot_score_summary, plot_n_hyperparams_summary, \
     plot_n_operands_summary, plot_base_kernel_freqs, plot_cov_dist_summary, plot_kernel_diversity_summary
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_lin_reg, rmse_svr, rmse_rbf, rmse_knn
@@ -136,12 +134,8 @@ class ModelSearchExperiment(BaseExperiment):
         base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
         hyperpriors = boms_hyperpriors()
         grammar = BOMSGrammar(base_kernel_names, n_dims, hyperpriors)
-        kernel_selector = BOMS_kernel_selector(n_parents=1)
-        objective = log_likelihood_normalized
-        acq = ExpectedImprovementPerSec()
-        qs = BestScoreStrategy(scoring_func=acq)
-        model_selector = BomsModelSelector(grammar, kernel_selector, objective, eval_budget=50, query_strategy=qs,
-                                           use_laplace=True, **kwargs)
+
+        model_selector = BomsModelSelector(grammar, eval_budget=50, use_laplace=True, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test)
 
@@ -150,19 +144,8 @@ class ModelSearchExperiment(BaseExperiment):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         n_dims = x_train.shape[1]
         grammar = CKSGrammar(n_dims)
-        kernel_selector = CKS_kernel_selector(n_parents=1)
 
-        def negative_BIC(m):
-            """Computes the negative of the Bayesian Information Criterion (BIC)."""
-            return -BIC(m)
-
-        # Use the negative BIC because we want to maximize the objective.
-        objective = negative_BIC
-
-        # Use scaled conjugate gradient descent for CKS.
-        optimizer = 'scg'
-        model_selector = CKSModelSelector(grammar, kernel_selector, objective, max_depth=10, optimizer=optimizer,
-                                          use_laplace=False, **kwargs)
+        model_selector = CKSModelSelector(grammar, use_laplace=False, **kwargs)
         return cls(x_train, y_train, model_selector, x_test, y_test)
 
     @classmethod
@@ -192,10 +175,9 @@ class ModelSearchExperiment(BaseExperiment):
         initializer = HalfAndHalfGenerator(binary_operators=grammar.operators, max_depth=1, operands=mutator.operands)
 
         kernel_selector = evolutionary_kernel_selector(n_parents=n_parents, max_offspring=pop_size)
-        objective = log_likelihood_normalized
-        budget = 50
-        model_selector = EvolutionaryModelSelector(grammar, kernel_selector, objective, initializer=initializer,
-                                                   n_init_trees=10, tabu_search=False, eval_budget=budget, **kwargs)
+
+        model_selector = EvolutionaryModelSelector(grammar, kernel_selector, initializer=initializer, tabu_search=False,
+                                                   **kwargs)
         return cls(x, y, model_selector)
 
     @classmethod

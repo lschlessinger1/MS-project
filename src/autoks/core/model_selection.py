@@ -7,14 +7,16 @@ from GPy.core import GP
 from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.kernel import set_priors, n_base_kernels, KERNEL_DICT
+from src.autoks.backend.model import log_likelihood_normalized, BIC
+from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import pairwise_centered_alignments, all_pairs_avg_dist, Covariance
 from src.autoks.core.gp_model import GPModel, remove_nan_scored_models, pretty_print_gp_models, \
     remove_duplicate_gp_models
 from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors
 from src.autoks.core.kernel_encoding import tree_to_kernel
-from src.autoks.core.kernel_selection import KernelSelector
-from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy
+from src.autoks.core.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector
+from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy, BestScoreStrategy
 from src.autoks.statistics import StatBook, StatBookCollection, Statistic
 from src.autoks.util import type_count
 
@@ -444,9 +446,19 @@ class EvolutionaryModelSelector(ModelSelector):
 class BomsModelSelector(ModelSelector):
     grammar: BOMSGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
-                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
+    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=None,
+                 query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
                  n_restarts_optimizer=10, use_laplace=True):
+        if kernel_selector is None:
+            kernel_selector = BOMS_kernel_selector(n_parents=1)
+
+        if objective is None:
+            objective = log_likelihood_normalized
+
+        if query_strategy is None:
+            acq = ExpectedImprovementPerSec()
+            query_strategy = BestScoreStrategy(scoring_func=acq)
+
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
                          debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
 
@@ -468,9 +480,21 @@ class BomsModelSelector(ModelSelector):
 class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
-                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True):
+    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=10,
+                 query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
+                 optimizer='scg', n_restarts_optimizer=10, use_laplace=True):
+
+        if kernel_selector is None:
+            kernel_selector = CKS_kernel_selector(n_parents=1)
+
+        if objective is None:
+            def negative_BIC(m):
+                """Computes the negative of the Bayesian Information Criterion (BIC)."""
+                return -BIC(m)
+
+            # Use the negative BIC because we want to maximize the objective.
+            objective = negative_BIC
+
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
                          debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
 
@@ -481,14 +505,18 @@ class CKSModelSelector(ModelSelector):
 class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
+    def __init__(self, grammar, kernel_selector, objective=None, eval_budget=50, max_depth=None, query_strategy=None,
                  additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
                  n_restarts_optimizer=10, use_laplace=True):
+        if objective is None:
+            objective = log_likelihood_normalized
+
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
                          debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels
+
 
 # stats functions
 def get_model_scores(gp_models: List[GPModel], *args, **kwargs) -> List[float]:
