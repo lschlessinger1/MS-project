@@ -28,8 +28,7 @@ def negative_BIC(m):
 # Use the negative BIC because we want to maximize the objective.
 objective = negative_BIC
 
-standardize_y = True
-model_selector = RandomModelSelector(standardize_y, grammar, kernel_selector, objective, eval_budget=8,
+model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=8,
                                      tabu_search=False, debug=True, verbose=True, additive_form=False)
 
 experiment = ModelSearchExperiment(x_train, y_train, model_selector, x_test, y_test)

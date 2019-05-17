@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import numpy as np
 from GPy.kern import RationalQuadratic, RBF
@@ -23,7 +23,7 @@ class TestModelSelector(TestCase):
         self.y_train = np.array([[5], [10]])
         self.x_test = np.array([[10, 20, 30], [40, 50, 60]])
         self.y_test = np.array([[2], [1]])
-        self.model_selector = ModelSelector(False, grammar, kernel_selector, objective)
+        self.model_selector = ModelSelector(grammar, kernel_selector, objective)
 
     def test_query_kernels(self):
         scoring_func = MagicMock(name='acq_func')
@@ -61,21 +61,3 @@ class TestModelSelector(TestCase):
         result = self.model_selector.select_offspring(self.gp_models)
         self.assertIsInstance(result, list)
         self.assertListEqual(result, offspring)
-
-    def test_opt_and_eval_kernels(self):
-        # test that opt and eval is called for all gp_models
-        self.model_selector.optimize_model = MagicMock()
-        self.model_selector.evaluate_model = MagicMock()
-        self.model_selector.update_stats = MagicMock()
-
-        self.model_selector.opt_and_eval_models(self.gp_models)
-
-        self.assertEqual(len(self.gp_models), self.model_selector.optimize_model.call_count)
-        self.assertEqual(len(self.gp_models), self.model_selector.evaluate_model.call_count)
-        self.model_selector.optimize_model.assert_has_calls([call(k) for k in self.gp_models], any_order=True)
-        # self.exp.evaluate_model.assert_has_calls([call(k) for k in self.gp_models], any_order=True)
-
-    def test_optimize_kernel(self):
-        self.model_selector.gp_model = MagicMock()
-        self.model_selector.optimize_model(self.gp_models[0])
-        self.assertEqual(2, self.model_selector.gp_model.optimize_restarts.call_count)

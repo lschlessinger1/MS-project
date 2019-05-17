@@ -25,15 +25,21 @@ class BaseExperiment:
             self.y_test = y_test.reshape(-1, 1) if y_test.ndim == 1 else y_test
         else:
             self.y_test = None
+
         # only save scaled version of data
         self.standardize_x = standardize_x
         self.standardize_y = standardize_y
         if standardize_x:
             scaler = StandardScaler()
-            if standardize_x:
-                self.x_train = scaler.fit_transform(self.x_train)
-                if self.x_test is not None:
-                    self.x_test = scaler.transform(self.x_test)
+            self.x_train = scaler.fit_transform(self.x_train)
+            if self.x_test is not None:
+                self.x_test = scaler.transform(self.x_test)
+
+        if standardize_y:
+            y_normalizer = StandardScaler()
+            self.y_train = y_normalizer.fit_transform(self.y_train)
+            if self.x_test is not None:
+                self.y_test = y_normalizer.transform(self.y_test)
 
         self.n_dims = self.x_train.shape[1]
 

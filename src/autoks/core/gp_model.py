@@ -1,6 +1,8 @@
 from typing import Optional, List, FrozenSet
 
 import numpy as np
+from GPy.core import GP
+from GPy.likelihoods import Likelihood
 
 from src.autoks.backend.kernel import encode_prior, get_priors, encode_kernel, sort_kernel, kernel_to_infix
 from src.autoks.core.covariance import Covariance
@@ -15,14 +17,41 @@ class GPModel:
     evaluated: bool
     nan_scored: bool
     expanded: bool
+    model_input_dict: Optional[dict]
+    likelihood: Optional[Likelihood]
 
-    def __init__(self, covariance: Covariance, lik_params=None, evaluated=False, nan_scored=False, expanded=False):
+    def __init__(self, covariance: Covariance, likelihood=None, evaluated=False, nan_scored=False, expanded=False):
         self.covariance = covariance
-        self.lik_params = lik_params
         self.evaluated = evaluated
         self.nan_scored = nan_scored
         self.expanded = expanded
         self._score = None
+
+        self.model_input_dict = dict()  # Only save keyword arguments of GP
+        self.likelihood = likelihood
+
+    def score_model(self, x, y, scoring_func):
+        model = self.fit(x, y)
+        self.score = scoring_func(model)
+        return self.score
+
+    def build_model(self, x, y) -> GP:
+        input_dict = self.model_input_dict.copy()
+
+        input_dict['X'] = x
+        input_dict['Y'] = y
+        input_dict['kernel'] = self.covariance.raw_kernel
+        input_dict['likelihood'] = self.likelihood
+
+        gp = GP(**input_dict)
+
+        return gp
+
+    def fit(self, x, y, optimizer=None, n_restarts=10):
+        model = self.build_model(x, y)
+        model.optimize_restarts(ipython_notebook=False, optimizer=optimizer, num_restarts=n_restarts, verbose=False,
+                                robust=True, messages=False)
+        return model
 
     @property
     def score(self) -> Optional[float]:

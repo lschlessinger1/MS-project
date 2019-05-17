@@ -42,11 +42,8 @@ class ModelSearchExperiment(BaseExperiment):
 
     def summarize(self, best_gp_model: GPModel) -> None:
         """Summarize results of experiment"""
-        best_kernel = best_gp_model.covariance.raw_kernel
-        best_model = self.model_selector.gp_model.__class__(self.x_train, self.y_train, kernel=best_kernel,
-                                                            normalizer=self.standardize_y)
-        # Set the likelihood parameters.
-        best_model.likelihood[:] = best_gp_model.lik_params
+        best_model = best_gp_model.build_model(self.x_train, self.y_train)
+
         # If training data is 1D, show a plot.
         if best_model.input_dim == 1:
             best_model.plot(plot_density=True, title='Best Model')
@@ -144,8 +141,7 @@ class ModelSearchExperiment(BaseExperiment):
         init_qs = BOMSInitQueryStrategy()
         acq = ExpectedImprovementPerSec()
         qs = BestScoreStrategy(scoring_func=acq)
-        standardize_y = True
-        model_selector = BomsModelSelector(standardize_y, grammar, kernel_selector, objective, eval_budget=50,
+        model_selector = BomsModelSelector(grammar, kernel_selector, objective, eval_budget=50,
                                            init_query_strat=init_qs, query_strat=qs, use_laplace=True, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test)
@@ -166,8 +162,7 @@ class ModelSearchExperiment(BaseExperiment):
 
         # use conjugate gradient descent for CKS
         optimizer = 'scg'
-        standardize_y = True
-        model_selector = CKSModelSelector(standardize_y, grammar, kernel_selector, objective, max_depth=10,
+        model_selector = CKSModelSelector(grammar, kernel_selector, objective, max_depth=10,
                                           optimizer=optimizer, use_laplace=False, **kwargs)
         return cls(x_train, y_train, model_selector, x_test, y_test)
 
@@ -203,8 +198,7 @@ class ModelSearchExperiment(BaseExperiment):
         kernel_selector = evolutionary_kernel_selector(n_parents=n_parents, max_offspring=pop_size)
         objective = log_likelihood_normalized
         budget = 50
-        standardize_y = True
-        model_selector = EvolutionaryModelSelector(standardize_y, grammar, kernel_selector, objective,
+        model_selector = EvolutionaryModelSelector(grammar, kernel_selector, objective,
                                                    tabu_search=False, eval_budget=budget, max_null_queries=budget,
                                                    max_same_expansions=budget, **kwargs)
         return cls(x, y, model_selector)
@@ -219,8 +213,7 @@ class ModelSearchExperiment(BaseExperiment):
         objective = log_likelihood_normalized
         kernel_selector = CKS_kernel_selector(n_parents=1)
 
-        standardize_y = True
-        model_selector = RandomModelSelector(standardize_y, grammar, kernel_selector, objective, eval_budget=50,
+        model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=50,
                                              tabu_search=False, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test, )
