@@ -9,7 +9,7 @@ from GPy.inference.latent_function_inference import Laplace
 from src.autoks.backend.kernel import set_priors, n_base_kernels, KERNEL_DICT
 from src.autoks.core.covariance import pairwise_centered_alignments, all_pairs_avg_dist, Covariance
 from src.autoks.core.gp_model import GPModel, remove_nan_scored_models, pretty_print_gp_models, \
-    remove_duplicate_gp_models, update_kernel_infix_set, all_same_expansion
+    remove_duplicate_gp_models
 from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors
 from src.autoks.core.kernel_encoding import tree_to_kernel
@@ -42,8 +42,8 @@ class ModelSelector:
     max_same_expansions: int
 
     def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
-                 additive_form=False, debug=False, verbose=False, tabu_search=True, max_null_queries=3,
-                 max_same_expansions=3, optimizer=None, n_restarts_optimizer=10, use_laplace=True):
+                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
+                 n_restarts_optimizer=10, use_laplace=True):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -52,7 +52,7 @@ class ModelSelector:
 
         if max_depth is None:
             # By default, the model search is terminated only when the evaluation budget is expended.
-            self.max_depth = np.inf
+            self.max_depth = max(1000, eval_budget * 2)
         else:
             self.max_depth = max_depth
 
@@ -89,10 +89,6 @@ class ModelSelector:
             self.query_strategy = NaiveQueryStrategy()
 
         self.tabu_search = tabu_search
-
-        # Kernel search termination conditions.
-        self.max_same_expansions = max_same_expansions  # Maximum number of same kernel proposal before terminating
-        self.max_null_queries = max_null_queries  # Maximum number of empty queries in a row allowed before terminating
 
         # Used for expected improvement per second.
         self.n_kernel_params = []
@@ -157,8 +153,6 @@ class ModelSelector:
         kernels = self.initialize(x, y)
         self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels, x)
 
-        prev_expansions = []
-        prev_n_queried = []
         depth = 0
         while self.n_evals < self.eval_budget:
             if depth > self.max_depth:
@@ -169,16 +163,7 @@ class ModelSelector:
             parents = self.select_parents(kernels)
 
             new_kernels = self.propose_new_kernels(parents)
-
             self.update_stat_book(self.stat_book_collection.stat_books[self.expansion_name], new_kernels, x)
-            # Check for same expansions
-            if all_same_expansion(new_kernels, prev_expansions, self.max_same_expansions):
-                if self.verbose:
-                    print(f'Terminating kernel search. The last {self.max_same_expansions} expansions proposed the same'
-                          f' gp_models.')
-                break
-            else:
-                prev_expansions = update_kernel_infix_set(new_kernels, prev_expansions, self.max_same_expansions)
 
             kernels += new_kernels
 
@@ -192,14 +177,6 @@ class ModelSelector:
             # Select gp_models by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_models(kernels, self.query_strategy, x, y,
                                                                   self.grammar.hyperpriors)
-
-            # Check for empty queries
-            prev_n_queried.append(len(ind))
-            if all([n == 0 for n in prev_n_queried[-self.max_null_queries:]]) and \
-                    len(prev_n_queried) >= self.max_null_queries:
-                if self.verbose:
-                    print(f'Terminating kernel search. The last {self.max_null_queries} queries were empty.')
-                break
 
             kernels = self.train_models(kernels, selected_kernels, ind, x, y)
 
@@ -441,12 +418,10 @@ class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
 
     def __init__(self, grammar, kernel_selector, objective, initializer=None, n_init_trees=10, eval_budget=50,
-                 max_depth=None, query_strategy=None, additive_form=False,
-                 debug=False, verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3,
+                 max_depth=None, query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
                  optimizer=None, n_restarts_optimizer=10, use_laplace=True):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth,
-                         query_strategy, additive_form, debug, verbose, tabu_search, max_null_queries,
-                         max_same_expansions, optimizer, n_restarts_optimizer, use_laplace)
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
+                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
 
@@ -465,14 +440,11 @@ class EvolutionaryModelSelector(ModelSelector):
 class BomsModelSelector(ModelSelector):
     grammar: BOMSGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50,
-                 max_depth=None, query_strategy=None, additive_form=False,
-                 debug=False, verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3,
-                 optimizer=None, n_restarts_optimizer=10, use_laplace=True):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth,
-                         query_strategy, additive_form, debug, verbose, tabu_search, max_null_queries,
-                         max_same_expansions,
-                         optimizer, n_restarts_optimizer, use_laplace)
+    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
+                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
+                 n_restarts_optimizer=10, use_laplace=True):
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
+                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         initial_level_depth = 2
@@ -492,12 +464,11 @@ class BomsModelSelector(ModelSelector):
 class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None,
-                 query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
-                 max_null_queries=3, max_same_expansions=3, optimizer=None, n_restarts_optimizer=10, use_laplace=True):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy,
-                         additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions, optimizer,
-                         n_restarts_optimizer, use_laplace)
+    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
+                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
+                 n_restarts_optimizer=10, use_laplace=True):
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
+                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels
@@ -506,12 +477,11 @@ class CKSModelSelector(ModelSelector):
 class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None,
-                 query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
-                 max_null_queries=3, max_same_expansions=3, optimizer=None, n_restarts_optimizer=10, use_laplace=True):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy,
-                         additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions, optimizer,
-                         n_restarts_optimizer, use_laplace)
+    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
+                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
+                 n_restarts_optimizer=10, use_laplace=True):
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
+                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels

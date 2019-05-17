@@ -195,8 +195,7 @@ class ModelSearchExperiment(BaseExperiment):
         objective = log_likelihood_normalized
         budget = 50
         model_selector = EvolutionaryModelSelector(grammar, kernel_selector, objective, initializer=initializer,
-                                                   n_init_trees=10, tabu_search=False, eval_budget=budget,
-                                                   max_null_queries=budget, max_same_expansions=budget, **kwargs)
+                                                   n_init_trees=10, tabu_search=False, eval_budget=budget, **kwargs)
         return cls(x, y, model_selector)
 
     @classmethod
