@@ -164,8 +164,7 @@ class ModelSelector:
             if depth > self.max_depth:
                 break
 
-            if self.verbose:
-                self.print_search_summary(depth, kernels)
+            self.print_search_summary(depth, kernels)
 
             parents = self.select_parents(kernels)
 
@@ -186,7 +185,7 @@ class ModelSelector:
             # evaluate, prune, and optimize gp_models
             n_before = len(kernels)
             kernels = remove_duplicate_gp_models(kernels)
-            if self.verbose:
+            if self.debug:
                 n_removed = n_before - len(kernels)
                 print(f'Removed {n_removed} duplicate gp_models.\n')
 
@@ -222,20 +221,24 @@ class ModelSelector:
         pass
 
     def print_search_summary(self, depth, kernels):
-        print(f'Iteration {depth}/{self.max_depth}')
-        print(f'Evaluated {self.n_evals}/{self.eval_budget}')
         evaluated_gp_models = [gp_model for gp_model in remove_nan_scored_models(kernels)
                                if gp_model.evaluated]
         scores = [gp_model.score for gp_model in evaluated_gp_models]
         arg_max_score = int(np.argmax(scores))
-        best_kernel = evaluated_gp_models[arg_max_score]
-        sizes = [len(gp_model.covariance.to_binary_tree()) for gp_model in evaluated_gp_models]
-        print(f'Avg. objective = %0.6f' % np.mean(scores))
-        print(f'Best objective = %.6f' % scores[arg_max_score])
-        print(f'Avg. size = %.2f' % np.mean(sizes))
-        print('Best kernel:')
-        best_kernel.covariance.pretty_print()
-        print('')
+        best_objective = scores[arg_max_score]
+        if self.verbose:
+            best_kernel = evaluated_gp_models[arg_max_score]
+            sizes = [len(gp_model.covariance.to_binary_tree()) for gp_model in evaluated_gp_models]
+            print(f'Iteration {depth}/{self.max_depth}')
+            print(f'Evaluated {self.n_evals}/{self.eval_budget}')
+            print(f'Avg. objective = %0.6f' % np.mean(scores))
+            print(f'Best objective = %.6f' % best_objective)
+            print(f'Avg. size = %.2f' % np.mean(sizes))
+            print('Best kernel:')
+            best_kernel.covariance.pretty_print()
+            print('')
+        else:
+            print('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
 
     def query_models(self,
                      kernels: List[GPModel],
@@ -260,7 +263,7 @@ class ModelSelector:
         selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
         self.total_query_time += time() - t0
 
-        if self.verbose:
+        if self.debug:
             n_selected = len(ind)
             plural_suffix = '' if n_selected == 1 else 's'
             print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')
@@ -302,7 +305,7 @@ class ModelSelector:
             parent.expanded = True
 
         t0_exp = time()
-        new_kernels = self.grammar.get_candidates(parents, verbose=self.verbose)
+        new_kernels = self.grammar.get_candidates(parents, verbose=self.debug)
         self.total_expansion_time += time() - t0_exp
 
         return self._covariances_to_gp_models(new_kernels)
@@ -318,7 +321,7 @@ class ModelSelector:
 
         offspring = self.kernel_selector.select_offspring(kernels, augmented_scores)
 
-        if self.verbose:
+        if self.debug:
             print(f'Offspring selector kept {len(offspring)}/{len(kernels)} gp_models\n')
 
         return offspring
@@ -348,11 +351,11 @@ class ModelSelector:
 
         for gp_model in models:
             if self.n_evals >= self.eval_budget:
-                if self.verbose:
+                if self.debug:
                     print('Stopping optimization and evaluation. Evaluation budget reached.\n')
                 break
             elif gp_model.covariance.symbolic_expr_expanded in self.visited:
-                if self.verbose:
+                if self.debug:
                     print('Skipping model because it was previously evaluated')
                     gp_model.covariance.pretty_print()
                     print()
@@ -372,7 +375,7 @@ class ModelSelector:
 
         evaluated_models = remove_nan_scored_models(evaluated_models)
 
-        if self.verbose:
+        if self.debug:
             print('Printing all results')
             # Sort models by scores with un-evaluated models last
             for gp_model in sorted(evaluated_models, key=lambda x: (x.score is not None, x.score), reverse=True):
