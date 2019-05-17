@@ -275,12 +275,10 @@ class TestBomsGrammar(unittest.TestCase):
         fitness_score = np.random.permutation(len(kernels))
 
         models = [GPModel(kernel) for kernel in kernels]
-        for model, model_score in zip(models, fitness_score):
-            model.score = model_score
 
         candidates = grammar.get_candidates(models)
         for candidate in candidates:
-            self.assertIsInstance(candidate, GPModel)
+            self.assertIsInstance(candidate, Covariance)
 
     def test_expand(self):
         base_kernel_names = ['SE', 'RQ']

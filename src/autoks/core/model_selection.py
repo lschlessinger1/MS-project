@@ -140,6 +140,16 @@ class ModelSelector:
         sb_evals = self.stat_book_collection.stat_books[self.evaluations_name]
         sb_evals.add_raw_value_stat(self.score_name, get_model_scores)
 
+    def get_initial_candidates(self) -> List[GPModel]:
+        initial_covariances = self.get_initial_candidate_covariances()
+        return self._covariances_to_gp_models(initial_covariances)
+
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        raise NotImplementedError
+
+    def initialize(self):
+        raise NotImplementedError
+
     def train(self, x, y):
         # set selected models
         t_init = time()
@@ -147,12 +157,6 @@ class ModelSelector:
         # initialize models
         kernels = self.get_initial_candidates()
         kernels = remove_duplicate_gp_models(kernels)
-        self.set_model_dicts(kernels)
-
-        # convert to additive form if necessary
-        if self.additive_form:
-            for gp_model in kernels:
-                gp_model.covariance.to_additive_form()
 
         # Select gp_models by acquisition function to be evaluated
         selected_kernels, ind, acq_scores = self.query_models(kernels, self.init_query_strat, x, y,
@@ -174,7 +178,6 @@ class ModelSelector:
             parents = self.select_parents(kernels)
 
             new_kernels = self.propose_new_kernels(parents)
-            self.set_model_dicts(new_kernels)
 
             self.update_stat_book(self.stat_book_collection.stat_books[self.expansion_name], new_kernels, x)
             # Check for same expansions
@@ -218,11 +221,6 @@ class ModelSelector:
         self.selected_models = kernels
         return self
 
-    def set_model_dicts(self, gp_models: List[GPModel]):
-        for gp_model in gp_models:
-            gp_model.model_input_dict = self.model_dict
-            gp_model.likelihood = self.default_likelihood
-
     def predict(self, x):
         # for now, just use best model to predict. Should be using model averaging...
         # sort selected models by scores
@@ -230,16 +228,6 @@ class ModelSelector:
 
     def score(self, x, y) -> float:
         pass
-
-    def get_initial_candidates(self) -> List[GPModel]:
-        initial_covariances = self.get_initial_candidate_covariances()
-        return [GPModel(covariance) for covariance in initial_covariances]
-
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
-        raise NotImplementedError
-
-    def initialize(self):
-        raise NotImplementedError
 
     def print_search_summary(self, depth, kernels):
         print(f'Iteration {depth}/{self.max_depth}')
@@ -325,11 +313,7 @@ class ModelSelector:
         new_kernels = self.grammar.get_candidates(parents, verbose=self.verbose)
         self.total_expansion_time += time() - t0_exp
 
-        if self.additive_form:
-            for gp_model in new_kernels:
-                gp_model.covariance.to_additive_form()
-
-        return new_kernels
+        return self._covariances_to_gp_models(new_kernels)
 
     def select_offspring(self, kernels: List[GPModel]) -> List[GPModel]:
         """Select next round of gp_models.
@@ -441,6 +425,22 @@ class ModelSelector:
         stat_book.update_stat_book(data=gp_models, x=x_train, base_kernels=self.grammar.base_kernel_names,
                                    n_dims=self.grammar.n_dims)
 
+    def _covariances_to_gp_models(self, covariances: List[Covariance]) -> List[GPModel]:
+        return [self._covariance_to_gp_model(cov) for cov in covariances]
+
+    def _covariance_to_gp_model(self, cov: Covariance) -> GPModel:
+        gp_model = GPModel(cov)
+
+        # Set model dict
+        gp_model.model_input_dict = self.model_dict
+        gp_model.likelihood = self.default_likelihood
+
+        # Convert to additive form if necessary
+        if self.additive_form:
+            gp_model.covariance = gp_model.covariance.to_additive_form()
+
+        return gp_model
+
 
 class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
@@ -494,13 +494,12 @@ class BomsModelSelector(ModelSelector):
 class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50,
-                 max_depth=None, init_query_strat=None, query_strat=None, additive_form=False,
-                 debug=False, verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3,
-                 optimizer=None, n_restarts_optimizer=10, use_laplace=True):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, init_query_strat,
-                         query_strat, additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions,
-                         optimizer, n_restarts_optimizer, use_laplace)
+    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, init_query_strat=None,
+                 query_strat=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
+                 max_null_queries=3, max_same_expansions=3, optimizer=None, n_restarts_optimizer=10, use_laplace=True):
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, init_query_strat, query_strat,
+                         additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions, optimizer,
+                         n_restarts_optimizer, use_laplace)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels

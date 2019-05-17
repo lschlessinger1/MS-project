@@ -5,7 +5,7 @@ from GPy.core import GP
 from GPy.likelihoods import Likelihood
 
 from src.autoks.backend.kernel import encode_prior, get_priors, encode_kernel, sort_kernel, kernel_to_infix
-from src.autoks.core.covariance import Covariance
+from src.autoks.core.covariance import Covariance, pretty_print_covariances
 from src.autoks.util import remove_duplicates
 
 
@@ -67,26 +67,14 @@ class GPModel:
         return str(self.covariance.symbolic_expr)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'covariance={self.covariance!r}, lik_params={self.lik_params!r}, ' \
-            f'evaluated={self.evaluated!r}, nan_scored={self.nan_scored!r}, expanded={self.expanded!r}, ' \
-            f'score={self.score!r}) '
+        return f'{self.__class__.__name__}('f'covariance={self.covariance!r}, evaluated={self.evaluated!r}, ' \
+            f'nan_scored={self.nan_scored!r}, expanded={self.expanded!r}, score={self.score!r})'
 
 
 def pretty_print_gp_models(gp_models: List[GPModel],
                            kernel_type_label: Optional[str] = None):
-    n_kernels = len(gp_models)
-
-    plural_suffix = 's' if n_kernels > 1 else ''
-    ending = f'kernel{plural_suffix}:'
-    if kernel_type_label is not None:
-        message = f'{n_kernels} {kernel_type_label} {ending}'
-    else:
-        message = f'{n_kernels} {ending}'
-    message = message.capitalize()
-    print(message)
-    for k in gp_models:
-        k.covariance.pretty_print()
-    print('')
+    covariances = [gp_model.covariance for gp_model in gp_models]
+    pretty_print_covariances(covariances, kernel_type_label)
 
 
 def remove_duplicate_gp_models(kernels: List[GPModel]) -> List[GPModel]:

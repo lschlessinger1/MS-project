@@ -47,10 +47,8 @@ class TestModelSelector(TestCase):
         self.assertListEqual(result, parents)
 
     def test_propose_new_kernels(self):
-        expansion = [GPModel(kern) for kern in [Covariance(RBF(1)),
-                                                Covariance(RationalQuadratic(1)),
-                                                Covariance(RBF(1) + RationalQuadratic(1)),
-                                                Covariance(RBF(1) * RationalQuadratic(1))]]
+        expansion = [Covariance(RBF(1)), Covariance(RationalQuadratic(1)), Covariance(RBF(1) + RationalQuadratic(1)),
+                     Covariance(RBF(1) * RationalQuadratic(1))]
         self.model_selector.grammar.get_candidates.return_value = expansion
         result = self.model_selector.propose_new_kernels(self.gp_models)
         self.assertIsInstance(result, list)

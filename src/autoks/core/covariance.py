@@ -118,6 +118,23 @@ class Covariance:
         return f'{self.__class__.__name__}('f'kernel={self.infix_full !r})'
 
 
+def pretty_print_covariances(covariances: List[Covariance],
+                             kernel_type_label: Optional[str] = None):
+    n_kernels = len(covariances)
+
+    plural_suffix = 's' if n_kernels > 1 else ''
+    ending = f'kernel{plural_suffix}:'
+    if kernel_type_label is not None:
+        message = f'{n_kernels} {kernel_type_label} {ending}'
+    else:
+        message = f'{n_kernels} {ending}'
+    message = message.capitalize()
+    print(message)
+    for cov in covariances:
+        cov.pretty_print()
+    print('')
+
+
 # Symbolic interface
 def tokens_to_kernel_symbols(tokens: List[Union[str, RawKernelType]]) -> List[Union[str, KernelSymbol]]:
     symbols = []
