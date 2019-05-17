@@ -74,22 +74,22 @@ class Covariance:
     def is_base(self) -> bool:
         return is_base_kernel(self.raw_kernel)
 
-    def is_sum(self):
+    def is_sum(self) -> bool:
         return is_sum_kernel(self.raw_kernel)
 
-    def is_prod(self):
+    def is_prod(self) -> bool:
         return is_prod_kernel(self.raw_kernel)
 
     def priors(self) -> Optional:
         raise NotImplementedError('This will be implemented soon')
 
-    def symbolically_equals(self, other):
+    def symbolically_equals(self, other) -> bool:
         return self.symbolic_expr == other.symbolic_expr
 
-    def symbolic_expanded_equals(self, other):
+    def symbolic_expanded_equals(self, other) -> bool:
         return self.symbolic_expr_expanded == other.symbolic_expr_expanded
 
-    def infix_equals(self, other):
+    def infix_equals(self, other) -> bool:
         # naively compare based on infix
         return isinstance(other, Covariance) and other.infix == self.infix
 
