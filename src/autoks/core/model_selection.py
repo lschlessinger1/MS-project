@@ -41,7 +41,7 @@ class ModelSelector:
     max_null_queries: int
     max_same_expansions: int
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strat=None,
+    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
                  additive_form=False, debug=False, verbose=False, tabu_search=True, max_null_queries=3,
                  max_same_expansions=3, optimizer=None, n_restarts_optimizer=10, use_laplace=True):
         self.grammar = grammar
@@ -83,8 +83,8 @@ class ModelSelector:
 
         self.model_dict = default_model_dict
 
-        if query_strat is not None:
-            self.query_strat = query_strat
+        if query_strategy is not None:
+            self.query_strat = query_strategy
         else:
             self.query_strat = NaiveQueryStrategy()
 
@@ -438,11 +438,11 @@ class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
 
     def __init__(self, grammar, kernel_selector, objective, initializer=None, n_init_trees=10, eval_budget=50,
-                 max_depth=None, query_strat=None, additive_form=False,
+                 max_depth=None, query_strategy=None, additive_form=False,
                  debug=False, verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3,
                  optimizer=None, n_restarts_optimizer=10, use_laplace=True):
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth,
-                         query_strat, additive_form, debug, verbose, tabu_search, max_null_queries,
+                         query_strategy, additive_form, debug, verbose, tabu_search, max_null_queries,
                          max_same_expansions, optimizer, n_restarts_optimizer, use_laplace)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
@@ -463,11 +463,12 @@ class BomsModelSelector(ModelSelector):
     grammar: BOMSGrammar
 
     def __init__(self, grammar, kernel_selector, objective, eval_budget=50,
-                 max_depth=None, query_strat=None, additive_form=False,
+                 max_depth=None, query_strategy=None, additive_form=False,
                  debug=False, verbose=False, tabu_search=True, max_null_queries=3, max_same_expansions=3,
                  optimizer=None, n_restarts_optimizer=10, use_laplace=True):
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth,
-                         query_strat, additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions,
+                         query_strategy, additive_form, debug, verbose, tabu_search, max_null_queries,
+                         max_same_expansions,
                          optimizer, n_restarts_optimizer, use_laplace)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
@@ -481,9 +482,9 @@ class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
     def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None,
-                 query_strat=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
+                 query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
                  max_null_queries=3, max_same_expansions=3, optimizer=None, n_restarts_optimizer=10, use_laplace=True):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strat,
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy,
                          additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions, optimizer,
                          n_restarts_optimizer, use_laplace)
 
@@ -495,9 +496,9 @@ class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
     def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None,
-                 query_strat=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
+                 query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
                  max_null_queries=3, max_same_expansions=3, optimizer=None, n_restarts_optimizer=10, use_laplace=True):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strat,
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy,
                          additive_form, debug, verbose, tabu_search, max_null_queries, max_same_expansions, optimizer,
                          n_restarts_optimizer, use_laplace)
 

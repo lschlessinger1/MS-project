@@ -142,7 +142,7 @@ class ModelSearchExperiment(BaseExperiment):
         acq = ExpectedImprovementPerSec()
         qs = BestScoreStrategy(scoring_func=acq)
         model_selector = BomsModelSelector(grammar, kernel_selector, objective, eval_budget=50,
-                                           init_query_strat=init_qs, query_strat=qs, use_laplace=True, **kwargs)
+                                           init_query_strat=init_qs, query_strategy=qs, use_laplace=True, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test)
 
