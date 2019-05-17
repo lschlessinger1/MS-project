@@ -3,4 +3,4 @@ from src.experiments.util.synthetic_data import Sinosoid1Dataset
 
 dataset = Sinosoid1Dataset(input_dim=1)
 experiment = ModelSearchExperiment.evolutionary_experiment(dataset, verbose=True, debug=True)
-experiment.run(title='Simple Evolutionary Experiment')
+experiment.run()
