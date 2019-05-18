@@ -164,7 +164,7 @@ class ModelSelector:
             if depth > self.max_depth:
                 break
 
-            self.print_search_summary(depth, kernels)
+            self._print_search_summary(depth, kernels)
 
             parents = self.select_parents(kernels)
 
@@ -202,26 +202,6 @@ class ModelSelector:
 
     def score(self, x, y) -> float:
         pass
-
-    def print_search_summary(self, depth, kernels):
-        evaluated_gp_models = [gp_model for gp_model in remove_nan_scored_models(kernels)
-                               if gp_model.evaluated]
-        scores = [gp_model.score for gp_model in evaluated_gp_models]
-        arg_max_score = int(np.argmax(scores))
-        best_objective = scores[arg_max_score]
-        if self.verbose:
-            best_kernel = evaluated_gp_models[arg_max_score]
-            sizes = [len(gp_model.covariance.to_binary_tree()) for gp_model in evaluated_gp_models]
-            print(f'Iteration {depth}/{self.max_depth}')
-            print(f'Evaluated {self.n_evals}/{self.eval_budget}')
-            print(f'Avg. objective = %0.6f' % np.mean(scores))
-            print(f'Best objective = %.6f' % best_objective)
-            print(f'Avg. size = %.2f' % np.mean(sizes))
-            print('Best kernel:')
-            best_kernel.covariance.pretty_print()
-            print('')
-        else:
-            print('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
 
     def query_models(self,
                      kernels: List[GPModel],
@@ -402,6 +382,27 @@ class ModelSelector:
         """
         stat_book.update_stat_book(data=gp_models, x=x_train, base_kernels=self.grammar.base_kernel_names,
                                    n_dims=self.grammar.n_dims)
+
+    def _print_search_summary(self, depth: int, gp_models: List[GPModel]) -> None:
+        evaluated_gp_models = [gp_model for gp_model in remove_nan_scored_models(gp_models)
+                               if gp_model.evaluated]
+        scores = [gp_model.score for gp_model in evaluated_gp_models]
+        arg_max_score = int(np.argmax(scores))
+        best_objective = scores[arg_max_score]
+        if self.verbose:
+            best_kernel = evaluated_gp_models[arg_max_score]
+            sizes = [len(gp_model.covariance.to_binary_tree()) for gp_model in evaluated_gp_models]
+            print(f'Iteration {depth}/{self.max_depth}')
+            print(f'Evaluated {self.n_evals}/{self.eval_budget}')
+            print(f'Avg. objective = %0.6f' % np.mean(scores))
+            print(f'Best objective = %.6f' % best_objective)
+            print(f'Avg. size = %.2f' % np.mean(sizes))
+            print('Best kernel:')
+            best_kernel.covariance.pretty_print()
+            print('')
+        else:
+            print('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
+
 
     def _covariances_to_gp_models(self, covariances: List[Covariance]) -> List[GPModel]:
         return [self._covariance_to_gp_model(cov) for cov in covariances]
