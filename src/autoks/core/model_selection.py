@@ -133,25 +133,6 @@ class ModelSelector:
         sb_evals = self.stat_book_collection.stat_books[self.evaluations_name]
         sb_evals.add_raw_value_stat(self.score_name, get_model_scores)
 
-    def get_initial_candidates(self) -> List[GPModel]:
-        initial_covariances = self.get_initial_candidate_covariances()
-        return self._covariances_to_gp_models(initial_covariances)
-
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
-        raise NotImplementedError
-
-    def initialize(self, x, y) -> List[GPModel]:
-        # initialize models
-        initial_models = self.get_initial_candidates()
-        initial_models = self.remove_duplicates(initial_models)
-
-        if self.debug:
-            pretty_print_gp_models(initial_models, 'Initial candidate')
-
-        indices = list(range(len(initial_models)))
-        initial_models = self.train_models(initial_models, initial_models, indices, x, y)
-        return initial_models
-
     def train(self, x, y):
         # set selected models
         t_init = time()
@@ -198,6 +179,25 @@ class ModelSelector:
 
     def score(self, x, y) -> float:
         pass
+
+    def get_initial_candidates(self) -> List[GPModel]:
+        initial_covariances = self.get_initial_candidate_covariances()
+        return self._covariances_to_gp_models(initial_covariances)
+
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        raise NotImplementedError
+
+    def initialize(self, x, y) -> List[GPModel]:
+        # initialize models
+        initial_models = self.get_initial_candidates()
+        initial_models = self.remove_duplicates(initial_models)
+
+        if self.debug:
+            pretty_print_gp_models(initial_models, 'Initial candidate')
+
+        indices = list(range(len(initial_models)))
+        initial_models = self.train_models(initial_models, initial_models, indices, x, y)
+        return initial_models
 
     def query_models(self,
                      kernels: List[GPModel],
