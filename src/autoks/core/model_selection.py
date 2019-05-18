@@ -143,7 +143,7 @@ class ModelSelector:
     def initialize(self, x, y) -> List[GPModel]:
         # initialize models
         initial_models = self.get_initial_candidates()
-        initial_models = remove_duplicate_gp_models(initial_models)
+        initial_models = self.remove_duplicates(initial_models)
 
         if self.debug:
             pretty_print_gp_models(initial_models, 'Initial candidate')
@@ -174,11 +174,7 @@ class ModelSelector:
             kernels += new_kernels
 
             # evaluate, prune, and optimize gp_models
-            n_before = len(kernels)
-            kernels = remove_duplicate_gp_models(kernels)
-            if self.debug:
-                n_removed = n_before - len(kernels)
-                print(f'Removed {n_removed} duplicate gp_models.\n')
+            kernels = self.remove_duplicates(kernels)
 
             # Select gp_models by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_models(kernels, self.query_strategy, x, y,
@@ -347,6 +343,14 @@ class ModelSelector:
             print('')
         return evaluated_models
 
+    def remove_duplicates(self, models: List[GPModel]) -> List[GPModel]:
+        n_before = len(models)
+        models = remove_duplicate_gp_models(models)
+        if self.debug:
+            n_removed = n_before - len(models)
+            print(f'Removed {n_removed} duplicate gp_models.\n')
+        return models
+
     def best_model(self) -> GPModel:
         """Get the best scoring model."""
         evaluated_gp_models = [model for model in self.selected_models if model.evaluated]
@@ -423,9 +427,12 @@ class ModelSelector:
 class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
 
-    def __init__(self, grammar, kernel_selector, objective, initializer=None, n_init_trees=10, eval_budget=50,
+    def __init__(self, grammar, kernel_selector, objective=None, initializer=None, n_init_trees=10, eval_budget=50,
                  max_depth=None, query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
                  optimizer=None, n_restarts_optimizer=10, use_laplace=True):
+        if objective is None:
+            objective = log_likelihood_normalized
+
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
                          debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
         self.initializer = initializer
