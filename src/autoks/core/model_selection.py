@@ -403,7 +403,6 @@ class ModelSelector:
         else:
             print('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
 
-
     def _covariances_to_gp_models(self, covariances: List[Covariance]) -> List[GPModel]:
         return [self._covariance_to_gp_model(cov) for cov in covariances]
 
