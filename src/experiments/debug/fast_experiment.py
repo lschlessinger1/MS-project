@@ -6,6 +6,7 @@ from src.autoks.core.grammar import RandomGrammar
 from src.autoks.core.kernel_selection import CKS_kernel_selector
 from src.autoks.core.model_search_experiment import ModelSearchExperiment
 from src.autoks.core.model_selection import RandomModelSelector
+from src.autoks.tracking import ModelSearchTracker
 from src.experiments.util.synthetic_data import CubicSine1dDataset
 
 # Set random seed for reproducibility.
@@ -28,8 +29,13 @@ def negative_BIC(m):
 # Use the negative BIC because we want to maximize the objective.
 objective = negative_BIC
 
-model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=8,
-                                     tabu_search=False, debug=True, verbose=True, additive_form=False)
+tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-experiment = ModelSearchExperiment(x_train, y_train, model_selector, x_test, y_test)
+model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=8,
+                                     tabu_search=False, debug=True, verbose=True, additive_form=False,
+                                     active_set_callback=tracker.active_set_callback,
+                                     eval_callback=tracker.evaluations_callback,
+                                     expansion_callback=tracker.expansion_callback)
+
+experiment = ModelSearchExperiment(x_train, y_train, model_selector, x_test, y_test, tracker)
 experiment.run()

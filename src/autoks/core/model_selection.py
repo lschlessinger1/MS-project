@@ -1,15 +1,15 @@
 from time import time
-from typing import List, Tuple, Optional, Callable, Union, Any
+from typing import List, Tuple, Optional, Callable
 
 import numpy as np
 from GPy import likelihoods
 from GPy.core import GP
 from GPy.inference.latent_function_inference import Laplace
 
-from src.autoks.backend.kernel import set_priors, n_base_kernels, KERNEL_DICT
+from src.autoks.backend.kernel import set_priors
 from src.autoks.backend.model import log_likelihood_normalized, BIC
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
-from src.autoks.core.covariance import pairwise_centered_alignments, all_pairs_avg_dist, Covariance
+from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel, remove_nan_scored_models, pretty_print_gp_models, \
     remove_duplicate_gp_models
 from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
@@ -17,8 +17,7 @@ from src.autoks.core.hyperprior import Hyperpriors
 from src.autoks.core.kernel_encoding import tree_to_kernel
 from src.autoks.core.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector
 from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy, BestScoreStrategy
-from src.autoks.statistics import StatBook, StatBookCollection, Statistic
-from src.autoks.util import type_count
+from src.autoks.statistics import StatBook
 
 
 class ModelSelector:
@@ -45,7 +44,8 @@ class ModelSelector:
 
     def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
                  additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True):
+                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 expansion_callback=None):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -99,46 +99,21 @@ class ModelSelector:
         # visited set of all expanded kernel expressions previously evaluated
         self.visited = set()
 
-        # statistics used for plotting
-        base_kernel_names = self.grammar.base_kernel_names
-        self.n_hyperparams_name = 'n_hyperparameters'
-        self.n_operands_name = 'n_operands'
-        self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in base_kernel_names]
-        self.score_name = 'score'
-        self.cov_dists_name = 'cov_dists'
-        self.diversity_scores_name = 'diversity_scores'
-        self.best_stat_name = 'best'
-        # All stat books track these variables
-        shared_multi_stat_names = [self.n_hyperparams_name, self.n_operands_name] + self.base_kern_freq_names
-
-        # raw value statistics
-        base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in base_kernel_names]
-        shared_stats = [get_n_hyperparams, get_n_operands] + base_kern_stat_funcs
-
-        self.evaluations_name = 'evaluations'
-        self.active_set_name = 'active_set'
-        self.expansion_name = 'expansion'
-        stat_book_names = [self.evaluations_name, self.expansion_name, self.active_set_name]
-        self.stat_book_collection = StatBookCollection(stat_book_names, shared_multi_stat_names, shared_stats)
-
-        sb_active_set = self.stat_book_collection.stat_books[self.active_set_name]
-        sb_active_set.add_raw_value_stat(self.score_name, get_model_scores)
-        sb_active_set.add_raw_value_stat(self.cov_dists_name, get_cov_dists)
-        sb_active_set.add_raw_value_stat(self.diversity_scores_name, get_diversity_scores)
-        sb_active_set.multi_stats[self.n_hyperparams_name].add_statistic(Statistic(self.best_stat_name,
-                                                                                   get_best_n_hyperparams))
-        sb_active_set.multi_stats[self.n_operands_name].add_statistic(Statistic(self.best_stat_name,
-                                                                                get_best_n_operands))
-
-        sb_evals = self.stat_book_collection.stat_books[self.evaluations_name]
-        sb_evals.add_raw_value_stat(self.score_name, get_model_scores)
+        # Callbacks
+        self.active_set_callback = active_set_callback
+        self.eval_callback = eval_callback
+        self.expansion_callback = expansion_callback
 
     def train(self, x, y):
         # set selected models
         t_init = time()
 
         kernels = self.initialize(x, y)
-        self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels, x)
+
+        if self.active_set_callback is not None:
+            self.active_set_callback(kernels, self, x, y)
+
+        # self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels, x)
 
         depth = 0
         while self.n_evals < self.eval_budget:
@@ -150,7 +125,9 @@ class ModelSelector:
             parents = self.select_parents(kernels)
 
             new_kernels = self.propose_new_kernels(parents)
-            self.update_stat_book(self.stat_book_collection.stat_books[self.expansion_name], new_kernels, x)
+            if self.active_set_callback is not None:
+                self.expansion_callback(kernels, self, x, y)
+            # self.update_stat_book(self.stat_book_collection.stat_books[self.expansion_name], new_kernels, x)
 
             kernels += new_kernels
 
@@ -164,7 +141,10 @@ class ModelSelector:
             kernels = self.train_models(kernels, selected_kernels, ind, x, y)
 
             kernels = self.select_offspring(kernels)
-            self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels, x)
+
+            # self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels, x)
+            if self.active_set_callback is not None:
+                self.active_set_callback(kernels, self, x, y)
             depth += 1
 
         self.total_model_search_time += time() - t_init
@@ -197,6 +177,7 @@ class ModelSelector:
 
         indices = list(range(len(initial_models)))
         initial_models = self.train_models(initial_models, initial_models, indices, x, y)
+
         return initial_models
 
     def query_models(self,
@@ -329,8 +310,10 @@ class ModelSelector:
 
             evaluated_models.append(gp_model)
             if not gp_model.nan_scored:
-                self.update_stat_book(self.stat_book_collection.stat_books[self.evaluations_name], [gp_model],
-                                      x_train=None)
+                if self.active_set_callback is not None:
+                    self.eval_callback([gp_model], self, x, y)
+                # self.update_stat_book(self.stat_book_collection.stat_books[self.evaluations_name], [gp_model],
+                #                       x_train=None)
 
         evaluated_models = remove_nan_scored_models(evaluated_models)
 
@@ -429,12 +412,14 @@ class EvolutionaryModelSelector(ModelSelector):
 
     def __init__(self, grammar, kernel_selector, objective=None, initializer=None, n_init_trees=10, eval_budget=50,
                  max_depth=None, query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
-                 optimizer=None, n_restarts_optimizer=10, use_laplace=True):
+                 optimizer=None, n_restarts_optimizer=10, use_laplace=True, active_set_callback=None,
+                 eval_callback=None, expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
 
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
-                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
+                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
+                         eval_callback, expansion_callback)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
 
@@ -455,7 +440,8 @@ class BomsModelSelector(ModelSelector):
 
     def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=None,
                  query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True):
+                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 expansion_callback=None):
         if kernel_selector is None:
             kernel_selector = BOMS_kernel_selector(n_parents=1)
 
@@ -467,7 +453,8 @@ class BomsModelSelector(ModelSelector):
             query_strategy = BestScoreStrategy(scoring_func=acq)
 
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
-                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
+                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
+                         eval_callback, expansion_callback)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         initial_level_depth = 2
@@ -489,7 +476,8 @@ class CKSModelSelector(ModelSelector):
 
     def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=10,
                  query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
-                 optimizer='scg', n_restarts_optimizer=10, use_laplace=True):
+                 optimizer='scg', n_restarts_optimizer=10, use_laplace=True, active_set_callback=None,
+                 eval_callback=None, expansion_callback=None):
 
         if kernel_selector is None:
             kernel_selector = CKS_kernel_selector(n_parents=1)
@@ -503,7 +491,8 @@ class CKSModelSelector(ModelSelector):
             objective = negative_BIC
 
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
-                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
+                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
+                         eval_callback, expansion_callback)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels
@@ -514,66 +503,14 @@ class RandomModelSelector(ModelSelector):
 
     def __init__(self, grammar, kernel_selector, objective=None, eval_budget=50, max_depth=None, query_strategy=None,
                  additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True):
+                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
 
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
-                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace)
+                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
+                         eval_callback, expansion_callback)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels
-
-
-# stats functions
-def get_model_scores(gp_models: List[GPModel], *args, **kwargs) -> List[float]:
-    return [gp_model.score for gp_model in gp_models if gp_model.evaluated]
-
-
-def get_n_operands(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
-    return [n_base_kernels(gp_model.covariance.raw_kernel) for gp_model in gp_models]
-
-
-def get_n_hyperparams(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
-    return [gp_model.covariance.raw_kernel.size for gp_model in gp_models]
-
-
-def get_cov_dists(gp_models: List[GPModel], *args, **kwargs) -> Union[np.ndarray, List[int]]:
-    kernels = [gp_model.covariance for gp_model in gp_models]
-    if len(kernels) >= 2:
-        x = kwargs.get('x')
-        return pairwise_centered_alignments(kernels, x)
-    else:
-        return [0] * len(gp_models)
-
-
-def get_diversity_scores(gp_models: List[GPModel], *args, **kwargs) -> Union[float, List[int]]:
-    kernels = [gp_model.covariance for gp_model in gp_models]
-    if len(kernels) >= 2:
-        base_kernels = kwargs.get('base_kernels')
-        n_dims = kwargs.get('n_dims')
-        return all_pairs_avg_dist(kernels, base_kernels, n_dims)
-    else:
-        return [0] * len(gp_models)
-
-
-def get_best_n_operands(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
-    model_scores = get_model_scores(gp_models, *args, **kwargs)
-    n_operands = get_n_operands(gp_models)
-    score_arg_max = int(np.argmax(model_scores))
-    return [n_operands[score_arg_max]]
-
-
-def get_best_n_hyperparams(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
-    model_scores = get_model_scores(gp_models, *args, **kwargs)
-    n_hyperparams = get_n_hyperparams(gp_models, *args, **kwargs)
-    score_arg_max = int(np.argmax(model_scores))
-    return [n_hyperparams[score_arg_max]]
-
-
-def base_kern_freq(base_kern: str) -> Callable[[List[GPModel], Any, Any], List[int]]:
-    def get_frequency(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
-        cls = KERNEL_DICT[base_kern]
-        return [type_count(gp_model.covariance.to_binary_tree(), cls) for gp_model in gp_models]
-
-    return get_frequency

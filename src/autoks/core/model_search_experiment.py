@@ -17,6 +17,7 @@ from src.autoks.plotting import plot_kernel_tree, plot_best_scores, plot_score_s
     plot_n_operands_summary, plot_base_kernel_freqs, plot_cov_dist_summary, plot_kernel_diversity_summary
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_lin_reg, rmse_svr, rmse_rbf, rmse_knn
 from src.autoks.statistics import StatBook
+from src.autoks.tracking import ModelSearchTracker
 from src.autoks.util import pretty_time_delta
 from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeLeafBiasedRecombinator, HalfAndHalfGenerator
 from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
@@ -29,9 +30,11 @@ class ModelSearchExperiment(BaseExperiment):
                  y_train: np.ndarray,
                  model_selector: ModelSelector,
                  x_test: Optional[np.ndarray] = None,
-                 y_test: Optional[np.ndarray] = None):
+                 y_test: Optional[np.ndarray] = None,
+                 tracker=None):
         super().__init__(x_train, y_train, x_test, y_test)
         self.model_selector = model_selector
+        self.tracker = tracker
 
     def run(self) -> None:
         """Run the model search experiment"""
@@ -48,7 +51,7 @@ class ModelSearchExperiment(BaseExperiment):
             plt.show()
 
         # View results of experiment
-        for stat_book in self.model_selector.stat_book_collection.stat_book_list():
+        for stat_book in self.tracker.stat_book_collection.stat_book_list():
             self.plot_stat_book(stat_book)
 
         # Plot the kernel tree of the best model
@@ -110,22 +113,22 @@ class ModelSearchExperiment(BaseExperiment):
 
     def plot_stat_book(self, stat_book: StatBook):
         ms = stat_book.multi_stats
-        x_label = 'evaluations' if stat_book.name == self.model_selector.evaluations_name else 'generation'
-        if self.model_selector.score_name in ms:
-            plot_best_scores(self.model_selector.score_name, self.model_selector.evaluations_name, stat_book)
-            plot_score_summary(self.model_selector.score_name, self.model_selector.evaluations_name, stat_book)
-        if self.model_selector.n_hyperparams_name in ms:
-            plot_n_hyperparams_summary(self.model_selector.n_hyperparams_name, self.model_selector.best_stat_name,
+        x_label = 'evaluations' if stat_book.name == self.tracker.evaluations_name else 'generation'
+        if self.tracker.score_name in ms:
+            plot_best_scores(self.tracker.score_name, self.tracker.evaluations_name, stat_book)
+            plot_score_summary(self.tracker.score_name, self.tracker.evaluations_name, stat_book)
+        if self.tracker.n_hyperparams_name in ms:
+            plot_n_hyperparams_summary(self.tracker.n_hyperparams_name, self.tracker.best_stat_name,
                                        stat_book, x_label)
-        if self.model_selector.n_operands_name in ms:
-            plot_n_operands_summary(self.model_selector.n_operands_name, self.model_selector.best_stat_name, stat_book,
+        if self.tracker.n_operands_name in ms:
+            plot_n_operands_summary(self.tracker.n_operands_name, self.tracker.best_stat_name, stat_book,
                                     x_label)
-        if all(key in ms for key in self.model_selector.base_kern_freq_names):
-            plot_base_kernel_freqs(self.model_selector.base_kern_freq_names, stat_book, x_label)
-        if self.model_selector.cov_dists_name in ms:
-            plot_cov_dist_summary(self.model_selector.cov_dists_name, stat_book, x_label)
-        if self.model_selector.diversity_scores_name in ms:
-            plot_kernel_diversity_summary(self.model_selector.diversity_scores_name, stat_book, x_label)
+        if all(key in ms for key in self.tracker.base_kern_freq_names):
+            plot_base_kernel_freqs(self.tracker.base_kern_freq_names, stat_book, x_label)
+        if self.tracker.cov_dists_name in ms:
+            plot_cov_dist_summary(self.tracker.cov_dists_name, stat_book, x_label)
+        if self.tracker.diversity_scores_name in ms:
+            plot_kernel_diversity_summary(self.tracker.diversity_scores_name, stat_book, x_label)
 
     @classmethod
     def boms_experiment(cls, dataset, **kwargs):
@@ -135,9 +138,14 @@ class ModelSearchExperiment(BaseExperiment):
         hyperpriors = boms_hyperpriors()
         grammar = BOMSGrammar(base_kernel_names, n_dims, hyperpriors)
 
-        model_selector = BomsModelSelector(grammar, eval_budget=50, use_laplace=True, **kwargs)
+        tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        return cls(x_train, y_train, model_selector, x_test, y_test)
+        model_selector = BomsModelSelector(grammar, eval_budget=50, use_laplace=True,
+                                           active_set_callback=tracker.active_set_callback,
+                                           eval_callback=tracker.evaluations_callback,
+                                           expansion_callback=tracker.expansion_callback, **kwargs)
+
+        return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
 
     @classmethod
     def cks_experiment(cls, dataset, **kwargs):
@@ -145,8 +153,12 @@ class ModelSearchExperiment(BaseExperiment):
         n_dims = x_train.shape[1]
         grammar = CKSGrammar(n_dims)
 
-        model_selector = CKSModelSelector(grammar, use_laplace=False, **kwargs)
-        return cls(x_train, y_train, model_selector, x_test, y_test)
+        tracker = ModelSearchTracker(grammar.base_kernel_names)
+
+        model_selector = CKSModelSelector(grammar, use_laplace=False, active_set_callback=tracker.active_set_callback,
+                                          eval_callback=tracker.evaluations_callback,
+                                          expansion_callback=tracker.expansion_callback, **kwargs)
+        return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
 
     @classmethod
     def evolutionary_experiment(cls,
@@ -176,9 +188,14 @@ class ModelSearchExperiment(BaseExperiment):
 
         kernel_selector = evolutionary_kernel_selector(n_parents=n_parents, max_offspring=pop_size)
 
+        tracker = ModelSearchTracker(grammar.base_kernel_names)
+
         model_selector = EvolutionaryModelSelector(grammar, kernel_selector, initializer=initializer, tabu_search=False,
+                                                   active_set_callback=tracker.active_set_callback,
+                                                   eval_callback=tracker.evaluations_callback,
+                                                   expansion_callback=tracker.expansion_callback,
                                                    **kwargs)
-        return cls(x, y, model_selector)
+        return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
     def random_experiment(cls,
@@ -190,7 +207,12 @@ class ModelSearchExperiment(BaseExperiment):
         objective = log_likelihood_normalized
         kernel_selector = CKS_kernel_selector(n_parents=1)
 
+        tracker = ModelSearchTracker(grammar.base_kernel_names)
+
         model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=50, tabu_search=False,
+                                             active_set_callback=tracker.active_set_callback,
+                                             eval_callback=tracker.evaluations_callback,
+                                             expansion_callback=tracker.expansion_callback,
                                              **kwargs)
 
-        return cls(x_train, y_train, model_selector, x_test, y_test, )
+        return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
