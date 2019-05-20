@@ -92,10 +92,6 @@ class ModelSelector:
 
         self.tabu_search = tabu_search
 
-        # Used for expected improvement per second.
-        self.n_kernel_params = []
-        self.objective_times = []
-
         # visited set of all expanded kernel expressions previously evaluated
         self.visited = set()
 
