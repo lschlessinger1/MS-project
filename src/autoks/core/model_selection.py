@@ -17,7 +17,6 @@ from src.autoks.core.hyperprior import Hyperpriors
 from src.autoks.core.kernel_encoding import tree_to_kernel
 from src.autoks.core.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector
 from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy, BestScoreStrategy
-from src.autoks.statistics import StatBook
 
 
 class ModelSelector:
@@ -113,8 +112,6 @@ class ModelSelector:
         if self.active_set_callback is not None:
             self.active_set_callback(kernels, self, x, y)
 
-        # self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels, x)
-
         depth = 0
         while self.n_evals < self.eval_budget:
             if depth > self.max_depth:
@@ -127,7 +124,6 @@ class ModelSelector:
             new_kernels = self.propose_new_kernels(parents)
             if self.active_set_callback is not None:
                 self.expansion_callback(kernels, self, x, y)
-            # self.update_stat_book(self.stat_book_collection.stat_books[self.expansion_name], new_kernels, x)
 
             kernels += new_kernels
 
@@ -142,7 +138,6 @@ class ModelSelector:
 
             kernels = self.select_offspring(kernels)
 
-            # self.update_stat_book(self.stat_book_collection.stat_books[self.active_set_name], kernels, x)
             if self.active_set_callback is not None:
                 self.active_set_callback(kernels, self, x, y)
             depth += 1
@@ -312,8 +307,6 @@ class ModelSelector:
             if not gp_model.nan_scored:
                 if self.active_set_callback is not None:
                     self.eval_callback([gp_model], self, x, y)
-                # self.update_stat_book(self.stat_book_collection.stat_books[self.evaluations_name], [gp_model],
-                #                       x_train=None)
 
         evaluated_models = remove_nan_scored_models(evaluated_models)
 
@@ -356,19 +349,6 @@ class ModelSelector:
         x_pct = 100 * (x / total_time)
 
         return labels, x, x_pct
-
-    def update_stat_book(self,
-                         stat_book: StatBook,
-                         gp_models: List[GPModel],
-                         x_train) -> None:
-        """Update model population statistics.
-
-        :param stat_book:
-        :param gp_models:
-        :return:
-        """
-        stat_book.update_stat_book(data=gp_models, x=x_train, base_kernels=self.grammar.base_kernel_names,
-                                   n_dims=self.grammar.n_dims)
 
     def _print_search_summary(self, depth: int, gp_models: List[GPModel]) -> None:
         evaluated_gp_models = [gp_model for gp_model in remove_nan_scored_models(gp_models)
