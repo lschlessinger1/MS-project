@@ -1,3 +1,4 @@
+from abc import ABC
 from time import time
 from typing import List, Tuple, Optional, Callable
 
@@ -30,8 +31,6 @@ class ModelSelector:
     eval_budget: int
     max_depth: Optional[int]
     hyperpriors: Optional[Hyperpriors]
-    init_query_strat: Optional[QueryStrategy]
-    query_strategy: Optional[QueryStrategy]
     gp_model: Optional[GP]
     additive_form: bool
     debug: bool
@@ -42,10 +41,9 @@ class ModelSelector:
     max_null_queries: int
     max_same_expansions: int
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, query_strategy=None,
-                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
+    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, additive_form=False,
+                 debug=False, verbose=False, tabu_search=True, optimizer=None, n_restarts_optimizer=10,
+                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -68,7 +66,6 @@ class ModelSelector:
         self.total_eval_time = 0
         self.total_expansion_time = 0
         self.total_model_search_time = 0
-        self.total_query_time = 0
 
         # build default model dict of GP (assuming GP Regression)
         default_likelihood = likelihoods.Gaussian()
@@ -84,11 +81,6 @@ class ModelSelector:
             default_model_dict['inference_method'] = Laplace()
 
         self.model_dict = default_model_dict
-
-        if query_strategy is not None:
-            self.query_strategy = query_strategy
-        else:
-            self.query_strategy = NaiveQueryStrategy()
 
         self.tabu_search = tabu_search
 
@@ -120,16 +112,13 @@ class ModelSelector:
 
             new_kernels = self.propose_new_kernels(parents)
             if self.active_set_callback is not None:
-                self.expansion_callback(population.models, self, x, y)
+                self.expansion_callback(new_kernels, self, x, y)
 
             population.update(new_kernels)
 
             population.models = self.remove_duplicates(population.models)
 
-            selected_kernels, ind, acq_scores = self.query_models(population, self.query_strategy, x, y,
-                                                                  self.grammar.hyperpriors)
-
-            population.models = self.train_models(population.models, selected_kernels, ind, x, y)
+            self.train_models(population.candidates(), x, y)
 
             population = self.select_offspring(population)
 
@@ -158,18 +147,18 @@ class ModelSelector:
         raise NotImplementedError
 
     def initialize(self, x, y) -> GPModelPopulation:
-        # initialize models
-        initial_models = self.get_initial_candidates()
-        initial_models = self.remove_duplicates(initial_models)
+        """Initialize models."""
+        population = GPModelPopulation()
+
+        initial_candidates = self.get_initial_candidates()
+        initial_candidates = self.remove_duplicates(initial_candidates)
+
+        population.update(initial_candidates)
 
         if self.debug:
-            pretty_print_gp_models(initial_models, 'Initial candidate')
+            pretty_print_gp_models(population.models, 'Initial candidate')
 
-        indices = list(range(len(initial_models)))
-        initial_models = self.train_models(initial_models, initial_models, indices, x, y)
-
-        population = GPModelPopulation()
-        population.update(initial_models)
+        self.train_models(population.candidates(), x, y)
 
         return population
 
@@ -207,40 +196,6 @@ class ModelSelector:
 
         return self._covariances_to_gp_models(new_kernels)
 
-    def query_models(self,
-                     population: GPModelPopulation,
-                     query_strategy: QueryStrategy,
-                     x_train,
-                     y_train,
-                     hyperpriors: Optional[Hyperpriors] = None) \
-            -> Tuple[List[GPModel], List[int], List[float]]:
-        """Select gp_models using the acquisition function of the query strategy.
-
-        :param kernels:
-        :param query_strategy:
-        :param hyperpriors:
-        :return:
-        """
-        t0 = time()
-        kernels = population.models
-        unevaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if not kernel.evaluated]
-        unevaluated_kernels = [kernels[i] for i in unevaluated_kernels_ind]
-        ind, acq_scores = query_strategy.query(unevaluated_kernels_ind, kernels, x_train, y_train,
-                                               hyperpriors, None)
-        selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
-        self.total_query_time += time() - t0
-
-        if self.debug:
-            n_selected = len(ind)
-            plural_suffix = '' if n_selected == 1 else 's'
-            print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')
-
-            for kern in selected_kernels:
-                kern.covariance.pretty_print()
-            print('')
-
-        return selected_kernels, ind, acq_scores
-
     def select_offspring(self, population: GPModelPopulation) -> GPModelPopulation:
         """Select next round of gp_models.
 
@@ -262,18 +217,16 @@ class ModelSelector:
         return population
 
     def train_models(self,
-                     all_models: List[GPModel],
                      chosen_models: List[GPModel],
-                     indices: List[int],
                      x,
                      y):
-        unevaluated_kernels = [kernel for kernel in all_models if not kernel.evaluated]
-        unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in indices]
+        # unevaluated_kernels = [kernel for kernel in all_models if not kernel.evaluated]
+        # unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in indices]
         newly_evaluated_kernels = self.evaluate_models(chosen_models, x, y)
         for gp_model in newly_evaluated_kernels:
             self.visited.add(gp_model.covariance.symbolic_expr_expanded)
-        old_evaluated_kernels = [kernel for kernel in all_models if kernel.evaluated and kernel not in chosen_models]
-        return newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
+        # old_evaluated_kernels = [kernel for kernel in all_models if kernel.evaluated and kernel not in chosen_models]
+        # return newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
 
     def evaluate_models(self, models: List[GPModel], x, y) -> List[GPModel]:
         """Optimize and evaluate all gp_models
@@ -339,12 +292,11 @@ class ModelSelector:
         """
         eval_time = self.total_eval_time
         expansion_time = self.total_expansion_time
-        query_time = self.total_query_time
         total_time = self.total_model_search_time
-        other_time = total_time - eval_time - expansion_time - query_time
+        other_time = total_time - eval_time - expansion_time
 
-        labels = ['Evaluation', 'Expansion', 'Query', 'Other']
-        x = np.array([eval_time, expansion_time, query_time, other_time])
+        labels = ['Evaluation', 'Expansion', 'Other']
+        x = np.array([eval_time, expansion_time, other_time])
         x_pct = 100 * (x / total_time)
 
         return labels, x, x_pct
@@ -385,19 +337,88 @@ class ModelSelector:
         return gp_model
 
 
+class SurrogateBasedModelSelector(ModelSelector, ABC):
+
+    def __init__(self, grammar, kernel_selector, objective, query_strategy=None, eval_budget=50, max_depth=None,
+                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
+                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 expansion_callback=None):
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+                         tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         expansion_callback)
+
+        if query_strategy is not None:
+            self.query_strategy = query_strategy
+        else:
+            self.query_strategy = NaiveQueryStrategy()
+
+        self.total_query_time = 0
+
+    def query_models(self,
+                     population: GPModelPopulation,
+                     query_strategy: QueryStrategy,
+                     x_train,
+                     y_train,
+                     hyperpriors: Optional[Hyperpriors] = None) \
+            -> Tuple[List[GPModel], List[int], List[float]]:
+        """Select gp_models using the acquisition function of the query strategy.
+
+        :param population:
+        :param query_strategy:
+        :param hyperpriors:
+        :return:
+        """
+        t0 = time()
+        kernels = population.models
+        unevaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if not kernel.evaluated]
+        unevaluated_kernels = [kernels[i] for i in unevaluated_kernels_ind]
+        ind, acq_scores = query_strategy.query(unevaluated_kernels_ind, kernels, x_train, y_train,
+                                               hyperpriors, None)
+        selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
+        self.total_query_time += time() - t0
+
+        if self.debug:
+            n_selected = len(ind)
+            plural_suffix = '' if n_selected == 1 else 's'
+            print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')
+
+            for kern in selected_kernels:
+                kern.covariance.pretty_print()
+            print('')
+
+        return selected_kernels, ind, acq_scores
+
+    def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
+        """Get the runtime report of the kernel search.
+
+        :return:
+        """
+        eval_time = self.total_eval_time
+        expansion_time = self.total_expansion_time
+        query_time = self.total_query_time
+        total_time = self.total_model_search_time
+        other_time = total_time - eval_time - expansion_time - query_time
+
+        labels = ['Evaluation', 'Expansion', 'Query', 'Other']
+        x = np.array([eval_time, expansion_time, query_time, other_time])
+        x_pct = 100 * (x / total_time)
+
+        return labels, x, x_pct
+
+
 class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
 
     def __init__(self, grammar, kernel_selector, objective=None, initializer=None, n_init_trees=10, eval_budget=50,
-                 max_depth=None, query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
-                 optimizer=None, n_restarts_optimizer=10, use_laplace=True, active_set_callback=None,
-                 eval_callback=None, expansion_callback=None):
+                 max_depth=None, additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
+                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
 
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
-                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
-                         eval_callback, expansion_callback)
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+                         tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         expansion_callback)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
 
@@ -413,7 +434,7 @@ class EvolutionaryModelSelector(ModelSelector):
             return self.grammar.base_kernels
 
 
-class BomsModelSelector(ModelSelector):
+class BomsModelSelector(SurrogateBasedModelSelector):
     grammar: BOMSGrammar
 
     def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=None,
@@ -440,22 +461,27 @@ class BomsModelSelector(ModelSelector):
         initial_candidates = self.grammar.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
         return initial_candidates
 
-    def initialize(self, x, y) -> List[GPModel]:
+    def initialize(self, x, y) -> GPModelPopulation:
+        population = GPModelPopulation()
+
         # initialize models
         initial_candidates = self.get_initial_candidates()
         indices = [0]
         initial_models = [initial_candidates[i] for i in indices]
-        initial_models = self.train_models(initial_candidates, initial_models, indices, x, y)
-        return initial_models
+
+        self.train_models(initial_models, x, y)
+
+        population.update(initial_candidates)
+
+        return population
 
 
 class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
-    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=10,
-                 query_strategy=None, additive_form=False, debug=False, verbose=False, tabu_search=True,
-                 optimizer='scg', n_restarts_optimizer=10, use_laplace=True, active_set_callback=None,
-                 eval_callback=None, expansion_callback=None):
+    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=10, additive_form=False,
+                 debug=False, verbose=False, tabu_search=True, optimizer='scg', n_restarts_optimizer=10,
+                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
 
         if kernel_selector is None:
             kernel_selector = CKS_kernel_selector(n_parents=1)
@@ -468,9 +494,9 @@ class CKSModelSelector(ModelSelector):
             # Use the negative BIC because we want to maximize the objective.
             objective = negative_BIC
 
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
-                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
-                         eval_callback, expansion_callback)
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+                         tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         expansion_callback)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels
@@ -479,16 +505,14 @@ class CKSModelSelector(ModelSelector):
 class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
-    def __init__(self, grammar, kernel_selector, objective=None, eval_budget=50, max_depth=None, query_strategy=None,
-                 additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
+    def __init__(self, grammar, kernel_selector, objective=None, eval_budget=50, max_depth=None, additive_form=False,
+                 debug=False, verbose=False, tabu_search=True, optimizer=None, n_restarts_optimizer=10,
+                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
-
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
-                         debug, verbose, tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
-                         eval_callback, expansion_callback)
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+                         tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         expansion_callback)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels
