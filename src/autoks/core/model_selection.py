@@ -104,10 +104,7 @@ class ModelSelector:
         """Train the model selector."""
         t_init = time()
 
-        population = GPModelPopulation()
-
-        initial_models = self.initialize(x, y)
-        population.update(initial_models)
+        population = self.initialize(x, y)
 
         if self.active_set_callback is not None:
             self.active_set_callback(population.models, self, x, y)
@@ -160,7 +157,7 @@ class ModelSelector:
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         raise NotImplementedError
 
-    def initialize(self, x, y) -> List[GPModel]:
+    def initialize(self, x, y) -> GPModelPopulation:
         # initialize models
         initial_models = self.get_initial_candidates()
         initial_models = self.remove_duplicates(initial_models)
@@ -171,7 +168,10 @@ class ModelSelector:
         indices = list(range(len(initial_models)))
         initial_models = self.train_models(initial_models, initial_models, indices, x, y)
 
-        return initial_models
+        population = GPModelPopulation()
+        population.update(initial_models)
+
+        return population
 
     def select_parents(self, population: GPModelPopulation) -> List[GPModel]:
         """Choose parents to later expand.
