@@ -91,10 +91,6 @@ class ModelSelector:
 
         self.tabu_search = tabu_search
 
-        # Used for expected improvement per second.
-        self.n_kernel_params = []
-        self.objective_times = []
-
         # visited set of all expanded kernel expressions previously evaluated
         self.visited = set()
 
@@ -193,8 +189,7 @@ class ModelSelector:
         unevaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if not kernel.evaluated]
         unevaluated_kernels = [kernels[i] for i in unevaluated_kernels_ind]
         ind, acq_scores = query_strategy.query(unevaluated_kernels_ind, kernels, x_train, y_train,
-                                               hyperpriors, None, durations=self.objective_times,
-                                               n_hyperparams=self.n_kernel_params)
+                                               hyperpriors, None)
         selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
         self.total_query_time += time() - t0
 
