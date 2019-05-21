@@ -6,6 +6,7 @@ from GPy.kern import RationalQuadratic, RBF, LinScaleShift
 
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
+from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.grammar import CKSGrammar
 from src.autoks.core.model_selection import ModelSelector, CKSModelSelector
 from src.autoks.core.query_strategy import QueryStrategy
@@ -34,7 +35,10 @@ class TestModelSelector(TestCase):
         qs.arg_select = MagicMock()
         ind = [1, 2]
         qs.arg_select.return_value = ind
-        result = self.model_selector.query_models(self.gp_models, qs, self.x_train, self.y_train)
+
+        pop = GPModelPopulation()
+        pop.update(self.gp_models)
+        result = self.model_selector.query_models(pop, qs, self.x_train, self.y_train)
         self.assertListEqual([self.gp_models[i] for i in ind], result[0].tolist())
         self.assertListEqual(ind, result[1])
         self.assertListEqual(scores, result[2])
@@ -42,7 +46,10 @@ class TestModelSelector(TestCase):
     def test_select_parents(self):
         parents = self.gp_models[:2]
         self.model_selector.kernel_selector.select_parents.return_value = parents
-        result = self.model_selector.select_parents(self.gp_models)
+
+        pop = GPModelPopulation()
+        pop.update(self.gp_models)
+        result = self.model_selector.select_parents(pop)
         self.assertIsInstance(result, list)
         self.assertListEqual(result, parents)
 
@@ -59,9 +66,12 @@ class TestModelSelector(TestCase):
     def test_select_offspring(self):
         offspring = self.gp_models[:2]
         self.model_selector.kernel_selector.select_offspring.return_value = offspring
-        result = self.model_selector.select_offspring(self.gp_models)
-        self.assertIsInstance(result, list)
-        self.assertListEqual(result, offspring)
+
+        pop = GPModelPopulation()
+        pop.update(self.gp_models)
+        result = self.model_selector.select_offspring(pop)
+        self.assertIsInstance(result, GPModelPopulation)
+        self.assertListEqual(result.models, offspring)
 
 
 class TestCKSModelSelector(TestCase):

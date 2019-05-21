@@ -101,7 +101,7 @@ class ModelSelector:
         self.expansion_callback = expansion_callback
 
     def train(self, x, y):
-        # set selected models
+        """Train the model selector."""
         t_init = time()
 
         population = GPModelPopulation()
@@ -117,7 +117,7 @@ class ModelSelector:
             if depth > self.max_depth:
                 break
 
-            self._print_search_summary(depth, population.models)
+            self._print_search_summary(depth, population)
 
             parents = self.select_parents(population)
 
@@ -127,16 +127,14 @@ class ModelSelector:
 
             population.update(new_kernels)
 
-            # evaluate, prune, and optimize gp_models
             population.models = self.remove_duplicates(population.models)
 
-            # Select gp_models by acquisition function to be evaluated
             selected_kernels, ind, acq_scores = self.query_models(population, self.query_strategy, x, y,
                                                                   self.grammar.hyperpriors)
 
             population.models = self.train_models(population.models, selected_kernels, ind, x, y)
 
-            population.models = self.select_offspring(population.models)
+            population = self.select_offspring(population)
 
             if self.active_set_callback is not None:
                 self.active_set_callback(population.models, self, x, y)
@@ -175,42 +173,6 @@ class ModelSelector:
 
         return initial_models
 
-    def query_models(self,
-                     population: GPModelPopulation,
-                     query_strategy: QueryStrategy,
-                     x_train,
-                     y_train,
-                     hyperpriors: Optional[Hyperpriors] = None) \
-            -> Tuple[List[GPModel], List[int], List[float]]:
-        """Select gp_models using the acquisition function of the query strategy.
-
-        :param kernels:
-        :param query_strategy:
-        :param hyperpriors:
-        :return:
-        """
-        t0 = time()
-        kernels = population.models
-        unevaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if not kernel.evaluated]
-        unevaluated_kernels = [kernels[i] for i in unevaluated_kernels_ind]
-        ind, acq_scores = query_strategy.query(unevaluated_kernels_ind, kernels, x_train, y_train,
-                                               hyperpriors, None)
-        selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
-        self.total_query_time += time() - t0
-
-        if self.debug:
-            n_selected = len(ind)
-            plural_suffix = '' if n_selected == 1 else 's'
-            print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')
-
-            acq_scores_selected = [s for i, s in enumerate(acq_scores) if i in ind]
-            for kern, score in zip(selected_kernels, acq_scores_selected):
-                kern.covariance.pretty_print()
-                print('\tacq. score =', score)
-            print('')
-
-        return selected_kernels, ind, acq_scores
-
     def select_parents(self, population: GPModelPopulation) -> List[GPModel]:
         """Choose parents to later expand.
 
@@ -245,21 +207,59 @@ class ModelSelector:
 
         return self._covariances_to_gp_models(new_kernels)
 
-    def select_offspring(self, kernels: List[GPModel]) -> List[GPModel]:
-        """Select next round of gp_models.
+    def query_models(self,
+                     population: GPModelPopulation,
+                     query_strategy: QueryStrategy,
+                     x_train,
+                     y_train,
+                     hyperpriors: Optional[Hyperpriors] = None) \
+            -> Tuple[List[GPModel], List[int], List[float]]:
+        """Select gp_models using the acquisition function of the query strategy.
 
         :param kernels:
+        :param query_strategy:
+        :param hyperpriors:
         :return:
         """
-        # Prioritize keeping evaluated models.
-        augmented_scores = [k.score if k.evaluated and not k.nan_scored else -np.inf for k in kernels]
-
-        offspring = self.kernel_selector.select_offspring(kernels, augmented_scores)
+        t0 = time()
+        kernels = population.models
+        unevaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if not kernel.evaluated]
+        unevaluated_kernels = [kernels[i] for i in unevaluated_kernels_ind]
+        ind, acq_scores = query_strategy.query(unevaluated_kernels_ind, kernels, x_train, y_train,
+                                               hyperpriors, None)
+        selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
+        self.total_query_time += time() - t0
 
         if self.debug:
-            print(f'Offspring selector kept {len(offspring)}/{len(kernels)} gp_models\n')
+            n_selected = len(ind)
+            plural_suffix = '' if n_selected == 1 else 's'
+            print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')
 
-        return offspring
+            for kern in selected_kernels:
+                kern.covariance.pretty_print()
+            print('')
+
+        return selected_kernels, ind, acq_scores
+
+    def select_offspring(self, population: GPModelPopulation) -> GPModelPopulation:
+        """Select next round of gp_models.
+
+        :param population:
+        :return:
+        """
+        gp_models = population.models
+
+        # Prioritize keeping evaluated models.
+        augmented_scores = [k.score if k.evaluated and not k.nan_scored else -np.inf for k in gp_models]
+
+        offspring = self.kernel_selector.select_offspring(gp_models, augmented_scores)
+
+        if self.debug:
+            print(f'Offspring selector kept {len(offspring)}/{len(gp_models)} gp_models\n')
+
+        population.models = offspring
+
+        return population
 
     def train_models(self,
                      all_models: List[GPModel],
@@ -272,8 +272,7 @@ class ModelSelector:
         newly_evaluated_kernels = self.evaluate_models(chosen_models, x, y)
         for gp_model in newly_evaluated_kernels:
             self.visited.add(gp_model.covariance.symbolic_expr_expanded)
-        old_evaluated_kernels = [kernel for kernel in all_models if
-                                 kernel.evaluated and kernel not in chosen_models]
+        old_evaluated_kernels = [kernel for kernel in all_models if kernel.evaluated and kernel not in chosen_models]
         return newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
 
     def evaluate_models(self, models: List[GPModel], x, y) -> List[GPModel]:
@@ -350,9 +349,8 @@ class ModelSelector:
 
         return labels, x, x_pct
 
-    def _print_search_summary(self, depth: int, gp_models: List[GPModel]) -> None:
-        evaluated_gp_models = [gp_model for gp_model in remove_nan_scored_models(gp_models)
-                               if gp_model.evaluated]
+    def _print_search_summary(self, depth: int, population: GPModelPopulation) -> None:
+        evaluated_gp_models = population.scored_models()
         scores = [gp_model.score for gp_model in evaluated_gp_models]
         arg_max_score = int(np.argmax(scores))
         best_objective = scores[arg_max_score]
