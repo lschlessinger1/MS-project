@@ -12,6 +12,7 @@ from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel, remove_nan_scored_models, pretty_print_gp_models, \
     remove_duplicate_gp_models
+from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors
 from src.autoks.core.kernel_encoding import tree_to_kernel
@@ -103,44 +104,47 @@ class ModelSelector:
         # set selected models
         t_init = time()
 
-        kernels = self.initialize(x, y)
+        population = GPModelPopulation()
+
+        initial_models = self.initialize(x, y)
+        population.update(initial_models)
 
         if self.active_set_callback is not None:
-            self.active_set_callback(kernels, self, x, y)
+            self.active_set_callback(population.models, self, x, y)
 
         depth = 0
         while self.n_evals < self.eval_budget:
             if depth > self.max_depth:
                 break
 
-            self._print_search_summary(depth, kernels)
+            self._print_search_summary(depth, population.models)
 
-            parents = self.select_parents(kernels)
+            parents = self.select_parents(population)
 
             new_kernels = self.propose_new_kernels(parents)
             if self.active_set_callback is not None:
-                self.expansion_callback(kernels, self, x, y)
+                self.expansion_callback(population.models, self, x, y)
 
-            kernels += new_kernels
+            population.update(new_kernels)
 
             # evaluate, prune, and optimize gp_models
-            kernels = self.remove_duplicates(kernels)
+            population.models = self.remove_duplicates(population.models)
 
             # Select gp_models by acquisition function to be evaluated
-            selected_kernels, ind, acq_scores = self.query_models(kernels, self.query_strategy, x, y,
+            selected_kernels, ind, acq_scores = self.query_models(population, self.query_strategy, x, y,
                                                                   self.grammar.hyperpriors)
 
-            kernels = self.train_models(kernels, selected_kernels, ind, x, y)
+            population.models = self.train_models(population.models, selected_kernels, ind, x, y)
 
-            kernels = self.select_offspring(kernels)
+            population.models = self.select_offspring(population.models)
 
             if self.active_set_callback is not None:
-                self.active_set_callback(kernels, self, x, y)
+                self.active_set_callback(population.models, self, x, y)
             depth += 1
 
         self.total_model_search_time += time() - t_init
 
-        self.selected_models = kernels
+        self.selected_models = population.models
         return self
 
     def predict(self, x):
@@ -172,7 +176,7 @@ class ModelSelector:
         return initial_models
 
     def query_models(self,
-                     kernels: List[GPModel],
+                     population: GPModelPopulation,
                      query_strategy: QueryStrategy,
                      x_train,
                      y_train,
@@ -186,6 +190,7 @@ class ModelSelector:
         :return:
         """
         t0 = time()
+        kernels = population.models
         unevaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if not kernel.evaluated]
         unevaluated_kernels = [kernels[i] for i in unevaluated_kernels_ind]
         ind, acq_scores = query_strategy.query(unevaluated_kernels_ind, kernels, x_train, y_train,
@@ -206,13 +211,13 @@ class ModelSelector:
 
         return selected_kernels, ind, acq_scores
 
-    def select_parents(self, kernels: List[GPModel]) -> List[GPModel]:
+    def select_parents(self, population: GPModelPopulation) -> List[GPModel]:
         """Choose parents to later expand.
 
         :param kernels:
         :return:
         """
-        evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
+        evaluated_kernels = population.scored_models()
         if self.tabu_search:
             # Expanded gp_models are the tabu list.
             evaluated_kernels = [kernel for kernel in evaluated_kernels if not kernel.expanded]
