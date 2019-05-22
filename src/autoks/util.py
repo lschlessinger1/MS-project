@@ -132,6 +132,6 @@ def pretty_time_delta(seconds: float) -> str:
     elif minutes > 0:
         return '%dm%ds' % (minutes, seconds)
     elif seconds > 0:
-        return '%ds' % (seconds)
+        return '%ds' % seconds
     else:
-        return '%.1fms' % (ms)
+        return '%.1fms' % ms
