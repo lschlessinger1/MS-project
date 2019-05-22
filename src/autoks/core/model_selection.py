@@ -441,6 +441,34 @@ class EvolutionaryModelSelector(ModelSelector):
             return self.grammar.base_kernels
 
 
+class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
+    grammar: EvolutionaryGrammar
+
+    def __init__(self, grammar, kernel_selector, objective=None, initializer=None, n_init_trees=10, eval_budget=50,
+                 max_depth=None, additive_form=False, debug=False, verbose=False, tabu_search=True, optimizer=None,
+                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 expansion_callback=None):
+        if objective is None:
+            objective = log_likelihood_normalized
+
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+                         tabu_search, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         expansion_callback)
+        self.initializer = initializer
+        self.n_init_trees = n_init_trees
+
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        if self.initializer is not None:
+            # Generate trees
+            trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
+            kernels = [tree_to_kernel(tree) for tree in trees]
+            covariances = [Covariance(k) for k in kernels]
+
+            return covariances
+        else:
+            return self.grammar.base_kernels
+
+
 class BomsModelSelector(SurrogateBasedModelSelector):
     grammar: BOMSGrammar
 
