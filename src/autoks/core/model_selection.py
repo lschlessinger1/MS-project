@@ -114,7 +114,7 @@ class ModelSelector:
             population.update(new_kernels)
             population.models = self.remove_duplicates(population.models)
 
-            self.train_models(population.candidates(), x, y)
+            self.evaluate_models(population.candidates(), x, y)
 
             population = self.select_offspring(population)
             if self.active_set_callback is not None:
@@ -154,7 +154,7 @@ class ModelSelector:
         if self.debug:
             pretty_print_gp_models(population.models, 'Initial candidate')
 
-        self.train_models(population.candidates(), x, y)
+        self.evaluate_models(population.candidates(), x, y)
 
         return population
 
@@ -214,18 +214,6 @@ class ModelSelector:
 
         return population
 
-    def train_models(self,
-                     chosen_models: List[GPModel],
-                     x,
-                     y):
-        # unevaluated_kernels = [kernel for kernel in all_models if not kernel.evaluated]
-        # unselected_kernels = [unevaluated_kernels[i] for i in range(len(unevaluated_kernels)) if i not in indices]
-        newly_evaluated_kernels = self.evaluate_models(chosen_models, x, y)
-        for gp_model in newly_evaluated_kernels:
-            self.visited.add(gp_model.covariance.symbolic_expr_expanded)
-        # old_evaluated_kernels = [kernel for kernel in all_models if kernel.evaluated and kernel not in chosen_models]
-        # return newly_evaluated_kernels + unselected_kernels + old_evaluated_kernels
-
     def evaluate_models(self, models: List[GPModel], x, y) -> List[GPModel]:
         """Optimize and evaluate all gp_models
 
@@ -252,6 +240,7 @@ class ModelSelector:
                 t1 = time()
                 self.total_eval_time += t1 - t0
                 self.n_evals += 1
+                self.visited.add(gp_model.covariance.symbolic_expr_expanded)
 
             evaluated_models.append(gp_model)
             if not gp_model.nan_scored:
@@ -263,7 +252,7 @@ class ModelSelector:
         if self.debug:
             print('Printing all results')
             # Sort models by scores with un-evaluated models last
-            for gp_model in sorted(evaluated_models, key=lambda x: (x.score is not None, x.score), reverse=True):
+            for gp_model in sorted(evaluated_models, key=lambda m: (m.score is not None, m.score), reverse=True):
                 gp_model.covariance.pretty_print()
                 print('\tobjective =', gp_model.score)
             print('')
