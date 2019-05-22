@@ -140,8 +140,7 @@ class ModelSearchExperiment(BaseExperiment):
 
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = BomsModelSelector(grammar, eval_budget=50, use_laplace=True,
-                                           active_set_callback=tracker.active_set_callback,
+        model_selector = BomsModelSelector(grammar, use_laplace=True, active_set_callback=tracker.active_set_callback,
                                            eval_callback=tracker.evaluations_callback,
                                            expansion_callback=tracker.expansion_callback, **kwargs)
 
@@ -209,7 +208,7 @@ class ModelSearchExperiment(BaseExperiment):
 
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=50, tabu_search=False,
+        model_selector = RandomModelSelector(grammar, kernel_selector, objective, tabu_search=False,
                                              active_set_callback=tracker.active_set_callback,
                                              eval_callback=tracker.evaluations_callback,
                                              expansion_callback=tracker.expansion_callback,
