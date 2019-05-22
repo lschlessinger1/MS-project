@@ -16,11 +16,9 @@ class GPModel:
     def __init__(self,
                  covariance: Covariance,
                  likelihood: Optional[Likelihood] = None,
-                 evaluated: bool = False,
-                 nan_scored: bool = False):
+                 evaluated: bool = False):
         self.covariance = covariance
         self.evaluated = evaluated
-        self.nan_scored = nan_scored
         self._score = None
 
         self.model_input_dict = dict()  # Only save keyword arguments of GP
@@ -94,14 +92,13 @@ def remove_duplicate_gp_models(kernels: List[GPModel]) -> List[GPModel]:
     :return:
     """
 
-    unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated and not kernel.nan_scored]
+    unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
     evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
-    nan_scored_kernels = [kernel for kernel in kernels if kernel.nan_scored]
     # Prioritize highest scoring kernel for duplicates
     sorted_evaluated_kernels = sorted(evaluated_kernels, key=lambda k: k.score, reverse=True)
 
     # Assume precedence by order.
-    gp_models = sorted_evaluated_kernels + nan_scored_kernels + unevaluated_kernels
+    gp_models = sorted_evaluated_kernels + unevaluated_kernels
     return remove_duplicates([gp_model.covariance.symbolic_expr_expanded for gp_model in gp_models], gp_models)
 
 
@@ -135,15 +132,6 @@ def randomize_models(gp_models: List[GPModel]) -> List[GPModel]:
         gp_model.covariance.raw_kernel.randomize()
 
     return gp_models
-
-
-def remove_nan_scored_models(gp_models: List[GPModel]) -> List[GPModel]:
-    """Remove all models that have NaN scores.
-
-    :param gp_models:
-    :return:
-    """
-    return [gp_model for gp_model in gp_models if not gp_model.nan_scored]
 
 
 def encode_gp_model(gp_model: GPModel) -> List[str]:

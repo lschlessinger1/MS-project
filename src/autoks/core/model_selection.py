@@ -11,8 +11,7 @@ from src.autoks.backend.kernel import set_priors
 from src.autoks.backend.model import log_likelihood_normalized, BIC
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
-from src.autoks.core.gp_model import GPModel, remove_nan_scored_models, pretty_print_gp_models, \
-    remove_duplicate_gp_models
+from src.autoks.core.gp_model import GPModel, pretty_print_gp_models, remove_duplicate_gp_models
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors
@@ -203,7 +202,7 @@ class ModelSelector:
         gp_models = population.models
 
         # Prioritize keeping evaluated models.
-        augmented_scores = [k.score if k.evaluated and not k.nan_scored else -np.inf for k in gp_models]
+        augmented_scores = [k.score if k.evaluated else -np.inf for k in gp_models]
 
         offspring = self.kernel_selector.select_offspring(gp_models, augmented_scores)
 
@@ -248,11 +247,8 @@ class ModelSelector:
                 self.visited.add(gp_model.covariance.symbolic_expr_expanded)
 
             evaluated_models.append(gp_model)
-            if not gp_model.nan_scored:
-                if self.active_set_callback is not None:
-                    self.eval_callback([gp_model], self, x, y)
-
-        evaluated_models = remove_nan_scored_models(evaluated_models)
+            if self.active_set_callback is not None:
+                self.eval_callback([gp_model], self, x, y)
 
         if self.debug:
             print('Printing all results')

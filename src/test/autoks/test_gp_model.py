@@ -5,8 +5,7 @@ from GPy.kern import RationalQuadratic, RBF
 
 from src.autoks.backend.kernel import encode_kernel
 from src.autoks.core.covariance import Covariance
-from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, encode_gp_model, encode_gp_models, \
-    remove_nan_scored_models
+from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, encode_gp_model, encode_gp_models
 from src.autoks.core.kernel_encoding import KernelTree
 
 
@@ -30,10 +29,8 @@ class TestGPModelModule(TestCase):
         k2.score = 9
 
         k3 = GPModel(Covariance(RBF(1)))
-        k3.nan_scored = True
 
         k4 = GPModel(Covariance(RBF(1)))
-        k4.nan_scored = True
 
         k5 = GPModel(Covariance(RBF(1)))
 
@@ -129,10 +126,3 @@ class TestGPModelModule(TestCase):
         self.assertEqual(result.shape, (len(gp_models), 1))
         self.assertListEqual(result[0][0], [encode_kernel(gp_models[0].covariance.raw_kernel), [None]])
         self.assertListEqual(result[1][0], [encode_kernel(gp_models[1].covariance.raw_kernel), [None]])
-
-    def test_remove_nan_scored_kernels(self):
-        kernels = [GPModel(Covariance(RationalQuadratic(1)), nan_scored=True), GPModel(RBF(1)),
-                   GPModel(Covariance(RBF(1)), nan_scored=True)]
-        result = remove_nan_scored_models(kernels)
-        self.assertIsInstance(result, list)
-        self.assertListEqual(result, [kernels[1]])
