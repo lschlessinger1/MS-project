@@ -17,12 +17,10 @@ class GPModel:
                  covariance: Covariance,
                  likelihood: Optional[Likelihood] = None,
                  evaluated: bool = False,
-                 nan_scored: bool = False,
-                 expanded: bool = False):
+                 nan_scored: bool = False):
         self.covariance = covariance
         self.evaluated = evaluated
         self.nan_scored = nan_scored
-        self.expanded = expanded
         self._score = None
 
         self.model_input_dict = dict()  # Only save keyword arguments of GP
@@ -75,7 +73,7 @@ class GPModel:
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'covariance={self.covariance!r}, evaluated={self.evaluated!r}, ' \
-            f'nan_scored={self.nan_scored!r}, expanded={self.expanded!r}, score={self.score!r})'
+            f'nan_scored={self.nan_scored!r}, score={self.score!r})'
 
 
 def pretty_print_gp_models(gp_models: List[GPModel],
