@@ -1,5 +1,5 @@
 import warnings
-from typing import List, Optional
+from typing import List, Optional, ClassVar
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from src.evalg.vary import PopulationOperator
 
 
 class BaseGrammar:
-    DEFAULT_OPERATORS: List[str] = ['+', '*']
+    DEFAULT_OPERATORS: ClassVar[List[str]] = ['+', '*']
     operators: List[str]
 
     def __init__(self,

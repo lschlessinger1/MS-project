@@ -1,4 +1,4 @@
-from typing import Callable, Optional, List, Dict, Iterable, Union, Any
+from typing import Callable, Optional, List, Dict, Iterable, Union, Any, ClassVar
 
 import numpy as np
 
@@ -39,7 +39,7 @@ class Statistic:
 class MultiStat:
     """Track multiple statistics."""
     stats: Dict[str, Statistic]
-    RAW_VALUE_STAT_NAME = 'raw_values'
+    RAW_VALUE_STAT_NAME: ClassVar[str] = 'raw_values'
 
     def __init__(self, name: str,
                  stats: Optional[Iterable[Statistic]] = None):
