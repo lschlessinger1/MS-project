@@ -41,7 +41,10 @@ class TestModelSelector(TestCase):
         expected = [Covariance(RBF(1)), Covariance(RationalQuadratic(1)), Covariance(RBF(1) + RationalQuadratic(1)),
                     Covariance(RBF(1) * RationalQuadratic(1))]
         self.model_selector.grammar.get_candidates.return_value = expected
-        actual = self.model_selector.propose_new_kernels(self.gp_models)
+
+        pop = GPModelPopulation()
+        pop.update(self.gp_models)
+        actual = self.model_selector.propose_new_kernels(pop)
         self.assertIsInstance(actual, list)
         self.assertEqual(len(expected), len(actual))
         for expected_cov, actual_cov in zip(expected, actual):

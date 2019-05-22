@@ -97,7 +97,6 @@ class ModelSelector:
         t_init = time()
 
         population = self.initialize(x, y)
-
         if self.active_set_callback is not None:
             self.active_set_callback(population.models, self, x, y)
 
@@ -108,22 +107,19 @@ class ModelSelector:
 
             self._print_search_summary(depth, population)
 
-            parents = self.select_parents(population)
-
-            new_kernels = self.propose_new_kernels(parents)
+            new_kernels = self.propose_new_kernels(population)
             if self.active_set_callback is not None:
                 self.expansion_callback(new_kernels, self, x, y)
 
             population.update(new_kernels)
-
             population.models = self.remove_duplicates(population.models)
 
             self.train_models(population.candidates(), x, y)
 
             population = self.select_offspring(population)
-
             if self.active_set_callback is not None:
                 self.active_set_callback(population.models, self, x, y)
+
             depth += 1
 
         self.total_model_search_time += time() - t_init
@@ -165,7 +161,7 @@ class ModelSelector:
     def select_parents(self, population: GPModelPopulation) -> List[GPModel]:
         """Choose parents to later expand.
 
-        :param kernels:
+        :param population:
         :return:
         """
         evaluated_kernels = population.scored_models()
@@ -180,12 +176,14 @@ class ModelSelector:
 
         return parents
 
-    def propose_new_kernels(self, parents: List[GPModel]) -> List[GPModel]:
+    def propose_new_kernels(self, population: GPModelPopulation) -> List[GPModel]:
         """Propose new gp_models using the grammar given a list of parent gp_models.
 
-        :param parents:
+        :param population:
         :return:
         """
+        parents = self.select_parents(population)
+
         # set gp_models to expanded
         for parent in parents:
             parent.expanded = True
