@@ -156,9 +156,9 @@ class ModelSelector:
         population = GPModelPopulation()
 
         initial_candidates = self.get_initial_candidates()
-        initial_candidates = self.remove_duplicates(initial_candidates)
 
         population.update(initial_candidates)
+        population.models = self.remove_duplicates(population.models)
 
         if self.debug:
             pretty_print_gp_models(population.models, 'Initial candidate')
