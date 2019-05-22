@@ -1,4 +1,4 @@
-from typing import Optional, List, FrozenSet
+from typing import Optional, List, FrozenSet, Callable
 
 import numpy as np
 from GPy.core import GP
@@ -10,17 +10,15 @@ from src.autoks.util import remove_duplicates
 
 
 class GPModel:
-    """GPy kernel wrapper
-    """
-    covariance: Covariance
-    lik_params: Optional[np.ndarray]
-    evaluated: bool
-    nan_scored: bool
-    expanded: bool
+    """GPy model wrapper."""
     model_input_dict: Optional[dict]
-    likelihood: Optional[Likelihood]
 
-    def __init__(self, covariance: Covariance, likelihood=None, evaluated=False, nan_scored=False, expanded=False):
+    def __init__(self,
+                 covariance: Covariance,
+                 likelihood: Optional[Likelihood] = None,
+                 evaluated: bool = False,
+                 nan_scored: bool = False,
+                 expanded: bool = False):
         self.covariance = covariance
         self.evaluated = evaluated
         self.nan_scored = nan_scored
@@ -30,12 +28,17 @@ class GPModel:
         self.model_input_dict = dict()  # Only save keyword arguments of GP
         self.likelihood = likelihood
 
-    def score_model(self, x, y, scoring_func):
+    def score_model(self,
+                    x: np.ndarray,
+                    y: np.ndarray,
+                    scoring_func: Callable[[GP], float]):
         model = self.fit(x, y)
         self.score = scoring_func(model)
         return self.score
 
-    def build_model(self, x, y) -> GP:
+    def build_model(self,
+                    x: np.ndarray,
+                    y: np.ndarray) -> GP:
         input_dict = self.model_input_dict.copy()
 
         input_dict['X'] = x
@@ -47,7 +50,11 @@ class GPModel:
 
         return gp
 
-    def fit(self, x, y, optimizer=None, n_restarts=10):
+    def fit(self,
+            x: np.ndarray,
+            y: np.ndarray,
+            optimizer: str = None,
+            n_restarts: int = 10) -> GP:
         model = self.build_model(x, y)
         model.optimize_restarts(ipython_notebook=False, optimizer=optimizer, num_restarts=n_restarts, verbose=False,
                                 robust=True, messages=False)
