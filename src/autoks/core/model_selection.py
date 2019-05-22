@@ -52,7 +52,8 @@ class ModelSelector:
 
         if max_depth is None:
             # By default, the model search is terminated only when the evaluation budget is expended.
-            self.max_depth = max(1000, eval_budget * 2)
+            max_iterations = 1000
+            self.max_depth = max(max_iterations, eval_budget * 2)
         else:
             self.max_depth = max_depth
 
@@ -107,11 +108,11 @@ class ModelSelector:
 
             self._print_search_summary(depth, population)
 
-            new_kernels = self.propose_new_kernels(population)
+            new_models = self.propose_new_kernels(population)
             if self.active_set_callback is not None:
-                self.expansion_callback(new_kernels, self, x, y)
+                self.expansion_callback(new_models, self, x, y)
 
-            population.update(new_kernels)
+            population.update(new_models)
             population.models = self.remove_duplicates(population.models)
 
             self.evaluate_models(population.candidates(), x, y)
@@ -127,22 +128,30 @@ class ModelSelector:
         self.selected_models = population.models
         return self
 
-    def predict(self, x):
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """Predict on test inputs."""
         # for now, just use best model to predict. Should be using model averaging...
         # sort selected models by scores
         pass
 
-    def score(self, x, y) -> float:
+    def score(self,
+              x: np.ndarray,
+              y: np.ndarray) -> float:
+        """Score the model selector on test data."""
         pass
 
     def get_initial_candidates(self) -> List[GPModel]:
+        """Get initial set of candidate GP models."""
         initial_covariances = self.get_initial_candidate_covariances()
         return self._covariances_to_gp_models(initial_covariances)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
+        """Get the initial set of candidate covariances."""
         raise NotImplementedError
 
-    def initialize(self, x, y) -> GPModelPopulation:
+    def initialize(self,
+                   x: np.ndarray,
+                   y: np.ndarray) -> GPModelPopulation:
         """Initialize models."""
         population = GPModelPopulation()
 
@@ -159,7 +168,7 @@ class ModelSelector:
         return population
 
     def select_parents(self, population: GPModelPopulation) -> List[GPModel]:
-        """Choose parents to later expand.
+        """Choose parent models to later expand.
 
         :param population:
         :return:
@@ -177,25 +186,25 @@ class ModelSelector:
         return parents
 
     def propose_new_kernels(self, population: GPModelPopulation) -> List[GPModel]:
-        """Propose new gp_models using the grammar given a list of parent gp_models.
+        """Propose new models using the grammar.
 
         :param population:
         :return:
         """
         parents = self.select_parents(population)
 
-        # set gp_models to expanded
+        # Set parents to expanded
         for parent in parents:
             parent.expanded = True
 
         t0_exp = time()
-        new_kernels = self.grammar.get_candidates(parents, verbose=self.debug)
+        new_covariances = self.grammar.get_candidates(parents, verbose=self.debug)
         self.total_expansion_time += time() - t0_exp
 
-        return self._covariances_to_gp_models(new_kernels)
+        return self._covariances_to_gp_models(new_covariances)
 
     def select_offspring(self, population: GPModelPopulation) -> GPModelPopulation:
-        """Select next round of gp_models.
+        """Select next round of models.
 
         :param population:
         :return:
@@ -214,10 +223,15 @@ class ModelSelector:
 
         return population
 
-    def evaluate_models(self, models: List[GPModel], x, y) -> List[GPModel]:
-        """Optimize and evaluate all gp_models
+    def evaluate_models(self,
+                        models: List[GPModel],
+                        x: np.ndarray,
+                        y: np.ndarray) -> List[GPModel]:
+        """Evaluate a set models on some training data.
 
         :param models:
+        :param x:
+        :param y:
         :return:
         """
         evaluated_models = []
@@ -259,6 +273,7 @@ class ModelSelector:
         return evaluated_models
 
     def remove_duplicates(self, models: List[GPModel]) -> List[GPModel]:
+        """Remove duplicate models."""
         n_before = len(models)
         models = remove_duplicate_gp_models(models)
         if self.debug:
@@ -269,11 +284,11 @@ class ModelSelector:
     def best_model(self) -> GPModel:
         """Get the best scoring model."""
         evaluated_gp_models = [model for model in self.selected_models if model.evaluated]
-        sorted_gp_models = sorted(evaluated_gp_models, key=lambda x: x.score, reverse=True)
+        sorted_gp_models = sorted(evaluated_gp_models, key=lambda m: m.score, reverse=True)
         return sorted_gp_models[0]
 
     def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
-        """Get the runtime report of the kernel search.
+        """Get the runtime report of the model search.
 
         :return:
         """
@@ -288,7 +303,10 @@ class ModelSelector:
 
         return labels, x, x_pct
 
-    def _print_search_summary(self, depth: int, population: GPModelPopulation) -> None:
+    def _print_search_summary(self,
+                              depth: int,
+                              population: GPModelPopulation) -> None:
+        """Print a summary of the model population at a given generation."""
         evaluated_gp_models = population.scored_models()
         scores = [gp_model.score for gp_model in evaluated_gp_models]
         arg_max_score = int(np.argmax(scores))
@@ -308,9 +326,11 @@ class ModelSelector:
             print('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
 
     def _covariances_to_gp_models(self, covariances: List[Covariance]) -> List[GPModel]:
+        """Convert covariances to GP models."""
         return [self._covariance_to_gp_model(cov) for cov in covariances]
 
     def _covariance_to_gp_model(self, cov: Covariance) -> GPModel:
+        """Convert a covariance to a GP model."""
         gp_model = GPModel(cov)
 
         # Set model dict
@@ -456,7 +476,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
         indices = [0]
         initial_models = [initial_candidates[i] for i in indices]
 
-        self.train_models(initial_models, x, y)
+        self.evaluate_models(initial_models, x, y)
 
         population.update(initial_candidates)
 
