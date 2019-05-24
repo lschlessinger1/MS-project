@@ -4,11 +4,10 @@ from typing import List, Tuple, Optional, Callable
 
 import numpy as np
 from GPy import likelihoods
-from GPy.core import GP
 from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.kernel import set_priors
-from src.autoks.backend.model import log_likelihood_normalized, BIC
+from src.autoks.backend.model import log_likelihood_normalized, BIC, RawGPModelType
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models, remove_duplicate_gp_models
@@ -23,25 +22,22 @@ from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy, Be
 class ModelSelector:
     """Abstract base class for model selectors"""
     selected_models: List[GPModel]
-    grammar: BaseGrammar
-    kernel_selector: KernelSelector
-    objective: Callable[[GP], float]
-    kernel_families: List[str]
-    eval_budget: int
-    max_generations: Optional[int]
-    hyperpriors: Optional[Hyperpriors]
-    gp_model: Optional[GP]
-    additive_form: bool
-    debug: bool
-    verbose: bool
-    optimizer: Optional[str]
-    n_restarts_optimizer: int
-    max_null_queries: int
-    max_same_expansions: int
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_generations=None, additive_form=False,
-                 debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10, use_laplace=True,
-                 active_set_callback=None, eval_callback=None, expansion_callback=None):
+    def __init__(self,
+                 grammar: BaseGrammar,
+                 kernel_selector: KernelSelector,
+                 objective: Callable[[RawGPModelType], float],
+                 eval_budget: int = 50,
+                 max_generations: Optional[int] = None,
+                 additive_form: bool = False,
+                 debug: bool = False,
+                 verbose: bool = False,
+                 optimizer: Optional[str] = None,
+                 n_restarts_optimizer: int = 10,
+                 use_laplace: bool = True,
+                 active_set_callback: Optional[Callable] = None,
+                 eval_callback: Optional[Callable] = None,
+                 expansion_callback: Optional[Callable] = None):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective

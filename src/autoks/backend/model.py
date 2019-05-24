@@ -3,14 +3,16 @@ from typing import List, Optional, Tuple
 import numpy as np
 from GPy.core import GP
 from GPy.core.model import Model
-from GPy.kern import Kern
 
-from src.autoks.backend.kernel import kernel_to_infix_tokens, tokens_to_str
+from src.autoks.backend.kernel import kernel_to_infix_tokens, tokens_to_str, RawKernelType
 from src.evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTree
 from src.evalg.fitness import covariant_parsimony_pressure
 
+RawGPModelType = GP
+RawModelType = Model
 
-def model_to_infix_tokens(model: GP) -> List[str]:
+
+def model_to_infix_tokens(model: RawGPModelType) -> List[str]:
     """Convert a model to list of infix tokens.
 
     :param model:
@@ -19,7 +21,7 @@ def model_to_infix_tokens(model: GP) -> List[str]:
     return kernel_to_infix_tokens(model.kern)
 
 
-def model_to_infix(model: GP) -> str:
+def model_to_infix(model: RawGPModelType) -> str:
     """Convert a model to an infix string
 
     :param model:
@@ -29,7 +31,7 @@ def model_to_infix(model: GP) -> str:
     return tokens_to_str(infix_tokens)
 
 
-def model_to_binexptree(model: GP) -> BinaryTree:
+def model_to_binexptree(model: RawGPModelType) -> BinaryTree:
     """Convert a model to a binary expression tree.
 
     :param model:
@@ -41,7 +43,7 @@ def model_to_binexptree(model: GP) -> BinaryTree:
     return tree
 
 
-def save_model(m: Model,
+def save_model(m: RawModelType,
                output_file_name: str,
                compress: bool = False,
                save_data: bool = False) -> None:
@@ -59,7 +61,7 @@ def save_model(m: Model,
 
 
 def load_model(output_file_name: str,
-               data: Optional[Tuple[np.ndarray, np.ndarray]]) -> Model:
+               data: Optional[Tuple[np.ndarray, np.ndarray]]) -> RawModelType:
     """Load a GPy model.
 
     :param output_file_name: The path of the file containing the saved model.
@@ -69,8 +71,8 @@ def load_model(output_file_name: str,
     return Model.load_model(output_file_name, data=data)
 
 
-def set_model_kern(model: GP,
-                   new_kern: Kern) -> None:
+def set_model_kern(model: RawGPModelType,
+                   new_kern: RawKernelType) -> None:
     """Set the kernel of a model.
 
     :param model:
@@ -82,7 +84,7 @@ def set_model_kern(model: GP,
     model.kern = new_kern
 
 
-def is_nan_model(model: GP) -> bool:
+def is_nan_model(model: RawGPModelType) -> bool:
     """Is a NaN model.
 
     :param model:
@@ -93,7 +95,7 @@ def is_nan_model(model: GP) -> bool:
 
 # Model selection criteria
 
-def log_likelihood_normalized(model: GP) -> float:
+def log_likelihood_normalized(model: RawGPModelType) -> float:
     """Computes the normalized log likelihood.
 
     :param model:
@@ -103,7 +105,7 @@ def log_likelihood_normalized(model: GP) -> float:
     return model.log_likelihood() / dataset_size
 
 
-def BIC(model: GP) -> float:
+def BIC(model: RawGPModelType) -> float:
     """Bayesian Information Criterion (BIC).
 
     Calculate the BIC for a GPy `model` with maximum likelihood hyperparameters on a
@@ -121,7 +123,7 @@ def BIC(model: GP) -> float:
     return np.log(n) * k - 2 * model.log_likelihood()
 
 
-def AIC(model: GP) -> float:
+def AIC(model: RawGPModelType) -> float:
     """Akaike Information Criterion (AIC).
 
     Calculate the AIC for a GPy `model` with maximum likelihood hyperparameters on a
@@ -137,7 +139,7 @@ def AIC(model: GP) -> float:
     return 2 * k - 2 * model.log_likelihood()
 
 
-def pl2(model: GP) -> float:
+def pl2(model: RawGPModelType) -> float:
     """Compute the modified expected log-predictive likelihood (PL2) score of a model.
 
     Ando & Tsay, 2009
@@ -151,7 +153,7 @@ def pl2(model: GP) -> float:
     return nll / n + k / (2 * n)
 
 
-def cov_parsimony_pressure(model: GP,
+def cov_parsimony_pressure(model: RawGPModelType,
                            model_scores: List[float],
                            model_sizes: List[int]) -> float:
     """Covariant parsimony pressure method of a model."""
@@ -163,8 +165,8 @@ def cov_parsimony_pressure(model: GP,
 
 # Model comparison scores
 
-def bayes_factor(model_1: GP,
-                 model_2: GP) -> float:
+def bayes_factor(model_1: RawGPModelType,
+                 model_2: RawGPModelType) -> float:
     """Compute the Bayes factor between two models.
     https://en.wikipedia.org/wiki/Bayes_factor
 

@@ -1,10 +1,10 @@
 from typing import Optional, List, FrozenSet, Callable
 
 import numpy as np
-from GPy.core import GP
 from GPy.likelihoods import Likelihood
 
 from src.autoks.backend.kernel import encode_prior, get_priors, encode_kernel, sort_kernel, kernel_to_infix
+from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance, pretty_print_covariances
 from src.autoks.util import remove_duplicates
 
@@ -27,14 +27,14 @@ class GPModel:
     def score_model(self,
                     x: np.ndarray,
                     y: np.ndarray,
-                    scoring_func: Callable[[GP], float]):
+                    scoring_func: Callable[[RawGPModelType], float]):
         model = self.fit(x, y)
         self.score = scoring_func(model)
         return self.score
 
     def build_model(self,
                     x: np.ndarray,
-                    y: np.ndarray) -> GP:
+                    y: np.ndarray) -> RawGPModelType:
         input_dict = self.model_input_dict.copy()
 
         input_dict['X'] = x
@@ -42,7 +42,7 @@ class GPModel:
         input_dict['kernel'] = self.covariance.raw_kernel
         input_dict['likelihood'] = self.likelihood
 
-        gp = GP(**input_dict)
+        gp = RawGPModelType(**input_dict)
 
         return gp
 
@@ -50,7 +50,7 @@ class GPModel:
             x: np.ndarray,
             y: np.ndarray,
             optimizer: str = None,
-            n_restarts: int = 10) -> GP:
+            n_restarts: int = 10) -> RawGPModelType:
         model = self.build_model(x, y)
         model.optimize_restarts(ipython_notebook=False, optimizer=optimizer, num_restarts=n_restarts, verbose=False,
                                 robust=True, messages=False)
