@@ -28,7 +28,7 @@ class ModelSelector:
     objective: Callable[[GP], float]
     kernel_families: List[str]
     eval_budget: int
-    max_depth: Optional[int]
+    max_generations: Optional[int]
     hyperpriors: Optional[Hyperpriors]
     gp_model: Optional[GP]
     additive_form: bool
@@ -39,7 +39,7 @@ class ModelSelector:
     max_null_queries: int
     max_same_expansions: int
 
-    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, additive_form=False,
+    def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_generations=None, additive_form=False,
                  debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10, use_laplace=True,
                  active_set_callback=None, eval_callback=None, expansion_callback=None):
         self.grammar = grammar
@@ -48,12 +48,12 @@ class ModelSelector:
 
         self.eval_budget = eval_budget  # number of model evaluations (budget)
 
-        if max_depth is None:
+        if max_generations is None:
             # By default, the model search is terminated only when the evaluation budget is expended.
             max_iterations = 1000
-            self.max_depth = max(max_iterations, eval_budget * 2)
+            self.max_generations = max(max_iterations, eval_budget * 2)
         else:
-            self.max_depth = max_depth
+            self.max_generations = max_generations
 
         self.n_evals = 0
         self.additive_form = additive_form
@@ -101,7 +101,7 @@ class ModelSelector:
 
         depth = 0
         while self.n_evals < self.eval_budget:
-            if depth > self.max_depth:
+            if depth > self.max_generations:
                 break
 
             self._print_search_summary(depth, population)
@@ -280,7 +280,7 @@ class ModelSelector:
         if self.verbose:
             best_kernel = evaluated_gp_models[arg_max_score]
             sizes = [len(gp_model.covariance.to_binary_tree()) for gp_model in evaluated_gp_models]
-            print(f'Iteration {depth}/{self.max_depth}')
+            print(f'Iteration {depth}/{self.max_generations}')
             print(f'Evaluated {self.n_evals}/{self.eval_budget}')
             print(f'Avg. objective = %0.6f' % np.mean(scores))
             print(f'Best objective = %.6f' % best_objective)
@@ -312,10 +312,11 @@ class ModelSelector:
 
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
-    def __init__(self, grammar, kernel_selector, objective, query_strategy=None, eval_budget=50, max_depth=None,
+    def __init__(self, grammar, kernel_selector, objective, query_strategy=None, eval_budget=50, max_generations=None,
                  additive_form=False, debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10,
                  use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
+                         verbose,
                          optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
 
@@ -382,13 +383,14 @@ class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
 
     def __init__(self, grammar, kernel_selector, objective=None, initializer=None, n_init_trees=10, eval_budget=50,
-                 max_depth=None, additive_form=False, debug=False, verbose=False, optimizer=None,
+                 max_generations=None, additive_form=False, debug=False, verbose=False, optimizer=None,
                  n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
                  expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
 
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
+                         verbose,
                          optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
         self.initializer = initializer
@@ -410,13 +412,14 @@ class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
     grammar: EvolutionaryGrammar
 
     def __init__(self, grammar, kernel_selector, objective=None, initializer=None, n_init_trees=10, eval_budget=50,
-                 max_depth=None, additive_form=False, debug=False, verbose=False, optimizer=None,
+                 max_generations=None, additive_form=False, debug=False, verbose=False, optimizer=None,
                  n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
                  expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
 
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
+                         verbose,
                          optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
         self.initializer = initializer
@@ -437,7 +440,7 @@ class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
 class BomsModelSelector(SurrogateBasedModelSelector):
     grammar: BOMSGrammar
 
-    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=None,
+    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_generations=None,
                  query_strategy=None, additive_form=False, debug=False, verbose=False, optimizer=None,
                  n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
                  expansion_callback=None):
@@ -451,7 +454,8 @@ class BomsModelSelector(SurrogateBasedModelSelector):
             acq = ExpectedImprovementPerSec()
             query_strategy = BestScoreStrategy(scoring_func=acq)
 
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, query_strategy, additive_form,
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, query_strategy,
+                         additive_form,
                          debug, verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
                          eval_callback, expansion_callback)
 
@@ -479,7 +483,8 @@ class BomsModelSelector(SurrogateBasedModelSelector):
 class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
-    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_depth=10, additive_form=False,
+    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_generations=10,
+                 additive_form=False,
                  debug=False, verbose=False, optimizer='scg', n_restarts_optimizer=10, use_laplace=True,
                  active_set_callback=None, eval_callback=None, expansion_callback=None):
 
@@ -494,7 +499,8 @@ class CKSModelSelector(ModelSelector):
             # Use the negative BIC because we want to maximize the objective.
             objective = negative_BIC
 
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
+                         verbose,
                          optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
 
@@ -505,12 +511,14 @@ class CKSModelSelector(ModelSelector):
 class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
-    def __init__(self, grammar, kernel_selector, objective=None, eval_budget=50, max_depth=None, additive_form=False,
+    def __init__(self, grammar, kernel_selector, objective=None, eval_budget=50, max_generations=None,
+                 additive_form=False,
                  debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10, use_laplace=True,
                  active_set_callback=None, eval_callback=None, expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_depth, additive_form, debug, verbose,
+        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
+                         verbose,
                          optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
 

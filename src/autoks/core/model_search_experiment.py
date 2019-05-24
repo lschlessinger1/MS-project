@@ -189,11 +189,10 @@ class ModelSearchExperiment(BaseExperiment):
 
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = EvolutionaryModelSelector(grammar, kernel_selector, initializer=initializer, tabu_search=False,
+        model_selector = EvolutionaryModelSelector(grammar, kernel_selector, initializer=initializer,
                                                    active_set_callback=tracker.active_set_callback,
                                                    eval_callback=tracker.evaluations_callback,
-                                                   expansion_callback=tracker.expansion_callback,
-                                                   **kwargs)
+                                                   expansion_callback=tracker.expansion_callback, **kwargs)
         return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
@@ -208,10 +207,9 @@ class ModelSearchExperiment(BaseExperiment):
 
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = RandomModelSelector(grammar, kernel_selector, objective, tabu_search=False,
+        model_selector = RandomModelSelector(grammar, kernel_selector, objective,
                                              active_set_callback=tracker.active_set_callback,
                                              eval_callback=tracker.evaluations_callback,
-                                             expansion_callback=tracker.expansion_callback,
-                                             **kwargs)
+                                             expansion_callback=tracker.expansion_callback, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
