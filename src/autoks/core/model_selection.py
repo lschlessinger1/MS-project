@@ -40,8 +40,8 @@ class ModelSelector:
     max_same_expansions: int
 
     def __init__(self, grammar, kernel_selector, objective, eval_budget=50, max_depth=None, additive_form=False,
-                 debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10,
-                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
+                 debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10, use_laplace=True,
+                 active_set_callback=None, eval_callback=None, expansion_callback=None):
         self.grammar = grammar
         self.kernel_selector = kernel_selector
         self.objective = objective
@@ -89,7 +89,9 @@ class ModelSelector:
         self.eval_callback = eval_callback
         self.expansion_callback = expansion_callback
 
-    def train(self, x, y):
+    def train(self,
+              x: np.ndarray,
+              y: np.ndarray):
         """Train the model selector."""
         t_init = time()
 
