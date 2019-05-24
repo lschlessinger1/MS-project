@@ -165,29 +165,15 @@ class ModelSelector:
 
         return population
 
-    def select_parents(self, population: GPModelPopulation) -> List[GPModel]:
-        """Choose parent models to later expand.
-
-        :param population:
-        :return:
-        """
-        evaluated_kernels = population.scored_models()
-
-        kernel_scores = [kernel.score for kernel in evaluated_kernels]
-        parents = self.kernel_selector.select_parents(evaluated_kernels, kernel_scores)
-        # Print parent (seed) gp_models
-        if self.debug:
-            pretty_print_gp_models(parents, 'Parent')
-
-        return parents
-
     def propose_new_kernels(self, population: GPModelPopulation) -> List[GPModel]:
         """Propose new models using the grammar.
 
         :param population:
         :return:
         """
-        parents = self.select_parents(population)
+        parents = self.kernel_selector.select_parents(population.scored_models(), population.scores())
+        if self.debug:
+            pretty_print_gp_models(parents, 'Parent')
 
         t0_exp = time()
         new_covariances = self.grammar.get_candidates(parents, verbose=self.debug)
@@ -297,7 +283,7 @@ class ModelSelector:
                               population: GPModelPopulation) -> None:
         """Print a summary of the model population at a given generation."""
         evaluated_gp_models = population.scored_models()
-        scores = [gp_model.score for gp_model in evaluated_gp_models]
+        scores = population.scores()
         arg_max_score = int(np.argmax(scores))
         best_objective = scores[arg_max_score]
         if self.verbose:

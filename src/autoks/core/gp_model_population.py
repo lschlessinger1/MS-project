@@ -27,6 +27,9 @@ class GPModelPopulation(PopulationBase):
     def scored_models(self):
         return [model for model in self.models if model.evaluated]
 
+    def scores(self) -> List[float]:
+        return [model.score for model in self.scored_models()]
+
     def variety(self) -> int:
         pass
 

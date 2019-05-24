@@ -27,15 +27,6 @@ class TestModelSelector(TestCase):
         self.y_test = np.array([[2], [1]])
         self.model_selector = ModelSelector(grammar, kernel_selector, objective)
 
-    def test_select_parents(self):
-        parents = self.gp_models[:2]
-        self.model_selector.kernel_selector.select_parents.return_value = parents
-
-        pop = GPModelPopulation()
-        pop.update(self.gp_models)
-        result = self.model_selector.select_parents(pop)
-        self.assertIsInstance(result, list)
-        self.assertListEqual(result, parents)
 
     def test_propose_new_kernels(self):
         expected = [Covariance(RBF(1)), Covariance(RationalQuadratic(1)), Covariance(RBF(1) + RationalQuadratic(1)),
