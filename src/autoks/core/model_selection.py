@@ -111,7 +111,7 @@ class ModelSelector:
                 self.expansion_callback(new_models, self, x, y)
 
             population.update(new_models)
-            population.models = self.remove_duplicates(population.models)
+            population.models = remove_duplicate_gp_models(population.models, verbose=self.debug)
 
             self.evaluate_models(population.candidates(), x, y)
 
@@ -156,7 +156,7 @@ class ModelSelector:
         initial_candidates = self.get_initial_candidates()
 
         population.update(initial_candidates)
-        population.models = self.remove_duplicates(population.models)
+        population.models = remove_duplicate_gp_models(population.models, verbose=self.debug)
 
         if self.debug:
             pretty_print_gp_models(population.models, 'Initial candidate')
@@ -246,15 +246,6 @@ class ModelSelector:
                 print('\tobjective =', gp_model.score)
             print('')
         return evaluated_models
-
-    def remove_duplicates(self, models: List[GPModel]) -> List[GPModel]:
-        """Remove duplicate models."""
-        n_before = len(models)
-        models = remove_duplicate_gp_models(models)
-        if self.debug:
-            n_removed = n_before - len(models)
-            print(f'Removed {n_removed} duplicate gp_models.\n')
-        return models
 
     def best_model(self) -> GPModel:
         """Get the best scoring model."""

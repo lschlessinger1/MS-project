@@ -71,7 +71,7 @@ class GPModel:
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'covariance={self.covariance!r}, evaluated={self.evaluated!r}, ' \
-            f'nan_scored={self.nan_scored!r}, score={self.score!r})'
+            f'score={self.score!r})'
 
 
 def pretty_print_gp_models(gp_models: List[GPModel],
@@ -80,18 +80,17 @@ def pretty_print_gp_models(gp_models: List[GPModel],
     pretty_print_covariances(covariances, kernel_type_label)
 
 
-def remove_duplicate_gp_models(kernels: List[GPModel]) -> List[GPModel]:
+def remove_duplicate_gp_models(kernels: List[GPModel], verbose: bool = False) -> List[GPModel]:
     """Remove duplicate GPModel's.
 
     prioritizing when removing duplicates
         1. highest score
-        2. not nan scored
-        3. evaluated
+        2. evaluated
 
     :param kernels:
+    :param verbose:
     :return:
     """
-
     unevaluated_kernels = [kernel for kernel in kernels if not kernel.evaluated]
     evaluated_kernels = [kernel for kernel in kernels if kernel.evaluated]
     # Prioritize highest scoring kernel for duplicates
@@ -99,7 +98,14 @@ def remove_duplicate_gp_models(kernels: List[GPModel]) -> List[GPModel]:
 
     # Assume precedence by order.
     gp_models = sorted_evaluated_kernels + unevaluated_kernels
-    return remove_duplicates([gp_model.covariance.symbolic_expr_expanded for gp_model in gp_models], gp_models)
+    deduped = remove_duplicates([gp_model.covariance.symbolic_expr_expanded for gp_model in gp_models], gp_models)
+
+    if verbose:
+        n_before = len(gp_models)
+        n_removed = n_before - len(deduped)
+        print(f'Removed {n_removed} duplicate GP models.\n')
+
+    return deduped
 
 
 def all_same_expansion(new_kernels: List[GPModel],
