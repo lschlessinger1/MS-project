@@ -138,14 +138,14 @@ class ModelSelector:
         """Score the model selector on test data."""
         pass
 
+    def get_initial_candidate_covariances(self) -> List[Covariance]:
+        """Get the initial set of candidate covariances."""
+        raise NotImplementedError
+
     def get_initial_candidates(self) -> List[GPModel]:
         """Get initial set of candidate GP models."""
         initial_covariances = self.get_initial_candidate_covariances()
         return self._covariances_to_gp_models(initial_covariances)
-
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
-        """Get the initial set of candidate covariances."""
-        raise NotImplementedError
 
     def initialize(self,
                    x: np.ndarray,
