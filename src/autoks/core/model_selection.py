@@ -5,6 +5,7 @@ from typing import List, Tuple, Optional, Callable
 import numpy as np
 from GPy import likelihoods
 from GPy.inference.latent_function_inference import Laplace
+from GPy.likelihoods import Likelihood
 
 from src.autoks.backend.kernel import set_priors
 from src.autoks.backend.model import log_likelihood_normalized, BIC, RawGPModelType
@@ -22,6 +23,13 @@ from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy, Be
 class ModelSelector:
     """Abstract base class for model selectors"""
     selected_models: List[GPModel]
+    n_evals: int
+    total_eval_time: int
+    total_expansion_time: int
+    total_model_search_time: int
+    default_likelihood: Likelihood
+    model_dict: dict
+    visited: set
 
     def __init__(self,
                  grammar: BaseGrammar,
