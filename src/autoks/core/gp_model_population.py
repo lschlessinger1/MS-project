@@ -6,14 +6,34 @@ from src.evalg.population import PopulationBase
 
 
 class GPModelPopulation(PopulationBase):
-    models: List[GPModel]
+    _models: List[GPModel]
 
     def __init__(self):
-        self.models = []
+        self._models = []
+        self._unique_model_hashes = set()
+
+    @property
+    def models(self):
+        return self._models
+
+    @models.setter
+    def models(self, new_models):
+        self._models = []
+        for model in new_models:
+            self.add_model(model)
 
     def update(self, new_models: List[GPModel]):
         for new_model in new_models:
-            self.models.append(new_model)
+            if self._hash_model(new_model) not in self._unique_model_hashes:
+                self.add_model(new_model)
+
+    def add_model(self, model):
+        self._models.append(model)
+        self._unique_model_hashes.add(self._hash_model(model))
+
+    @staticmethod
+    def _hash_model(model):
+        return model.covariance.symbolic_expr_expanded
 
     def genotypes(self) -> List[KernelTree]:
         return [gp_model.covariance.to_binary_tree() for gp_model in self.models]

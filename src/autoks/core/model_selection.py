@@ -11,7 +11,7 @@ from src.autoks.backend.kernel import set_priors
 from src.autoks.backend.model import log_likelihood_normalized, BIC, RawGPModelType
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
-from src.autoks.core.gp_model import GPModel, pretty_print_gp_models, remove_duplicate_gp_models
+from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors
@@ -115,7 +115,6 @@ class ModelSelector:
                 self.expansion_callback(new_models, self, x, y)
 
             population.update(new_models)
-            population.models = remove_duplicate_gp_models(population.models, verbose=self.debug)
 
             self.evaluate_models(population.candidates(), x, y)
 
@@ -160,7 +159,6 @@ class ModelSelector:
         initial_candidates = self.get_initial_candidates()
 
         population.update(initial_candidates)
-        population.models = remove_duplicate_gp_models(population.models, verbose=self.debug)
 
         if self.debug:
             pretty_print_gp_models(population.models, 'Initial candidate')
