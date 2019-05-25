@@ -122,7 +122,6 @@ class ModelSelector:
 
             new_models = self.propose_new_models(population)
             self.expansion_callback(new_models, self, x, y)
-
             population.update(new_models)
 
             self.evaluate_models(population.candidates(), x, y)
@@ -182,34 +181,12 @@ class ModelSelector:
         :return:
         """
         parents = self.kernel_selector.select_parents(population.models, population.objectives())
-        if self.debug:
-            pretty_print_gp_models(parents, 'Parent')
 
         t0_exp = time()
         new_covariances = self.grammar.get_candidates(parents, verbose=self.debug)
         self.total_expansion_time += time() - t0_exp
 
         return self._covariances_to_gp_models(new_covariances)
-
-    def select_offspring(self, population: ActiveModelPopulation) -> ActiveModelPopulation:
-        """Select next round of models.
-
-        :param population:
-        :return:
-        """
-        gp_models = population.models
-
-        # Prioritize keeping evaluated models.
-        augmented_scores = [k.score if k.evaluated else -np.inf for k in gp_models]
-
-        offspring = self.kernel_selector.select_offspring(gp_models, augmented_scores)
-
-        if self.debug:
-            print(f'Offspring selector kept {len(offspring)}/{len(gp_models)} gp_models\n')
-
-        population.models = offspring
-
-        return population
 
     def evaluate_models(self,
                         models: List[GPModel],
@@ -239,8 +216,7 @@ class ModelSelector:
             if not gp_model.evaluated:
                 t0 = time()
                 gp_model.score_model(x, y, self.objective)
-                t1 = time()
-                self.total_eval_time += t1 - t0
+                self.total_eval_time += time() - t0
                 self.n_evals += 1
                 self.visited.add(gp_model.covariance.symbolic_expr_expanded)
 
@@ -282,7 +258,6 @@ class ModelSelector:
                               depth: int,
                               population: ActiveModelPopulation) -> None:
         """Print a summary of the model population at a given generation."""
-
         best_objective = population.best_objective()
         if self.verbose:
             best_kernel = population.best_model()
