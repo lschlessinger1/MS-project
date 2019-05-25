@@ -1,5 +1,7 @@
 from typing import List
 
+import numpy as np
+
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.kernel_encoding import KernelTree
 from src.evalg.population import PopulationBase
@@ -44,14 +46,8 @@ class GPModelPopulation(PopulationBase):
     def candidates(self):
         return [model for model in self.models if not model.evaluated]
 
-    def scored_models(self):
-        return [model for model in self.models if model.evaluated]
-
-    def scores(self) -> List[float]:
-        return [model.score for model in self.scored_models()]
-
     def variety(self) -> int:
-        pass
+        return len(self._unique_model_hashes)
 
     def size(self) -> int:
         return len(self)
@@ -66,3 +62,26 @@ class GPModelPopulation(PopulationBase):
 
     def __len__(self):
         return len(self.models)
+
+
+class ActiveModelPopulation(GPModelPopulation):
+    """Evaluated models"""
+
+    def objectives(self) -> List[float]:
+        return [gp_model.score for gp_model in self.models]
+
+    def avg_objective(self) -> float:
+        """Average objective"""
+        return float(np.mean(self.objectives()))
+
+    def best_objective(self) -> float:
+        """Objective of the highest scoring kernel"""
+        return self.best_model().score
+
+    def best_model(self) -> GPModel:
+        """Model with the highest fitness score."""
+        return self.models[int(np.argmax(self.objectives()))]
+
+    def phenotypic_diversity(self) -> float:
+        """Measure of the number of different solution behavior present."""
+        raise NotImplementedError

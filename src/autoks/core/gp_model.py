@@ -19,7 +19,7 @@ class GPModel:
                  evaluated: bool = False):
         self.covariance = covariance
         self.evaluated = evaluated
-        self._score = None
+        self._score = np.nan
 
         self.model_input_dict = dict()  # Only save keyword arguments of GP
         self.likelihood = likelihood

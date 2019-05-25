@@ -6,7 +6,7 @@ from GPy.kern import RationalQuadratic, RBF, LinScaleShift
 
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.gp_model_population import GPModelPopulation
+from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.grammar import CKSGrammar
 from src.autoks.core.model_selection import ModelSelector, CKSModelSelector, BomsModelSelector
 from src.autoks.core.query_strategy import QueryStrategy
@@ -27,29 +27,18 @@ class TestModelSelector(TestCase):
         self.y_test = np.array([[2], [1]])
         self.model_selector = ModelSelector(grammar, kernel_selector, objective)
 
-
     def test_propose_new_kernels(self):
         expected = [Covariance(RBF(1)), Covariance(RationalQuadratic(1)), Covariance(RBF(1) + RationalQuadratic(1)),
                     Covariance(RBF(1) * RationalQuadratic(1))]
         self.model_selector.grammar.get_candidates.return_value = expected
 
-        pop = GPModelPopulation()
+        pop = ActiveModelPopulation()
         pop.update(self.gp_models)
         actual = self.model_selector.propose_new_kernels(pop)
         self.assertIsInstance(actual, list)
         self.assertEqual(len(expected), len(actual))
         for expected_cov, actual_cov in zip(expected, actual):
             self.assertEqual(expected_cov.infix, actual_cov.covariance.infix)
-
-    def test_select_offspring(self):
-        offspring = self.gp_models[:2]
-        self.model_selector.kernel_selector.select_offspring.return_value = offspring
-
-        pop = GPModelPopulation()
-        pop.update(self.gp_models)
-        result = self.model_selector.select_offspring(pop)
-        self.assertIsInstance(result, GPModelPopulation)
-        self.assertListEqual(result.models, offspring)
 
 
 class TestCKSModelSelector(TestCase):

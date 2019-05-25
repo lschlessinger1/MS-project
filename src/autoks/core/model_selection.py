@@ -12,7 +12,7 @@ from src.autoks.backend.model import log_likelihood_normalized, BIC, RawGPModelT
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
-from src.autoks.core.gp_model_population import GPModelPopulation
+from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
 from src.autoks.core.hyperprior import Hyperpriors
 from src.autoks.core.kernel_encoding import tree_to_kernel
@@ -118,7 +118,7 @@ class ModelSelector:
 
             self.evaluate_models(population.candidates(), x, y)
 
-            population = self.select_offspring(population)
+            population.models = self.kernel_selector.select_offspring(population.models, population.objectives())
             if self.active_set_callback is not None:
                 self.active_set_callback(population.models, self, x, y)
 
@@ -152,9 +152,9 @@ class ModelSelector:
 
     def initialize(self,
                    x: np.ndarray,
-                   y: np.ndarray) -> GPModelPopulation:
+                   y: np.ndarray) -> ActiveModelPopulation:
         """Initialize models."""
-        population = GPModelPopulation()
+        population = ActiveModelPopulation()
 
         initial_candidates = self.get_initial_candidates()
 
@@ -167,13 +167,13 @@ class ModelSelector:
 
         return population
 
-    def propose_new_kernels(self, population: GPModelPopulation) -> List[GPModel]:
+    def propose_new_kernels(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Propose new models using the grammar.
 
         :param population:
         :return:
         """
-        parents = self.kernel_selector.select_parents(population.scored_models(), population.scores())
+        parents = self.kernel_selector.select_parents(population.models, population.objectives())
         if self.debug:
             pretty_print_gp_models(parents, 'Parent')
 
@@ -183,7 +183,7 @@ class ModelSelector:
 
         return self._covariances_to_gp_models(new_covariances)
 
-    def select_offspring(self, population: GPModelPopulation) -> GPModelPopulation:
+    def select_offspring(self, population: ActiveModelPopulation) -> ActiveModelPopulation:
         """Select next round of models.
 
         :param population:
@@ -273,18 +273,16 @@ class ModelSelector:
 
     def _print_search_summary(self,
                               depth: int,
-                              population: GPModelPopulation) -> None:
+                              population: ActiveModelPopulation) -> None:
         """Print a summary of the model population at a given generation."""
-        evaluated_gp_models = population.scored_models()
-        scores = population.scores()
-        arg_max_score = int(np.argmax(scores))
-        best_objective = scores[arg_max_score]
+
+        best_objective = population.best_objective()
         if self.verbose:
-            best_kernel = evaluated_gp_models[arg_max_score]
-            sizes = [len(gp_model.covariance.to_binary_tree()) for gp_model in evaluated_gp_models]
+            best_kernel = population.best_model()
+            sizes = population.sizes()
             print(f'Iteration {depth}/{self.max_generations}')
             print(f'Evaluated {self.n_evals}/{self.eval_budget}')
-            print(f'Avg. objective = %0.6f' % np.mean(scores))
+            print(f'Avg. objective = %0.6f' % population.avg_objective())
             print(f'Best objective = %.6f' % best_objective)
             print(f'Avg. size = %.2f' % np.mean(sizes))
             print('Best kernel:')
