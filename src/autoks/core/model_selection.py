@@ -120,7 +120,7 @@ class ModelSelector:
 
             self._print_search_summary(depth, population)
 
-            new_models = self.propose_new_kernels(population)
+            new_models = self.propose_new_models(population)
             self.expansion_callback(new_models, self, x, y)
 
             population.update(new_models)
@@ -175,7 +175,7 @@ class ModelSelector:
 
         return population
 
-    def propose_new_kernels(self, population: ActiveModelPopulation) -> List[GPModel]:
+    def propose_new_models(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Propose new models using the grammar.
 
         :param population:

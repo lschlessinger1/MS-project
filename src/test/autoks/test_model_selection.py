@@ -27,14 +27,14 @@ class TestModelSelector(TestCase):
         self.y_test = np.array([[2], [1]])
         self.model_selector = ModelSelector(grammar, kernel_selector, objective)
 
-    def test_propose_new_kernels(self):
+    def test_propose_new_models(self):
         expected = [Covariance(RBF(1)), Covariance(RationalQuadratic(1)), Covariance(RBF(1) + RationalQuadratic(1)),
                     Covariance(RBF(1) * RationalQuadratic(1))]
         self.model_selector.grammar.get_candidates.return_value = expected
 
         pop = ActiveModelPopulation()
         pop.update(self.gp_models)
-        actual = self.model_selector.propose_new_kernels(pop)
+        actual = self.model_selector.propose_new_models(pop)
         self.assertIsInstance(actual, list)
         self.assertEqual(len(expected), len(actual))
         for expected_cov, actual_cov in zip(expected, actual):
