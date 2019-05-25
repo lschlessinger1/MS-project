@@ -71,17 +71,15 @@ class ModelSearchExperiment(BaseExperiment):
         # Summarize model
         nll = -best_model.log_likelihood()
         nll_norm = log_likelihood_normalized(best_model)
-        if self.has_test_data:
-            mean_nlpd = np.mean(-best_model.log_predictive_density(self.x_test, self.y_test))
-        else:
-            mean_nlpd = np.nan
         aic = AIC(best_model)
         bic = BIC(best_model)
         pl2_score = pl2(best_model)
 
         print('NLL = %.3f' % nll)
         print('NLL (normalized) = %.3f' % nll_norm)
-        print('NLPD = %.3f' % mean_nlpd)
+        if self.has_test_data:
+            mean_nlpd = np.mean(-best_model.log_predictive_density(self.x_test, self.y_test))
+            print('NLPD = %.3f' % mean_nlpd)
         print('AIC = %.3f' % aic)
         print('BIC = %.3f' % bic)
         print('PL2 = %.3f' % pl2_score)
