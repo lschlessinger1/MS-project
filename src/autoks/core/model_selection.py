@@ -89,8 +89,19 @@ class ModelSelector:
         self.visited = set()
 
         # Callbacks
+        def do_nothing(*args, **kwargs):
+            pass
+
+        if active_set_callback is None:
+            active_set_callback = do_nothing
         self.active_set_callback = active_set_callback
+
+        if eval_callback is None:
+            eval_callback = do_nothing
         self.eval_callback = eval_callback
+
+        if expansion_callback is None:
+            expansion_callback = do_nothing
         self.expansion_callback = expansion_callback
 
     def train(self,
@@ -100,8 +111,7 @@ class ModelSelector:
         t_init = time()
 
         population = self.initialize(x, y)
-        if self.active_set_callback is not None:
-            self.active_set_callback(population.models, self, x, y)
+        self.active_set_callback(population.models, self, x, y)
 
         depth = 0
         while self.n_evals < self.eval_budget:
@@ -111,16 +121,14 @@ class ModelSelector:
             self._print_search_summary(depth, population)
 
             new_models = self.propose_new_kernels(population)
-            if self.active_set_callback is not None:
-                self.expansion_callback(new_models, self, x, y)
+            self.expansion_callback(new_models, self, x, y)
 
             population.update(new_models)
 
             self.evaluate_models(population.candidates(), x, y)
 
             population.models = self.kernel_selector.select_offspring(population.models, population.objectives())
-            if self.active_set_callback is not None:
-                self.active_set_callback(population.models, self, x, y)
+            self.active_set_callback(population.models, self, x, y)
 
             depth += 1
 
@@ -237,8 +245,7 @@ class ModelSelector:
                 self.visited.add(gp_model.covariance.symbolic_expr_expanded)
 
             evaluated_models.append(gp_model)
-            if self.active_set_callback is not None:
-                self.eval_callback([gp_model], self, x, y)
+            self.eval_callback([gp_model], self, x, y)
 
         if self.debug:
             print('Printing all results')
