@@ -148,16 +148,16 @@ class ModelSearchExperiment(BaseExperiment):
 
     @classmethod
     def cks_experiment(cls, dataset, **kwargs):
-        x_train, x_test, y_train, y_test = dataset.split_train_test()
-        n_dims = x_train.shape[1]
+        x, y = dataset.load_or_generate_data()
+        n_dims = x.shape[1]
         grammar = CKSGrammar(n_dims)
-
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = CKSModelSelector(grammar, use_laplace=False, active_set_callback=tracker.active_set_callback,
+        model_selector = CKSModelSelector(grammar, objective=log_likelihood_normalized, max_generations=None,
+                                          optimizer=None, active_set_callback=tracker.active_set_callback,
                                           eval_callback=tracker.evaluations_callback,
                                           expansion_callback=tracker.expansion_callback, **kwargs)
-        return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
+        return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
     def evolutionary_experiment(cls,

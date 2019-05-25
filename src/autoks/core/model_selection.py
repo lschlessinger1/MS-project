@@ -466,9 +466,8 @@ class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
     def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_generations=10,
-                 additive_form=False,
-                 debug=False, verbose=False, optimizer='scg', n_restarts_optimizer=10, use_laplace=True,
-                 active_set_callback=None, eval_callback=None, expansion_callback=None):
+                 additive_form=False, debug=False, verbose=False, optimizer='scg', n_restarts_optimizer=10,
+                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
 
         if kernel_selector is None:
             kernel_selector = CKS_kernel_selector(n_parents=1)
@@ -482,9 +481,39 @@ class CKSModelSelector(ModelSelector):
             objective = negative_BIC
 
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
-                         verbose,
-                         optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
+
+    def train(self,
+              x: np.ndarray,
+              y: np.ndarray):
+        """Train the model selector."""
+        t_init = time()
+
+        population = self.initialize(x, y)
+        self.active_set_callback(population.models, self, x, y)
+
+        depth = 0
+        while self.n_evals < self.eval_budget:
+            if depth > self.max_generations:
+                break
+
+            self._print_search_summary(depth, population)
+
+            new_models = self.propose_new_models(population)
+            self.expansion_callback(new_models, self, x, y)
+            population.models = new_models
+
+            self.evaluate_models(population.candidates(), x, y)
+
+            self.active_set_callback(population.models, self, x, y)
+
+            depth += 1
+
+        self.total_model_search_time += time() - t_init
+
+        self.selected_models = population.models
+        return self
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels
@@ -500,8 +529,7 @@ class RandomModelSelector(ModelSelector):
         if objective is None:
             objective = log_likelihood_normalized
         super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
-                         verbose,
-                         optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
