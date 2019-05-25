@@ -115,6 +115,16 @@ def rmse_knn(x_train: np.ndarray,
     return compute_skmodel_rmse(KNeighborsRegressor(), x_train, y_train, x_test, y_test)
 
 
+def rmse_to_smse(rmse: float, y_test: np.ndarray) -> float:
+    """Computes the standardized mean squared error (SMSE)
+
+    The trivial method of guessing the mean of the training targets will have a SMSE of approximately 1
+    """
+    mse = rmse ** 2
+    target_variance = y_test.var()
+    return mse / target_variance
+
+
 class ExperimentReportGenerator:
     gp_models: List[GPModel]
     x_test: np.ndarray

@@ -15,7 +15,7 @@ from src.autoks.core.model_selection import ModelSelector, EvolutionaryModelSele
     CKSModelSelector, RandomModelSelector
 from src.autoks.plotting import plot_kernel_tree, plot_best_scores, plot_score_summary, plot_n_hyperparams_summary, \
     plot_n_operands_summary, plot_base_kernel_freqs, plot_cov_dist_summary, plot_kernel_diversity_summary
-from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_lin_reg, rmse_svr, rmse_rbf, rmse_knn
+from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_lin_reg, rmse_svr, rmse_rbf, rmse_knn, rmse_to_smse
 from src.autoks.statistics import StatBook
 from src.autoks.tracking import ModelSearchTracker
 from src.autoks.util import pretty_time_delta
@@ -95,11 +95,11 @@ class ModelSearchExperiment(BaseExperiment):
             se_rmse = rmse_rbf(self.x_train, self.y_train, self.x_test, self.y_test)
             knn_rmse = rmse_knn(self.x_train, self.y_train, self.x_test, self.y_test)
 
-            print('RMSE Best Model = %.3f' % best_model_rmse)
-            print('RMSE Linear Regression = %.3f' % lr_rmse)
-            print('RMSE SVM = %.3f' % svm_rmse)
-            print('RMSE RBF = %.3f' % se_rmse)
-            print('RMSE k-NN = %.3f' % knn_rmse)
+            print('SMSE Best Model = %.3f' % rmse_to_smse(best_model_rmse, self.y_test))
+            print('SMSE Linear Regression = %.3f' % rmse_to_smse(lr_rmse, self.y_test))
+            print('SMSE SVM = %.3f' % rmse_to_smse(svm_rmse, self.y_test))
+            print('SMSE RBF = %.3f' % rmse_to_smse(se_rmse, self.y_test))
+            print('SMSE k-NN = %.3f' % rmse_to_smse(knn_rmse, self.y_test))
 
     def timing_report(self) -> None:
         """Print a runtime report of the model search.
