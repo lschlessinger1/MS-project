@@ -131,7 +131,6 @@ class UniformSelector(Selector):
         return ind
 
 
-
 class StochasticUnivSampSelector(Selector):
 
     def __init__(self, n_individuals: int):
@@ -158,7 +157,6 @@ class StochasticUnivSampSelector(Selector):
         :return:
         """
         raise NotImplementedError("Stochastic Universal Sampling selection is not yet implemented.")
-
 
 
 class BoltzmannSelector(Selector):
@@ -230,7 +228,6 @@ class FitnessProportionalSelector(Selector, ProbabilityMixin):
 
     def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
         return raw_fitness / np.sum(raw_fitness)
-
 
 
 class SigmaScalingSelector(Selector, ProbabilityMixin):
@@ -306,7 +303,6 @@ class TruncationSelector(Selector):
         """
         ind = np.argpartition(fitness_list, -self.n_individuals)[-self.n_individuals:]
         return ind
-
 
 
 class LinearRankingSelector(Selector, ProbabilityMixin):
