@@ -46,7 +46,7 @@ class EvolutionaryModelSelector(ModelSelector):
 
             self.evaluate_models(population.candidates(), x, y)
 
-            self.select_offspring(population)
+            population.models = self.select_offspring(population)
             self.active_set_callback(population.models, self, x, y)
 
             depth += 1
@@ -56,15 +56,19 @@ class EvolutionaryModelSelector(ModelSelector):
     def select_parents(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Select parents to expand.
 
-        By default, choose top k models.
+        Here, exponential ranking selection is used.
         """
         selector = ExponentialRankingSelector(self.n_parents, c=0.7)
         return list(selector.select(np.array(population.models), np.array(population.objectives())).tolist())
 
-    def select_offspring(self, population: ActiveModelPopulation):
+    def select_offspring(self, population: ActiveModelPopulation) -> List[GPModel]:
+        """Select offspring for the next generation.
+
+        Here, the top k offspring are chosen to seed the next generation.
+        """
         selector = TruncationSelector(self.max_offspring)
         offspring = list(selector.select(np.array(population.models), np.array(population.objectives())).tolist())
-        population.models = offspring
+        return offspring
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         if self.initializer is not None:
