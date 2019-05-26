@@ -8,16 +8,14 @@ from GPy.inference.latent_function_inference import Laplace
 from GPy.likelihoods import Likelihood
 
 from src.autoks.backend.kernel import set_priors
-from src.autoks.backend.model import log_likelihood_normalized, BIC, RawGPModelType
-from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
+from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
-from src.autoks.core.grammar import BaseGrammar, EvolutionaryGrammar, CKSGrammar, BOMSGrammar, RandomGrammar
+from src.autoks.core.grammar import BaseGrammar
 from src.autoks.core.hyperprior import Hyperpriors
-from src.autoks.core.kernel_encoding import tree_to_kernel
-from src.autoks.core.kernel_selection import KernelSelector, BOMS_kernel_selector, CKS_kernel_selector
-from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy, BestScoreStrategy
+from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy
+from src.evalg.selection import TruncationSelector
 
 
 class ModelSelector:
@@ -33,10 +31,10 @@ class ModelSelector:
 
     def __init__(self,
                  grammar: BaseGrammar,
-                 kernel_selector: KernelSelector,
                  objective: Callable[[RawGPModelType], float],
                  eval_budget: int = 50,
                  max_generations: Optional[int] = None,
+                 n_parents: int = 1,
                  additive_form: bool = False,
                  debug: bool = False,
                  verbose: bool = False,
@@ -47,7 +45,6 @@ class ModelSelector:
                  eval_callback: Optional[Callable] = None,
                  expansion_callback: Optional[Callable] = None):
         self.grammar = grammar
-        self.kernel_selector = kernel_selector
         self.objective = objective
 
         self.eval_budget = eval_budget  # number of model evaluations (budget)
@@ -58,6 +55,8 @@ class ModelSelector:
             self.max_generations = max(max_iterations, eval_budget * 2)
         else:
             self.max_generations = max_generations
+
+        self.n_parents = n_parents
 
         self.n_evals = 0
         self.additive_form = additive_form
@@ -109,32 +108,13 @@ class ModelSelector:
               y: np.ndarray):
         """Train the model selector."""
         t_init = time()
-
-        population = self.initialize(x, y)
-        self.active_set_callback(population.models, self, x, y)
-
-        depth = 0
-        while self.n_evals < self.eval_budget:
-            if depth > self.max_generations:
-                break
-
-            self._print_search_summary(depth, population)
-
-            new_models = self.propose_new_models(population)
-            self.expansion_callback(new_models, self, x, y)
-            population.update(new_models)
-
-            self.evaluate_models(population.candidates(), x, y)
-
-            population.models = self.kernel_selector.select_offspring(population.models, population.objectives())
-            self.active_set_callback(population.models, self, x, y)
-
-            depth += 1
-
+        population = self._train(x, y)
         self.total_model_search_time += time() - t_init
-
         self.selected_models = population.models
         return self
+
+    def _train(self, x: np.ndarray, y: np.ndarray) -> GPModelPopulation:
+        raise NotImplementedError
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Predict on test inputs."""
@@ -174,14 +154,21 @@ class ModelSelector:
 
         return population
 
+    def select_parents(self, population: ActiveModelPopulation) -> List[GPModel]:
+        """Select parents to expand.
+
+        By default, choose top k models.
+        """
+        parent_selector = TruncationSelector(self.n_parents)
+        return list(parent_selector.select(np.array(population.models), np.array(population.objectives())).tolist())
+
     def propose_new_models(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Propose new models using the grammar.
 
         :param population:
         :return:
         """
-        parents = self.kernel_selector.select_parents(population.models, population.objectives())
-
+        parents = self.select_parents(population)
         t0_exp = time()
         new_covariances = self.grammar.get_candidates(parents, verbose=self.debug)
         self.total_expansion_time += time() - t0_exp
@@ -294,12 +281,11 @@ class ModelSelector:
 
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
-    def __init__(self, grammar, kernel_selector, objective, query_strategy=None, eval_budget=50, max_generations=None,
+    def __init__(self, grammar, objective, query_strategy=None, eval_budget=50, max_generations=None, n_parents=1,
                  additive_form=False, debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10,
                  use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
-                         verbose,
-                         optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug,
+                         verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
 
         if query_strategy is not None:
@@ -359,178 +345,3 @@ class SurrogateBasedModelSelector(ModelSelector, ABC):
         x_pct = 100 * (x / total_time)
 
         return labels, x, x_pct
-
-
-class EvolutionaryModelSelector(ModelSelector):
-    grammar: EvolutionaryGrammar
-
-    def __init__(self, grammar, kernel_selector, objective=None, initializer=None, n_init_trees=10, eval_budget=50,
-                 max_generations=None, additive_form=False, debug=False, verbose=False, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
-        if objective is None:
-            objective = log_likelihood_normalized
-
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
-                         verbose,
-                         optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
-                         expansion_callback)
-        self.initializer = initializer
-        self.n_init_trees = n_init_trees
-
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
-        if self.initializer is not None:
-            # Generate trees
-            trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
-            kernels = [tree_to_kernel(tree) for tree in trees]
-            covariances = [Covariance(k) for k in kernels]
-
-            return covariances
-        else:
-            return self.grammar.base_kernels
-
-
-class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
-    grammar: EvolutionaryGrammar
-
-    def __init__(self, grammar, kernel_selector, objective=None, initializer=None, n_init_trees=10, eval_budget=50,
-                 max_generations=None, additive_form=False, debug=False, verbose=False, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
-        if objective is None:
-            objective = log_likelihood_normalized
-
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
-                         verbose,
-                         optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
-                         expansion_callback)
-        self.initializer = initializer
-        self.n_init_trees = n_init_trees
-
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
-        if self.initializer is not None:
-            # Generate trees
-            trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
-            kernels = [tree_to_kernel(tree) for tree in trees]
-            covariances = [Covariance(k) for k in kernels]
-
-            return covariances
-        else:
-            return self.grammar.base_kernels
-
-
-class BomsModelSelector(SurrogateBasedModelSelector):
-    grammar: BOMSGrammar
-
-    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_generations=None,
-                 query_strategy=None, additive_form=False, debug=False, verbose=False, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
-        if kernel_selector is None:
-            kernel_selector = BOMS_kernel_selector(n_parents=1)
-
-        if objective is None:
-            objective = log_likelihood_normalized
-
-        if query_strategy is None:
-            acq = ExpectedImprovementPerSec()
-            query_strategy = BestScoreStrategy(scoring_func=acq)
-
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, query_strategy,
-                         additive_form,
-                         debug, verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback,
-                         eval_callback, expansion_callback)
-
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
-        initial_level_depth = 2
-        max_number_of_initial_models = 500
-        initial_candidates = self.grammar.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
-        return initial_candidates
-
-    def initialize(self, x, y) -> GPModelPopulation:
-        population = GPModelPopulation()
-
-        # initialize models
-        initial_candidates = self.get_initial_candidates()
-        indices = [0]
-        initial_models = [initial_candidates[i] for i in indices]
-
-        self.evaluate_models(initial_models, x, y)
-
-        population.update(initial_candidates)
-
-        return population
-
-
-class CKSModelSelector(ModelSelector):
-    grammar: CKSGrammar
-
-    def __init__(self, grammar, kernel_selector=None, objective=None, eval_budget=50, max_generations=10,
-                 additive_form=False, debug=False, verbose=False, optimizer='scg', n_restarts_optimizer=10,
-                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
-
-        if kernel_selector is None:
-            kernel_selector = CKS_kernel_selector(n_parents=1)
-
-        if objective is None:
-            def negative_BIC(m):
-                """Computes the negative of the Bayesian Information Criterion (BIC)."""
-                return -BIC(m)
-
-            # Use the negative BIC because we want to maximize the objective.
-            objective = negative_BIC
-
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
-                         verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
-                         expansion_callback)
-
-    def train(self,
-              x: np.ndarray,
-              y: np.ndarray):
-        """Train the model selector."""
-        t_init = time()
-
-        population = self.initialize(x, y)
-        self.active_set_callback(population.models, self, x, y)
-
-        depth = 0
-        while self.n_evals < self.eval_budget:
-            if depth > self.max_generations:
-                break
-
-            self._print_search_summary(depth, population)
-
-            new_models = self.propose_new_models(population)
-            self.expansion_callback(new_models, self, x, y)
-            population.models = new_models
-
-            self.evaluate_models(population.candidates(), x, y)
-
-            self.active_set_callback(population.models, self, x, y)
-
-            depth += 1
-
-        self.total_model_search_time += time() - t_init
-
-        self.selected_models = population.models
-        return self
-
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
-        return self.grammar.base_kernels
-
-
-class RandomModelSelector(ModelSelector):
-    grammar: RandomGrammar
-
-    def __init__(self, grammar, kernel_selector, objective=None, eval_budget=50, max_generations=None,
-                 additive_form=False,
-                 debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10, use_laplace=True,
-                 active_set_callback=None, eval_callback=None, expansion_callback=None):
-        if objective is None:
-            objective = log_likelihood_normalized
-        super().__init__(grammar, kernel_selector, objective, eval_budget, max_generations, additive_form, debug,
-                         verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
-                         expansion_callback)
-
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
-        return self.grammar.base_kernels

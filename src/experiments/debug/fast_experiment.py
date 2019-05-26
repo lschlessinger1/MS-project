@@ -3,9 +3,8 @@ from sklearn.model_selection import train_test_split
 
 from src.autoks.backend.model import BIC
 from src.autoks.core.grammar import RandomGrammar
-from src.autoks.core.kernel_selection import CKS_kernel_selector
 from src.autoks.core.model_search_experiment import ModelSearchExperiment
-from src.autoks.core.model_selection import RandomModelSelector
+from src.autoks.core.model_selection.random_model_selector import RandomModelSelector
 from src.autoks.tracking import ModelSearchTracker
 from src.experiments.util.synthetic_data import CubicSine1dDataset
 
@@ -18,7 +17,6 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
 n_dims = x.shape[1]
 grammar = RandomGrammar(n_dims)
-kernel_selector = CKS_kernel_selector(n_parents=1)
 
 
 def negative_BIC(m):
@@ -31,7 +29,7 @@ objective = negative_BIC
 
 tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-model_selector = RandomModelSelector(grammar, kernel_selector, objective, eval_budget=8, debug=True, verbose=True,
+model_selector = RandomModelSelector(grammar, objective, eval_budget=8, debug=True, verbose=True,
                                      additive_form=False, active_set_callback=tracker.active_set_callback,
                                      eval_callback=tracker.evaluations_callback,
                                      expansion_callback=tracker.expansion_callback)

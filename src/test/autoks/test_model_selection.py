@@ -8,7 +8,9 @@ from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.grammar import CKSGrammar
-from src.autoks.core.model_selection import ModelSelector, CKSModelSelector, BomsModelSelector
+from src.autoks.core.model_selection.boms_model_selector import BomsModelSelector
+from src.autoks.core.model_selection.cks_model_selector import CKSModelSelector
+from src.autoks.core.model_selection.model_selector import ModelSelector
 from src.autoks.core.query_strategy import QueryStrategy
 
 
@@ -19,13 +21,12 @@ class TestModelSelector(TestCase):
                           GPModel(Covariance(RBF(1)))]
 
         grammar = MagicMock()
-        kernel_selector = MagicMock()
         objective = MagicMock()
         self.x_train = np.array([[1, 2, 3], [4, 5, 6]])
         self.y_train = np.array([[5], [10]])
         self.x_test = np.array([[10, 20, 30], [40, 50, 60]])
         self.y_test = np.array([[2], [1]])
-        self.model_selector = ModelSelector(grammar, kernel_selector, objective)
+        self.model_selector = ModelSelector(grammar, objective)
 
     def test_propose_new_models(self):
         expected = [Covariance(RBF(1)), Covariance(RationalQuadratic(1)), Covariance(RBF(1) + RationalQuadratic(1)),
