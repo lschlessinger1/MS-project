@@ -1,3 +1,4 @@
+import warnings
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -33,14 +34,21 @@ class ModelSearchExperiment(BaseExperiment):
                  model_selector: ModelSelector,
                  x_test: Optional[np.ndarray] = None,
                  y_test: Optional[np.ndarray] = None,
-                 tracker=None):
-        super().__init__(x_train, y_train, x_test, y_test)
+                 tracker=None,
+                 hide_warnings: bool = True):
+        super().__init__(x_train, y_train, x_test, y_test, hide_warnings=hide_warnings)
         self.model_selector = model_selector
         self.tracker = tracker
 
     def run(self) -> None:
         """Run the model search experiment"""
-        self.model_selector.train(self.x_train, self.y_train)
+        if self.hide_warnings:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self.model_selector.train(self.x_train, self.y_train)
+        else:
+            self.model_selector.train(self.x_train, self.y_train)
+
         self.summarize(self.model_selector.best_model())
 
     def summarize(self, best_gp_model: GPModel) -> None:

@@ -12,7 +12,8 @@ class BaseExperiment:
                  x_test: Optional[np.ndarray],
                  y_test: Optional[np.ndarray],
                  standardize_x: bool = True,
-                 standardize_y: bool = True):
+                 standardize_y: bool = True,
+                 hide_warnings: bool = False):
 
         self.x_train = x_train.reshape(-1, 1) if x_train.ndim == 1 else x_train
         if x_test is not None:
@@ -44,6 +45,8 @@ class BaseExperiment:
         self.n_dims = self.x_train.shape[1]
 
         self.has_test_data = x_test is not None and y_test is not None
+
+        self.hide_warnings = hide_warnings
 
     def run(self) -> None:
         raise NotImplementedError
