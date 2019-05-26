@@ -39,6 +39,12 @@ class Selector:
         if self.n_individuals is not None and self.n_individuals >= pop_size:
             return population
 
+        # Treat NaNs as -inf.
+        if fitness_list is not None:
+            for i, score in enumerate(fitness_list):
+                if np.isnan(score):
+                    fitness_list[i] = -np.inf
+
         return population[self.arg_select(population, fitness_list)]
 
     def select(self,
