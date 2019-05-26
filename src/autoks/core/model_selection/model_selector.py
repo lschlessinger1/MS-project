@@ -202,7 +202,8 @@ class ModelSelector:
 
             if not gp_model.evaluated:
                 t0 = time()
-                gp_model.score_model(x, y, self.objective)
+                gp_model.score_model(x, y, self.objective, optimizer=self.optimizer,
+                                     n_restarts=self.n_restarts_optimizer)
                 self.total_eval_time += time() - t0
                 self.n_evals += 1
                 self.visited.add(gp_model.covariance.symbolic_expr_expanded)

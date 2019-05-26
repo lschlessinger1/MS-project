@@ -27,8 +27,9 @@ class GPModel:
     def score_model(self,
                     x: np.ndarray,
                     y: np.ndarray,
-                    scoring_func: Callable[[RawGPModelType], float]):
-        model = self.fit(x, y)
+                    scoring_func: Callable[[RawGPModelType], float],
+                    **fit_kwargs):
+        model = self.fit(x, y, **fit_kwargs)
         self.score = scoring_func(model)
         return self.score
 
