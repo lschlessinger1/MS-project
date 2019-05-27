@@ -1,5 +1,7 @@
 from typing import List
 
+from GPy.inference.latent_function_inference import Laplace
+
 from src.autoks.backend.model import log_likelihood_normalized
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
@@ -23,8 +25,15 @@ class BomsModelSelector(SurrogateBasedModelSelector):
             acq = ExpectedImprovementPerSec()
             query_strategy = BestScoreStrategy(scoring_func=acq)
 
+        if use_laplace:
+            inference_method = Laplace()
+        else:
+            inference_method = None
+
+        likelihood = None
+
         super().__init__(grammar, objective, eval_budget, max_generations, n_parents, query_strategy,
-                         additive_form, debug, verbose, optimizer, n_restarts_optimizer, use_laplace,
+                         additive_form, debug, verbose, likelihood, inference_method, optimizer, n_restarts_optimizer,
                          active_set_callback, eval_callback, expansion_callback)
 
     def _train(self, x, y) -> GPModelPopulation:

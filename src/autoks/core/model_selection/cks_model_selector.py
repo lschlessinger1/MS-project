@@ -1,5 +1,7 @@
 from typing import List
 
+from GPy.inference.latent_function_inference import Laplace
+
 from src.autoks.backend.model import BIC
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
@@ -22,8 +24,16 @@ class CKSModelSelector(ModelSelector):
             # Use the negative BIC because we want to maximize the objective.
             objective = negative_BIC
 
+        if use_laplace:
+            inference_method = Laplace()
+        else:
+            inference_method = None
+
+        likelihood = None
+
         super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug,
-                         verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         verbose, likelihood, inference_method, optimizer, n_restarts_optimizer, active_set_callback,
+                         eval_callback,
                          expansion_callback)
 
     def _train(self, x, y) -> GPModelPopulation:

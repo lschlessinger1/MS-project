@@ -1,5 +1,7 @@
 from typing import List
 
+from GPy.inference.latent_function_inference import Laplace
+
 from src.autoks.backend.model import log_likelihood_normalized
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
@@ -15,9 +17,17 @@ class RandomModelSelector(ModelSelector):
                  use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
-        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug,
-                         verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
-                         expansion_callback)
+
+        if use_laplace:
+            inference_method = Laplace()
+        else:
+            inference_method = None
+
+        likelihood = None
+
+        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug, verbose,
+                         likelihood, inference_method, optimizer, n_restarts_optimizer, active_set_callback,
+                         eval_callback, expansion_callback)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels

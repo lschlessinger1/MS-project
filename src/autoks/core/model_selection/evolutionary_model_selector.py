@@ -1,6 +1,7 @@
 from typing import List
 
 import numpy as np
+from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.model import log_likelihood_normalized
 from src.autoks.core.covariance import Covariance
@@ -22,8 +23,16 @@ class EvolutionaryModelSelector(ModelSelector):
         if objective is None:
             objective = log_likelihood_normalized
 
+        if use_laplace:
+            inference_method = Laplace()
+        else:
+            inference_method = None
+
+        likelihood = None
+
         super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug, verbose,
-                         optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         likelihood, inference_method, optimizer, n_restarts_optimizer, active_set_callback,
+                         eval_callback,
                          expansion_callback)
         self.initializer = initializer
         self.n_init_trees = n_init_trees

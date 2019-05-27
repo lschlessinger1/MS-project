@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Callable
 
 import numpy as np
 from GPy import likelihoods
-from GPy.inference.latent_function_inference import Laplace
+from GPy.inference.latent_function_inference import LatentFunctionInference
 from GPy.likelihoods import Likelihood
 
 from src.autoks.backend.kernel import set_priors
@@ -38,9 +38,10 @@ class ModelSelector:
                  additive_form: bool = False,
                  debug: bool = False,
                  verbose: bool = False,
+                 likelihood: Optional[Likelihood] = None,
+                 inference_method: Optional[LatentFunctionInference] = None,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 10,
-                 use_laplace: bool = True,
                  active_set_callback: Optional[Callable] = None,
                  eval_callback: Optional[Callable] = None,
                  expansion_callback: Optional[Callable] = None):
@@ -70,18 +71,18 @@ class ModelSelector:
         self.total_model_search_time = 0
 
         # build default model dict of GP (assuming GP Regression)
-        default_likelihood = likelihoods.Gaussian()
+        if likelihood is None:
+            likelihood = likelihoods.Gaussian()
+
         if self.grammar.hyperpriors is not None:
             # set likelihood hyperpriors
             likelihood_priors = self.grammar.hyperpriors['GP']
-            default_likelihood = set_priors(default_likelihood, likelihood_priors)
+            likelihood = set_priors(likelihood, likelihood_priors)
 
         default_model_dict = dict()
-        self.default_likelihood = default_likelihood
+        self.default_likelihood = likelihood
 
-        if use_laplace:
-            default_model_dict['inference_method'] = Laplace()
-
+        default_model_dict['inference_method'] = inference_method
         self.model_dict = default_model_dict
 
         # visited set of all expanded kernel expressions previously evaluated
@@ -283,10 +284,12 @@ class ModelSelector:
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
     def __init__(self, grammar, objective, query_strategy=None, eval_budget=50, max_generations=None, n_parents=1,
-                 additive_form=False, debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10,
-                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
+                 additive_form=False, debug=False, verbose=False, likelihood=None, inference_method=None,
+                 optimizer=None, n_restarts_optimizer=10, active_set_callback=None, eval_callback=None,
+                 expansion_callback=None):
         super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug,
-                         verbose, optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+                         verbose, likelihood, inference_method, optimizer, n_restarts_optimizer, active_set_callback,
+                         eval_callback,
                          expansion_callback)
 
         if query_strategy is not None:
