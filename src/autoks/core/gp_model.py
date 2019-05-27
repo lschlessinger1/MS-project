@@ -55,6 +55,10 @@ class GPModel:
         model = self.build_model(x, y)
         model.optimize_restarts(ipython_notebook=False, optimizer=optimizer, num_restarts=n_restarts, verbose=False,
                                 robust=True, messages=False)
+
+        self.covariance.raw_kernel = model.kern
+        self.likelihood = model.likelihood
+
         return model
 
     @property

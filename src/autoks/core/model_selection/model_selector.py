@@ -271,7 +271,7 @@ class ModelSelector:
 
         # Set model dict
         gp_model.model_input_dict = self.model_dict
-        gp_model.likelihood = self.default_likelihood
+        gp_model.likelihood = self.default_likelihood.copy()
 
         # Convert to additive form if necessary
         if self.additive_form:
