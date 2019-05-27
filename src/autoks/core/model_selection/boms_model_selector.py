@@ -14,7 +14,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
 
     def __init__(self, grammar, objective=None, eval_budget=50, max_generations=None, n_parents: int = 1,
                  query_strategy=None, additive_form=False, debug=False, verbose=False, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 n_restarts_optimizer=3, use_laplace=True, active_set_callback=None, eval_callback=None,
                  expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized

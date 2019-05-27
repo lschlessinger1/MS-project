@@ -17,7 +17,7 @@ class EvolutionaryModelSelector(ModelSelector):
 
     def __init__(self, grammar, objective=None, initializer=None, n_init_trees=10, eval_budget=50, max_generations=None,
                  n_parents=10, max_offspring: int = 25, additive_form=False, debug=False, verbose=False, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 n_restarts_optimizer=3, use_laplace=True, active_set_callback=None, eval_callback=None,
                  expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized

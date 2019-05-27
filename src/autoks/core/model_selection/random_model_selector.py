@@ -11,7 +11,7 @@ class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
     def __init__(self, grammar, objective=None, eval_budget=50, max_generations=None, n_parents: int = 1,
-                 additive_form=False, debug=False, verbose=False, optimizer=None, n_restarts_optimizer=10,
+                 additive_form=False, debug=False, verbose=False, optimizer=None, n_restarts_optimizer=3,
                  use_laplace=True,
                  active_set_callback=None, eval_callback=None, expansion_callback=None):
         if objective is None:
