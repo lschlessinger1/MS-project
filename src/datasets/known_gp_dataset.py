@@ -1,69 +1,11 @@
-from abc import ABC
-from typing import List, Tuple
+from typing import Tuple, List
 
 import numpy as np
 from GPy.kern import Kern
-from sklearn.model_selection import train_test_split
 
 from src.autoks.backend.kernel import create_1d_kernel
 from src.autoks.core.covariance import Covariance
-
-
-class Dataset:
-    """Simple abstract class for datasets."""
-
-    def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
-        raise NotImplementedError('Must be implemented in a child class')
-
-    def split_train_test(self,
-                         test_size=0.2,
-                         **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        x, y = self.load_or_generate_data()
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, **kwargs)
-        return x_train, x_test, y_train, y_test
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}'
-
-
-class SyntheticDataset(Dataset, ABC):
-    n_samples: int
-    input_dim: int
-
-    def __init__(self, n_samples, input_dim):
-        self.n_samples = n_samples
-        self.input_dim = input_dim
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f' n={self.n_samples!r}, d={self.input_dim!r})'
-
-
-class Input1DSyntheticDataset(SyntheticDataset, ABC):
-
-    def __init__(self, n_samples, input_dim=1):
-        super().__init__(n_samples, input_dim)
-        if self.input_dim != 1:
-            raise ValueError('Input dimension must be 1')
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f'n={self.n_samples!r}, d={self.input_dim!r})'
-
-
-class FileDataset(Dataset):
-    file_path: str
-
-    def __init__(self, file_path):
-        # assume file type of CSV
-        self.path = file_path
-
-    def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
-        data = np.genfromtxt(self.path, delimiter=',')
-        # assume output dimension is 1
-        x, y = data[:, :-1], data[:, -1]
-        return x, y
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}('f' file_path={self.path!r}) '
+from src.datasets.dataset import Dataset
 
 
 class KnownGPDataset(Dataset):

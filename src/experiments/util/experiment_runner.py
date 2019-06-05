@@ -4,7 +4,9 @@ from typing import List, Callable, Optional, Sequence
 import numpy as np
 
 from src.autoks.core.covariance import Covariance
-from src.experiments.util.data_util import KnownGPDataset, FileDataset, Dataset, cks_known_kernels
+from src.datasets.dataset import Dataset
+from src.datasets.file_dataset import FileDataset
+from src.datasets.known_gp_dataset import KnownGPDataset, cks_known_kernels
 
 EXP_FACTORY = Callable
 
