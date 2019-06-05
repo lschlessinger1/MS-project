@@ -11,9 +11,8 @@ from src.autoks.statistics import StatBook, StatBookCollection, Statistic
 
 class ModelSearchTracker:
 
-    def __init__(self, base_kernel_names):
+    def __init__(self, base_kernel_names: List[str]):
         # statistics used for plotting
-        # base_kernel_names = base_kernel_names
         self.n_hyperparams_name = 'n_hyperparameters'
         self.n_operands_name = 'n_operands'
         self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in base_kernel_names]
