@@ -6,6 +6,7 @@ import numpy as np
 from GPy import likelihoods
 from GPy.inference.latent_function_inference import LatentFunctionInference
 from GPy.likelihoods import Likelihood
+from tqdm import tqdm
 
 from src.autoks.backend.kernel import set_priors
 from src.autoks.backend.model import RawGPModelType
@@ -104,12 +105,17 @@ class ModelSelector:
             expansion_callback = do_nothing
         self.expansion_callback = expansion_callback
 
+        # Progress bar
+        if not self.debug:
+            self.pbar = tqdm(total=self.eval_budget, unit='ev', desc='Model Evaluations')
+
     def train(self,
               x: np.ndarray,
               y: np.ndarray):
         """Train the model selector."""
         t_init = time()
         population = self._train(x, y)
+        self.pbar.close()
         self.total_model_search_time += time() - t_init
         self.selected_models = population.models
         return self
@@ -208,6 +214,8 @@ class ModelSelector:
                 self.total_eval_time += time() - t0
                 self.n_evals += 1
                 self.visited.add(gp_model.covariance.symbolic_expr_expanded)
+                if not self.debug:
+                    self.pbar.update()
 
             evaluated_models.append(gp_model)
             self.eval_callback([gp_model], self, x, y)
@@ -249,6 +257,7 @@ class ModelSelector:
         """Print a summary of the model population at a given generation."""
         best_objective = population.best_objective()
         if self.verbose:
+            print()
             best_kernel = population.best_model()
             sizes = population.sizes()
             print(f'Iteration {depth}/{self.max_generations}')
@@ -260,6 +269,7 @@ class ModelSelector:
             best_kernel.covariance.pretty_print()
             print('')
         else:
+            print()
             print('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
 
     def _covariances_to_gp_models(self, covariances: List[Covariance]) -> List[GPModel]:
