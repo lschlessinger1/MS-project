@@ -22,6 +22,7 @@ from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_lin_reg, rmse
 from src.autoks.statistics import StatBook
 from src.autoks.tracking import ModelSearchTracker
 from src.autoks.util import pretty_time_delta
+from src.datasets.dataset import Dataset
 from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeLeafBiasedRecombinator, HalfAndHalfGenerator
 from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
 
@@ -139,7 +140,7 @@ class ModelSearchExperiment(BaseExperiment):
             plot_kernel_diversity_summary(self.tracker.diversity_scores_name, stat_book, x_label)
 
     @classmethod
-    def boms_experiment(cls, dataset, **kwargs):
+    def boms_experiment(cls, dataset: Dataset, **kwargs):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         n_dims = x_train.shape[1]
         base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
@@ -155,7 +156,7 @@ class ModelSearchExperiment(BaseExperiment):
         return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
 
     @classmethod
-    def cks_experiment(cls, dataset, **kwargs):
+    def cks_experiment(cls, dataset: Dataset, **kwargs):
         x, y = dataset.load_or_generate_data()
         n_dims = x.shape[1]
         grammar = CKSGrammar(n_dims)
@@ -169,7 +170,7 @@ class ModelSearchExperiment(BaseExperiment):
 
     @classmethod
     def evolutionary_experiment(cls,
-                                dataset,
+                                dataset: Dataset,
                                 **kwargs):
         x, y = dataset.load_or_generate_data()
         n_dims = x.shape[1]
@@ -204,7 +205,7 @@ class ModelSearchExperiment(BaseExperiment):
 
     @classmethod
     def random_experiment(cls,
-                          dataset,
+                          dataset: Dataset,
                           **kwargs):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         n_dims = x_train.shape[1]
