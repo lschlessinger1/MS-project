@@ -10,11 +10,6 @@ from src.autoks.statistics import StatBook, StatBookCollection, Statistic
 
 
 class ModelSearchTracker:
-    ### Should not have any dependency on grammar.
-    # only depend on info from callback
-    # think about stat book collection vs stat books
-    # one tracker for each SB? or the collection
-    # what about shared variables
 
     def __init__(self, base_kernel_names):
         # statistics used for plotting
