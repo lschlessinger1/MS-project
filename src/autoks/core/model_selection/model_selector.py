@@ -115,7 +115,8 @@ class ModelSelector:
         """Train the model selector."""
         t_init = time()
         population = self._train(x, y)
-        self.pbar.close()
+        if not self.debug:
+            self.pbar.close()
         self.total_model_search_time += time() - t_init
         self.selected_models = population.models
         return self

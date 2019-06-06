@@ -9,3 +9,4 @@ sobol_seq==0.1.2
 sympy==1.4
 statsmodels==0.9.0
 tqdm==4.32.1
+toml

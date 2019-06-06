@@ -2,24 +2,17 @@ from typing import List, Callable, Any, Union
 
 import numpy as np
 
-from src.autoks.backend.kernel import KERNEL_DICT, n_base_kernels
+from src.autoks.backend.kernel import KERNEL_DICT, n_base_kernels, count_kernel_types
 from src.autoks.core.covariance import all_pairs_avg_dist, pairwise_centered_alignments
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.model_selection.model_selector import ModelSelector
 from src.autoks.statistics import StatBook, StatBookCollection, Statistic
-from src.autoks.util import type_count
 
 
 class ModelSearchTracker:
-    ### Should not have any dependency on grammar.
-    # only depend on info from callback
-    # think about stat book collection vs stat books
-    # one tracker for each SB? or the collection
-    # what about shared variables
 
-    def __init__(self, base_kernel_names):
+    def __init__(self, base_kernel_names: List[str]):
         # statistics used for plotting
-        # base_kernel_names = base_kernel_names
         self.n_hyperparams_name = 'n_hyperparameters'
         self.n_operands_name = 'n_operands'
         self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in base_kernel_names]
@@ -144,6 +137,7 @@ def get_best_n_hyperparams(gp_models: List[GPModel], *args, **kwargs) -> List[in
 def base_kern_freq(base_kern: str) -> Callable[[List[GPModel], Any, Any], List[int]]:
     def get_frequency(gp_models: List[GPModel], *args, **kwargs) -> List[int]:
         cls = KERNEL_DICT[base_kern]
-        return [type_count(gp_model.covariance.to_binary_tree(), cls) for gp_model in gp_models]
+        return [count_kernel_types(gp_model.covariance.raw_kernel, lambda k: isinstance(k, cls)) for gp_model in
+                gp_models]
 
     return get_frequency

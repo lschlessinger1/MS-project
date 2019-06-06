@@ -4,7 +4,8 @@ import numpy as np
 # the following were mostly taken or modified from:
 # https://gpy.readthedocs.io/en/deploy/_modules/GPy/examples/regression.html
 from src.autoks.core.covariance import Covariance
-from src.experiments.util.data_util import SyntheticDataset, Input1DSyntheticDataset, KnownGPDataset
+from src.datasets.known_gp_dataset import KnownGPDataset
+from src.datasets.synthetic_dataset import SyntheticDataset, Input1DSyntheticDataset
 
 
 class Sinosoid1Dataset(SyntheticDataset):
@@ -12,14 +13,14 @@ class Sinosoid1Dataset(SyntheticDataset):
     def __init__(self, n_samples=50, input_dim=1):
         super().__init__(n_samples, input_dim)
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         # build a design matrix with a column of integers indicating the output
         x = np.random.rand(self.n_samples, self.input_dim) * 8
 
         # build a suitable set of observed variables
         y = np.sin(x) + np.random.randn(*x.shape) * 0.05
         y = np.sum(y[:, :, None], axis=1)
-        return x, y
+        self.x, self.y = x, y
 
 
 class Sinosoid2Dataset(SyntheticDataset):
@@ -27,14 +28,14 @@ class Sinosoid2Dataset(SyntheticDataset):
     def __init__(self, n_samples=30, input_dim=1):
         super().__init__(n_samples, input_dim)
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         # build a design matrix with a column of integers indicating the output
         x = np.random.rand(self.n_samples, self.input_dim) * 5
 
         # build a suitable set of observed variables
         y = np.sin(x) + np.random.randn(self.n_samples, self.input_dim) * 0.05 + 2.
         y = np.sum(y[:, :, None], axis=1)
-        return x, y
+        self.x, self.y = x, y
 
 
 class SimplePeriodic1dDataset(Input1DSyntheticDataset):
@@ -42,13 +43,13 @@ class SimplePeriodic1dDataset(Input1DSyntheticDataset):
     def __init__(self, n_samples=100, input_dim=1):
         super().__init__(n_samples, input_dim)
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         """1-D simple periodic data."""
         x = np.linspace(0, 10, self.n_samples).reshape(-1, 1)
         y_sin = np.sin(x * 1.5)
         noise = np.random.randn(*x.shape)
         y = (y_sin + noise).reshape(x.shape[0], 1)
-        return x, y
+        self.x, self.y = x, y
 
 
 class PeriodicTrend1dDataset(Input1DSyntheticDataset):
@@ -56,13 +57,13 @@ class PeriodicTrend1dDataset(Input1DSyntheticDataset):
     def __init__(self, n_samples=100, input_dim=1):
         super().__init__(n_samples, input_dim)
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         """1-D periodic trend"""
         x = np.linspace(0, 10, self.n_samples).reshape(-1, 1)
         y_sin = np.sin(x * 1.5)
         noise = np.random.randn(*x.shape)
         y = (x * (1 + y_sin) + noise * 2).reshape(x.shape[0], 1)
-        return x, y
+        self.x, self.y = x, y
 
 
 class LinearTrend1dDataset(Input1DSyntheticDataset):
@@ -70,12 +71,12 @@ class LinearTrend1dDataset(Input1DSyntheticDataset):
     def __init__(self, n_samples=100, input_dim=1):
         super().__init__(n_samples, input_dim)
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         """1-D linear data."""
         x = np.linspace(0, 10, self.n_samples).reshape(-1, 1)
         noise = np.random.randn(*x.shape)
         y = (x + noise).reshape(x.shape[0], 1)
-        return x, y
+        self.x, self.y = x, y
 
 
 class RBF1dDataset(Input1DSyntheticDataset):
@@ -83,11 +84,11 @@ class RBF1dDataset(Input1DSyntheticDataset):
     def __init__(self, n_samples=100, input_dim=1):
         super().__init__(n_samples, input_dim)
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         x = np.linspace(0, 10, self.n_samples).reshape(-1, 1)
         f_true = np.random.multivariate_normal(np.zeros(self.n_samples), GPy.kern.RBF(1).K(x))
         y = np.array([np.random.poisson(np.exp(f)) for f in f_true])[:, None]
-        return x, y
+        self.x, self.y = x, y
 
 
 class CubicSine1dDataset(Input1DSyntheticDataset):
@@ -95,13 +96,13 @@ class CubicSine1dDataset(Input1DSyntheticDataset):
     def __init__(self, n_samples=151, input_dim=1):
         super().__init__(n_samples, input_dim)
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         x = (2 * np.pi) * np.random.random(self.n_samples) - np.pi
         y = np.sin(x) + np.random.normal(0, 0.2, self.n_samples)
         y = np.array([np.power(abs(y), float(1) / 3) * (1, -1)[y < 0] for y in y])
         x = x[:, None]
         y = y[:, None]
-        return x, y
+        self.x, self.y = x, y
 
 
 class ToyARD4dDataset(SyntheticDataset):
@@ -109,7 +110,7 @@ class ToyARD4dDataset(SyntheticDataset):
     def __init__(self, n_samples=300, input_dim=4):
         super().__init__(n_samples, input_dim)
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         # Create an artificial dataset where the values in the targets (Y)
         # only depend in dimensions 1 and 3 of the inputs (x). Run ARD to
         # see if this dependency can be recovered
@@ -127,7 +128,7 @@ class ToyARD4dDataset(SyntheticDataset):
         y = y + 0.2 * np.random.randn(y.shape[0], y.shape[1])
         y -= y.mean()
         y /= y.std()
-        return x, y
+        self.x, self.y = x, y
 
 
 class SyntheticRegressionDataset(SyntheticDataset):
@@ -141,7 +142,7 @@ class SyntheticRegressionDataset(SyntheticDataset):
         self.max_terms = max_terms
         self.periodic = periodic
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         """Create regression problem."""
         import itertools
 
@@ -197,7 +198,7 @@ class SyntheticRegressionDataset(SyntheticDataset):
                 pretty_str += f
         print('y = f(x) =', pretty_str)
 
-        return x, y
+        self.x, self.y = x, y
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'n={self.n_samples!r}, d={self.input_dim!r}, ' \
@@ -216,7 +217,7 @@ class BraninGenerator(SyntheticDataset):
         y += 10 * (1 - 1 / (8 * np.pi)) * np.cos(x[:, 0]) + 10
         return y
 
-    def load_or_generate_data(self):
+    def load_or_generate_data(self) -> None:
         """
         2-dimensional Branin function defined over [-5, 10] x [0, 15]
         and a set of 25 observations.
@@ -231,7 +232,7 @@ class BraninGenerator(SyntheticDataset):
                 x[i + xg1.size * j, :] = [x1, x2]
 
         y = self.branin(x)[:, None]
-        return x, y
+        self.x, self.y = x, y
 
 
 class SePlusRQ(KnownGPDataset):
