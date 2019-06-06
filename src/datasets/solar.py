@@ -6,29 +6,27 @@ import toml
 
 from src.datasets.dataset import Dataset, _download_raw_dataset, _parse_args
 
-RAW_DATA_DIRNAME = Dataset.data_dirname() / 'raw' / 'airline'
+RAW_DATA_DIRNAME = Dataset.data_dirname() / 'raw' / 'solar'
 METADATA_FILENAME = RAW_DATA_DIRNAME / 'metadata.toml'
 
-PROCESSED_DATA_DIRNAME = Dataset.data_dirname() / 'processed' / 'airline'
+PROCESSED_DATA_DIRNAME = Dataset.data_dirname() / 'processed' / 'solar'
 PROCESSED_DATA_FILENAME = PROCESSED_DATA_DIRNAME / 'processed_data.npz'
 
 
-class AirlineDataset(Dataset):
-    """U.S. international airline passengers dataset
+class SolarDataset(Dataset):
+    """Solar irradiance data
 
-    The international airline passenger series describes monthly totals (in thousands) of the international passengers
-    for the period between January 1949 and December 1960.
-
-    Time Series: Forecast and Control by Box, Jenkins and Reinsel
+    http://lasp.colorado.edu/data/sorce/tsi_data/
     """
 
     def __init__(self, subsample_fraction: Optional[float] = None):
         super().__init__()
+
         self.subsample_fraction = subsample_fraction
 
     def load_or_generate_data(self) -> None:
         if not os.path.exists(PROCESSED_DATA_FILENAME):
-            _download_airline()
+            _download_solar()
 
         with PROCESSED_DATA_FILENAME.open('rb') as f:
             data = np.load(f)
@@ -38,7 +36,7 @@ class AirlineDataset(Dataset):
 
         self._subsample()
 
-    def _subsample(self) -> None:
+    def _subsample(self):
         """Only this fraction of data will be loaded."""
         if self.subsample_fraction is None:
             return
@@ -48,7 +46,7 @@ class AirlineDataset(Dataset):
         self.y = self.y[:num_subsample]
 
 
-def _download_airline() -> None:
+def _download_solar():
     metadata = toml.load(METADATA_FILENAME)
     curdir = os.getcwd()
     os.chdir(RAW_DATA_DIRNAME)
@@ -59,7 +57,7 @@ def _download_airline() -> None:
 
 def _process_raw_dataset(filename: str):
     print('Loading training data from .txt file')
-    x, y = _load_X_y(filename)
+    x, y = _load_x_y(filename)
 
     print('Saving to NPZ...')
     PROCESSED_DATA_DIRNAME.mkdir(parents=True, exist_ok=True)
@@ -67,26 +65,30 @@ def _process_raw_dataset(filename: str):
     np.savez(PROCESSED_DATA_FILENAME, x=x, y=y)
 
 
-def _load_data(filename: str):
-    result = []
-    for line in open(filename):
-        values = map(float, line.strip().split())
-        result += values
-    return np.array(result)
+def _load_x_y(data_file: str):
+    """Returns a Tx1 matrix X representing the year, and a length-T
+    vector y representing the solar irradiance."""
+    x_list = []
+    y_list = []
+    for line in open(data_file):
+        if line[0] == ';':
+            continue
 
+        parts = line.strip().split()
+        year = float(parts[0])
+        irrad = float(parts[1])
+        x_list.append(year)
+        y_list.append(irrad)
 
-def _load_X_y(data_filename: str):
-    """X is a vector giving the time step, and y is the total number of international
-    airline passengers, in thousands. Each element corresponds to one
-    month, and it goes from Jan. 1949 through Dec. 1960."""
-    values = _load_data(data_filename)
-    return np.arange(values.size).astype(float), values.astype(float)
+    x = np.array(x_list)
+    y = np.array(y_list)
+    return x, y
 
 
 def main():
     """Load dataset and print info."""
     args = _parse_args()
-    dataset = AirlineDataset(subsample_fraction=args.subsample_fraction)
+    dataset = SolarDataset(subsample_fraction=args.subsample_fraction)
     dataset.load_or_generate_data()
     print(dataset)
 
