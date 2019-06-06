@@ -101,8 +101,7 @@ def log_likelihood_normalized(model: RawGPModelType) -> float:
     :param model:
     :return:
     """
-    dataset_size = model.X.shape[0]
-    return model.log_likelihood() / dataset_size
+    return model.log_likelihood() / model.num_data
 
 
 def BIC(model: RawGPModelType) -> float:
