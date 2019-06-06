@@ -24,13 +24,11 @@ class AirlineDataset(Dataset):
 
     def __init__(self, subsample_fraction: Optional[float] = None):
         super().__init__()
-        self.metadata = toml.load(METADATA_FILENAME)
-
         self.subsample_fraction = subsample_fraction
 
     def load_or_generate_data(self) -> None:
         if not os.path.exists(PROCESSED_DATA_FILENAME):
-            self._download_airline()
+            _download_airline()
 
         with PROCESSED_DATA_FILENAME.open('rb') as f:
             data = np.load(f)
@@ -40,13 +38,6 @@ class AirlineDataset(Dataset):
 
         self._subsample()
 
-    def _download_airline(self) -> None:
-        curdir = os.getcwd()
-        os.chdir(RAW_DATA_DIRNAME)
-        _download_raw_dataset(self.metadata)
-        _process_raw_dataset(self.metadata['filename'])
-        os.chdir(curdir)
-
     def _subsample(self) -> None:
         """Only this fraction of data will be loaded."""
         if self.subsample_fraction is None:
@@ -55,6 +46,15 @@ class AirlineDataset(Dataset):
         num_subsample = int(self.x.shape[0] * self.subsample_fraction)
         self.x = self.x[:num_subsample]
         self.y = self.y[:num_subsample]
+
+
+def _download_airline() -> None:
+    metadata = toml.load(METADATA_FILENAME)
+    curdir = os.getcwd()
+    os.chdir(RAW_DATA_DIRNAME)
+    _download_raw_dataset(metadata)
+    _process_raw_dataset(metadata['filename'])
+    os.chdir(curdir)
 
 
 def _process_raw_dataset(filename: str):
