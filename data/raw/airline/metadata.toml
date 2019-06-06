@@ -1,0 +1,3 @@
+filename = 'airline-pass.txt'
+url = 'https://raw.githubusercontent.com/jamesrobertlloyd/gp-structure-search/master/data/airline-pass.txt'
+sha256 = 'fbc9b8cf8db5131df7461b58c44f735a5a3aa362ab0037c1ebd98ef913628023'
