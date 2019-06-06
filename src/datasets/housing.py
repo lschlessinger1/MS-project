@@ -4,37 +4,34 @@ from typing import Optional, Tuple
 import numpy as np
 import toml
 
-from src.datasets.dataset import Dataset, _download_raw_dataset, _parse_args
+from src.datasets.dataset import Dataset, _parse_args, _download_raw_dataset
 
-RAW_DATA_DIRNAME = Dataset.data_dirname() / 'raw' / 'airline'
+RAW_DATA_DIRNAME = Dataset.data_dirname() / 'raw' / 'housing'
 METADATA_FILENAME = RAW_DATA_DIRNAME / 'metadata.toml'
 
-PROCESSED_DATA_DIRNAME = Dataset.data_dirname() / 'processed' / 'airline'
+PROCESSED_DATA_DIRNAME = Dataset.data_dirname() / 'processed' / 'housing'
 PROCESSED_DATA_FILENAME = PROCESSED_DATA_DIRNAME / 'processed_data.npz'
 
 
-class AirlineDataset(Dataset):
-    """U.S. international airline passengers dataset
+class HousingDataset(Dataset):
+    """Housing Values in Suburbs of Boston
 
-    The international airline passenger series describes monthly totals (in thousands) of the international passengers
-    for the period between January 1949 and December 1960.
-
-    Time Series: Forecast and Control by Box, Jenkins and Reinsel
+    http://lib.stat.cmu.edu/datasets/boston
     """
 
     def __init__(self, subsample_fraction: Optional[float] = None):
         super().__init__()
-        self.subsample_fraction = subsample_fraction
+        self.subsample_fraction = subsample_fraction  # by default, take the first 500 samples
 
     def load_or_generate_data(self) -> None:
         if not os.path.exists(PROCESSED_DATA_FILENAME):
-            _download_airline()
+            _download_housing()
 
         with PROCESSED_DATA_FILENAME.open('rb') as f:
             data = np.load(f)
 
-            self.x = data['x'][:, None]
-            self.y = data['y'][:, None]
+            self.x = data['x']
+            self.y = data['y']
 
         self._subsample()
 
@@ -48,7 +45,7 @@ class AirlineDataset(Dataset):
         self.y = self.y[:num_subsample]
 
 
-def _download_airline() -> None:
+def _download_housing() -> None:
     metadata = toml.load(METADATA_FILENAME)
     curdir = os.getcwd()
     os.chdir(RAW_DATA_DIRNAME)
@@ -68,26 +65,17 @@ def _process_raw_dataset(filename: str) -> None:
     np.savez(PROCESSED_DATA_FILENAME, x=x, y=y)
 
 
-def _load_data(filename: str) -> np.ndarray:
-    result = []
-    for line in open(filename):
-        values = map(float, line.strip().split())
-        result += values
-    return np.array(result)
-
-
 def _load_x_y(data_filename: str) -> Tuple[np.ndarray, np.ndarray]:
-    """X is a vector giving the time step, and y is the total number of international
-    airline passengers, in thousands. Each element corresponds to one
-    month, and it goes from Jan. 1949 through Dec. 1960."""
-    values = _load_data(data_filename)
-    return np.arange(values.size).astype(float), values.astype(float)
+    """Load input and outputs"""
+    data = np.genfromtxt(data_filename)
+    x, y = data[:, :-1], data[:, -1:]
+    return x, y
 
 
 def main():
     """Load dataset and print info."""
     args = _parse_args()
-    dataset = AirlineDataset(subsample_fraction=args.subsample_fraction)
+    dataset = HousingDataset(subsample_fraction=args.subsample_fraction)
     dataset.load_or_generate_data()
     print(dataset)
 

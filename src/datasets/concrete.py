@@ -6,35 +6,34 @@ import toml
 
 from src.datasets.dataset import Dataset, _download_raw_dataset, _parse_args
 
-RAW_DATA_DIRNAME = Dataset.data_dirname() / 'raw' / 'airline'
+RAW_DATA_DIRNAME = Dataset.data_dirname() / 'raw' / 'concrete'
 METADATA_FILENAME = RAW_DATA_DIRNAME / 'metadata.toml'
 
-PROCESSED_DATA_DIRNAME = Dataset.data_dirname() / 'processed' / 'airline'
+PROCESSED_DATA_DIRNAME = Dataset.data_dirname() / 'processed' / 'concrete'
 PROCESSED_DATA_FILENAME = PROCESSED_DATA_DIRNAME / 'processed_data.npz'
 
 
-class AirlineDataset(Dataset):
-    """U.S. international airline passengers dataset
+class ConcreteDataset(Dataset):
+    """Concrete Compressive Strength Dataset
 
-    The international airline passenger series describes monthly totals (in thousands) of the international passengers
-    for the period between January 1949 and December 1960.
-
-    Time Series: Forecast and Control by Box, Jenkins and Reinsel
+    I-Cheng Yeh, "Modeling of strength of high performance concrete using artificial neural networks," Cement and
+    Concrete Research, Vol. 28, No. 12, pp. 1797-1808 (1998).
+    http://archive.ics.uci.edu/ml/datasets/concrete+compressive+strength
     """
 
-    def __init__(self, subsample_fraction: Optional[float] = None):
+    def __init__(self, subsample_fraction: Optional[float] = 0.486):
         super().__init__()
-        self.subsample_fraction = subsample_fraction
+        self.subsample_fraction = subsample_fraction  # by default, take the first 500 samples
 
     def load_or_generate_data(self) -> None:
         if not os.path.exists(PROCESSED_DATA_FILENAME):
-            _download_airline()
+            _download_concrete()
 
         with PROCESSED_DATA_FILENAME.open('rb') as f:
             data = np.load(f)
 
-            self.x = data['x'][:, None]
-            self.y = data['y'][:, None]
+            self.x = data['x']
+            self.y = data['y']
 
         self._subsample()
 
@@ -48,7 +47,7 @@ class AirlineDataset(Dataset):
         self.y = self.y[:num_subsample]
 
 
-def _download_airline() -> None:
+def _download_concrete() -> None:
     metadata = toml.load(METADATA_FILENAME)
     curdir = os.getcwd()
     os.chdir(RAW_DATA_DIRNAME)
@@ -68,26 +67,18 @@ def _process_raw_dataset(filename: str) -> None:
     np.savez(PROCESSED_DATA_FILENAME, x=x, y=y)
 
 
-def _load_data(filename: str) -> np.ndarray:
-    result = []
-    for line in open(filename):
-        values = map(float, line.strip().split())
-        result += values
-    return np.array(result)
-
-
 def _load_x_y(data_filename: str) -> Tuple[np.ndarray, np.ndarray]:
-    """X is a vector giving the time step, and y is the total number of international
-    airline passengers, in thousands. Each element corresponds to one
-    month, and it goes from Jan. 1949 through Dec. 1960."""
-    values = _load_data(data_filename)
-    return np.arange(values.size).astype(float), values.astype(float)
+    """Load input and outputs"""
+    import pandas as pd
+    df = pd.read_excel(data_filename)
+    x, y = df.values[:, :-1], df.values[:, -1:]
+    return x, y
 
 
 def main():
     """Load dataset and print info."""
     args = _parse_args()
-    dataset = AirlineDataset(subsample_fraction=args.subsample_fraction)
+    dataset = ConcreteDataset(subsample_fraction=args.subsample_fraction)
     dataset.load_or_generate_data()
     print(dataset)
 

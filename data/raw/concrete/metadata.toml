@@ -1,0 +1,3 @@
+filename = 'Concrete_Data.xls'
+url = 'http://archive.ics.uci.edu/ml/machine-learning-databases/concrete/compressive/Concrete_Data.xls'
+sha256 = '710076c66b9ca3f8050e7942f3dcbdbe04013534daeb0077ffd3079a52d8e0c4'
