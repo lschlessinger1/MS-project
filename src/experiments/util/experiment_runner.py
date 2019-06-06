@@ -8,6 +8,7 @@ from src.datasets.airline import AirlineDataset
 from src.datasets.concrete import ConcreteDataset
 from src.datasets.dataset import Dataset
 from src.datasets.file_dataset import FileDataset
+from src.datasets.housing import HousingDataset
 from src.datasets.known_gp_dataset import KnownGPDataset, cks_known_kernels
 from src.datasets.mauna import MaunaDataset
 from src.datasets.methane import MethaneDataset
@@ -66,16 +67,7 @@ class FileExperimentRunner(ExperimentRunner):
 class BOMSFilesExperimentRunner(ExperimentRunner):
 
     def get_datasets(self) -> List[Dataset]:
-        data_dir = os.path.join('..', '..', 'data')
-
-        data_multi_d_dir = os.path.join(data_dir, 'multi_dimensional')
-        housing_path = os.path.join(data_multi_d_dir, 'housing.csv')
-        data_multi_d_paths = [housing_path]
-
-        data_paths = data_multi_d_paths
-        datasets = [AirlineDataset(), MaunaDataset(), MethaneDataset(), SolarDataset(), ConcreteDataset()]
-        datasets += [FileDataset(path) for path in data_paths]
-        return datasets
+        return [AirlineDataset(), MaunaDataset(), MethaneDataset(), SolarDataset(), ConcreteDataset(), HousingDataset()]
 
 
 def gen_dataset_paths(data_dir: str,
