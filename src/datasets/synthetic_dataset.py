@@ -8,6 +8,7 @@ class SyntheticDataset(Dataset, ABC):
     input_dim: int
 
     def __init__(self, n_samples, input_dim):
+        super().__init__()
         self.n_samples = n_samples
         self.input_dim = input_dim
 

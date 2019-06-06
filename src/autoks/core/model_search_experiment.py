@@ -157,7 +157,8 @@ class ModelSearchExperiment(BaseExperiment):
 
     @classmethod
     def cks_experiment(cls, dataset: Dataset, **kwargs):
-        x, y = dataset.load_or_generate_data()
+        dataset.load_or_generate_data()
+        x, y = dataset.x, dataset.y
         n_dims = x.shape[1]
         grammar = CKSGrammar(n_dims)
         tracker = ModelSearchTracker(grammar.base_kernel_names)
@@ -172,7 +173,8 @@ class ModelSearchExperiment(BaseExperiment):
     def evolutionary_experiment(cls,
                                 dataset: Dataset,
                                 **kwargs):
-        x, y = dataset.load_or_generate_data()
+        dataset.load_or_generate_data()
+        x, y = dataset.x, dataset.y
         n_dims = x.shape[1]
         base_kernels_names = CKSGrammar.get_base_kernel_names(n_dims)
 

@@ -14,13 +14,13 @@ class KnownGPDataset(Dataset):
     n_pts: int
 
     def __init__(self, kernel, noise_var, n_pts=100):
+        super().__init__()
         self.kernel = kernel
         self.noise_var = noise_var
         self.n_pts = n_pts
 
-    def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
-        x, y = sample_gp(self.kernel.raw_kernel, self.n_pts, self.noise_var)
-        return x, y
+    def load_or_generate_data(self) -> None:
+        self.x, self.y = sample_gp(self.kernel.raw_kernel, self.n_pts, self.noise_var)
 
     def snr(self):
         # assume signal variance always = 1

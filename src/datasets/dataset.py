@@ -12,18 +12,23 @@ from src.datasets import util
 class Dataset:
     """Simple abstract class for datasets."""
 
+    def __init__(self):
+        self.x = None
+        self.y = None
+
     @classmethod
     def data_dirname(cls):
         return Path(__file__).resolve().parents[2] / 'data'
 
-    def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
+    def load_or_generate_data(self) -> None:
+        """Load or generate dataset data."""
         raise NotImplementedError('Must be implemented in a child class')
 
     def split_train_test(self,
                          test_size=0.2,
                          **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        x, y = self.load_or_generate_data()
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, **kwargs)
+        self.load_or_generate_data()
+        x_train, x_test, y_train, y_test = train_test_split(self.x, self.y, test_size=test_size, **kwargs)
         return x_train, x_test, y_train, y_test
 
     def __repr__(self):

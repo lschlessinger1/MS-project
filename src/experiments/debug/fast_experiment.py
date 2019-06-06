@@ -12,7 +12,8 @@ from src.datasets.synthetic_data import CubicSine1dDataset
 np.random.seed(4096)
 
 dataset = CubicSine1dDataset(n_samples=60)
-x, y = dataset.load_or_generate_data()
+dataset.load_or_generate_data()
+x, y = dataset.x, dataset.y
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
 n_dims = x.shape[1]
