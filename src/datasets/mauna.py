@@ -60,7 +60,8 @@ def _download_mauna() -> None:
 
 
 def _process_raw_dataset(filename: str) -> None:
-    print('Loading training data from .txt file')
+    file_type = filename.split('.')[-1]
+    print('Loading training data from .%s file' % file_type)
     x, y = _load_x_y(filename)
 
     print('Saving to NPZ...')
