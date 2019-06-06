@@ -4,8 +4,8 @@ import numpy as np
 # the following were mostly taken or modified from:
 # https://gpy.readthedocs.io/en/deploy/_modules/GPy/examples/regression.html
 from src.autoks.core.covariance import Covariance
-from src.datasets.known_gp_dataset import KnownGPDataset
-from src.datasets.synthetic_dataset import SyntheticDataset, Input1DSyntheticDataset
+from src.datasets.synthetic.known_gp_dataset import KnownGPDataset
+from src.datasets.synthetic.synthetic_dataset import SyntheticDataset, Input1DSyntheticDataset
 
 
 class Sinosoid1Dataset(SyntheticDataset):
