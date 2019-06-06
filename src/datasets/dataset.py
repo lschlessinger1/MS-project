@@ -14,7 +14,7 @@ class Dataset:
 
     @classmethod
     def data_dirname(cls):
-        return Path(__file__).resolve().parents[3] / 'data'
+        return Path(__file__).resolve().parents[2] / 'data'
 
     def load_or_generate_data(self) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError('Must be implemented in a child class')
