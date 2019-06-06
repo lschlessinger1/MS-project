@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import toml
@@ -57,9 +57,9 @@ def _download_airline() -> None:
     os.chdir(curdir)
 
 
-def _process_raw_dataset(filename: str):
+def _process_raw_dataset(filename: str) -> None:
     print('Loading training data from .txt file')
-    x, y = _load_X_y(filename)
+    x, y = _load_x_y(filename)
 
     print('Saving to NPZ...')
     PROCESSED_DATA_DIRNAME.mkdir(parents=True, exist_ok=True)
@@ -67,7 +67,7 @@ def _process_raw_dataset(filename: str):
     np.savez(PROCESSED_DATA_FILENAME, x=x, y=y)
 
 
-def _load_data(filename: str):
+def _load_data(filename: str) -> np.ndarray:
     result = []
     for line in open(filename):
         values = map(float, line.strip().split())
@@ -75,7 +75,7 @@ def _load_data(filename: str):
     return np.array(result)
 
 
-def _load_X_y(data_filename: str):
+def _load_x_y(data_filename: str) -> Tuple[np.ndarray, np.ndarray]:
     """X is a vector giving the time step, and y is the total number of international
     airline passengers, in thousands. Each element corresponds to one
     month, and it goes from Jan. 1949 through Dec. 1960."""
