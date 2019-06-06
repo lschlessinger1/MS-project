@@ -5,6 +5,7 @@ import numpy as np
 
 from src.autoks.core.covariance import Covariance
 from src.datasets.airline import AirlineDataset
+from src.datasets.concrete import ConcreteDataset
 from src.datasets.dataset import Dataset
 from src.datasets.file_dataset import FileDataset
 from src.datasets.known_gp_dataset import KnownGPDataset, cks_known_kernels
@@ -68,12 +69,11 @@ class BOMSFilesExperimentRunner(ExperimentRunner):
         data_dir = os.path.join('..', '..', 'data')
 
         data_multi_d_dir = os.path.join(data_dir, 'multi_dimensional')
-        concrete_path = os.path.join(data_multi_d_dir, 'concrete_500.csv')
         housing_path = os.path.join(data_multi_d_dir, 'housing.csv')
-        data_multi_d_paths = [concrete_path, housing_path]
+        data_multi_d_paths = [housing_path]
 
         data_paths = data_multi_d_paths
-        datasets = [AirlineDataset(), MaunaDataset(), MethaneDataset(), SolarDataset()]
+        datasets = [AirlineDataset(), MaunaDataset(), MethaneDataset(), SolarDataset(), ConcreteDataset()]
         datasets += [FileDataset(path) for path in data_paths]
         return datasets
 
