@@ -6,7 +6,7 @@ from src.autoks.core.grammar import RandomGrammar
 from src.autoks.core.model_search_experiment import ModelSearchExperiment
 from src.autoks.core.model_selection.random_model_selector import RandomModelSelector
 from src.autoks.tracking import ModelSearchTracker
-from src.datasets.synthetic_data import CubicSine1dDataset
+from src.datasets.synthetic.synthetic_data import CubicSine1dDataset
 
 # Set random seed for reproducibility.
 np.random.seed(4096)
