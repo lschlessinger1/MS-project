@@ -105,15 +105,14 @@ class ModelSelector:
             expansion_callback = do_nothing
         self.expansion_callback = expansion_callback
 
-        # Progress bar
-        if not self.debug:
-            self.pbar = tqdm(total=self.eval_budget, unit='ev', desc='Model Evaluations')
-
     def train(self,
               x: np.ndarray,
               y: np.ndarray):
         """Train the model selector."""
         t_init = time()
+        # Progress bar
+        if not self.debug:
+            self.pbar = tqdm(total=self.eval_budget, unit='ev', desc='Model Evaluations')
         population = self._train(x, y)
         if not self.debug:
             self.pbar.close()
