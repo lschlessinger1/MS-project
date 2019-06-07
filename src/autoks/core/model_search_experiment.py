@@ -11,10 +11,10 @@ from src.autoks.core.gp_model import GPModel
 from src.autoks.core.grammar import CKSGrammar, BOMSGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.core.hyperprior import boms_hyperpriors
 from src.autoks.core.kernel_encoding import KernelNode
+from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.core.model_selection.boms_model_selector import BomsModelSelector
 from src.autoks.core.model_selection.cks_model_selector import CKSModelSelector
 from src.autoks.core.model_selection.evolutionary_model_selector import EvolutionaryModelSelector
-from src.autoks.core.model_selection.model_selector import ModelSelector
 from src.autoks.core.model_selection.random_model_selector import RandomModelSelector
 from src.autoks.plotting import plot_kernel_tree, plot_best_scores, plot_score_summary, plot_n_hyperparams_summary, \
     plot_n_operands_summary, plot_base_kernel_freqs, plot_cov_dist_summary, plot_kernel_diversity_summary

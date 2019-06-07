@@ -8,9 +8,9 @@ from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.grammar import CKSGrammar
+from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.core.model_selection.boms_model_selector import BomsModelSelector
 from src.autoks.core.model_selection.cks_model_selector import CKSModelSelector
-from src.autoks.core.model_selection.model_selector import ModelSelector
 from src.autoks.core.query_strategy import QueryStrategy
 
 

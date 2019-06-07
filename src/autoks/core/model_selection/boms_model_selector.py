@@ -7,7 +7,7 @@ from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.grammar import BOMSGrammar
-from src.autoks.core.model_selection.model_selector import SurrogateBasedModelSelector
+from src.autoks.core.model_selection.base import SurrogateBasedModelSelector
 from src.autoks.core.query_strategy import BestScoreStrategy
 
 

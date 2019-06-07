@@ -5,7 +5,7 @@ import numpy as np
 from src.autoks.backend.kernel import KERNEL_DICT, n_base_kernels, count_kernel_types
 from src.autoks.core.covariance import all_pairs_avg_dist, pairwise_centered_alignments
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.model_selection.model_selector import ModelSelector
+from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.statistics import StatBook, StatBookCollection, Statistic
 
 

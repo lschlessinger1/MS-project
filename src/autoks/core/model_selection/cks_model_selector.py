@@ -6,7 +6,7 @@ from src.autoks.backend.model import BIC
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.grammar import CKSGrammar
-from src.autoks.core.model_selection.model_selector import ModelSelector
+from src.autoks.core.model_selection.base import ModelSelector
 
 
 class CKSModelSelector(ModelSelector):
