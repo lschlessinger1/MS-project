@@ -9,11 +9,9 @@ from src.evalg.mutation import Mutator
 
 
 class BinaryTreeGenerator:
-    binary_operators: List[str]
-    operands: list
     _max_depth: int
 
-    def __init__(self, binary_operators, operands, max_depth: int, binary_tree_node_cls: type):
+    def __init__(self, binary_operators: List[str], operands: list, max_depth: int, binary_tree_node_cls: type):
         self.binary_operators = binary_operators
         self.operands = operands
         self._max_depth = max_depth
