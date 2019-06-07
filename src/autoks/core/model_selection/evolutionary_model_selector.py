@@ -32,8 +32,7 @@ class EvolutionaryModelSelector(ModelSelector):
 
         super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug, verbose,
                          likelihood, inference_method, optimizer, n_restarts_optimizer, active_set_callback,
-                         eval_callback,
-                         expansion_callback)
+                         eval_callback, expansion_callback)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
         self.max_offspring = max_offspring
