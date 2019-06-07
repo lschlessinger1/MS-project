@@ -1,0 +1,39 @@
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+from src.autoks.backend.model import BIC, log_likelihood_normalized
+from src.autoks.core.grammar import CKSGrammar
+from src.autoks.core.model_search_experiment import ModelSearchExperiment
+from src.autoks.core.model_selection.cks_model_selector import CKSModelSelector
+from src.autoks.tracking import ModelSearchTracker
+# Set random seed for reproducibility.
+from src.datasets.synthetic.synthetic_data import CubicSine1dDataset
+
+np.random.seed(4096)
+
+dataset = CubicSine1dDataset(n_samples=60)
+dataset.load_or_generate_data()
+x, y = dataset.x, dataset.y
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+
+n_dims = x.shape[1]
+grammar = CKSGrammar(n_dims)
+
+
+def negative_BIC(m):
+    """Computes the negative of the Bayesian Information Criterion (BIC)."""
+    return -BIC(m)
+
+
+# Use the negative BIC because we want to maximize the objective.
+objective = log_likelihood_normalized
+
+tracker = ModelSearchTracker(grammar.base_kernel_names)
+
+model_selector = CKSModelSelector(grammar, objective, eval_budget=6, debug=True, verbose=True,
+                                  additive_form=False, active_set_callback=tracker.active_set_callback,
+                                  eval_callback=tracker.evaluations_callback, n_restarts_optimizer=4,
+                                  expansion_callback=tracker.expansion_callback)
+
+experiment = ModelSearchExperiment(x_train, y_train, model_selector, x_test, y_test, tracker)
+experiment.run()
