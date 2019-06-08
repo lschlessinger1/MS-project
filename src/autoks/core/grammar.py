@@ -32,8 +32,8 @@ class BaseGrammar:
                verbose: int = 0) -> List[Covariance]:
         """Expand seed gp_models.
 
-        :param seed_models:
-        :param verbose:
+        :param seed_models: List of GP Models to expand.
+        :param verbose: Verbosity mode.
         :return:
         """
         raise NotImplementedError('expand must be implemented in a subclass')
@@ -41,10 +41,10 @@ class BaseGrammar:
     def get_candidates(self,
                        seed_models: List[GPModel],
                        verbose: int = 0) -> List[Covariance]:
-        """Get next round of candidate covariances from current gp_models.
+        """Get next round of candidate covariances from current GP models.
 
-        :param seed_models:
-        :param verbose:
+        :param seed_models: List of GP models to expand.
+        :param verbose: Verbosity mode.
         :return:
         """
         if verbose == 3:
@@ -78,8 +78,8 @@ class EvolutionaryGrammar(BaseGrammar):
                verbose: int = 0) -> List[Covariance]:
         """Perform crossover and mutation.
 
-        :param seed_models: list of AKSKernels
-        :param verbose:
+        :param seed_models: List of GP models to expand.
+        :param verbose: Verbosity mode.
         :return:
         """
         using_1_pt_cx = any([isinstance(v.operator, OnePointRecombinatorBase) for v in
@@ -127,6 +127,7 @@ class CKSGrammar(BaseGrammar):
 
     @staticmethod
     def get_base_kernel_names(n_dims: int) -> List[str]:
+        """Get the names of the kernel families to use according to the dimension."""
         if n_dims > 1:
             return ['SE', 'RQ']
         else:
@@ -143,8 +144,8 @@ class CKSGrammar(BaseGrammar):
         2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
         3) Any base kernel B may be replaced with any other base kernel family B'
 
-        :param seed_models:
-        :param verbose:
+        :param seed_models: List of GP models to expand.
+        :param verbose: Verbosity mode.
         :return:
         """
         new_covariances = []
@@ -159,7 +160,7 @@ class CKSGrammar(BaseGrammar):
     def expand_single_kernel(self, seed_kernel: Covariance) -> List[Covariance]:
         """Expand a seed kernel according to the CKS grammar.
 
-        :param seed_kernel:
+        :param seed_kernel: Covariance to expand.
         :return:
         """
         new_covariances = []
@@ -173,7 +174,7 @@ class CKSGrammar(BaseGrammar):
     def expand_full_kernel(self, covariance: Covariance) -> List[Covariance]:
         """Expand full kernel.
 
-        :param covariance:
+        :param covariance: Covariance to expand.
         :return:
         """
         result = self.expand_single_kernel(covariance)
@@ -203,8 +204,13 @@ class CKSGrammar(BaseGrammar):
 
     def expand_full_brute_force(self,
                                 level: int,
-                                max_number_of_models: int) -> List[Covariance]:
-        """Enumerate all covariances in CKS grammar up to a depth with a size limit."""
+                                max_n_models: int) -> List[Covariance]:
+        """Enumerate all covariances in CKS grammar up to a depth with a size limit.
+
+        :param level: Level of expansion.
+        :param max_n_models: Maximum number of models in expansion.
+        :return:
+        """
         if level >= 4:
             warnings.warn('This is a brute-force implementation, use it for level < 4')
 
@@ -234,13 +240,14 @@ class CKSGrammar(BaseGrammar):
                 unique_new_kernels = remove_duplicates(new_kernels, this_level)
                 this_level += unique_new_kernels
                 number_of_models = number_of_models + len(unique_new_kernels)
-                if number_of_models > max_number_of_models:
+                if number_of_models > max_n_models:
                     all_kernels += this_level
-                    all_kernels = all_kernels[:max_number_of_models]
+                    all_kernels = all_kernels[:max_n_models]
                     return all_kernels
             current_kernels = this_level
             all_kernels += this_level
             level -= 1
+
         return all_kernels
 
 
@@ -259,7 +266,7 @@ class BOMSGrammar(CKSGrammar):
 
         super().__init__(n_dims, base_kernel_names, hyperpriors)
 
-        self.random_walk_geometric_dist_parameter = 1 / 3  # termination probability
+        self.random_walk_geometric_dist_parameter = 1 / 3  # Termination probability.
         self.number_of_top_k_best = 3
         self.number_of_random_walks = 15
 
@@ -268,7 +275,7 @@ class BOMSGrammar(CKSGrammar):
                verbose: int = 0) -> List[Covariance]:
         """Greedy and exploratory expansion of gp_models.
 
-        :param seed_models: List of GP Models to expand
+        :param seed_models: List of GP models to expand.
         :param verbose: Verbosity mode.
         :return:
         """
@@ -286,13 +293,14 @@ class BOMSGrammar(CKSGrammar):
 
         return candidates
 
-    def expand_random(self, total_num_walks: int) -> List[Covariance]:
-        """Geometric random walk gp_models.
+    def expand_random(self, n_walks: int) -> List[Covariance]:
+        """Geometric random walk covariances.
 
+        :param n_walks: Total number of random walks.
         :return:
         """
         parameter = self.random_walk_geometric_dist_parameter
-        depths = np.random.geometric(parameter, size=total_num_walks)
+        depths = np.random.geometric(parameter, size=n_walks)
         new_kernels = []
         for depth in depths:
             frontier = self.base_kernels
@@ -309,8 +317,8 @@ class BOMSGrammar(CKSGrammar):
                     fitness_score: List[float]) -> List[Covariance]:
         """Single expansion of CKS Grammar.
 
-        :param selected_models:
-        :param fitness_score:
+        :param selected_models:  List of GP models to expand.
+        :param fitness_score: List of fitness scores for the selected models.
         :return:
         """
         new_kernels = []
@@ -345,8 +353,8 @@ class RandomGrammar(BOMSGrammar):
                verbose: int = 0) -> List[Covariance]:
         """Random expansion of nodes.
 
-        :param seed_models:
-        :param verbose:
+        :param seed_models:  List of GP models to expand.
+        :param verbose: Verbosity mode.
         :return:
         """
         return self.expand_random(self.number_of_random_walks)
