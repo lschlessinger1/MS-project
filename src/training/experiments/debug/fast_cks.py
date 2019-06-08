@@ -30,10 +30,10 @@ objective = log_likelihood_normalized
 
 tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-model_selector = CKSModelSelector(grammar, objective, eval_budget=22, additive_form=False,
+model_selector = CKSModelSelector(grammar, objective, additive_form=False,
                                   active_set_callback=tracker.active_set_callback,
                                   eval_callback=tracker.evaluations_callback, n_restarts_optimizer=4,
                                   expansion_callback=tracker.expansion_callback)
 
 experiment = ModelSearchExperiment(x_train, y_train, model_selector, x_test, y_test, tracker)
-experiment.run()
+experiment.run(eval_budget=8)
