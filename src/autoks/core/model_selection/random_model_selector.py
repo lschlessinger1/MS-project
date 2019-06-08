@@ -1,5 +1,6 @@
 from typing import List
 
+import numpy as np
 from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.model import log_likelihood_normalized
@@ -13,8 +14,8 @@ class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
     def __init__(self, grammar, objective=None, eval_budget=50, max_generations=None, n_parents: int = 1,
-                 additive_form=False, debug=False, verbose=False, optimizer=None, n_restarts_optimizer=3,
-                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
+                 additive_form=False, optimizer=None, n_restarts_optimizer=3, use_laplace=True,
+                 active_set_callback=None, eval_callback=None, expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
 
@@ -25,15 +26,15 @@ class RandomModelSelector(ModelSelector):
 
         likelihood = None
 
-        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug, verbose,
-                         likelihood, inference_method, optimizer, n_restarts_optimizer, active_set_callback,
-                         eval_callback, expansion_callback)
+        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, likelihood,
+                         inference_method, optimizer, n_restarts_optimizer, active_set_callback, eval_callback,
+                         expansion_callback)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels
 
-    def _train(self, x, y) -> GPModelPopulation:
-        population = self.initialize(x, y)
+    def _train(self, x: np.ndarray, y: np.ndarray, verbose: int = 0) -> GPModelPopulation:
+        population = self.initialize(x, y, verbose=verbose)
         self.active_set_callback(population.models, self, x, y)
 
         depth = 0
@@ -41,13 +42,13 @@ class RandomModelSelector(ModelSelector):
             if depth > self.max_generations:
                 break
 
-            self._print_search_summary(depth, population)
+            self._print_search_summary(depth, population, verbose=verbose)
 
-            new_models = self.propose_new_models(population)
+            new_models = self.propose_new_models(population, verbose=verbose)
             self.expansion_callback(new_models, self, x, y)
             population.models = new_models
 
-            self.evaluate_models(population.candidates(), x, y)
+            self.evaluate_models(population.candidates(), x, y, verbose=verbose)
 
             self.active_set_callback(population.models, self, x, y)
 

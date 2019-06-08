@@ -41,14 +41,14 @@ class ModelSearchExperiment(BaseExperiment):
         self.model_selector = model_selector
         self.tracker = tracker
 
-    def run(self) -> None:
+    def run(self, verbose: int = 2) -> None:
         """Run the model search experiment"""
         if self.hide_warnings:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                self.model_selector.train(self.x_train, self.y_train)
+                self.model_selector.train(self.x_train, self.y_train, verbose=verbose)
         else:
-            self.model_selector.train(self.x_train, self.y_train)
+            self.model_selector.train(self.x_train, self.y_train, verbose=verbose)
 
         self.summarize(self.model_selector.best_model())
 

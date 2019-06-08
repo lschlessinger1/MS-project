@@ -29,7 +29,7 @@ class BaseGrammar:
 
     def expand(self,
                seed_kernels: List[GPModel],
-               verbose: bool = False) -> List[Covariance]:
+               verbose: int = 0) -> List[Covariance]:
         """Expand seed gp_models.
 
         :param seed_kernels:
@@ -40,7 +40,7 @@ class BaseGrammar:
 
     def get_candidates(self,
                        seed_kernels: List[GPModel],
-                       verbose: bool = False) -> List[Covariance]:
+                       verbose: int = 0) -> List[Covariance]:
         """Get next round of candidate covariances from current gp_models.
 
         :param seed_kernels:
@@ -67,20 +67,20 @@ class EvolutionaryGrammar(BaseGrammar):
 
     def expand(self,
                seed_kernels: List[GPModel],
-               verbose: bool = False) -> List[Covariance]:
+               verbose: int = 0) -> List[Covariance]:
         """Perform crossover and mutation.
 
         :param seed_kernels: list of AKSKernels
         :param verbose:
         :return:
         """
-        if verbose:
+        if verbose == 3:
             pretty_print_gp_models(seed_kernels, 'Seed')
 
         using_1_pt_cx = any([isinstance(v.operator, OnePointRecombinatorBase) for v in
                              self.population_operator.variators])
         if using_1_pt_cx:
-            if verbose:
+            if verbose == 3:
                 print('Using one-point crossover. Sorting gp_models.\n')
             # Sort trees if performing one-point crossover for alignment of trees.
             for seed_model in seed_kernels:
@@ -99,7 +99,7 @@ class EvolutionaryGrammar(BaseGrammar):
 
         new_covariances = remove_duplicate_kernels(covariances)
 
-        if verbose:
+        if verbose == 3:
             pretty_print_covariances(new_covariances, 'Newly expanded')
 
         return new_covariances
@@ -132,7 +132,7 @@ class CKSGrammar(BaseGrammar):
 
     def expand(self,
                seed_kernels: List[GPModel],
-               verbose: bool = False) -> List[Covariance]:
+               verbose: int = 0) -> List[Covariance]:
         """Greedy expansion of nodes.
 
         :param seed_kernels:
@@ -144,7 +144,7 @@ class CKSGrammar(BaseGrammar):
         # 1) Any subexpression S can be replaced with S + B, where B is any base kernel family.
         # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
         # 3) Any base kernel B may be replaced with any other base kernel family B'
-        if verbose:
+        if verbose == 3:
             pretty_print_gp_models(seed_kernels, 'Seed')
 
         new_covariances = []
@@ -154,7 +154,7 @@ class CKSGrammar(BaseGrammar):
         new_covariances = [sort_kernel(kernel) for kernel in new_covariances]
         new_covariances = remove_duplicate_kernels(new_covariances)
 
-        if verbose:
+        if verbose == 3:
             pretty_print_covariances(new_covariances, 'Newly expanded')
 
         return new_covariances
@@ -268,14 +268,14 @@ class BOMSGrammar(CKSGrammar):
 
     def get_candidates(self,
                        seed_kernels: List[GPModel],
-                       verbose: bool = False) -> List[Covariance]:
+                       verbose: int = 0) -> List[Covariance]:
         """Greedy and exploratory expansion of gp_models.
 
         :param seed_kernels: list of AKSKernels
         :param verbose:
         :return:
         """
-        if verbose:
+        if verbose == 3:
             pretty_print_gp_models(seed_kernels, 'Seed')
 
         # Exploration
@@ -290,7 +290,7 @@ class BOMSGrammar(CKSGrammar):
         # Concatenate
         candidates = candidates_best + candidates_random
 
-        if verbose:
+        if verbose == 3:
             pretty_print_covariances(candidates, 'Newly expanded')
 
         return candidates
@@ -351,19 +351,19 @@ class RandomGrammar(BOMSGrammar):
 
     def get_candidates(self,
                        seed_kernels: List[GPModel],
-                       verbose: bool = False) -> List[Covariance]:
+                       verbose: int = False) -> List[Covariance]:
         """Random expansion of nodes.
 
         :param seed_kernels:
         :param verbose:
         :return:
         """
-        if verbose:
+        if verbose == 3:
             pretty_print_gp_models(seed_kernels, 'Seed')
 
         new_covariances = self.expand_random(self.number_of_random_walks)
 
-        if verbose:
+        if verbose == 3:
             pretty_print_covariances(new_covariances, 'Newly expanded')
 
         return new_covariances

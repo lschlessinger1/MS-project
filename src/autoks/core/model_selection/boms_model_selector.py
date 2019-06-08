@@ -1,5 +1,6 @@
 from typing import List
 
+import numpy as np
 from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.model import log_likelihood_normalized
@@ -15,9 +16,8 @@ class BomsModelSelector(SurrogateBasedModelSelector):
     grammar: BOMSGrammar
 
     def __init__(self, grammar, objective=None, eval_budget=50, max_generations=None, n_parents: int = 1,
-                 query_strategy=None, additive_form=False, debug=False, verbose=False, optimizer=None,
-                 n_restarts_optimizer=3, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
+                 query_strategy=None, additive_form=False, optimizer=None, n_restarts_optimizer=3, use_laplace=True,
+                 active_set_callback=None, eval_callback=None, expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
 
@@ -32,11 +32,11 @@ class BomsModelSelector(SurrogateBasedModelSelector):
 
         likelihood = None
 
-        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, query_strategy,
-                         additive_form, debug, verbose, likelihood, inference_method, optimizer, n_restarts_optimizer,
-                         active_set_callback, eval_callback, expansion_callback)
+        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, query_strategy, additive_form,
+                         likelihood, inference_method, optimizer, n_restarts_optimizer, active_set_callback,
+                         eval_callback, expansion_callback)
 
-    def _train(self, x, y) -> GPModelPopulation:
+    def _train(self, x: np.ndarray, y: np.ndarray, verbose: int = 1) -> GPModelPopulation:
         pass
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
@@ -45,7 +45,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
         initial_candidates = self.grammar.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
         return initial_candidates
 
-    def initialize(self, x, y) -> GPModelPopulation:
+    def initialize(self, x, y, verbose: int = 0) -> GPModelPopulation:
         population = GPModelPopulation()
 
         # initialize models
@@ -53,7 +53,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
         indices = [0]
         initial_models = [initial_candidates[i] for i in indices]
 
-        self.evaluate_models(initial_models, x, y)
+        self.evaluate_models(initial_models, x, y, verbose=verbose)
 
         population.update(initial_candidates)
 

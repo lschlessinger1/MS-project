@@ -48,5 +48,5 @@ class BaseExperiment:
 
         self.hide_warnings = hide_warnings
 
-    def run(self) -> None:
+    def run(self, verbose: int = 2) -> None:
         raise NotImplementedError

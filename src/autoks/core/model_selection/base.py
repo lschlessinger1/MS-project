@@ -37,8 +37,6 @@ class ModelSelector:
                  max_generations: Optional[int] = None,
                  n_parents: int = 1,
                  additive_form: bool = False,
-                 debug: bool = False,
-                 verbose: bool = False,
                  likelihood: Optional[Likelihood] = None,
                  inference_method: Optional[LatentFunctionInference] = None,
                  optimizer: Optional[str] = None,
@@ -62,8 +60,6 @@ class ModelSelector:
 
         self.n_evals = 0
         self.additive_form = additive_form
-        self.debug = debug
-        self.verbose = verbose
         self.optimizer = optimizer
         self.n_restarts_optimizer = n_restarts_optimizer
 
@@ -107,20 +103,30 @@ class ModelSelector:
 
     def train(self,
               x: np.ndarray,
-              y: np.ndarray):
-        """Train the model selector."""
+              y: np.ndarray,
+              verbose: int = 1):
+        """Train the model selector.
+
+        :param x: Input data.
+        :param y: Target data.
+        :param verbose: Integer. 0, 1, 2, or 3. Verbosity mode.
+        :return:
+        """
         t_init = time()
         # Progress bar
-        if not self.debug:
+        if verbose:
             self.pbar = tqdm(total=self.eval_budget, unit='ev', desc='Model Evaluations')
-        population = self._train(x, y)
-        if not self.debug:
+        population = self._train(x, y, verbose=verbose)
+        if verbose:
             self.pbar.close()
         self.total_model_search_time += time() - t_init
         self.selected_models = population.models
         return self
 
-    def _train(self, x: np.ndarray, y: np.ndarray) -> GPModelPopulation:
+    def _train(self,
+               x: np.ndarray,
+               y: np.ndarray,
+               verbose: int = 1) -> GPModelPopulation:
         raise NotImplementedError
 
     def predict(self, x: np.ndarray) -> np.ndarray:
@@ -146,7 +152,8 @@ class ModelSelector:
 
     def initialize(self,
                    x: np.ndarray,
-                   y: np.ndarray) -> ActiveModelPopulation:
+                   y: np.ndarray,
+                   verbose: int = 0) -> ActiveModelPopulation:
         """Initialize models."""
         population = ActiveModelPopulation()
 
@@ -154,10 +161,10 @@ class ModelSelector:
 
         population.update(initial_candidates)
 
-        if self.debug:
+        if verbose == 3:
             pretty_print_gp_models(population.models, 'Initial candidate')
 
-        self.evaluate_models(population.candidates(), x, y)
+        self.evaluate_models(population.candidates(), x, y, verbose=verbose)
 
         return population
 
@@ -169,15 +176,18 @@ class ModelSelector:
         parent_selector = TruncationSelector(self.n_parents)
         return list(parent_selector.select(np.array(population.models), np.array(population.objectives())).tolist())
 
-    def propose_new_models(self, population: ActiveModelPopulation) -> List[GPModel]:
+    def propose_new_models(self,
+                           population: ActiveModelPopulation,
+                           verbose: int = 0) -> List[GPModel]:
         """Propose new models using the grammar.
 
         :param population:
+        :param verbose:
         :return:
         """
         parents = self.select_parents(population)
         t0_exp = time()
-        new_covariances = self.grammar.get_candidates(parents, verbose=self.debug)
+        new_covariances = self.grammar.get_candidates(parents, verbose=verbose)
         self.total_expansion_time += time() - t0_exp
 
         return self._covariances_to_gp_models(new_covariances)
@@ -185,23 +195,25 @@ class ModelSelector:
     def evaluate_models(self,
                         models: List[GPModel],
                         x: np.ndarray,
-                        y: np.ndarray) -> List[GPModel]:
+                        y: np.ndarray,
+                        verbose: int = 0) -> List[GPModel]:
         """Evaluate a set models on some training data.
 
         :param models:
         :param x:
         :param y:
+        :param verbose:
         :return:
         """
         evaluated_models = []
 
         for gp_model in models:
             if self.n_evals >= self.eval_budget:
-                if self.debug:
+                if verbose == 3:
                     print('Stopping optimization and evaluation. Evaluation budget reached.\n')
                 break
             elif gp_model.covariance.symbolic_expr_expanded in self.visited:
-                if self.debug:
+                if verbose == 3:
                     print('Skipping model because it was previously evaluated')
                     gp_model.covariance.pretty_print()
                     print()
@@ -214,13 +226,13 @@ class ModelSelector:
                 self.total_eval_time += time() - t0
                 self.n_evals += 1
                 self.visited.add(gp_model.covariance.symbolic_expr_expanded)
-                if not self.debug:
+                if verbose:
                     self.pbar.update()
 
             evaluated_models.append(gp_model)
             self.eval_callback([gp_model], self, x, y)
 
-        if self.debug:
+        if verbose == 3:
             print('Printing all results')
             # Sort models by scores with un-evaluated models last
             for gp_model in sorted(evaluated_models, key=lambda m: (m.score is not None, m.score), reverse=True):
@@ -253,10 +265,11 @@ class ModelSelector:
 
     def _print_search_summary(self,
                               depth: int,
-                              population: ActiveModelPopulation) -> None:
+                              population: ActiveModelPopulation,
+                              verbose: int = 0) -> None:
         """Print a summary of the model population at a given generation."""
         best_objective = population.best_objective()
-        if self.verbose:
+        if verbose >= 2:
             print()
             best_kernel = population.best_model()
             sizes = population.sizes()
@@ -268,7 +281,7 @@ class ModelSelector:
             print('Best kernel:')
             best_kernel.covariance.pretty_print()
             print('')
-        else:
+        elif verbose == 1:
             print()
             print('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
 
@@ -294,12 +307,10 @@ class ModelSelector:
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
     def __init__(self, grammar, objective, query_strategy=None, eval_budget=50, max_generations=None, n_parents=1,
-                 additive_form=False, debug=False, verbose=False, likelihood=None, inference_method=None,
-                 optimizer=None, n_restarts_optimizer=10, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
-        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, debug,
-                         verbose, likelihood, inference_method, optimizer, n_restarts_optimizer, active_set_callback,
-                         eval_callback,
+                 additive_form=False, likelihood=None, inference_method=None, optimizer=None, n_restarts_optimizer=10,
+                 active_set_callback=None, eval_callback=None, expansion_callback=None):
+        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, likelihood,
+                         inference_method, optimizer, n_restarts_optimizer, active_set_callback, eval_callback,
                          expansion_callback)
 
         if query_strategy is not None:
@@ -314,13 +325,15 @@ class SurrogateBasedModelSelector(ModelSelector, ABC):
                      query_strategy: QueryStrategy,
                      x_train,
                      y_train,
-                     hyperpriors: Optional[Hyperpriors] = None) \
+                     hyperpriors: Optional[Hyperpriors] = None,
+                     verbose: int = 0) \
             -> Tuple[List[GPModel], List[int], List[float]]:
         """Select gp_models using the acquisition function of the query strategy.
 
         :param population:
         :param query_strategy:
         :param hyperpriors:
+        :param verbose: Verbosity mode, 0 or 1.
         :return:
         """
         t0 = time()
@@ -332,7 +345,7 @@ class SurrogateBasedModelSelector(ModelSelector, ABC):
         selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
         self.total_query_time += time() - t0
 
-        if self.debug:
+        if verbose:
             n_selected = len(ind)
             plural_suffix = '' if n_selected == 1 else 's'
             print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')

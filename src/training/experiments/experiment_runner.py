@@ -23,11 +23,11 @@ class ExperimentRunner:
         self.exp_factory = exp_factory
         self.random_seed = random_seed
 
-    def run(self, **kwargs) -> None:
+    def run(self, verbose: int = 2, **kwargs) -> None:
         datasets = self.get_datasets()
         # Set random seed for reproducibility.
         np.random.seed(self.random_seed)
-        self.run_experiments(datasets, self.exp_factory, **kwargs)
+        self.run_experiments(datasets, self.exp_factory, verbose, **kwargs)
 
     def get_datasets(self) -> Sequence[Dataset]:
         raise NotImplementedError('Must be implemented.')
@@ -35,12 +35,13 @@ class ExperimentRunner:
     @staticmethod
     def run_experiments(datasets: Sequence[Dataset],
                         exp_factory: EXP_FACTORY,
+                        verbose: int = 2,
                         **kwargs) -> None:
         print(f'Running {len(datasets)} experiment(s)\n')
         for ds in datasets:
             print(f'Performing experiment on \n {ds}')
             experiment = exp_factory(ds, **kwargs)
-            experiment.run()
+            experiment.run(verbose=verbose)
 
 
 class KnownGPExperimentRunner(ExperimentRunner):
