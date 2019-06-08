@@ -64,39 +64,39 @@ def create_1d_kernel(kernel_family: str,
     return kernel
 
 
-def get_all_1d_kernels(base_kernels: List[str],
+def get_all_1d_kernels(base_kernel_names: List[str],
                        n_dims: int,
                        hyperpriors: Optional[Hyperpriors] = None) -> List[RawKernelType]:
-    """Get all possible 1-D gp_models.
+    """Get all possible 1-D kernels.
 
-    :param base_kernels:
+    :param base_kernel_names:
     :param n_dims: number of dimensions
     :param hyperpriors:
-    :return: list of models of size len(base_kernels) * n_dims
+    :return: list of kernels of size len(base_kernels) * n_dims
     """
     kernel_mapping = KERNEL_DICT
-    models = []
+    kernels = []
 
-    for kern_fam in base_kernels:
+    for kern_fam in base_kernel_names:
         kern_cls = kernel_mapping[kern_fam]
         for d in range(n_dims):
             hyperprior = None if hyperpriors is None else hyperpriors[kern_fam]
             kernel = create_1d_kernel(kern_fam, d, kernel_mapping=kernel_mapping, kernel_cls=kern_cls,
                                       hyperpriors=hyperprior)
-            models.append(kernel)
+            kernels.append(kernel)
 
-    return models
+    return kernels
 
 
-def get_priors(cov: Kern):
+def get_priors(kernel: RawKernelType):
     """Get the priors of a kernel (if they exists)"""
     # for now, make sure that priors are return in sorted order of parameters
     # and that all parameters have priors
-    if cov.priors.size != cov.size:
+    if kernel.priors.size != kernel.size:
         raise ValueError('All kernel parameters must have priors')
 
-    priors = np.empty(cov.priors.size, dtype=np.object)
-    for prior, ind in cov.priors.items():
+    priors = np.empty(kernel.priors.size, dtype=np.object)
+    for prior, ind in kernel.priors.items():
         priors[ind] = prior
     return priors
 
@@ -111,19 +111,19 @@ def set_priors(param: Parameterized, priors: Dict[str, Prior]) -> Parameterized:
     return param_copy
 
 
-def encode_prior(p: Prior) -> bytes:
+def encode_prior(prior: Prior) -> bytes:
     import pickle
-    p_string = pickle.dumps(p)
+    p_string = pickle.dumps(prior)
     return p_string
 
 
-def decode_prior(p_string: bytes) -> Prior:
+def decode_prior(prior_string: bytes) -> Prior:
     import pickle
-    p_new = pickle.loads(p_string)
-    return p_new
+    prior_new = pickle.loads(prior_string)
+    return prior_new
 
 
-def subkernel_expression(kernel: Kern,
+def subkernel_expression(kernel: RawKernelType,
                          show_params: bool = False,
                          html_like: bool = False) -> str:
     """Construct a subkernel expression
