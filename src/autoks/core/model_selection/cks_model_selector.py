@@ -13,9 +13,9 @@ from src.autoks.core.model_selection.base import ModelSelector
 class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
-    def __init__(self, grammar, objective=None, eval_budget=50, max_generations=10, n_parents: int = 1,
-                 additive_form=False, optimizer='scg', n_restarts_optimizer=3, use_laplace=True,
-                 active_set_callback=None, eval_callback=None, expansion_callback=None):
+    def __init__(self, grammar, objective=None, n_parents: int = 1, additive_form=False, optimizer='scg',
+                 n_restarts_optimizer=3, use_laplace=True, active_set_callback=None, eval_callback=None,
+                 expansion_callback=None):
 
         if objective is None:
             def negative_BIC(m):
@@ -32,26 +32,30 @@ class CKSModelSelector(ModelSelector):
 
         likelihood = None
 
-        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, likelihood,
-                         inference_method, optimizer, n_restarts_optimizer, active_set_callback, eval_callback,
-                         expansion_callback)
+        super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
+                         n_restarts_optimizer, active_set_callback, eval_callback, expansion_callback)
 
-    def _train(self, x: np.ndarray, y: np.ndarray, verbose: int = 1) -> GPModelPopulation:
-        population = self.initialize(x, y, verbose=verbose)
+    def _train(self,
+               x: np.ndarray,
+               y: np.ndarray,
+               eval_budget: int,
+               max_generations: int = 10,
+               verbose: int = 1) -> GPModelPopulation:
+        population = self.initialize(x, y, eval_budget, verbose=verbose)
         self.active_set_callback(population.models, self, x, y)
 
         depth = 0
-        while self.n_evals < self.eval_budget:
-            if depth > self.max_generations:
+        while self.n_evals < eval_budget:
+            if depth > max_generations:
                 break
 
-            self._print_search_summary(depth, population, verbose=verbose)
+            self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
             new_models = self.propose_new_models(population, verbose=verbose)
             self.expansion_callback(new_models, self, x, y)
             population.models = new_models
 
-            self.evaluate_models(population.candidates(), x, y, verbose=verbose)
+            self.evaluate_models(population.candidates(), x, y, eval_budget, verbose=verbose)
 
             self.active_set_callback(population.models, self, x, y)
 

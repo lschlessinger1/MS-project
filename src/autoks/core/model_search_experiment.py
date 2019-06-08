@@ -41,14 +41,19 @@ class ModelSearchExperiment(BaseExperiment):
         self.model_selector = model_selector
         self.tracker = tracker
 
-    def run(self, verbose: int = 2) -> None:
+    def run(self,
+            eval_budget: int = 50,
+            max_n_generations: Optional[int] = None,
+            verbose: int = 2) -> None:
         """Run the model search experiment"""
         if self.hide_warnings:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                self.model_selector.train(self.x_train, self.y_train, verbose=verbose)
+                self.model_selector.train(self.x_train, self.y_train, eval_budget=eval_budget,
+                                          max_generations=max_n_generations, verbose=verbose)
         else:
-            self.model_selector.train(self.x_train, self.y_train, verbose=verbose)
+            self.model_selector.train(self.x_train, self.y_train, eval_budget=eval_budget,
+                                      max_generations=max_n_generations, verbose=verbose)
 
         self.summarize(self.model_selector.best_model())
 
@@ -163,8 +168,8 @@ class ModelSearchExperiment(BaseExperiment):
         grammar = CKSGrammar(n_dims)
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = CKSModelSelector(grammar, objective=log_likelihood_normalized, max_generations=None,
-                                          optimizer=None, active_set_callback=tracker.active_set_callback,
+        model_selector = CKSModelSelector(grammar, objective=log_likelihood_normalized, optimizer=None,
+                                          active_set_callback=tracker.active_set_callback,
                                           eval_callback=tracker.evaluations_callback,
                                           expansion_callback=tracker.expansion_callback, **kwargs)
         return cls(x, y, model_selector, tracker=tracker)

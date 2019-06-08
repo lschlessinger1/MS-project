@@ -16,9 +16,9 @@ from src.evalg.selection import ExponentialRankingSelector, TruncationSelector
 class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
 
-    def __init__(self, grammar, objective=None, initializer=None, n_init_trees=10, eval_budget=50, max_generations=None,
-                 n_parents=10, max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=3,
-                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
+    def __init__(self, grammar, objective=None, initializer=None, n_init_trees=10, n_parents=10,
+                 max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=3, use_laplace=True,
+                 active_set_callback=None, eval_callback=None, expansion_callback=None):
         if objective is None:
             objective = log_likelihood_normalized
 
@@ -29,9 +29,8 @@ class EvolutionaryModelSelector(ModelSelector):
 
         likelihood = None
 
-        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, likelihood,
-                         inference_method, optimizer, n_restarts_optimizer, active_set_callback, eval_callback,
-                         expansion_callback)
+        super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
+                         n_restarts_optimizer, active_set_callback, eval_callback, expansion_callback)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
         self.max_offspring = max_offspring
@@ -39,22 +38,24 @@ class EvolutionaryModelSelector(ModelSelector):
     def _train(self,
                x: np.ndarray,
                y: np.ndarray,
+               eval_budget: int,
+               max_generations: int,
                verbose: int = 1) -> GPModelPopulation:
-        population = self.initialize(x, y, verbose=verbose)
+        population = self.initialize(x, y, eval_budget, verbose=verbose)
         self.active_set_callback(population.models, self, x, y)
 
         depth = 0
-        while self.n_evals < self.eval_budget:
-            if depth > self.max_generations:
+        while self.n_evals < eval_budget:
+            if depth > max_generations:
                 break
 
-            self._print_search_summary(depth, population, verbose=verbose)
+            self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
             new_models = self.propose_new_models(population, verbose=verbose)
             self.expansion_callback(new_models, self, x, y)
             population.update(new_models)
 
-            self.evaluate_models(population.candidates(), x, y, verbose=verbose)
+            self.evaluate_models(population.candidates(), x, y, eval_budget, verbose=verbose)
 
             population.models = self.select_offspring(population)
             self.active_set_callback(population.models, self, x, y)
@@ -95,22 +96,26 @@ class EvolutionaryModelSelector(ModelSelector):
 class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
     grammar: EvolutionaryGrammar
 
-    def __init__(self, grammar, objective=None, query_strategy=None, initializer=None, n_init_trees=10, eval_budget=50,
-                 max_generations=None, n_parents=10, max_offspring: int = 25, additive_form=False, optimizer=None,
-                 n_restarts_optimizer=10, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
+    def __init__(self, grammar, objective=None, query_strategy=None, initializer=None, n_init_trees=10, n_parents=10,
+                 max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=10,
+                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
 
         if objective is None:
             objective = log_likelihood_normalized
 
-        super().__init__(grammar, objective, query_strategy, eval_budget, max_generations, n_parents, additive_form,
-                         optimizer, n_restarts_optimizer, use_laplace, active_set_callback, eval_callback,
+        super().__init__(grammar, objective, query_strategy, n_parents, additive_form, optimizer, n_restarts_optimizer,
+                         use_laplace, active_set_callback, eval_callback,
                          expansion_callback)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
         self.max_offspring = max_offspring
 
-    def _train(self, x: np.ndarray, y: np.ndarray, verbose: int = 1) -> GPModelPopulation:
+    def _train(self,
+               x: np.ndarray,
+               y: np.ndarray,
+               eval_budget: int,
+               max_generations: int,
+               verbose: int = 1) -> GPModelPopulation:
         pass
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:

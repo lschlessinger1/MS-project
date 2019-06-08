@@ -33,8 +33,6 @@ class ModelSelector:
     def __init__(self,
                  grammar: BaseGrammar,
                  objective: Callable[[RawGPModelType], float],
-                 eval_budget: int = 50,
-                 max_generations: Optional[int] = None,
                  n_parents: int = 1,
                  additive_form: bool = False,
                  likelihood: Optional[Likelihood] = None,
@@ -46,15 +44,6 @@ class ModelSelector:
                  expansion_callback: Optional[Callable] = None):
         self.grammar = grammar
         self.objective = objective
-
-        self.eval_budget = eval_budget  # number of model evaluations (budget)
-
-        if max_generations is None:
-            # By default, the model search is terminated only when the evaluation budget is expended.
-            max_iterations = 1000
-            self.max_generations = max(max_iterations, eval_budget * 2)
-        else:
-            self.max_generations = max_generations
 
         self.n_parents = n_parents
 
@@ -104,28 +93,44 @@ class ModelSelector:
     def train(self,
               x: np.ndarray,
               y: np.ndarray,
+              eval_budget: int = 50,
+              max_generations: Optional[int] = None,
               verbose: int = 1):
         """Train the model selector.
 
         :param x: Input data.
         :param y: Target data.
+        :param eval_budget: Number of model evaluations (budget).
+        :param max_generations: Maximum number of generations.
         :param verbose: Integer. 0, 1, 2, or 3. Verbosity mode.
         :return:
         """
-        t_init = time()
+        if max_generations is None:
+            # By default, the model search is terminated only when the evaluation budget is expended.
+            max_iterations = 1000
+            max_generations = max(max_iterations, eval_budget * 2)
+        else:
+            max_generations = max_generations
+
         # Progress bar
         if verbose:
-            self.pbar = tqdm(total=self.eval_budget, unit='ev', desc='Model Evaluations')
-        population = self._train(x, y, verbose=verbose)
+            self.pbar = tqdm(total=eval_budget, unit='ev', desc='Model Evaluations')
+
+        t_init = time()
+        population = self._train(x, y, eval_budget=eval_budget, max_generations=max_generations, verbose=verbose)
+        self.total_model_search_time += time() - t_init
+
         if verbose:
             self.pbar.close()
-        self.total_model_search_time += time() - t_init
+
         self.selected_models = population.models
         return self
 
     def _train(self,
                x: np.ndarray,
                y: np.ndarray,
+               eval_budget: int,
+               max_generations: int,
                verbose: int = 1) -> GPModelPopulation:
         raise NotImplementedError
 
@@ -153,6 +158,7 @@ class ModelSelector:
     def initialize(self,
                    x: np.ndarray,
                    y: np.ndarray,
+                   eval_budget: int,
                    verbose: int = 0) -> ActiveModelPopulation:
         """Initialize models."""
         population = ActiveModelPopulation()
@@ -164,7 +170,7 @@ class ModelSelector:
         if verbose == 3:
             pretty_print_gp_models(population.models, 'Initial candidate')
 
-        self.evaluate_models(population.candidates(), x, y, verbose=verbose)
+        self.evaluate_models(population.candidates(), x, y, eval_budget, verbose=verbose)
 
         return population
 
@@ -196,19 +202,21 @@ class ModelSelector:
                         models: List[GPModel],
                         x: np.ndarray,
                         y: np.ndarray,
+                        eval_budget: int,
                         verbose: int = 0) -> List[GPModel]:
         """Evaluate a set models on some training data.
 
         :param models:
         :param x:
         :param y:
+        :param eval_budget:
         :param verbose:
         :return:
         """
         evaluated_models = []
 
         for gp_model in models:
-            if self.n_evals >= self.eval_budget:
+            if self.n_evals >= eval_budget:
                 if verbose == 3:
                     print('Stopping optimization and evaluation. Evaluation budget reached.\n')
                 break
@@ -266,6 +274,8 @@ class ModelSelector:
     def _print_search_summary(self,
                               depth: int,
                               population: ActiveModelPopulation,
+                              eval_budget: int,
+                              max_generations: int,
                               verbose: int = 0) -> None:
         """Print a summary of the model population at a given generation."""
         best_objective = population.best_objective()
@@ -273,8 +283,8 @@ class ModelSelector:
             print()
             best_kernel = population.best_model()
             sizes = population.sizes()
-            print(f'Iteration {depth}/{self.max_generations}')
-            print(f'Evaluated {self.n_evals}/{self.eval_budget}')
+            print(f'Iteration {depth}/{max_generations}')
+            print(f'Evaluated {self.n_evals}/{eval_budget}')
             print(f'Avg. objective = %0.6f' % population.avg_objective())
             print(f'Best objective = %.6f' % best_objective)
             print(f'Avg. size = %.2f' % np.mean(sizes))
@@ -306,12 +316,11 @@ class ModelSelector:
 
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
-    def __init__(self, grammar, objective, query_strategy=None, eval_budget=50, max_generations=None, n_parents=1,
-                 additive_form=False, likelihood=None, inference_method=None, optimizer=None, n_restarts_optimizer=10,
-                 active_set_callback=None, eval_callback=None, expansion_callback=None):
-        super().__init__(grammar, objective, eval_budget, max_generations, n_parents, additive_form, likelihood,
-                         inference_method, optimizer, n_restarts_optimizer, active_set_callback, eval_callback,
-                         expansion_callback)
+    def __init__(self, grammar, objective, query_strategy=None, n_parents=1, additive_form=False, likelihood=None,
+                 inference_method=None, optimizer=None, n_restarts_optimizer=10, active_set_callback=None,
+                 eval_callback=None, expansion_callback=None):
+        super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
+                         n_restarts_optimizer, active_set_callback, eval_callback, expansion_callback)
 
         if query_strategy is not None:
             self.query_strategy = query_strategy
