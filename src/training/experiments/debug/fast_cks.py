@@ -30,7 +30,7 @@ objective = log_likelihood_normalized
 
 tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-model_selector = CKSModelSelector(grammar, objective, eval_budget=6, additive_form=False,
+model_selector = CKSModelSelector(grammar, objective, eval_budget=22, additive_form=False,
                                   active_set_callback=tracker.active_set_callback,
                                   eval_callback=tracker.evaluations_callback, n_restarts_optimizer=4,
                                   expansion_callback=tracker.expansion_callback)
