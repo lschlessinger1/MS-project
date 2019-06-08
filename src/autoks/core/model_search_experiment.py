@@ -35,7 +35,7 @@ class ModelSearchExperiment(BaseExperiment):
                  model_selector: ModelSelector,
                  x_test: Optional[np.ndarray] = None,
                  y_test: Optional[np.ndarray] = None,
-                 tracker=None,
+                 tracker: ModelSearchTracker = None,
                  hide_warnings: bool = True):
         super().__init__(x_train, y_train, x_test, y_test, hide_warnings=hide_warnings)
         self.model_selector = model_selector
@@ -50,10 +50,16 @@ class ModelSearchExperiment(BaseExperiment):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 self.model_selector.train(self.x_train, self.y_train, eval_budget=eval_budget,
-                                          max_generations=max_n_generations, verbose=verbose)
+                                          max_generations=max_n_generations,
+                                          active_set_callback=self.tracker.active_set_callback,
+                                          eval_callback=self.tracker.evaluations_callback,
+                                          expansion_callback=self.tracker.expansion_callback, verbose=verbose)
         else:
             self.model_selector.train(self.x_train, self.y_train, eval_budget=eval_budget,
-                                      max_generations=max_n_generations, verbose=verbose)
+                                      max_generations=max_n_generations,
+                                      active_set_callback=self.tracker.active_set_callback,
+                                      eval_callback=self.tracker.evaluations_callback,
+                                      expansion_callback=self.tracker.expansion_callback, verbose=verbose)
 
         self.summarize(self.model_selector.best_model())
 
@@ -154,9 +160,7 @@ class ModelSearchExperiment(BaseExperiment):
 
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = BomsModelSelector(grammar, use_laplace=True, active_set_callback=tracker.active_set_callback,
-                                           eval_callback=tracker.evaluations_callback,
-                                           expansion_callback=tracker.expansion_callback, **kwargs)
+        model_selector = BomsModelSelector(grammar, use_laplace=True, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
 
@@ -168,10 +172,7 @@ class ModelSearchExperiment(BaseExperiment):
         grammar = CKSGrammar(n_dims)
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = CKSModelSelector(grammar, objective=log_likelihood_normalized, optimizer=None,
-                                          active_set_callback=tracker.active_set_callback,
-                                          eval_callback=tracker.evaluations_callback,
-                                          expansion_callback=tracker.expansion_callback, **kwargs)
+        model_selector = CKSModelSelector(grammar, objective=log_likelihood_normalized, optimizer=None, **kwargs)
         return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
@@ -204,10 +205,7 @@ class ModelSearchExperiment(BaseExperiment):
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
         model_selector = EvolutionaryModelSelector(grammar, n_parents=n_parents, max_offspring=pop_size,
-                                                   initializer=initializer,
-                                                   active_set_callback=tracker.active_set_callback,
-                                                   eval_callback=tracker.evaluations_callback,
-                                                   expansion_callback=tracker.expansion_callback, **kwargs)
+                                                   initializer=initializer, **kwargs)
         return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
@@ -221,9 +219,6 @@ class ModelSearchExperiment(BaseExperiment):
 
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = RandomModelSelector(grammar, objective,
-                                             active_set_callback=tracker.active_set_callback,
-                                             eval_callback=tracker.evaluations_callback,
-                                             expansion_callback=tracker.expansion_callback, **kwargs)
+        model_selector = RandomModelSelector(grammar, objective, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test, tracker)

@@ -14,8 +14,7 @@ class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
     def __init__(self, grammar, objective=None, n_parents: int = 1, additive_form=False, optimizer='scg',
-                 n_restarts_optimizer=3, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
+                 n_restarts_optimizer=3, use_laplace=True):
 
         if objective is None:
             def negative_BIC(m):
@@ -33,7 +32,7 @@ class CKSModelSelector(ModelSelector):
         likelihood = None
 
         super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
-                         n_restarts_optimizer, active_set_callback, eval_callback, expansion_callback)
+                         n_restarts_optimizer)
 
     def _train(self,
                x: np.ndarray,

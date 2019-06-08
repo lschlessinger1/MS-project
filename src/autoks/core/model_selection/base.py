@@ -38,10 +38,7 @@ class ModelSelector:
                  likelihood: Optional[Likelihood] = None,
                  inference_method: Optional[LatentFunctionInference] = None,
                  optimizer: Optional[str] = None,
-                 n_restarts_optimizer: int = 10,
-                 active_set_callback: Optional[Callable] = None,
-                 eval_callback: Optional[Callable] = None,
-                 expansion_callback: Optional[Callable] = None):
+                 n_restarts_optimizer: int = 10):
         self.grammar = grammar
         self.objective = objective
 
@@ -74,28 +71,15 @@ class ModelSelector:
         # visited set of all expanded kernel expressions previously evaluated
         self.visited = set()
 
-        # Callbacks
-        def do_nothing(*args, **kwargs):
-            pass
-
-        if active_set_callback is None:
-            active_set_callback = do_nothing
-        self.active_set_callback = active_set_callback
-
-        if eval_callback is None:
-            eval_callback = do_nothing
-        self.eval_callback = eval_callback
-
-        if expansion_callback is None:
-            expansion_callback = do_nothing
-        self.expansion_callback = expansion_callback
-
     def train(self,
               x: np.ndarray,
               y: np.ndarray,
               eval_budget: int = 50,
               max_generations: Optional[int] = None,
-              verbose: int = 1):
+              verbose: int = 1,
+              active_set_callback: Optional[Callable] = None,
+              eval_callback: Optional[Callable] = None,
+              expansion_callback: Optional[Callable] = None):
         """Train the model selector.
 
         :param x: Input data.
@@ -111,6 +95,23 @@ class ModelSelector:
             max_generations = max(max_iterations, eval_budget * 2)
         else:
             max_generations = max_generations
+
+        # TODO: make callbacks into a single object and pass them down
+        # Callbacks
+        def do_nothing(*args, **kwargs):
+            pass
+
+        if active_set_callback is None:
+            active_set_callback = do_nothing
+        self.active_set_callback = active_set_callback
+
+        if eval_callback is None:
+            eval_callback = do_nothing
+        self.eval_callback = eval_callback
+
+        if expansion_callback is None:
+            expansion_callback = do_nothing
+        self.expansion_callback = expansion_callback
 
         # Progress bar
         if verbose:
@@ -317,10 +318,9 @@ class ModelSelector:
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
     def __init__(self, grammar, objective, query_strategy=None, n_parents=1, additive_form=False, likelihood=None,
-                 inference_method=None, optimizer=None, n_restarts_optimizer=10, active_set_callback=None,
-                 eval_callback=None, expansion_callback=None):
+                 inference_method=None, optimizer=None, n_restarts_optimizer=10):
         super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
-                         n_restarts_optimizer, active_set_callback, eval_callback, expansion_callback)
+                         n_restarts_optimizer)
 
         if query_strategy is not None:
             self.query_strategy = query_strategy

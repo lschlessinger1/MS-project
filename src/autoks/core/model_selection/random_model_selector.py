@@ -14,8 +14,7 @@ class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
     def __init__(self, grammar, objective=None, n_parents: int = 1, additive_form=False, optimizer=None,
-                 n_restarts_optimizer=3, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
+                 n_restarts_optimizer=3, use_laplace=True):
         if objective is None:
             objective = log_likelihood_normalized
 
@@ -27,7 +26,7 @@ class RandomModelSelector(ModelSelector):
         likelihood = None
 
         super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
-                         n_restarts_optimizer, active_set_callback, eval_callback, expansion_callback)
+                         n_restarts_optimizer)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels

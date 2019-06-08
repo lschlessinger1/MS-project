@@ -30,10 +30,7 @@ objective = negative_BIC
 
 tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-model_selector = RandomModelSelector(grammar, objective, additive_form=False,
-                                     active_set_callback=tracker.active_set_callback,
-                                     eval_callback=tracker.evaluations_callback,
-                                     expansion_callback=tracker.expansion_callback)
+model_selector = RandomModelSelector(grammar, objective, additive_form=False)
 
 experiment = ModelSearchExperiment(x_train, y_train, model_selector, x_test, y_test, tracker)
 experiment.run(eval_budget=8)

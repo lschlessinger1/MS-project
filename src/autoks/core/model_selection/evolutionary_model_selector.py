@@ -17,8 +17,8 @@ class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
 
     def __init__(self, grammar, objective=None, initializer=None, n_init_trees=10, n_parents=10,
-                 max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=3, use_laplace=True,
-                 active_set_callback=None, eval_callback=None, expansion_callback=None):
+                 max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=3,
+                 use_laplace=True):
         if objective is None:
             objective = log_likelihood_normalized
 
@@ -30,7 +30,7 @@ class EvolutionaryModelSelector(ModelSelector):
         likelihood = None
 
         super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
-                         n_restarts_optimizer, active_set_callback, eval_callback, expansion_callback)
+                         n_restarts_optimizer)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
         self.max_offspring = max_offspring
@@ -98,14 +98,13 @@ class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
 
     def __init__(self, grammar, objective=None, query_strategy=None, initializer=None, n_init_trees=10, n_parents=10,
                  max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=10,
-                 use_laplace=True, active_set_callback=None, eval_callback=None, expansion_callback=None):
+                 use_laplace=True):
 
         if objective is None:
             objective = log_likelihood_normalized
 
         super().__init__(grammar, objective, query_strategy, n_parents, additive_form, optimizer, n_restarts_optimizer,
-                         use_laplace, active_set_callback, eval_callback,
-                         expansion_callback)
+                         use_laplace)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
         self.max_offspring = max_offspring

@@ -16,8 +16,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
     grammar: BOMSGrammar
 
     def __init__(self, grammar, objective=None, n_parents: int = 1, query_strategy=None, additive_form=False,
-                 optimizer=None, n_restarts_optimizer=3, use_laplace=True, active_set_callback=None, eval_callback=None,
-                 expansion_callback=None):
+                 optimizer=None, n_restarts_optimizer=3, use_laplace=True):
         if objective is None:
             objective = log_likelihood_normalized
 
@@ -33,7 +32,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
         likelihood = None
 
         super().__init__(grammar, objective, n_parents, query_strategy, additive_form, likelihood, inference_method,
-                         optimizer, n_restarts_optimizer, active_set_callback, eval_callback, expansion_callback)
+                         optimizer, n_restarts_optimizer)
 
     def _train(self,
                x: np.ndarray,
