@@ -137,15 +137,16 @@ class CKSGrammar(BaseGrammar):
                verbose: int = 0) -> List[Covariance]:
         """Greedy expansion of nodes.
 
+        Choose highest scoring kernel and expand it by applying all possible operators.
+        Context-free grammar rules:
+        1) Any subexpression S can be replaced with S + B, where B is any base kernel family.
+        2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
+        3) Any base kernel B may be replaced with any other base kernel family B'
+
         :param seed_models:
         :param verbose:
         :return:
         """
-        # choose highest scoring kernel (using BIC) and expand it by applying all possible operators
-        # CFG:
-        # 1) Any subexpression S can be replaced with S + B, where B is any base kernel family.
-        # 2) Any subexpression S can be replaced with S x B, where B is any base kernel family.
-        # 3) Any base kernel B may be replaced with any other base kernel family B'
         new_covariances = []
         for gp_model in seed_models:
             new_covariances += self.expand_full_kernel(gp_model.covariance)
