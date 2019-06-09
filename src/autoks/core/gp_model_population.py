@@ -72,7 +72,7 @@ class ActiveModelPopulation(GPModelPopulation):
 
     def avg_objective(self) -> float:
         """Average objective"""
-        return float(np.mean(self.objectives()))
+        return float(np.nanmean(self.objectives()))
 
     def best_objective(self) -> float:
         """Objective of the highest scoring kernel"""
@@ -80,7 +80,7 @@ class ActiveModelPopulation(GPModelPopulation):
 
     def best_model(self) -> GPModel:
         """Model with the highest fitness score."""
-        return self.models[int(np.argmax(self.objectives()))]
+        return self.models[int(np.nanargmax(self.objectives()))]
 
     def phenotypic_diversity(self) -> float:
         """Measure of the number of different solution behavior present."""
