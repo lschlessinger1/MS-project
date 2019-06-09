@@ -160,7 +160,7 @@ class ModelSearchExperiment(BaseExperiment):
 
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = BomsModelSelector(grammar, use_laplace=True, **kwargs)
+        model_selector = BomsModelSelector(grammar, **kwargs)
 
         return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
 

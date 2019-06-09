@@ -1,11 +1,11 @@
-from typing import List
+from typing import List, Callable, Optional
 
 import numpy as np
-from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.model import BIC
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
+from src.autoks.core.gp_models.gp_regression import gp_regression
 from src.autoks.core.grammar import CKSGrammar
 from src.autoks.core.model_selection.base import ModelSelector
 
@@ -13,8 +13,9 @@ from src.autoks.core.model_selection.base import ModelSelector
 class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
-    def __init__(self, grammar, objective=None, n_parents: int = 1, additive_form=False, optimizer='scg',
-                 n_restarts_optimizer=3, use_laplace=True):
+    def __init__(self, grammar, objective=None, n_parents: int = 1, additive_form=False,
+                 gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer='scg',
+                 n_restarts_optimizer=3):
 
         if objective is None:
             def negative_BIC(m):
@@ -24,14 +25,7 @@ class CKSModelSelector(ModelSelector):
             # Use the negative BIC because we want to maximize the objective.
             objective = negative_BIC
 
-        if use_laplace:
-            inference_method = Laplace()
-        else:
-            inference_method = None
-
-        likelihood = None
-
-        super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
+        super().__init__(grammar, objective, n_parents, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)
 
     def _train(self,

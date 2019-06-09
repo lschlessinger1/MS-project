@@ -1,12 +1,12 @@
-from typing import List
+from typing import List, Callable, Optional
 
 import numpy as np
-from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.model import log_likelihood_normalized
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
+from src.autoks.core.gp_models.gp_regression import gp_regression
 from src.autoks.core.grammar import BOMSGrammar
 from src.autoks.core.model_selection.base import SurrogateBasedModelSelector
 from src.autoks.core.query_strategy import BestScoreStrategy
@@ -16,7 +16,8 @@ class BomsModelSelector(SurrogateBasedModelSelector):
     grammar: BOMSGrammar
 
     def __init__(self, grammar, objective=None, n_parents: int = 1, query_strategy=None, additive_form=False,
-                 optimizer=None, n_restarts_optimizer=3, use_laplace=True):
+                 gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer=None,
+                 n_restarts_optimizer=3):
         if objective is None:
             objective = log_likelihood_normalized
 
@@ -24,15 +25,14 @@ class BomsModelSelector(SurrogateBasedModelSelector):
             acq = ExpectedImprovementPerSec()
             query_strategy = BestScoreStrategy(scoring_func=acq)
 
-        if use_laplace:
-            inference_method = Laplace()
+        # Use laplace inference by default.
+        if gp_args is not None and 'inference_method' not in gp_args:
+            gp_args['inference_method'] = 'laplace'
         else:
-            inference_method = None
+            gp_args = {'inference_method': 'laplace'}
 
-        likelihood = None
-
-        super().__init__(grammar, objective, n_parents, query_strategy, additive_form, likelihood, inference_method,
-                         optimizer, n_restarts_optimizer)
+        super().__init__(grammar, objective, n_parents, query_strategy, additive_form, gp_fn, gp_args, optimizer,
+                         n_restarts_optimizer)
 
     def _train(self,
                x: np.ndarray,

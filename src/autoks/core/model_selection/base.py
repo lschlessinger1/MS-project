@@ -3,16 +3,14 @@ from time import time
 from typing import List, Tuple, Optional, Callable
 
 import numpy as np
-from GPy import likelihoods
-from GPy.inference.latent_function_inference import LatentFunctionInference
 from GPy.likelihoods import Likelihood
 from tqdm import tqdm
 
-from src.autoks.backend.kernel import set_priors
 from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
+from src.autoks.core.gp_models.gp_regression import gp_regression
 from src.autoks.core.grammar import BaseGrammar
 from src.autoks.core.hyperprior import Hyperpriors
 from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy
@@ -35,10 +33,11 @@ class ModelSelector:
                  objective: Callable[[RawGPModelType], float],
                  n_parents: int = 1,
                  additive_form: bool = False,
-                 likelihood: Optional[Likelihood] = None,
-                 inference_method: Optional[LatentFunctionInference] = None,
+                 gp_fn: Callable = gp_regression,
+                 gp_args: Optional[dict] = None,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 10):
+        gp_args = gp_args or {}
         self.grammar = grammar
         self.objective = objective
 
@@ -53,20 +52,12 @@ class ModelSelector:
         self.total_expansion_time = 0
         self.total_model_search_time = 0
 
-        # build default model dict of GP (assuming GP Regression)
-        if likelihood is None:
-            likelihood = likelihoods.Gaussian()
-
-        if self.grammar.hyperpriors is not None:
-            # set likelihood hyperpriors
-            likelihood_priors = self.grammar.hyperpriors['GP']
-            likelihood = set_priors(likelihood, likelihood_priors)
-
-        default_model_dict = dict()
-        self.default_likelihood = likelihood
-
-        default_model_dict['inference_method'] = inference_method
-        self.model_dict = default_model_dict
+        # Build default model dict of GP.
+        if grammar.hyperpriors is not None:
+            gp_args = gp_args or {}
+            # Set likelihood hyperpriors.
+            gp_args["likelihood_hyperprior"] = grammar.hyperpriors['GP']
+        self.model_dict = gp_fn(**gp_args)
 
         # visited set of all expanded kernel expressions previously evaluated
         self.visited = set()
@@ -306,7 +297,7 @@ class ModelSelector:
 
         # Set model dict
         gp_model.model_input_dict = self.model_dict
-        gp_model.likelihood = self.default_likelihood.copy()
+        gp_model.likelihood = self.model_dict["likelihood"].copy()
 
         # Convert to additive form if necessary
         if self.additive_form:
@@ -317,10 +308,10 @@ class ModelSelector:
 
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
-    def __init__(self, grammar, objective, query_strategy=None, n_parents=1, additive_form=False, likelihood=None,
-                 inference_method=None, optimizer=None, n_restarts_optimizer=10):
-        super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
-                         n_restarts_optimizer)
+    def __init__(self, grammar, objective, query_strategy=None, n_parents=1, additive_form=False,
+                 gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer=None,
+                 n_restarts_optimizer=10):
+        super().__init__(grammar, objective, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
         if query_strategy is not None:
             self.query_strategy = query_strategy

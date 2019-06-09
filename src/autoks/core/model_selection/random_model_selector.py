@@ -1,11 +1,11 @@
-from typing import List
+from typing import List, Callable, Optional
 
 import numpy as np
-from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.model import log_likelihood_normalized
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
+from src.autoks.core.gp_models.gp_regression import gp_regression
 from src.autoks.core.grammar import RandomGrammar
 from src.autoks.core.model_selection.base import ModelSelector
 
@@ -14,18 +14,11 @@ class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
     def __init__(self, grammar, objective=None, n_parents: int = 1, additive_form=False, optimizer=None,
-                 n_restarts_optimizer=3, use_laplace=True):
+                 n_restarts_optimizer=3, gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None):
         if objective is None:
             objective = log_likelihood_normalized
 
-        if use_laplace:
-            inference_method = Laplace()
-        else:
-            inference_method = None
-
-        likelihood = None
-
-        super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
+        super().__init__(grammar, objective, n_parents, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:

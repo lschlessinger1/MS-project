@@ -1,12 +1,12 @@
-from typing import List
+from typing import List, Callable, Optional
 
 import numpy as np
-from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.model import log_likelihood_normalized
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
+from src.autoks.core.gp_models.gp_regression import gp_regression
 from src.autoks.core.grammar import EvolutionaryGrammar
 from src.autoks.core.kernel_encoding import tree_to_kernel
 from src.autoks.core.model_selection.base import ModelSelector, SurrogateBasedModelSelector
@@ -18,18 +18,11 @@ class EvolutionaryModelSelector(ModelSelector):
 
     def __init__(self, grammar, objective=None, initializer=None, n_init_trees=10, n_parents=10,
                  max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=3,
-                 use_laplace=True):
+                 gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None):
         if objective is None:
             objective = log_likelihood_normalized
 
-        if use_laplace:
-            inference_method = Laplace()
-        else:
-            inference_method = None
-
-        likelihood = None
-
-        super().__init__(grammar, objective, n_parents, additive_form, likelihood, inference_method, optimizer,
+        super().__init__(grammar, objective, n_parents, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
@@ -98,13 +91,13 @@ class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
 
     def __init__(self, grammar, objective=None, query_strategy=None, initializer=None, n_init_trees=10, n_parents=10,
                  max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=10,
-                 use_laplace=True):
+                 gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None):
 
         if objective is None:
             objective = log_likelihood_normalized
 
-        super().__init__(grammar, objective, query_strategy, n_parents, additive_form, optimizer, n_restarts_optimizer,
-                         use_laplace)
+        super().__init__(grammar, objective, query_strategy, n_parents, additive_form, gp_fn, gp_args, optimizer,
+                         n_restarts_optimizer)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
         self.max_offspring = max_offspring
