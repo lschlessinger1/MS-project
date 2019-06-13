@@ -11,28 +11,32 @@ from src.autoks.statistics import StatBook, StatBookCollection, Statistic
 
 class ModelSearchTracker:
 
-    def __init__(self, base_kernel_names: List[str]):
+    def __init__(self):
         # statistics used for plotting
         self.n_hyperparams_name = 'n_hyperparameters'
         self.n_operands_name = 'n_operands'
-        self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in base_kernel_names]
         self.score_name = 'score'
         self.cov_dists_name = 'cov_dists'
         self.diversity_scores_name = 'diversity_scores'
         self.best_stat_name = 'best'
-        # All stat books track these variables
-        shared_multi_stat_names = [self.n_hyperparams_name, self.n_operands_name] + self.base_kern_freq_names
-
-        # raw value statistics
-        base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in base_kernel_names]
-        shared_stats = [get_n_hyperparams, get_n_operands] + base_kern_stat_funcs
 
         # separate these!
         self.evaluations_name = 'evaluations'
         self.active_set_name = 'active_set'
         self.expansion_name = 'expansion'
-        stat_book_names = [self.evaluations_name, self.expansion_name, self.active_set_name]
-        self.stat_book_collection = StatBookCollection(stat_book_names, shared_multi_stat_names, shared_stats)
+        self.stat_book_names = [self.evaluations_name, self.expansion_name, self.active_set_name]
+
+    def set_stat_book_collection(self, base_kernel_names: List[str]):
+        base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in base_kernel_names]
+
+        # All stat books track these variables
+        shared_multi_stat_names = [self.n_hyperparams_name, self.n_operands_name] + base_kern_freq_names
+
+        # raw value statistics
+        base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in base_kernel_names]
+        shared_stats = [get_n_hyperparams, get_n_operands] + base_kern_stat_funcs
+
+        self.stat_book_collection = StatBookCollection(self.stat_book_names, shared_multi_stat_names, shared_stats)
 
         sb_active_set = self.stat_book_collection.stat_books[self.active_set_name]
         sb_active_set.add_raw_value_stat(self.score_name, get_model_scores)

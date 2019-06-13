@@ -156,9 +156,10 @@ class ModelSearchExperiment(BaseExperiment):
         hyperpriors = boms_hyperpriors()
         grammar = BOMSGrammar(base_kernel_names, n_dims, hyperpriors)
 
-        tracker = ModelSearchTracker(grammar.base_kernel_names)
-
         model_selector = BomsModelSelector(grammar, **kwargs)
+
+        tracker = ModelSearchTracker()
+        tracker.set_stat_book_collection(model_selector.grammar.base_kernel_names)
 
         return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
 
@@ -168,9 +169,12 @@ class ModelSearchExperiment(BaseExperiment):
         x, y = dataset.x, dataset.y
         n_dims = x.shape[1]
         grammar = CKSGrammar(n_dims)
-        tracker = ModelSearchTracker(grammar.base_kernel_names)
 
         model_selector = CKSModelSelector(grammar, fitness_fn=log_likelihood_normalized, optimizer=None, **kwargs)
+
+        tracker = ModelSearchTracker()
+        tracker.set_stat_book_collection(model_selector.grammar.base_kernel_names)
+
         return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
@@ -200,10 +204,12 @@ class ModelSearchExperiment(BaseExperiment):
                                       population_operator=pop_operator)
         initializer = HalfAndHalfGenerator(binary_operators=grammar.operators, max_depth=1, operands=mutator.operands)
 
-        tracker = ModelSearchTracker(grammar.base_kernel_names)
-
         model_selector = EvolutionaryModelSelector(grammar, n_parents=n_parents, max_offspring=pop_size,
                                                    initializer=initializer, **kwargs)
+
+        tracker = ModelSearchTracker()
+        tracker.set_stat_book_collection(model_selector.grammar.base_kernel_names)
+
         return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
@@ -213,10 +219,10 @@ class ModelSearchExperiment(BaseExperiment):
         x_train, x_test, y_train, y_test = dataset.split_train_test()
         n_dims = x_train.shape[1]
         grammar = RandomGrammar(n_dims)
-        objective = log_likelihood_normalized
 
-        tracker = ModelSearchTracker(grammar.base_kernel_names)
+        model_selector = RandomModelSelector(grammar, **kwargs)
 
-        model_selector = RandomModelSelector(grammar, objective, **kwargs)
+        tracker = ModelSearchTracker()
+        tracker.set_stat_book_collection(model_selector.grammar.base_kernel_names)
 
         return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
