@@ -10,7 +10,7 @@ from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
-from src.autoks.core.gp_models.gp_regression import gp_regression
+from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import BaseGrammar
 from src.autoks.core.hyperprior import Hyperpriors
 from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy

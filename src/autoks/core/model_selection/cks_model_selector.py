@@ -5,7 +5,7 @@ import numpy as np
 from src.autoks.backend.model import BIC
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
-from src.autoks.core.gp_models.gp_regression import gp_regression
+from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import CKSGrammar
 from src.autoks.core.model_selection.base import ModelSelector
 

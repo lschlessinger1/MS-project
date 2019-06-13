@@ -6,7 +6,7 @@ from src.autoks.backend.model import log_likelihood_normalized
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
-from src.autoks.core.gp_models.gp_regression import gp_regression
+from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import EvolutionaryGrammar
 from src.autoks.core.kernel_encoding import tree_to_kernel
 from src.autoks.core.model_selection.base import ModelSelector, SurrogateBasedModelSelector
