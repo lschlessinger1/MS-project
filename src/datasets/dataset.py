@@ -20,6 +20,7 @@ class Dataset:
 
     @classmethod
     def data_dirname(cls) -> Path:
+        """Dataset directory name."""
         return Path(__file__).resolve().parents[2] / 'data'
 
     def load_or_generate_data(self) -> None:
@@ -29,6 +30,7 @@ class Dataset:
     def split_train_test(self,
                          test_size: float = 0.2,
                          **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Return the train-test split of the dataset."""
         self.load_or_generate_data()
         x_train, x_test, y_train, y_test = train_test_split(self.x, self.y, test_size=test_size, **kwargs)
         return x_train, x_test, y_train, y_test
@@ -38,6 +40,7 @@ class Dataset:
 
 
 def _download_raw_dataset(metadata: dict) -> None:
+    """Download the raw dataset if not already downloaded."""
     if os.path.exists(metadata['filename']):
         return
 
@@ -51,6 +54,7 @@ def _download_raw_dataset(metadata: dict) -> None:
 
 
 def _parse_args():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--subsample_fraction",
                         type=float,
