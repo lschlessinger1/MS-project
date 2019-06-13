@@ -37,7 +37,7 @@ class ModelSelector:
                  gp_args: Optional[dict] = None,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 10):
-        gp_args = gp_args or {}
+
         self.grammar = grammar
         self.fitness_fn = fitness_fn
 
@@ -53,6 +53,7 @@ class ModelSelector:
         self.total_model_search_time = 0
 
         # Build default model dict of GP.
+        gp_args = gp_args or {}
         if grammar.hyperpriors is not None:
             gp_args = gp_args or {}
             # Set likelihood hyperpriors.
