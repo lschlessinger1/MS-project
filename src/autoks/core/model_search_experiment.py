@@ -8,7 +8,7 @@ from src.autoks.backend.kernel import get_all_1d_kernels
 from src.autoks.backend.model import log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.core.experiment import BaseExperiment
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.grammar import CKSGrammar, BOMSGrammar, EvolutionaryGrammar, RandomGrammar
+from src.autoks.core.grammar import CKSGrammar, BomsGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.core.hyperprior import boms_hyperpriors
 from src.autoks.core.kernel_encoding import KernelNode
 from src.autoks.core.model_selection import BomsModelSelector, CKSModelSelector, EvolutionaryModelSelector, \
@@ -154,7 +154,7 @@ class ModelSearchExperiment(BaseExperiment):
         n_dims = x_train.shape[1]
         base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
         hyperpriors = boms_hyperpriors()
-        grammar = BOMSGrammar(base_kernel_names, n_dims, hyperpriors)
+        grammar = BomsGrammar(base_kernel_names, n_dims, hyperpriors)
 
         model_selector = BomsModelSelector(grammar, **kwargs)
 

@@ -6,7 +6,7 @@ from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.grammar import BaseGrammar, CKSGrammar, BOMSGrammar
+from src.autoks.core.grammar import BaseGrammar, CKSGrammar, BomsGrammar
 
 
 class TestBaseGrammar(unittest.TestCase):
@@ -237,7 +237,7 @@ class TestBomsGrammar(unittest.TestCase):
         n_dim = 2
 
         # No optional arguments
-        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
         self.assertEqual(base_kernel_names, grammar.base_kernel_names)
         self.assertEqual(n_dim, grammar.n_dims)
         self.assertIsNotNone(grammar.hyperpriors)
@@ -251,7 +251,7 @@ class TestBomsGrammar(unittest.TestCase):
         n_dim = 2
 
         # No optional arguments
-        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
 
         seed = np.random.randint(100)
         np.random.seed(seed)
@@ -267,7 +267,7 @@ class TestBomsGrammar(unittest.TestCase):
         base_kernel_names = ['SE', 'RQ']
         n_dim = 2
 
-        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
 
         grammar.number_of_top_k_best = 1
         grammar.num_random_walks = 5
@@ -285,7 +285,7 @@ class TestBomsGrammar(unittest.TestCase):
         n_dim = 2
         num_random_walks = 5
 
-        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
         grammar.random_walk_geometric_dist_parameter = 1 / 3
         grammar.number_of_random_walks = 1
 
@@ -300,7 +300,7 @@ class TestBomsGrammar(unittest.TestCase):
         n_dim = 1
 
         np.random.seed(5)
-        grammar = BOMSGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
 
         grammar.number_of_top_k_best = 1
         num_random_walks = 5

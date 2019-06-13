@@ -7,13 +7,13 @@ from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.gp_models import gp_regression
-from src.autoks.core.grammar import BOMSGrammar
+from src.autoks.core.grammar import BomsGrammar
 from src.autoks.core.model_selection.base import SurrogateBasedModelSelector
 from src.autoks.core.query_strategy import BestScoreStrategy
 
 
 class BomsModelSelector(SurrogateBasedModelSelector):
-    grammar: BOMSGrammar
+    grammar: BomsGrammar
 
     def __init__(self, grammar, fitness_fn=None, n_parents: int = 1, query_strategy=None, additive_form=False,
                  gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer=None,

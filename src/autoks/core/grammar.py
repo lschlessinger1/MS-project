@@ -251,7 +251,7 @@ class CKSGrammar(BaseGrammar):
         return all_kernels
 
 
-class BOMSGrammar(CKSGrammar):
+class BomsGrammar(CKSGrammar):
     """
     Bayesian optimization for automated model selection (Malkomes et al., 2016)
     """
@@ -339,7 +339,7 @@ class BOMSGrammar(CKSGrammar):
         return new_kernels
 
 
-class RandomGrammar(BOMSGrammar):
+class RandomGrammar(BomsGrammar):
     """Random grammar randomly expands nodes using a CKS expansion"""
 
     def __init__(self,
