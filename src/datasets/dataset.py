@@ -1,7 +1,7 @@
 import argparse
 import os
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -11,13 +11,15 @@ from src.datasets import util
 
 class Dataset:
     """Simple abstract class for datasets."""
+    x: Optional[np.ndarray]
+    y: Optional[np.ndarray]
 
     def __init__(self):
         self.x = None
         self.y = None
 
     @classmethod
-    def data_dirname(cls):
+    def data_dirname(cls) -> Path:
         return Path(__file__).resolve().parents[2] / 'data'
 
     def load_or_generate_data(self) -> None:
@@ -25,7 +27,7 @@ class Dataset:
         raise NotImplementedError('Must be implemented in a child class')
 
     def split_train_test(self,
-                         test_size=0.2,
+                         test_size: float = 0.2,
                          **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         self.load_or_generate_data()
         x_train, x_test, y_train, y_test = train_test_split(self.x, self.y, test_size=test_size, **kwargs)
@@ -35,7 +37,7 @@ class Dataset:
         return f'{self.__class__.__name__}'
 
 
-def _download_raw_dataset(metadata):
+def _download_raw_dataset(metadata: dict) -> None:
     if os.path.exists(metadata['filename']):
         return
 
