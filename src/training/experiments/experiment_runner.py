@@ -3,13 +3,8 @@ from typing import List, Callable, Optional, Sequence
 import numpy as np
 
 from src.autoks.core.covariance import Covariance
-from src.datasets.airline import AirlineDataset
-from src.datasets.concrete import ConcreteDataset
+from src.datasets import AirlineDataset, MaunaDataset, MethaneDataset, SolarDataset, ConcreteDataset, HousingDataset
 from src.datasets.dataset import Dataset
-from src.datasets.housing import HousingDataset
-from src.datasets.mauna import MaunaDataset
-from src.datasets.methane import MethaneDataset
-from src.datasets.solar import SolarDataset
 from src.datasets.synthetic.known_gp_dataset import KnownGPDataset, cks_known_kernels
 
 EXP_FACTORY = Callable
