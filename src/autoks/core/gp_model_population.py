@@ -67,20 +67,21 @@ class GPModelPopulation(PopulationBase):
 class ActiveModelPopulation(GPModelPopulation):
     """Evaluated models"""
 
-    def objectives(self) -> List[float]:
+    def fitness_scores(self) -> List[float]:
+        """List of all fitness scores."""
         return [gp_model.score for gp_model in self.models]
 
-    def avg_objective(self) -> float:
-        """Average objective"""
-        return float(np.nanmean(self.objectives()))
+    def mean_fitness(self) -> float:
+        """Average fitness"""
+        return float(np.nanmean(self.fitness_scores()))
 
-    def best_objective(self) -> float:
+    def best_fitness(self) -> float:
         """Objective of the highest scoring kernel"""
         return self.best_model().score
 
     def best_model(self) -> GPModel:
         """Model with the highest fitness score."""
-        return self.models[int(np.nanargmax(self.objectives()))]
+        return self.models[int(np.nanargmax(self.fitness_scores()))]
 
     def phenotypic_diversity(self) -> float:
         """Measure of the number of different solution behavior present."""

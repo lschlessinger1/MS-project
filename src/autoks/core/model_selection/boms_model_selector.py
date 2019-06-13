@@ -15,11 +15,11 @@ from src.autoks.core.query_strategy import BestScoreStrategy
 class BomsModelSelector(SurrogateBasedModelSelector):
     grammar: BOMSGrammar
 
-    def __init__(self, grammar, objective=None, n_parents: int = 1, query_strategy=None, additive_form=False,
+    def __init__(self, grammar, fitness_fn=None, n_parents: int = 1, query_strategy=None, additive_form=False,
                  gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer=None,
                  n_restarts_optimizer=3):
-        if objective is None:
-            objective = log_likelihood_normalized
+        if fitness_fn is None:
+            fitness_fn = log_likelihood_normalized
 
         if query_strategy is None:
             acq = ExpectedImprovementPerSec()
@@ -31,7 +31,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
         else:
             gp_args = {'inference_method': 'laplace'}
 
-        super().__init__(grammar, objective, n_parents, query_strategy, additive_form, gp_fn, gp_args, optimizer,
+        super().__init__(grammar, fitness_fn, n_parents, query_strategy, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)
 
     def _train(self,

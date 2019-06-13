@@ -13,19 +13,19 @@ from src.autoks.core.model_selection.base import ModelSelector
 class CKSModelSelector(ModelSelector):
     grammar: CKSGrammar
 
-    def __init__(self, grammar, objective=None, n_parents: int = 1, additive_form=False,
+    def __init__(self, grammar, fitness_fn=None, n_parents: int = 1, additive_form=False,
                  gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer='scg',
                  n_restarts_optimizer=3):
 
-        if objective is None:
+        if fitness_fn is None:
             def negative_BIC(m):
                 """Computes the negative of the Bayesian Information Criterion (BIC)."""
                 return -BIC(m)
 
-            # Use the negative BIC because we want to maximize the objective.
-            objective = negative_BIC
+            # Use the negative BIC because we want to maximize the fitness_fn.
+            fitness_fn = negative_BIC
 
-        super().__init__(grammar, objective, n_parents, additive_form, gp_fn, gp_args, optimizer,
+        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)
 
     def _train(self,

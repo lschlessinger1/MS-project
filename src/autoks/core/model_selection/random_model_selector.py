@@ -13,12 +13,12 @@ from src.autoks.core.model_selection.base import ModelSelector
 class RandomModelSelector(ModelSelector):
     grammar: RandomGrammar
 
-    def __init__(self, grammar, objective=None, n_parents: int = 1, additive_form=False, optimizer=None,
+    def __init__(self, grammar, fitness_fn=None, n_parents: int = 1, additive_form=False, optimizer=None,
                  n_restarts_optimizer=3, gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None):
-        if objective is None:
-            objective = log_likelihood_normalized
+        if fitness_fn is None:
+            fitness_fn = log_likelihood_normalized
 
-        super().__init__(grammar, objective, n_parents, additive_form, gp_fn, gp_args, optimizer,
+        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:

@@ -30,7 +30,7 @@ class ModelSelector:
 
     def __init__(self,
                  grammar: BaseGrammar,
-                 objective: Callable[[RawGPModelType], float],
+                 fitness_fn: Callable[[RawGPModelType], float],
                  n_parents: int = 1,
                  additive_form: bool = False,
                  gp_fn: Callable = gp_regression,
@@ -39,7 +39,7 @@ class ModelSelector:
                  n_restarts_optimizer: int = 10):
         gp_args = gp_args or {}
         self.grammar = grammar
-        self.objective = objective
+        self.fitness_fn = fitness_fn
 
         self.n_parents = n_parents
 
@@ -172,7 +172,7 @@ class ModelSelector:
         By default, choose top k models.
         """
         parent_selector = TruncationSelector(self.n_parents)
-        return list(parent_selector.select(np.array(population.models), np.array(population.objectives())).tolist())
+        return list(parent_selector.select(np.array(population.models), np.array(population.fitness_scores())).tolist())
 
     def propose_new_models(self,
                            population: ActiveModelPopulation,
@@ -221,7 +221,7 @@ class ModelSelector:
 
             if not gp_model.evaluated:
                 t0 = time()
-                gp_model.score_model(x, y, self.objective, optimizer=self.optimizer,
+                gp_model.score_model(x, y, self.fitness_fn, optimizer=self.optimizer,
                                      n_restarts=self.n_restarts_optimizer)
                 self.total_eval_time += time() - t0
                 self.n_evals += 1
@@ -237,7 +237,7 @@ class ModelSelector:
             # Sort models by scores with un-evaluated models last
             for gp_model in sorted(evaluated_models, key=lambda m: (m.score is not None, m.score), reverse=True):
                 gp_model.covariance.pretty_print()
-                print('\tobjective =', gp_model.score)
+                print('\tfitness_fn =', gp_model.score)
             print('')
         return evaluated_models
 
@@ -270,15 +270,15 @@ class ModelSelector:
                               max_generations: int,
                               verbose: int = 0) -> None:
         """Print a summary of the model population at a given generation."""
-        best_objective = population.best_objective()
+        best_objective = population.best_fitness()
         if verbose >= 2:
             print()
             best_kernel = population.best_model()
             sizes = population.sizes()
             print(f'Iteration {depth}/{max_generations}')
             print(f'Evaluated {self.n_evals}/{eval_budget}')
-            print(f'Avg. objective = %0.6f' % population.avg_objective())
-            print(f'Best objective = %.6f' % best_objective)
+            print(f'Avg. fitness_fn = %0.6f' % population.mean_fitness())
+            print(f'Best fitness_fn = %.6f' % best_objective)
             print(f'Avg. size = %.2f' % np.mean(sizes))
             print('Best kernel:')
             best_kernel.covariance.pretty_print()
@@ -308,10 +308,10 @@ class ModelSelector:
 
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
-    def __init__(self, grammar, objective, query_strategy=None, n_parents=1, additive_form=False,
+    def __init__(self, grammar, fitness_fn, query_strategy=None, n_parents=1, additive_form=False,
                  gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer=None,
                  n_restarts_optimizer=10):
-        super().__init__(grammar, objective, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
+        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
         if query_strategy is not None:
             self.query_strategy = query_strategy

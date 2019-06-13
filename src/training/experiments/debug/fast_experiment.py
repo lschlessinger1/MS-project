@@ -25,12 +25,12 @@ def negative_BIC(m):
     return -BIC(m)
 
 
-# Use the negative BIC because we want to maximize the objective.
-objective = negative_BIC
+# Use the negative BIC because we want to maximize the fitness_fn.
+fitness_fn = negative_BIC
 
 tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-model_selector = RandomModelSelector(grammar, objective, additive_form=False)
+model_selector = RandomModelSelector(grammar, fitness_fn, additive_form=False)
 
 experiment = ModelSearchExperiment(x_train, y_train, model_selector, x_test, y_test, tracker)
 experiment.run(eval_budget=8)

@@ -16,13 +16,13 @@ from src.evalg.selection import ExponentialRankingSelector, TruncationSelector
 class EvolutionaryModelSelector(ModelSelector):
     grammar: EvolutionaryGrammar
 
-    def __init__(self, grammar, objective=None, initializer=None, n_init_trees=10, n_parents=10,
+    def __init__(self, grammar, fitness_fn=None, initializer=None, n_init_trees=10, n_parents=10,
                  max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=3,
                  gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None):
-        if objective is None:
-            objective = log_likelihood_normalized
+        if fitness_fn is None:
+            fitness_fn = log_likelihood_normalized
 
-        super().__init__(grammar, objective, n_parents, additive_form, gp_fn, gp_args, optimizer,
+        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
@@ -63,7 +63,7 @@ class EvolutionaryModelSelector(ModelSelector):
         Here, exponential ranking selection is used.
         """
         selector = ExponentialRankingSelector(self.n_parents, c=0.7)
-        return list(selector.select(np.array(population.models), np.array(population.objectives())).tolist())
+        return list(selector.select(np.array(population.models), np.array(population.fitness_scores())).tolist())
 
     def select_offspring(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Select offspring for the next generation.
@@ -71,7 +71,7 @@ class EvolutionaryModelSelector(ModelSelector):
         Here, the top k offspring are chosen to seed the next generation.
         """
         selector = TruncationSelector(self.max_offspring)
-        offspring = list(selector.select(np.array(population.models), np.array(population.objectives())).tolist())
+        offspring = list(selector.select(np.array(population.models), np.array(population.fitness_scores())).tolist())
         return offspring
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
@@ -89,14 +89,14 @@ class EvolutionaryModelSelector(ModelSelector):
 class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
     grammar: EvolutionaryGrammar
 
-    def __init__(self, grammar, objective=None, query_strategy=None, initializer=None, n_init_trees=10, n_parents=10,
+    def __init__(self, grammar, fitness_fn=None, query_strategy=None, initializer=None, n_init_trees=10, n_parents=10,
                  max_offspring: int = 25, additive_form=False, optimizer=None, n_restarts_optimizer=10,
                  gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None):
 
-        if objective is None:
-            objective = log_likelihood_normalized
+        if fitness_fn is None:
+            fitness_fn = log_likelihood_normalized
 
-        super().__init__(grammar, objective, query_strategy, n_parents, additive_form, gp_fn, gp_args, optimizer,
+        super().__init__(grammar, fitness_fn, query_strategy, n_parents, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)
         self.initializer = initializer
         self.n_init_trees = n_init_trees

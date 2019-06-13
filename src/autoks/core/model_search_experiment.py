@@ -170,7 +170,7 @@ class ModelSearchExperiment(BaseExperiment):
         grammar = CKSGrammar(n_dims)
         tracker = ModelSearchTracker(grammar.base_kernel_names)
 
-        model_selector = CKSModelSelector(grammar, objective=log_likelihood_normalized, optimizer=None, **kwargs)
+        model_selector = CKSModelSelector(grammar, fitness_fn=log_likelihood_normalized, optimizer=None, **kwargs)
         return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
