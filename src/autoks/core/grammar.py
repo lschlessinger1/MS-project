@@ -271,9 +271,9 @@ class BomsGrammar(CKSGrammar):
     """
     Bayesian optimization for automated model selection (Malkomes et al., 2016)
     """
-    random_walk_geometric_dist_parameter: float
-    number_of_top_k_best: int
-    number_of_random_walks: int
+    _random_walk_geometric_dist_parameter: float
+    _number_of_top_k_best: int
+    _number_of_random_walks: int
 
     def __init__(self,
                  base_kernel_names: Optional[List[str]] = None,
@@ -284,9 +284,9 @@ class BomsGrammar(CKSGrammar):
 
         super().__init__(base_kernel_names, hyperpriors)
 
-        self.random_walk_geometric_dist_parameter = 1 / 3  # Termination probability.
-        self.number_of_top_k_best = 3
-        self.number_of_random_walks = 15
+        self._random_walk_geometric_dist_parameter = 1 / 3  # Termination probability.
+        self._number_of_top_k_best = 3
+        self._number_of_random_walks = 15
 
     def expand(self,
                seed_models: List[GPModel],
@@ -298,7 +298,7 @@ class BomsGrammar(CKSGrammar):
         :return:
         """
         # Exploration
-        total_num_walks = self.number_of_random_walks
+        total_num_walks = self._number_of_random_walks
         candidates_random = self.expand_random(total_num_walks)
 
         # Exploitation
@@ -317,7 +317,7 @@ class BomsGrammar(CKSGrammar):
         :param n_walks: Total number of random walks.
         :return:
         """
-        parameter = self.random_walk_geometric_dist_parameter
+        parameter = self._random_walk_geometric_dist_parameter
         depths = np.random.geometric(parameter, size=n_walks)
         new_kernels = []
         for depth in depths:
@@ -340,7 +340,7 @@ class BomsGrammar(CKSGrammar):
         :return:
         """
         new_kernels = []
-        num_exploit_top = self.number_of_top_k_best
+        num_exploit_top = self._number_of_top_k_best
         if len(fitness_score) < 2:
             return new_kernels
 
@@ -374,4 +374,4 @@ class RandomGrammar(BomsGrammar):
         :param verbose: Verbosity mode.
         :return:
         """
-        return self.expand_random(self.number_of_random_walks)
+        return self.expand_random(self._number_of_random_walks)

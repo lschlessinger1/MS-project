@@ -258,9 +258,9 @@ class TestBomsGrammar(unittest.TestCase):
         self.assertEqual(n_dim, grammar.n_dims)
         self.assertIsNotNone(grammar.hyperpriors)
 
-        self.assertIsNotNone(grammar.random_walk_geometric_dist_parameter)
-        self.assertIsNotNone(grammar.number_of_top_k_best)
-        self.assertIsNotNone(grammar.number_of_random_walks)
+        self.assertIsNotNone(grammar._random_walk_geometric_dist_parameter)
+        self.assertIsNotNone(grammar._number_of_top_k_best)
+        self.assertIsNotNone(grammar._number_of_random_walks)
 
     def test_get_candidates_empty(self):
         base_kernel_names = ['SE', 'RQ']
@@ -275,7 +275,7 @@ class TestBomsGrammar(unittest.TestCase):
         candidates = grammar.get_candidates([])
 
         np.random.seed(seed)
-        total_num_walks = grammar.number_of_random_walks
+        total_num_walks = grammar._number_of_random_walks
         expected_candidates = grammar.expand_random(total_num_walks)
 
         self.assertEqual(len(expected_candidates), len(candidates))
@@ -287,9 +287,9 @@ class TestBomsGrammar(unittest.TestCase):
         grammar = BomsGrammar(base_kernel_names=base_kernel_names)
         grammar.build(n_dim)
 
-        grammar.number_of_top_k_best = 1
+        grammar._number_of_top_k_best = 1
         grammar.num_random_walks = 5
-        kernels = grammar.expand_random(grammar.number_of_random_walks)
+        kernels = grammar.expand_random(grammar._number_of_random_walks)
         fitness_score = np.random.permutation(len(kernels))
 
         models = [GPModel(kernel) for kernel in kernels]
@@ -305,8 +305,8 @@ class TestBomsGrammar(unittest.TestCase):
 
         grammar = BomsGrammar(base_kernel_names=base_kernel_names)
         grammar.build(n_dim)
-        grammar.random_walk_geometric_dist_parameter = 1 / 3
-        grammar.number_of_random_walks = 1
+        grammar._random_walk_geometric_dist_parameter = 1 / 3
+        grammar._number_of_random_walks = 1
 
         np.random.seed(5)
         new_kernels = grammar.expand_random(num_random_walks)
@@ -322,7 +322,7 @@ class TestBomsGrammar(unittest.TestCase):
         grammar = BomsGrammar(base_kernel_names=base_kernel_names)
         grammar.build(n_dim)
 
-        grammar.number_of_top_k_best = 1
+        grammar._number_of_top_k_best = 1
         num_random_walks = 5
         kernels = grammar.expand_random(num_random_walks)
         fitness_score = list(np.random.permutation(len(kernels)).tolist())
