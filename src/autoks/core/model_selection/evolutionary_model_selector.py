@@ -10,7 +10,7 @@ from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import EvolutionaryGrammar
 from src.autoks.core.kernel_encoding import tree_to_kernel
 from src.autoks.core.model_selection.base import ModelSelector, SurrogateBasedModelSelector
-from src.evalg.genprog import BinaryTreeGenerator
+from src.evalg.genprog.generators import BinaryTreeGenerator
 from src.evalg.selection import ExponentialRankingSelector, TruncationSelector
 
 

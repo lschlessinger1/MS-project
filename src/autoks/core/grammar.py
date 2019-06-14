@@ -8,7 +8,7 @@ from src.autoks.core.covariance import Covariance, remove_duplicate_kernels, pre
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.hyperprior import Hyperpriors, boms_hyperpriors
 from src.autoks.core.kernel_encoding import tree_to_kernel
-from src.evalg.genprog import OnePointRecombinatorBase
+from src.evalg.genprog.crossover import OnePointRecombinatorBase
 from src.evalg.vary import PopulationOperator
 
 

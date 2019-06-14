@@ -4,10 +4,12 @@ from unittest.mock import MagicMock
 import numpy as np
 
 from src.evalg.encoding import BinaryTree, BinaryTreeNode
-from src.evalg.genprog import TreePointMutator, TreeMutator, SubTreeExchangeMutator, BinaryTreeGenerator, \
-    GrowGenerator, FullGenerator, GrowMutator, FullMutator, SubtreeExchangeRecombinatorBase, HalfAndHalfMutator, \
-    HalfAndHalfGenerator, SubtreeExchangeRecombinator, SubtreeExchangeLeafBiasedRecombinator, OnePointRecombinatorBase, \
-    OnePointRecombinator, OnePointLeafBiasedRecombinator, OnePointStrictRecombinator
+from src.evalg.genprog import GrowGenerator, FullGenerator, TreePointMutator, FullMutator, HalfAndHalfMutator
+from src.evalg.genprog.crossover import SubtreeExchangeRecombinatorBase, SubtreeExchangeRecombinator, \
+    SubtreeExchangeLeafBiasedRecombinator, OnePointRecombinatorBase, OnePointRecombinator, \
+    OnePointLeafBiasedRecombinator, OnePointStrictRecombinator
+from src.evalg.genprog.generators import BinaryTreeGenerator, HalfAndHalfGenerator
+from src.evalg.genprog.mutation import TreeMutator, SubTreeExchangeMutator, GrowMutator
 from src.test.evalg.support.util import NodeCheckTestCase
 
 
