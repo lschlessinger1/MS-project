@@ -17,15 +17,14 @@ class BaseGrammar:
     operators: List[str]
 
     def __init__(self,
-                 base_kernel_names: List[str],
-                 n_dims: int,
+                 base_kernel_names: Optional[List[str]],
                  hyperpriors: Optional[Hyperpriors] = None):
         self.operators = BaseGrammar.DEFAULT_OPERATORS
         self.base_kernel_names = base_kernel_names
-        self.n_dims = n_dims
         self.hyperpriors = hyperpriors
-        raw_kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, hyperpriors=self.hyperpriors)
-        self.base_kernels = [Covariance(kernel) for kernel in raw_kernels]
+        self.n_dims = None
+        self.base_kernels = None
+        self.built = False
 
     def expand(self,
                seed_models: List[GPModel],
@@ -47,6 +46,11 @@ class BaseGrammar:
         :param verbose: Verbosity mode.
         :return:
         """
+        if not self.built:
+            raise RuntimeError('You must build a grammar before '
+                               'getting candidates. '
+                               'Use `grammar.build(n_dims)`.')
+
         if verbose == 3:
             pretty_print_gp_models(seed_models, 'Seed')
 
@@ -57,20 +61,31 @@ class BaseGrammar:
 
         return new_covariances
 
+    def build(self, n_dims: int):
+        """Set the base kernels."""
+        if self.base_kernel_names is None:
+            self.base_kernel_names = self._get_default_base_kernel_names(n_dims)
+        self.n_dims = n_dims
+        raw_kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, hyperpriors=self.hyperpriors)
+        self.base_kernels = [Covariance(kernel) for kernel in raw_kernels]
+        self.built = True
+
+    @staticmethod
+    def _get_default_base_kernel_names(n_dims: int) -> List[str]:
+        return ['SE', 'RQ']
+
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
             f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r})'
 
 
 class EvolutionaryGrammar(BaseGrammar):
-    population_operator: PopulationOperator
 
     def __init__(self,
                  base_kernel_names: List[str],
-                 n_dims: int,
-                 population_operator,
+                 population_operator: PopulationOperator,
                  hyperpriors: Optional[Hyperpriors] = None):
-        super().__init__(base_kernel_names, n_dims, hyperpriors)
+        super().__init__(base_kernel_names, hyperpriors)
         self.population_operator = population_operator
 
     def expand(self,
@@ -118,20 +133,21 @@ class CKSGrammar(BaseGrammar):
     """
 
     def __init__(self,
-                 n_dims: int,
-                 base_kernel_names: List[str] = None,
+                 base_kernel_names: Optional[List[str]] = None,
                  hyperpriors: Optional[Hyperpriors] = None):
-        if base_kernel_names is None:
-            base_kernel_names = self.get_base_kernel_names(n_dims)
-        super().__init__(base_kernel_names, n_dims, hyperpriors)
+        super().__init__(base_kernel_names, hyperpriors)
 
     @staticmethod
-    def get_base_kernel_names(n_dims: int) -> List[str]:
+    def default_base_kernel_names(n_dims: int) -> List[str]:
         """Get the names of the kernel families to use according to the dimension."""
         if n_dims > 1:
             return ['SE', 'RQ']
         else:
             return ['SE', 'RQ', 'LIN', 'PER']
+
+    @staticmethod
+    def _get_default_base_kernel_names(n_dims: int) -> List[str]:
+        return CKSGrammar.default_base_kernel_names(n_dims)
 
     def expand(self,
                seed_models: List[GPModel],
@@ -259,12 +275,14 @@ class BomsGrammar(CKSGrammar):
     number_of_top_k_best: int
     number_of_random_walks: int
 
-    def __init__(self, base_kernel_names: List[str], n_dims: int, hyperpriors: Optional[Hyperpriors] = None):
+    def __init__(self,
+                 base_kernel_names: Optional[List[str]] = None,
+                 hyperpriors: Optional[Hyperpriors] = None):
 
         if hyperpriors is None:
             hyperpriors = boms_hyperpriors()
 
-        super().__init__(n_dims, base_kernel_names, hyperpriors)
+        super().__init__(base_kernel_names, hyperpriors)
 
         self.random_walk_geometric_dist_parameter = 1 / 3  # Termination probability.
         self.number_of_top_k_best = 3
@@ -343,10 +361,9 @@ class RandomGrammar(BomsGrammar):
     """Random grammar randomly expands nodes using a CKS expansion"""
 
     def __init__(self,
-                 n_dims: int,
                  base_kernel_names: List[str] = None,
                  hyperpriors: Optional[Hyperpriors] = None):
-        super().__init__(base_kernel_names, n_dims, hyperpriors)
+        super().__init__(base_kernel_names, hyperpriors)
 
     def expand(self,
                seed_models: List[GPModel],

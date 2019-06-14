@@ -12,7 +12,8 @@ from src.autoks.core.grammar import BaseGrammar, CKSGrammar, BomsGrammar
 class TestBaseGrammar(unittest.TestCase):
 
     def setUp(self):
-        self.grammar = BaseGrammar(['SE', 'RQ'], 1)
+        self.grammar = BaseGrammar(['SE', 'RQ'])
+        self.grammar.build(1)
 
     def test_expand(self):
         seed_kernel = GPModel(RBF(1))
@@ -35,7 +36,8 @@ class TestCKSGrammar(unittest.TestCase):
         dim = 1
 
         # Test with base kernel names and dimension arguments
-        grammar = CKSGrammar(base_kernel_names=base_kernel_names, n_dims=dim)
+        grammar = CKSGrammar(base_kernel_names=base_kernel_names)
+        grammar.build(dim)
 
         self.assertEqual(base_kernel_names, grammar.base_kernel_names)
         self.assertEqual(len(base_kernel_names), len(grammar.base_kernel_names))
@@ -50,7 +52,8 @@ class TestCKSGrammar(unittest.TestCase):
         dim = 3
 
         # Test with base kernel names and dimension arguments
-        grammar = CKSGrammar(base_kernel_names=base_kernel_names, n_dims=dim)
+        grammar = CKSGrammar(base_kernel_names=base_kernel_names)
+        grammar.build(dim)
 
         expected_kernels = [
             self.se0,
@@ -65,7 +68,8 @@ class TestCKSGrammar(unittest.TestCase):
             self.assertEqual(expected_kernel.infix, actual_kernel.infix)
 
     def test_expand(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=2)
         scored_kernel = GPModel(self.se0)
         scored_kernel.score = 1
         result = grammar.expand([scored_kernel])
@@ -73,7 +77,8 @@ class TestCKSGrammar(unittest.TestCase):
         # TODO: test that expand_full_kernel is called with each kernel
 
     def test_expand_one_dim(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ', 'LIN'], n_dims=1)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ', 'LIN'])
+        grammar.build(n_dims=1)
 
         # Expand SE
         se = grammar.base_kernels[0]
@@ -108,7 +113,9 @@ class TestCKSGrammar(unittest.TestCase):
             self.assertEqual(expected_cov.infix, actual_cov.infix)
 
     def test_expand_single_kernel_two_dims(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=2)
+
         # first, test 1d expansion of base kernel
         k = self.se0
         expected_kernels = grammar.expand_single_kernel(k)
@@ -134,7 +141,8 @@ class TestCKSGrammar(unittest.TestCase):
         self.assertCountEqual(expected_infixes, new_kernels_infixes)
 
     def test_expand_single_kernel_mutli_d(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=3)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=3)
 
         # Expand SE
         se = grammar.base_kernels[0]
@@ -159,7 +167,9 @@ class TestCKSGrammar(unittest.TestCase):
             self.assertEqual(expected_cov.infix, actual_cov.infix)
 
     def test_expand_full_brute_force_level_0(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=2)
+
         n = len(grammar.base_kernel_names)
         n_dim = grammar.n_dims
         max_number_of_models = 1000
@@ -170,7 +180,8 @@ class TestCKSGrammar(unittest.TestCase):
         self.assertEqual(expected, len(kernels))
 
     def test_expand_full_brute_force_level_1(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=2)
         n = len(grammar.base_kernel_names)
         n_dim = grammar.n_dims
         max_number_of_models = 1000
@@ -182,7 +193,8 @@ class TestCKSGrammar(unittest.TestCase):
 
     @unittest.skip("Skipping expand full brute force test level 2 and 3 in the interest of time.")
     def test_expand_full_brute_force_level_2_and_3(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=2)
         max_number_of_models = 1000
 
         level = 2
@@ -196,7 +208,9 @@ class TestCKSGrammar(unittest.TestCase):
         self.assertEqual(expected, len(kernels))
 
     def test_expand_full_kernel(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=2)
+
         # first, test 1d expansion of base kernel
         k = self.se0
         new_kernels = grammar.expand_full_kernel(k)
@@ -237,7 +251,9 @@ class TestBomsGrammar(unittest.TestCase):
         n_dim = 2
 
         # No optional arguments
-        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names)
+        grammar.build(n_dim)
+
         self.assertEqual(base_kernel_names, grammar.base_kernel_names)
         self.assertEqual(n_dim, grammar.n_dims)
         self.assertIsNotNone(grammar.hyperpriors)
@@ -251,7 +267,8 @@ class TestBomsGrammar(unittest.TestCase):
         n_dim = 2
 
         # No optional arguments
-        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names)
+        grammar.build(n_dim)
 
         seed = np.random.randint(100)
         np.random.seed(seed)
@@ -267,7 +284,8 @@ class TestBomsGrammar(unittest.TestCase):
         base_kernel_names = ['SE', 'RQ']
         n_dim = 2
 
-        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names)
+        grammar.build(n_dim)
 
         grammar.number_of_top_k_best = 1
         grammar.num_random_walks = 5
@@ -285,7 +303,8 @@ class TestBomsGrammar(unittest.TestCase):
         n_dim = 2
         num_random_walks = 5
 
-        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names)
+        grammar.build(n_dim)
         grammar.random_walk_geometric_dist_parameter = 1 / 3
         grammar.number_of_random_walks = 1
 
@@ -300,7 +319,8 @@ class TestBomsGrammar(unittest.TestCase):
         n_dim = 1
 
         np.random.seed(5)
-        grammar = BomsGrammar(base_kernel_names=base_kernel_names, n_dims=n_dim)
+        grammar = BomsGrammar(base_kernel_names=base_kernel_names)
+        grammar.build(n_dim)
 
         grammar.number_of_top_k_best = 1
         num_random_walks = 5

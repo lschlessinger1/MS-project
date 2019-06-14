@@ -2,7 +2,7 @@ from typing import List, Callable, Optional
 
 import numpy as np
 
-from src.autoks.backend.model import log_likelihood_normalized
+from src.autoks.backend.model import log_likelihood_normalized, RawGPModelType
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.gp_models import gp_regression
@@ -11,15 +11,20 @@ from src.autoks.core.model_selection.base import ModelSelector
 
 
 class RandomModelSelector(ModelSelector):
-    grammar: RandomGrammar
 
-    def __init__(self, grammar, fitness_fn=None, n_parents: int = 1, additive_form=False, optimizer=None,
-                 n_restarts_optimizer=3, gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None):
-        if fitness_fn is None:
-            fitness_fn = log_likelihood_normalized
+    def __init__(self,
+                 grammar: Optional[RandomGrammar],
+                 fitness_fn: Callable[[RawGPModelType], float] = log_likelihood_normalized,
+                 n_parents: int = 1,
+                 additive_form: bool = False,
+                 optimizer: Optional[str] = None,
+                 n_restarts_optimizer: int = 3,
+                 gp_fn: Callable = gp_regression,
+                 gp_args: Optional[dict] = None):
+        if grammar is None:
+            grammar = RandomGrammar()
 
-        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer,
-                         n_restarts_optimizer)
+        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         return self.grammar.base_kernels

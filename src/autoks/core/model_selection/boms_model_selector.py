@@ -2,24 +2,33 @@ from typing import List, Callable, Optional
 
 import numpy as np
 
-from src.autoks.backend.model import log_likelihood_normalized
+from src.autoks.backend.model import log_likelihood_normalized, RawGPModelType
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import BomsGrammar
+from src.autoks.core.hyperprior import boms_hyperpriors
 from src.autoks.core.model_selection.base import SurrogateBasedModelSelector
-from src.autoks.core.query_strategy import BestScoreStrategy
+from src.autoks.core.query_strategy import BestScoreStrategy, QueryStrategy
 
 
 class BomsModelSelector(SurrogateBasedModelSelector):
-    grammar: BomsGrammar
 
-    def __init__(self, grammar, fitness_fn=None, n_parents: int = 1, query_strategy=None, additive_form=False,
-                 gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer=None,
-                 n_restarts_optimizer=3):
-        if fitness_fn is None:
-            fitness_fn = log_likelihood_normalized
+    def __init__(self,
+                 grammar: Optional[BomsGrammar] = None,
+                 fitness_fn: Callable[[RawGPModelType], float] = log_likelihood_normalized,
+                 n_parents: int = 1,
+                 query_strategy: Optional[QueryStrategy] = None,
+                 additive_form: bool = False,
+                 gp_fn: Callable = gp_regression,
+                 gp_args: Optional[dict] = None,
+                 optimizer: Optional[str] = None,
+                 n_restarts_optimizer: int = 3):
+
+        if grammar is None:
+            hyperpriors = boms_hyperpriors()
+            grammar = BomsGrammar(hyperpriors=hyperpriors)
 
         if query_strategy is None:
             acq = ExpectedImprovementPerSec()

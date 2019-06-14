@@ -2,7 +2,7 @@ from typing import List, Callable, Optional
 
 import numpy as np
 
-from src.autoks.backend.model import BIC
+from src.autoks.backend.model import BIC, RawGPModelType
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.gp_models import gp_regression
@@ -11,11 +11,18 @@ from src.autoks.core.model_selection.base import ModelSelector
 
 
 class CKSModelSelector(ModelSelector):
-    grammar: CKSGrammar
 
-    def __init__(self, grammar, fitness_fn=None, n_parents: int = 1, additive_form=False,
-                 gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer='scg',
-                 n_restarts_optimizer=3):
+    def __init__(self,
+                 grammar: Optional[CKSGrammar] = None,
+                 fitness_fn: Optional[Callable[[RawGPModelType], float]] = None,
+                 n_parents: int = 1,
+                 additive_form: bool = False,
+                 gp_fn: Callable = gp_regression,
+                 gp_args: Optional[dict] = None,
+                 optimizer: Optional[str] = 'scg',
+                 n_restarts_optimizer: int = 3):
+        if grammar is None:
+            grammar = CKSGrammar()
 
         if fitness_fn is None:
             def negative_BIC(m):
@@ -25,8 +32,7 @@ class CKSModelSelector(ModelSelector):
             # Use the negative BIC because we want to maximize the fitness_fn.
             fitness_fn = negative_BIC
 
-        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer,
-                         n_restarts_optimizer)
+        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
     def _train(self,
                x: np.ndarray,

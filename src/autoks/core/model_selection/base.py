@@ -63,15 +63,15 @@ class ModelSelector:
         # visited set of all expanded kernel expressions previously evaluated
         self.visited = set()
 
+        self.built = False
+
     def train(self,
               x: np.ndarray,
               y: np.ndarray,
               eval_budget: int = 50,
               max_generations: Optional[int] = None,
               verbose: int = 1,
-              active_set_callback: Optional[Callable] = None,
-              eval_callback: Optional[Callable] = None,
-              expansion_callback: Optional[Callable] = None):
+              tracker: Optional = None):
         """Train the model selector.
 
         :param x: Input data.
@@ -81,6 +81,8 @@ class ModelSelector:
         :param verbose: Integer. 0, 1, 2, or 3. Verbosity mode.
         :return:
         """
+        x, y = self._prepare_data(x, y)  # create grammar and standardize data
+
         if max_generations is None:
             # By default, the model search is terminated only when the evaluation budget is expended.
             max_iterations = 1000
@@ -93,17 +95,27 @@ class ModelSelector:
         def do_nothing(*args, **kwargs):
             pass
 
-        if active_set_callback is None:
-            active_set_callback = do_nothing
-        self.active_set_callback = active_set_callback
+        if tracker is not None:
+            tracker.set_stat_book_collection(self.grammar.base_kernel_names)
 
-        if eval_callback is None:
-            eval_callback = do_nothing
-        self.eval_callback = eval_callback
+            if tracker.active_set_callback is None:
+                self.active_set_callback = do_nothing
+            else:
+                self.active_set_callback = tracker.active_set_callback
 
-        if expansion_callback is None:
-            expansion_callback = do_nothing
-        self.expansion_callback = expansion_callback
+            if tracker.evaluations_callback is None:
+                self.eval_callback = do_nothing
+            else:
+                self.eval_callback = tracker.evaluations_callback
+
+            if tracker.expansion_callback is None:
+                self.expansion_callback = do_nothing
+            else:
+                self.expansion_callback = tracker.expansion_callback
+        else:
+            self.active_set_callback = do_nothing
+            self.eval_callback = do_nothing
+            self.eval_callback = do_nothing
 
         # Progress bar
         if verbose:
@@ -118,6 +130,13 @@ class ModelSelector:
 
         self.selected_models = population.models
         return self
+
+    def _prepare_data(self, x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        if not self.built:
+            self.grammar.build(x.shape[1])
+            self.built = True
+
+        return x, y
 
     def _train(self,
                x: np.ndarray,
@@ -238,7 +257,7 @@ class ModelSelector:
             # Sort models by scores with un-evaluated models last
             for gp_model in sorted(evaluated_models, key=lambda m: (m.score is not None, m.score), reverse=True):
                 gp_model.covariance.pretty_print()
-                print('\tfitness_fn =', gp_model.score)
+                print('\tfitness =', gp_model.score)
             print('')
         return evaluated_models
 
@@ -278,8 +297,8 @@ class ModelSelector:
             sizes = population.sizes()
             print(f'Iteration {depth}/{max_generations}')
             print(f'Evaluated {self.n_evals}/{eval_budget}')
-            print(f'Avg. fitness_fn = %0.6f' % population.mean_fitness())
-            print(f'Best fitness_fn = %.6f' % best_objective)
+            print(f'Avg. fitness = %0.6f' % population.mean_fitness())
+            print(f'Best fitness = %.6f' % best_objective)
             print(f'Avg. size = %.2f' % np.mean(sizes))
             print('Best kernel:')
             best_kernel.covariance.pretty_print()
@@ -309,9 +328,16 @@ class ModelSelector:
 
 class SurrogateBasedModelSelector(ModelSelector, ABC):
 
-    def __init__(self, grammar, fitness_fn, query_strategy=None, n_parents=1, additive_form=False,
-                 gp_fn: Callable = gp_regression, gp_args: Optional[dict] = None, optimizer=None,
-                 n_restarts_optimizer=10):
+    def __init__(self,
+                 grammar: BaseGrammar,
+                 fitness_fn: Callable[[RawGPModelType], float],
+                 query_strategy: Optional[QueryStrategy] = None,
+                 n_parents: int = 1,
+                 additive_form: bool = False,
+                 gp_fn: Callable = gp_regression,
+                 gp_args: Optional[dict] = None,
+                 optimizer: Optional[str] = None,
+                 n_restarts_optimizer: int = 10):
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
         if query_strategy is not None:

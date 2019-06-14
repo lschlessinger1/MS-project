@@ -54,7 +54,9 @@ class TestCKSModelSelector(TestCase):
         self.lin0 = Covariance(LinScaleShift(1, active_dims=[0]))
 
     def test_get_initial_candidate_covariances(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=2)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=2)
+
         model_selector = CKSModelSelector(grammar)
 
         actual = model_selector.get_initial_candidate_covariances()
@@ -64,7 +66,9 @@ class TestCKSModelSelector(TestCase):
         for expected_cov, actual_cov in zip(expected, actual):
             self.assertEqual(expected_cov.infix, actual_cov.infix)
 
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'], n_dims=1)
+        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
+        grammar.build(n_dims=1)
+
         model_selector = CKSModelSelector(grammar)
 
         actual = model_selector.get_initial_candidate_covariances()

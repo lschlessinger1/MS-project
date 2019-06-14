@@ -8,8 +8,7 @@ from src.autoks.backend.kernel import get_all_1d_kernels
 from src.autoks.backend.model import log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.core.experiment import BaseExperiment
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.grammar import CKSGrammar, BomsGrammar, EvolutionaryGrammar, RandomGrammar
-from src.autoks.core.hyperprior import boms_hyperpriors
+from src.autoks.core.grammar import CKSGrammar, EvolutionaryGrammar
 from src.autoks.core.kernel_encoding import KernelNode
 from src.autoks.core.model_selection import BomsModelSelector, CKSModelSelector, EvolutionaryModelSelector, \
     RandomModelSelector
@@ -48,16 +47,10 @@ class ModelSearchExperiment(BaseExperiment):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 self.model_selector.train(self.x_train, self.y_train, eval_budget=eval_budget,
-                                          max_generations=max_n_generations,
-                                          active_set_callback=self.tracker.active_set_callback,
-                                          eval_callback=self.tracker.evaluations_callback,
-                                          expansion_callback=self.tracker.expansion_callback, verbose=verbose)
+                                          max_generations=max_n_generations, tracker=self.tracker, verbose=verbose)
         else:
             self.model_selector.train(self.x_train, self.y_train, eval_budget=eval_budget,
-                                      max_generations=max_n_generations,
-                                      active_set_callback=self.tracker.active_set_callback,
-                                      eval_callback=self.tracker.evaluations_callback,
-                                      expansion_callback=self.tracker.expansion_callback, verbose=verbose)
+                                      max_generations=max_n_generations, tracker=self.tracker, verbose=verbose)
 
         self.summarize(self.model_selector.best_model())
 
@@ -150,41 +143,32 @@ class ModelSearchExperiment(BaseExperiment):
 
     @classmethod
     def boms_experiment(cls, dataset: Dataset, **kwargs):
-        x_train, x_test, y_train, y_test = dataset.split_train_test()
-        n_dims = x_train.shape[1]
-        base_kernel_names = CKSGrammar.get_base_kernel_names(n_dims)
-        hyperpriors = boms_hyperpriors()
-        grammar = BomsGrammar(base_kernel_names, n_dims, hyperpriors)
+        dataset.load_or_generate_data()
+        x, y = dataset.x, dataset.y
 
-        model_selector = BomsModelSelector(grammar, **kwargs)
+        model_selector = BomsModelSelector(**kwargs)
 
         tracker = ModelSearchTracker()
-        tracker.set_stat_book_collection(model_selector.grammar.base_kernel_names)
 
-        return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
+        return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
     def cks_experiment(cls, dataset: Dataset, **kwargs):
         dataset.load_or_generate_data()
         x, y = dataset.x, dataset.y
-        n_dims = x.shape[1]
-        grammar = CKSGrammar(n_dims)
 
-        model_selector = CKSModelSelector(grammar, fitness_fn=log_likelihood_normalized, optimizer=None, **kwargs)
+        model_selector = CKSModelSelector(fitness_fn=log_likelihood_normalized, optimizer=None, **kwargs)
 
         tracker = ModelSearchTracker()
-        tracker.set_stat_book_collection(model_selector.grammar.base_kernel_names)
 
         return cls(x, y, model_selector, tracker=tracker)
 
     @classmethod
-    def evolutionary_experiment(cls,
-                                dataset: Dataset,
-                                **kwargs):
+    def evolutionary_experiment(cls, dataset: Dataset, **kwargs):
         dataset.load_or_generate_data()
         x, y = dataset.x, dataset.y
         n_dims = x.shape[1]
-        base_kernels_names = CKSGrammar.get_base_kernel_names(n_dims)
+        base_kernels_names = CKSGrammar.default_base_kernel_names(n_dims)
 
         pop_size = 25
         m_prob = 0.10
@@ -200,15 +184,13 @@ class ModelSearchExperiment(BaseExperiment):
         mut_variator = MutationVariator(mutator, m_prob=m_prob)
         variators = [cx_variator, mut_variator]
         pop_operator = CrossMutPopOperator(variators)
-        grammar = EvolutionaryGrammar(base_kernel_names=base_kernels_names, n_dims=n_dims,
-                                      population_operator=pop_operator)
+        grammar = EvolutionaryGrammar(base_kernel_names=base_kernels_names, population_operator=pop_operator)
         initializer = HalfAndHalfGenerator(binary_operators=grammar.operators, max_depth=1, operands=mutator.operands)
 
         model_selector = EvolutionaryModelSelector(grammar, n_parents=n_parents, max_offspring=pop_size,
                                                    initializer=initializer, **kwargs)
 
         tracker = ModelSearchTracker()
-        tracker.set_stat_book_collection(model_selector.grammar.base_kernel_names)
 
         return cls(x, y, model_selector, tracker=tracker)
 
@@ -216,13 +198,11 @@ class ModelSearchExperiment(BaseExperiment):
     def random_experiment(cls,
                           dataset: Dataset,
                           **kwargs):
-        x_train, x_test, y_train, y_test = dataset.split_train_test()
-        n_dims = x_train.shape[1]
-        grammar = RandomGrammar(n_dims)
+        dataset.load_or_generate_data()
+        x, y = dataset.x, dataset.y
 
-        model_selector = RandomModelSelector(grammar, **kwargs)
+        model_selector = RandomModelSelector(**kwargs)
 
         tracker = ModelSearchTracker()
-        tracker.set_stat_book_collection(model_selector.grammar.base_kernel_names)
 
-        return cls(x_train, y_train, model_selector, x_test, y_test, tracker)
+        return cls(x, y, model_selector, tracker=tracker)
