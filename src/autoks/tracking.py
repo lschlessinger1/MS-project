@@ -25,12 +25,13 @@ class ModelSearchTracker:
         self.active_set_name = 'active_set'
         self.expansion_name = 'expansion'
         self.stat_book_names = [self.evaluations_name, self.expansion_name, self.active_set_name]
+        self.base_kern_freq_names = []
 
     def set_stat_book_collection(self, base_kernel_names: List[str]):
-        base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in base_kernel_names]
+        self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in base_kernel_names]
 
         # All stat books track these variables
-        shared_multi_stat_names = [self.n_hyperparams_name, self.n_operands_name] + base_kern_freq_names
+        shared_multi_stat_names = [self.n_hyperparams_name, self.n_operands_name] + self.base_kern_freq_names
 
         # raw value statistics
         base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in base_kernel_names]
