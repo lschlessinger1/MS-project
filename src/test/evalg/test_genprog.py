@@ -16,18 +16,18 @@ from src.test.evalg.support.util import NodeCheckTestCase
 class TestBinaryTreeGenerator(TestCase):
 
     def setUp(self):
+        self.max_depth = 3
         self.operators = ['+', '*']
         self.operands = [1, 2, 3]
-        self.max_depth = 3
-        self.generator = BinaryTreeGenerator(self.operators, self.operands, self.max_depth, BinaryTreeNode)
+        self.generator = BinaryTreeGenerator(self.max_depth, BinaryTreeNode)
 
     def test_max_depth(self):
-        generator = BinaryTreeGenerator(self.operators, self.operands, max_depth=2, binary_tree_node_cls=BinaryTreeNode)
+        generator = BinaryTreeGenerator(max_depth=2, binary_tree_node_cls=BinaryTreeNode)
         with self.assertRaises(ValueError):
             generator.max_depth = -2
 
     def test_generate(self):
-        self.assertRaises(NotImplementedError, self.generator.generate)
+        self.assertRaises(NotImplementedError, self.generator.generate, self.operators, self.operands)
 
 
 class TestGrowGenerator(TestCase):
@@ -36,16 +36,16 @@ class TestGrowGenerator(TestCase):
         self.operators = ['+', '*']
         self.operands = [1, 2, 3]
         self.max_depth = 2
-        self.generator = GrowGenerator(self.operators, self.operands, self.max_depth)
+        self.generator = GrowGenerator(self.max_depth)
 
     def test_generate(self):
-        tree = self.generator.generate()
+        tree = self.generator.generate(self.operators, self.operands, )
         self.assertIsInstance(tree, BinaryTree)
         self.assertLessEqual(tree.height(), self.max_depth + 1)  # depth of a stump is 0
 
     def test_grow(self):
-        self.assertRaises(ValueError, self.generator.grow, -2)
-        self.assertIsInstance(self.generator.grow(0), BinaryTreeNode)
+        self.assertRaises(ValueError, self.generator.grow, self.operators, self.operands, -2)
+        self.assertIsInstance(self.generator.grow(self.operators, self.operands, 0), BinaryTreeNode)
 
 
 class TestFullGenerator(TestCase):
@@ -54,17 +54,17 @@ class TestFullGenerator(TestCase):
         self.operators = ['+', '*']
         self.operands = [1, 2, 3]
         self.max_depth = 2
-        self.generator = FullGenerator(self.operators, self.operands, self.max_depth)
+        self.generator = FullGenerator(self.max_depth)
 
     def test_generate(self):
-        tree = self.generator.generate()
+        tree = self.generator.generate(self.operators, self.operands, )
         self.assertIsInstance(tree, BinaryTree)
         max_height = self.max_depth + 1  # depth of a stump is 0
         self.assertLessEqual(tree.height(), max_height)
 
     def test_full(self):
-        self.assertRaises(ValueError, self.generator.full, -2)
-        self.assertIsInstance(self.generator.full(0), BinaryTreeNode)
+        self.assertRaises(ValueError, self.generator.full, self.operators, self.operands, -2)
+        self.assertIsInstance(self.generator.full(self.operators, self.operands, 0), BinaryTreeNode)
 
 
 class TestHalfAndHalfGenerator(TestCase):
@@ -73,10 +73,10 @@ class TestHalfAndHalfGenerator(TestCase):
         self.operators = ['+', '*']
         self.operands = [1, 2, 3]
         self.max_depth = 2
-        self.generator = HalfAndHalfGenerator(self.operators, self.operands, self.max_depth)
+        self.generator = HalfAndHalfGenerator(self.max_depth)
 
     def test_generate(self):
-        tree = self.generator.generate()
+        tree = self.generator.generate(self.operators, self.operands)
         self.assertIsInstance(tree, BinaryTree)
         max_height = self.max_depth + 1  # depth of a stump is 0
         self.assertLessEqual(tree.height(), max_height)
@@ -101,8 +101,8 @@ class TestTreePointMutator(TestCase):
         np.random.seed(42)
 
     def test_mutate(self):
-        mutator = TreePointMutator(operands=['A', 'B', 'C', 'D'])
-        tree = mutator.mutate(self.tree)
+        mutator = TreePointMutator()
+        tree = mutator.mutate(['+', '*'], ['A', 'B', 'C', 'D'], self.tree)
         self.assertEqual(tree.root.label, '+')
         self.assertIsInstance(tree, BinaryTree)
 
@@ -121,15 +121,13 @@ class TestSubTreeExchangeMutator(TestCase):
         self.root.add_right('B')
 
     def test_max_depth(self):
-        operands = ['A', 'B', 'C', 'D']
-        self.assertRaises(ValueError, SubTreeExchangeMutator, operands, max_depth=-2,
-                          binary_tree_node_cls=BinaryTreeNode)
+        self.assertRaises(ValueError, SubTreeExchangeMutator, max_depth=-2, binary_tree_node_cls=BinaryTreeNode)
 
     def test__mutate_subtree_exchange(self):
         max_depth = 2
-        tree_gen = GrowGenerator(['+', '*'], [1, 2, 3], max_depth)
+        tree_gen = GrowGenerator(max_depth)
 
-        result = SubTreeExchangeMutator._mutate_subtree_exchange(self.tree, tree_gen)
+        result = SubTreeExchangeMutator._mutate_subtree_exchange(['+', '*'], [1, 2, 3], self.tree, tree_gen)
         self.assertIsInstance(result, BinaryTree)
         max_height = max_depth + 1
         initial_height = self.tree.height()
@@ -163,8 +161,8 @@ class TestGrowMutator(TestCase):
     def test_mutate(self):
         individual = self.tree
         operands = ['A', 'B', 'C']
-        mutator = GrowMutator(operands, max_depth=2)
-        result = mutator.mutate(individual)
+        mutator = GrowMutator(max_depth=2)
+        result = mutator.mutate(['+', '*'], operands, individual)
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
@@ -182,8 +180,8 @@ class TestFullMutator(TestCase):
     def test_mutate(self):
         individual = self.tree
         operands = ['A', 'B', 'C']
-        mutator = FullMutator(operands, max_depth=2)
-        result = mutator.mutate(individual)
+        mutator = FullMutator(max_depth=2)
+        result = mutator.mutate(['+', '*'], operands, individual)
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
@@ -201,8 +199,8 @@ class TestHalfAndHalfMutator(TestCase):
     def test_mutate(self):
         individual = self.tree
         operands = ['A', 'B', 'C']
-        mutator = HalfAndHalfMutator(operands, max_depth=2)
-        result = mutator.mutate(individual)
+        mutator = HalfAndHalfMutator(max_depth=2)
+        result = mutator.mutate(['+', '*'], operands, individual)
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)

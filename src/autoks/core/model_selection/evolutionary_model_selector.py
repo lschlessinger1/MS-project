@@ -8,10 +8,12 @@ from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import EvolutionaryGrammar
-from src.autoks.core.kernel_encoding import tree_to_kernel
+from src.autoks.core.kernel_encoding import tree_to_kernel, KernelNode
 from src.autoks.core.model_selection.base import ModelSelector, SurrogateBasedModelSelector
-from src.evalg.genprog.generators import BinaryTreeGenerator
+from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeLeafBiasedRecombinator
+from src.evalg.genprog.generators import BinaryTreeGenerator, HalfAndHalfGenerator
 from src.evalg.selection import ExponentialRankingSelector, TruncationSelector
+from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
 
 
 class EvolutionaryModelSelector(ModelSelector):
@@ -22,16 +24,26 @@ class EvolutionaryModelSelector(ModelSelector):
                  initializer: Optional[BinaryTreeGenerator] = None,
                  n_init_trees: int = 10,
                  n_parents: int = 10,
-                 max_offspring: int = 25,
+                 m_prob: float = 0.10,
+                 cx_prob: float = 0.60,
+                 pop_size: int = 25,
                  additive_form: bool = False,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 3,
                  gp_fn: Callable = gp_regression,
                  gp_args: Optional[dict] = None):
+        if grammar is None:
+            variation_pct = m_prob + cx_prob  # 60% of individuals created using crossover and 10% mutation
+            n_offspring = int(variation_pct * pop_size)
+            n_parents = n_offspring
+            grammar = self._create_default_grammar(n_offspring, cx_prob, m_prob)
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
+
+        if initializer is None:
+            initializer = HalfAndHalfGenerator(max_depth=1)
         self.initializer = initializer
         self.n_init_trees = n_init_trees
-        self.max_offspring = max_offspring
+        self.max_offspring = pop_size
 
     def _train(self,
                x: np.ndarray,
@@ -82,13 +94,27 @@ class EvolutionaryModelSelector(ModelSelector):
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         if self.initializer is not None:
             # Generate trees
-            trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
+            operators = self.grammar.operators
+            operands = [cov.raw_kernel for cov in self.grammar.base_kernels]
+            trees = [self.initializer.generate(operators, operands) for _ in range(self.n_init_trees)]
             kernels = [tree_to_kernel(tree) for tree in trees]
             covariances = [Covariance(k) for k in kernels]
 
             return covariances
         else:
             return self.grammar.base_kernels
+
+    @staticmethod
+    def _create_default_grammar(n_offspring, cx_prob, m_prob):
+        mutator = HalfAndHalfMutator(binary_tree_node_cls=KernelNode, max_depth=1)
+        recombinator = SubtreeExchangeLeafBiasedRecombinator()
+
+        cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring, c_prob=cx_prob)
+        mut_variator = MutationVariator(mutator, m_prob=m_prob)
+        variators = [cx_variator, mut_variator]
+        pop_operator = CrossMutPopOperator(variators)
+
+        return EvolutionaryGrammar(population_operator=pop_operator)
 
 
 class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
@@ -124,7 +150,9 @@ class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
     def get_initial_candidate_covariances(self) -> List[Covariance]:
         if self.initializer is not None:
             # Generate trees
-            trees = [self.initializer.generate() for _ in range(self.n_init_trees)]
+            operators = self.grammar.operators
+            operands = [cov.raw_kernel for cov in self.grammar.base_kernels]
+            trees = [self.initializer.generate(operators, operands) for _ in range(self.n_init_trees)]
             kernels = [tree_to_kernel(tree) for tree in trees]
             covariances = [Covariance(k) for k in kernels]
 

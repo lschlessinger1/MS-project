@@ -4,12 +4,9 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.autoks.backend.kernel import get_all_1d_kernels
 from src.autoks.backend.model import log_likelihood_normalized, AIC, BIC, pl2
 from src.autoks.core.experiment import BaseExperiment
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.grammar import CKSGrammar, EvolutionaryGrammar
-from src.autoks.core.kernel_encoding import KernelNode
 from src.autoks.core.model_selection import BomsModelSelector, CKSModelSelector, EvolutionaryModelSelector, \
     RandomModelSelector
 from src.autoks.core.model_selection.base import ModelSelector
@@ -20,8 +17,6 @@ from src.autoks.statistics import StatBook
 from src.autoks.tracking import ModelSearchTracker
 from src.autoks.util import pretty_time_delta
 from src.datasets.dataset import Dataset
-from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeLeafBiasedRecombinator, HalfAndHalfGenerator
-from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
 
 
 class ModelSearchExperiment(BaseExperiment):
@@ -167,28 +162,8 @@ class ModelSearchExperiment(BaseExperiment):
     def evolutionary_experiment(cls, dataset: Dataset, **kwargs):
         dataset.load_or_generate_data()
         x, y = dataset.x, dataset.y
-        n_dims = x.shape[1]
-        base_kernels_names = CKSGrammar.default_base_kernel_names(n_dims)
 
-        pop_size = 25
-        m_prob = 0.10
-        cx_prob = 0.60
-        variation_pct = m_prob + cx_prob  # 60% of individuals created using crossover and 10% mutation
-        n_offspring = int(variation_pct * pop_size)
-        n_parents = n_offspring
-
-        mutator = HalfAndHalfMutator(operands=[k for k in get_all_1d_kernels(base_kernels_names, n_dims)],
-                                     binary_tree_node_cls=KernelNode, max_depth=1)
-        recombinator = SubtreeExchangeLeafBiasedRecombinator()
-        cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring, c_prob=cx_prob)
-        mut_variator = MutationVariator(mutator, m_prob=m_prob)
-        variators = [cx_variator, mut_variator]
-        pop_operator = CrossMutPopOperator(variators)
-        grammar = EvolutionaryGrammar(base_kernel_names=base_kernels_names, population_operator=pop_operator)
-        initializer = HalfAndHalfGenerator(binary_operators=grammar.operators, max_depth=1, operands=mutator.operands)
-
-        model_selector = EvolutionaryModelSelector(grammar, n_parents=n_parents, max_offspring=pop_size,
-                                                   initializer=initializer, **kwargs)
+        model_selector = EvolutionaryModelSelector(**kwargs)
 
         tracker = ModelSearchTracker()
 

@@ -7,14 +7,13 @@ from src.evalg.mutation import Mutator
 
 
 class Variator:
-    operator: Union[Mutator, Recombinator]
 
-    def __init__(self, operator):
+    def __init__(self, operator: Union[Mutator, Recombinator]):
         self.operator = operator
 
     T = TypeVar('T')
 
-    def vary(self, parents: List[T]) -> List[T]:
+    def vary(self, parents: List[T], **kwargs) -> List[T]:
         """Vary all parents.
 
         :param parents:
@@ -27,12 +26,12 @@ class Variator:
 
 
 class CrossoverVariator(Variator):
-    operator: Recombinator
-    n_offspring: int
-    n_way: int
-    c_prob: float
 
-    def __init__(self, operator, n_offspring, n_way=2, c_prob=0.9):
+    def __init__(self,
+                 operator: Recombinator,
+                 n_offspring: int,
+                 n_way: int = 2,
+                 c_prob: float = 0.9):
         """
 
         :param operator: the recombinator containing the crossover operator
@@ -71,7 +70,7 @@ class CrossoverVariator(Variator):
 
         return offspring
 
-    def vary(self, parents: List[T]) -> List[T]:
+    def vary(self, parents: List[T], **kwargs) -> List[T]:
         """Crossover all parents.
 
         :param parents:
@@ -85,10 +84,10 @@ class CrossoverVariator(Variator):
 
 
 class MutationVariator(Variator):
-    operator: Mutator
-    m_prob: float
 
-    def __init__(self, operator, m_prob=0.01):
+    def __init__(self,
+                 operator: Mutator,
+                 m_prob: float = 0.01):
         """
 
         :param operator: the mutator
@@ -99,7 +98,7 @@ class MutationVariator(Variator):
 
     T = TypeVar('T')
 
-    def mutate_all(self, individuals: List[T]) -> List[T]:
+    def mutate_all(self, individuals: List[T], **kwargs) -> List[T]:
         """Mutation applied to all offspring.
 
         :param individuals: the members of the population
@@ -112,14 +111,14 @@ class MutationVariator(Variator):
 
         for child in offspring:
             if np.random.rand() < self.m_prob:
-                child = mutator.mutate(child)
+                child = mutator.mutate(individual=child, **kwargs)
 
             offspring_mut.append(child)
 
         return offspring_mut
 
-    def vary(self, parents: List[T]) -> List[T]:
-        return self.mutate_all(parents)
+    def vary(self, parents: List[T], **kwargs) -> List[T]:
+        return self.mutate_all(parents, **kwargs)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operator={self.operator!r}, m_prob={self.m_prob!r})'
@@ -127,7 +126,6 @@ class MutationVariator(Variator):
 
 class PopulationOperator:
     """Collection of variators."""
-    _variators: List[Variator]
 
     def __init__(self, variators: List[Variator]):
         self._variators = variators
@@ -146,7 +144,7 @@ class PopulationOperator:
 
     T = TypeVar('T')
 
-    def create_offspring(self, population: List[T]) -> List[T]:
+    def create_offspring(self, population: List[T], **kwargs) -> List[T]:
         """Create offspring by varying all population.
 
         :param population:
@@ -154,7 +152,7 @@ class PopulationOperator:
         """
         offspring = population
         for variator in self.variators:
-            offspring = variator.vary(offspring)
+            offspring = variator.vary(offspring, **kwargs)
         return offspring
 
     def __repr__(self):
@@ -163,9 +161,6 @@ class PopulationOperator:
 
 class CrossMutPopOperator(PopulationOperator):
     """Perform both crossover then mutation to all individuals."""
-    _variators: List[Union[CrossoverVariator, MutationVariator]]
-    _crossover_variator: CrossoverVariator
-    _mutation_variator: MutationVariator
 
     def __init__(self, variators: List[Union[CrossoverVariator, MutationVariator]]):
         super().__init__(variators)
@@ -204,8 +199,6 @@ class CrossMutPopOperator(PopulationOperator):
 
 
 class CrossoverPopOperator(PopulationOperator):
-    _variators: List[CrossoverVariator]
-    _crossover_variator: CrossoverVariator
 
     def __init__(self, variators: List[CrossoverVariator]):
         super().__init__(variators)
@@ -234,8 +227,6 @@ class CrossoverPopOperator(PopulationOperator):
 
 
 class MutationPopOperator(PopulationOperator):
-    _variators: List[MutationVariator]
-    _mutation_variator: MutationVariator
 
     def __init__(self, variators: List[MutationVariator]):
         super().__init__(variators)

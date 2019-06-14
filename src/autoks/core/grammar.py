@@ -82,8 +82,8 @@ class BaseGrammar:
 class EvolutionaryGrammar(BaseGrammar):
 
     def __init__(self,
-                 base_kernel_names: List[str],
                  population_operator: PopulationOperator,
+                 base_kernel_names: Optional[List[str]] = None,
                  hyperpriors: Optional[Hyperpriors] = None):
         super().__init__(base_kernel_names, hyperpriors)
         self.population_operator = population_operator
@@ -110,7 +110,8 @@ class EvolutionaryGrammar(BaseGrammar):
         trees = [gp_model.covariance.to_binary_tree() for gp_model in seed_models]
 
         # Crossover and mutate trees.
-        offspring = self.population_operator.create_offspring(trees)
+        operands = [cov.raw_kernel for cov in self.base_kernels]
+        offspring = self.population_operator.create_offspring(trees, operators=self.operators, operands=operands)
 
         # Convert Trees back to GPy kernels, then to covariances.
         kernels = [tree_to_kernel(tree) for tree in offspring]
@@ -120,6 +121,10 @@ class EvolutionaryGrammar(BaseGrammar):
         new_covariances = remove_duplicate_kernels(covariances)
 
         return new_covariances
+
+    @staticmethod
+    def _get_default_base_kernel_names(n_dims: int) -> List[str]:
+        return CKSGrammar.default_base_kernel_names(n_dims)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
