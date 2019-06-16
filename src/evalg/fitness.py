@@ -1,8 +1,62 @@
-from typing import List, Callable, Optional
+import itertools
+from typing import List, Callable, Optional, Iterable
 
 import numpy as np
+from scipy.spatial.distance import squareform
 
 from src.evalg.encoding import BinaryTreeNode, BinaryTree
+
+
+def shared_fitness_scores(individuals,
+                          raw_fitness_scores,
+                          metric: Callable,
+                          share_radius: float = 7.5,
+                          alpha: float = 1):
+    """Compute shared fitness scores
+
+    Fitness sharing aims to allocate individuals to niches in proportion to the niche fitness. Consider all possible
+    pairs of individuals and calculates distance d(i, j) between them. Raw fitness F is adjusted according to number of
+    individuals falling within some constant radius sigma_share using a power-law distribution.
+
+    F'(i) = F(i) / sum_j (sh(d(i, j))), where
+
+    sh(d) = { 1 - (d/sigma_share)^alpha, if d <= sigma_share
+              0                        , otherwise
+
+    Goldberg, David E., and Jon Richardson. "Genetic algorithms with sharing for multimodal function optimization."
+    Genetic algorithms and their applications: Proceedings of the Second International Conference on Genetic
+    Algorithms. Hillsdale, NJ: Lawrence Erlbaum, 1987.
+
+
+    :param individuals: Items in a population
+    :param raw_fitness_scores: Unscaled fitness scores.
+    :param metric: Distance metric between pairs of individuals. Can be genotypic or phenotypic (preferred).
+    :param share_radius: Decides both how many niches can be maintained and the granularity with which different niches
+    can be discriminated. A default range of 5 - 10 is suggested, unless the number of niches in known in advance.
+    AKA sigma_share
+    :param alpha: Shape parameter. Determines the shape of the sharing function: for alpha=1, the function is linear,
+    but for values greater than this the effect of similar individuals in reducing a solution's fitness falls off more
+    rapidly with distance.
+    :return: The shared fitness values.
+    """
+    dist_matrix = compute_distance(individuals, metric)
+    return shared_fitness(dist_matrix, raw_fitness_scores, share_radius, alpha)
+
+
+def shared_fitness(distance_matrix: np.ndarray,
+                   raw_fitness_scores,
+                   share_radius: float = 7.5,
+                   alpha: float = 1.):
+    """Only using a distance matrix."""
+    shared_dists = np.where(distance_matrix <= share_radius, 1 - (distance_matrix / share_radius) ** alpha, 0)
+    return raw_fitness_scores / np.sum(shared_dists, axis=0)
+
+
+def compute_distance(items: Iterable, metric: Callable):
+    # items iterable, metric, callable two args of type items, returning float
+    """Compute a distance matrix between all individuals given a metric."""
+    dists = np.array([metric(a, b) for a, b in itertools.combinations(items, 2)])
+    return squareform(dists)
 
 
 def parsimony_pressure(fitness: float,

@@ -45,7 +45,7 @@ class RandomModelSelector(ModelSelector):
 
             self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
-            new_models = self.propose_new_models(population, verbose=verbose)
+            new_models = self.propose_new_models(population, x, y, verbose=verbose)
             self.expansion_callback(new_models, self, x, y)
             population.models = new_models
 

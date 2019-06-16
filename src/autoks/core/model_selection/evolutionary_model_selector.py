@@ -1,18 +1,21 @@
+import warnings
 from typing import List, Callable, Optional
 
 import numpy as np
 
+from src.autoks.backend.kernel import compute_kernel
 from src.autoks.backend.model import log_likelihood_normalized, RawGPModelType
-from src.autoks.core.covariance import Covariance
+from src.autoks.core.covariance import Covariance, centered_alignment
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import EvolutionaryGrammar
 from src.autoks.core.kernel_encoding import tree_to_kernel, KernelNode
 from src.autoks.core.model_selection.base import ModelSelector, SurrogateBasedModelSelector
+from src.evalg.fitness import shared_fitness_scores
 from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeLeafBiasedRecombinator
 from src.evalg.genprog.generators import BinaryTreeGenerator, HalfAndHalfGenerator
-from src.evalg.selection import ExponentialRankingSelector, TruncationSelector
+from src.evalg.selection import ExponentialRankingSelector, TruncationSelector, FitnessProportionalSelector
 from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
 
 
@@ -28,6 +31,7 @@ class EvolutionaryModelSelector(ModelSelector):
                  cx_prob: float = 0.60,
                  pop_size: int = 25,
                  additive_form: bool = False,
+                 fitness_sharing: bool = False,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 3,
                  gp_fn: Callable = gp_regression,
@@ -44,6 +48,7 @@ class EvolutionaryModelSelector(ModelSelector):
         self.initializer = initializer
         self.n_init_trees = n_init_trees
         self.max_offspring = pop_size
+        self.fitness_sharing = fitness_sharing
 
     def _train(self,
                x: np.ndarray,
@@ -61,7 +66,7 @@ class EvolutionaryModelSelector(ModelSelector):
 
             self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
-            new_models = self.propose_new_models(population, verbose=verbose)
+            new_models = self.propose_new_models(population, x, y, verbose=verbose)
             self.expansion_callback(new_models, self, x, y)
             population.update(new_models)
 
@@ -74,13 +79,24 @@ class EvolutionaryModelSelector(ModelSelector):
 
         return population
 
-    def select_parents(self, population: ActiveModelPopulation) -> List[GPModel]:
+    def select_parents(self, population: ActiveModelPopulation, x, y) -> List[GPModel]:
         """Select parents to expand.
 
         Here, exponential ranking selection is used.
         """
         selector = ExponentialRankingSelector(self.n_parents, c=0.7)
-        return list(selector.select(np.array(population.models), np.array(population.fitness_scores())).tolist())
+        raw_fitness_scores = population.fitness_scores()
+        models = np.array(population.models)
+        if self.fitness_sharing:
+            if not isinstance(selector, FitnessProportionalSelector):
+                warnings.warn('When using fitness sharing, fitness proportional selection is assumed.')
+            individuals = [compute_kernel(gp_model.covariance.raw_kernel, x) for gp_model in models]
+            metric = centered_alignment
+            effective_fitness_scores = shared_fitness_scores(individuals, raw_fitness_scores, metric)
+        else:
+            effective_fitness_scores = raw_fitness_scores
+
+        return list(selector.select(models, effective_fitness_scores))
 
     def select_offspring(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Select offspring for the next generation.

@@ -186,7 +186,10 @@ class ModelSelector:
 
         return population
 
-    def select_parents(self, population: ActiveModelPopulation) -> List[GPModel]:
+    def select_parents(self,
+                       population: ActiveModelPopulation,
+                       x: np.ndarray,
+                       y: np.ndarray) -> List[GPModel]:
         """Select parents to expand.
 
         By default, choose top k models.
@@ -196,6 +199,8 @@ class ModelSelector:
 
     def propose_new_models(self,
                            population: ActiveModelPopulation,
+                           x: np.ndarray,
+                           y: np.ndarray,
                            verbose: int = 0) -> List[GPModel]:
         """Propose new models using the grammar.
 
@@ -203,7 +208,7 @@ class ModelSelector:
         :param verbose:
         :return:
         """
-        parents = self.select_parents(population)
+        parents = self.select_parents(population, x, y)
         t0_exp = time()
         new_covariances = self.grammar.get_candidates(parents, verbose=verbose)
         self.total_expansion_time += time() - t0_exp
