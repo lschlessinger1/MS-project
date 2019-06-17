@@ -94,7 +94,7 @@ class EvolutionaryModelSelector(ModelSelector):
             metric = centered_alignment
             effective_fitness_scores = shared_fitness_scores(individuals, raw_fitness_scores, metric)
         else:
-            effective_fitness_scores = raw_fitness_scores
+            effective_fitness_scores = np.array(raw_fitness_scores)
 
         return list(selector.select(models, effective_fitness_scores))
 
