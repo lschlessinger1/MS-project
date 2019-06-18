@@ -4,6 +4,8 @@ from typing import List, Tuple, Optional, Callable
 
 import numpy as np
 from GPy.likelihoods import Likelihood
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import check_X_y, check_array
 from tqdm import tqdm
 
 from src.autoks.backend.model import RawGPModelType
@@ -36,7 +38,9 @@ class ModelSelector:
                  gp_fn: Callable = gp_regression,
                  gp_args: Optional[dict] = None,
                  optimizer: Optional[str] = None,
-                 n_restarts_optimizer: int = 10):
+                 n_restarts_optimizer: int = 10,
+                 standardize_x: bool = True,
+                 standardize_y: bool = True):
 
         self.grammar = grammar
         self.fitness_fn = fitness_fn
@@ -47,6 +51,8 @@ class ModelSelector:
         self.additive_form = additive_form
         self.optimizer = optimizer
         self.n_restarts_optimizer = n_restarts_optimizer
+        self.standardize_x = standardize_x
+        self.standardize_y = standardize_y
 
         self.total_eval_time = 0
         self.total_expansion_time = 0
@@ -81,6 +87,8 @@ class ModelSelector:
         :param verbose: Integer. 0, 1, 2, or 3. Verbosity mode.
         :return:
         """
+        x, y = check_X_y(x, y, multi_output=True, y_numeric=True)
+
         x, y = self._prepare_data(x, y)  # create grammar and standardize data
 
         if max_generations is None:
@@ -136,6 +144,14 @@ class ModelSelector:
             self.grammar.build(x.shape[1])
             self.built = True
 
+        if self.standardize_x:
+            self._x_scaler = StandardScaler()
+            x = self._x_scaler.fit_transform(x)
+
+        if self.standardize_y:
+            self._y_scaler = StandardScaler()
+            y = self._y_scaler.fit_transform(y)
+
         return x, y
 
     def _train(self,
@@ -150,7 +166,7 @@ class ModelSelector:
         """Predict on test inputs."""
         # for now, just use best model to predict. Should be using model averaging...
         # sort selected models by scores
-        pass
+        x = check_array(x)
 
     def score(self,
               x: np.ndarray,
