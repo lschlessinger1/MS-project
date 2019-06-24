@@ -7,6 +7,6 @@ git+git://github.com/lschlessinger1/GPy#egg=GPy
 pylatex==1.3.0
 sobol_seq==0.1.2
 sympy==1.4
-statsmodels==0.9.0
+statsmodels==0.10.0
 tqdm==4.32.2
 toml==0.10.0
