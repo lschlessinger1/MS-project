@@ -37,7 +37,12 @@ class Statistic:
     def to_dict(self) -> dict:
         input_dict = dict()
         input_dict["name"] = self.name
-        input_dict["data"] = self.data
+
+        if isinstance(self.data[0], np.ndarray):
+            data_out = [a.tolist() for a in self.data]
+        else:
+            data_out = self.data
+        input_dict["data"] = data_out
         input_dict["function"] = self.function.__name__  # TODO: find way to serialize function
         return input_dict
 
