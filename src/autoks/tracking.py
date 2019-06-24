@@ -27,6 +27,8 @@ class ModelSearchTracker:
         self.stat_book_names = [self.evaluations_name, self.expansion_name, self.active_set_name]
         self.base_kern_freq_names = []
 
+        self.stat_book_collection = StatBookCollection()
+
     def set_stat_book_collection(self, base_kernel_names: List[str]):
         self.base_kern_freq_names = [base_kern_name + '_frequency' for base_kern_name in base_kernel_names]
 
@@ -37,7 +39,7 @@ class ModelSearchTracker:
         base_kern_stat_funcs = [base_kern_freq(base_kern_name) for base_kern_name in base_kernel_names]
         shared_stats = [get_n_hyperparams, get_n_operands] + base_kern_stat_funcs
 
-        self.stat_book_collection = StatBookCollection(self.stat_book_names, shared_multi_stat_names, shared_stats)
+        self.stat_book_collection.create_shared_stat_books(self.stat_book_names, shared_multi_stat_names, shared_stats)
 
         sb_active_set = self.stat_book_collection.stat_books[self.active_set_name]
         sb_active_set.add_raw_value_stat(self.score_name, get_model_scores)

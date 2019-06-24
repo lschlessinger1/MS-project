@@ -1,3 +1,5 @@
+import gzip
+import json
 from typing import Callable, Optional, List, Dict, Iterable, Union, Any, ClassVar
 
 import numpy as np
@@ -10,7 +12,8 @@ Function = Callable[..., Union[float, np.ndarray, List[float]]]
 class Statistic:
     data: DataList
 
-    def __init__(self, name: str,
+    def __init__(self,
+                 name: str,
                  function: Optional[Function] = None):
         self.name = name  # the name of the statistic e.g. arithmetic mean
         self.data = []
@@ -31,6 +34,26 @@ class Statistic:
         """Reset statistic."""
         self.data = []
 
+    def to_dict(self) -> dict:
+        input_dict = dict()
+        input_dict["name"] = self.name
+        input_dict["data"] = self.data
+        input_dict["function"] = self.function.__name__  # TODO: find way to serialize function
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict, fn_map: Optional[dict] = None):
+        data = input_dict.pop("data")
+
+        fn_map = fn_map or {}
+        if input_dict["function"] in fn_map:
+            input_dict["function"] = fn_map[input_dict["function"]]
+        else:
+            input_dict["function"] = None
+        stat = Statistic(**input_dict)
+        stat.data = data
+        return stat
+
     def __repr__(self):
         return f'{self.__class__.__name__}(name={self.name!r}, n_data={len(self.data)}, ' \
             f'function={self.function.__name__!r})'
@@ -41,7 +64,8 @@ class MultiStat:
     stats: Dict[str, Statistic]
     RAW_VALUE_STAT_NAME: ClassVar[str] = 'raw_values'
 
-    def __init__(self, name: str,
+    def __init__(self,
+                 name: str,
                  stats: Optional[Iterable[Statistic]] = None):
         """
 
@@ -107,11 +131,11 @@ class MultiStat:
 
     def running_std(self) -> DataList:
         values = np.array(self.get_raw_values())
-        rollling_std = np.zeros(values.size)
-        for i in range(rollling_std.size):
+        rolling_std = np.zeros(values.size)
+        for i in range(rolling_std.size):
             if i > 0:
-                rollling_std[i] = np.std(values[:i + 1])
-        return list(rollling_std.tolist())
+                rolling_std[i] = np.std(values[:i + 1])
+        return list(rolling_std.tolist())
 
     def plot(self):
         raise NotImplementedError()
@@ -119,6 +143,17 @@ class MultiStat:
     def clear_all_values(self) -> None:
         for statistic in self.stats.values():
             statistic.clear()
+
+    def to_dict(self) -> dict:
+        input_dict = dict()
+        input_dict["name"] = self.name
+        input_dict["stats"] = [stat.to_dict() for stat in self.stats_list()]
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        input_dict["stats"] = [Statistic.from_dict(stat) for stat in input_dict["stats"]]
+        return MultiStat(**input_dict)
 
     def __repr__(self):
         return f'{self.__class__.__name__}(stats={self.stats!r})'
@@ -128,7 +163,8 @@ class StatBook:
     """Store many multi-statistics."""
     multi_stats: Dict[str, MultiStat]
 
-    def __init__(self, name: str,
+    def __init__(self,
+                 name: str,
                  multi_stats: Optional[Iterable[MultiStat]] = None):
         self.name = name
         self.multi_stats = dict()
@@ -200,6 +236,17 @@ class StatBook:
         for multi_stat in self.multi_stats.values():
             multi_stat.clear_all_values()
 
+    def to_dict(self) -> dict:
+        input_dict = dict()
+        input_dict["name"] = self.name
+        input_dict["multi_stats"] = [ms.to_dict() for ms in self.multi_stats_list()]
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        input_dict["multi_stats"] = [MultiStat.from_dict(ms) for ms in input_dict["multi_stats"]]
+        return StatBook(**input_dict)
+
     def __repr__(self):
         multi_stat_names = [multi_stat.name for multi_stat in self.multi_stats_list()]
         return f'{self.__class__.__name__}(name={self.name!r}, multi_stats={multi_stat_names!r})'
@@ -209,11 +256,17 @@ class StatBookCollection:
     """Store many stat books."""
     stat_books: Dict[str, StatBook]
 
-    def __init__(self, stat_book_names: Iterable[str],
-                 multi_stat_names: Iterable[str],
-                 raw_value_functions: Optional[Iterable[Function]] = None):
+    def __init__(self, stat_books: Optional[Iterable[StatBook]] = None):
         # TODO:  make raw value functions map to mutli-stats
         self.stat_books = dict()
+        if stat_books is not None:
+            for stat_book in stat_books:
+                self.add_stat_book(stat_book)
+
+    def create_shared_stat_books(self,
+                                 stat_book_names: Iterable[str],
+                                 multi_stat_names: Iterable[str],
+                                 raw_value_functions: Optional[Iterable[Function]] = None):
         for sb_name in stat_book_names:
             # shared multi-stats
             multi_stats = [MultiStat(ms_name) for ms_name in multi_stat_names]
@@ -235,6 +288,44 @@ class StatBookCollection:
         for stat_book in self.stat_books.values():
             stat_book.clear_all_values()
 
+    def to_dict(self) -> dict:
+        input_dict = dict()
+        input_dict["stat_books"] = [sb.to_dict() for sb in self.stat_book_list()]
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        input_dict["stat_books"] = [StatBook.from_dict(sb) for sb in input_dict["stat_books"]]
+        return StatBookCollection(**input_dict)
+
+    def save(self, output_file_name: str, compress: bool = True):
+        output_dict = self.to_dict()
+        if compress:
+            output_file_name += ".zip"
+            with gzip.GzipFile(output_file_name, 'w') as outfile:
+                json_str = json.dumps(output_dict)
+                json_bytes = json_str.encode('utf-8')
+                outfile.write(json_bytes)
+        else:
+            output_file_name += ".json"
+            with open(output_file_name, 'w') as outfile:
+                json.dump(output_dict, outfile)
+
+        return output_file_name
+
+    @staticmethod
+    def load(output_filename: str):
+        compress = output_filename.split(".")[-1] == "zip"
+        if compress:
+            with gzip.GzipFile(output_filename, 'r') as json_data:
+                json_bytes = json_data.read()
+                json_str = json_bytes.decode('utf-8')
+                output_dict = json.loads(json_str)
+        else:
+            with open(output_filename) as json_data:
+                output_dict = json.load(json_data)
+
+        return StatBookCollection.from_dict(output_dict)
+
     def __repr__(self):
-        stat_book_names = [book.name for book in self.stat_book_list()]
-        return f'{self.__class__.__name__}(stat_books={stat_book_names!r})'
+        return f'{self.__class__.__name__}(stat_books={self.stat_book_names()!r})'

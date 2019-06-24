@@ -1,9 +1,10 @@
+import os
 from unittest import TestCase
 from unittest.mock import MagicMock
 
 import numpy as np
 
-from src.autoks.statistics import Statistic, MultiStat, StatBook
+from src.autoks.statistics import Statistic, MultiStat, StatBook, StatBookCollection
 
 
 class TestStatistic(TestCase):
@@ -19,6 +20,37 @@ class TestStatistic(TestCase):
         stat.record(5)
         stat.clear()
         self.assertListEqual(stat.data, [])
+
+    def test_to_dict(self):
+        stat = Statistic(name='test')
+        stat.record(5)
+        output_dict = stat.to_dict()
+        self.assertEqual(stat.name, output_dict["name"])
+        self.assertEqual(stat.data, output_dict["data"])
+        self.assertEqual(stat.function.__name__, output_dict["function"])
+
+    def test_from_dict(self):
+        stat = Statistic(name='test')
+        stat.record(5)
+        output_dict = stat.to_dict()
+
+        actual = Statistic.from_dict(output_dict)
+        self.assertEqual(stat.name, actual.name)
+        self.assertEqual(stat.data, actual.data)
+        self.assertEqual(stat.function.__name__, actual.function.__name__)
+
+        def square(x):
+            return x ** 2
+
+        stat = Statistic(name='test', function=square)
+        stat.record(2)
+        output_dict = stat.to_dict()
+
+        actual = Statistic.from_dict(output_dict, fn_map={"square": square})
+        self.assertEqual(stat.name, actual.name)
+        self.assertEqual(stat.data, actual.data)
+        self.assertEqual(stat.function.__name__, actual.function.__name__)
+        self.assertEqual(stat.function(2), actual.function(2))
 
 
 class TestMultiStat(TestCase):
@@ -174,6 +206,15 @@ class TestMultiStat(TestCase):
         stat_2.clear.assert_called_once()
         stat_3.clear.assert_called_once()
 
+    def test_to_dict(self):
+        ms = MultiStat(name='test_ms')
+        stat_1 = Statistic('name1')
+        stat_1.record(6)
+        ms.add_statistic(stat_1)
+        output_dict = ms.to_dict()
+        self.assertEqual(ms.name, output_dict["name"])
+        self.assertEqual([stat.to_dict() for stat in ms.stats_list()], output_dict["stats"])
+
 
 class TestStatBook(TestCase):
 
@@ -328,3 +369,71 @@ class TestStatBook(TestCase):
 
         ms1.clear_all_values.assert_called_once()
         ms2.clear_all_values.assert_called_once()
+
+    def test_to_dict(self):
+        sb = StatBook('test_sb')
+        ms = MultiStat(name='test_ms')
+        sb.add_multi_stat(ms)
+        output_dict = sb.to_dict()
+        self.assertEqual(sb.name, output_dict["name"])
+        self.assertEqual([ms.to_dict() for ms in sb.multi_stats_list()], output_dict["multi_stats"])
+
+
+class TestStatBookCollection(TestCase):
+
+    def setUp(self) -> None:
+        self.sb_names = ["sb_name_1", "sb_name_2"]
+        self.ms_names = ["mean", "variance"]
+
+    def test_add_stat_book(self):
+        sbc = StatBookCollection()
+        sbc.create_shared_stat_books(self.sb_names, self.ms_names)
+
+        sb = StatBook('test_sb')
+        sbc.add_stat_book(sb)
+        self.assertIn(sb.name, sbc.stat_book_names())
+        self.assertIn(sb, sbc.stat_book_list())
+
+    def test_to_dict(self):
+        sbc = StatBookCollection()
+        sbc.create_shared_stat_books(self.sb_names, self.ms_names)
+
+        output_dict = sbc.to_dict()
+        self.assertEqual([sb.to_dict() for sb in sbc.stat_book_list()], output_dict["stat_books"])
+
+    def test_from_dict(self):
+        sbc = StatBookCollection()
+        sbc.create_shared_stat_books(self.sb_names, self.ms_names)
+
+        actual = StatBookCollection.from_dict(sbc.to_dict())
+        self.assertEqual(sbc.stat_book_names(), actual.stat_book_names())
+
+        expected_ms_names = [sb.multi_stats_names() for sb in sbc.stat_book_list()]
+        actual_ms_names = [sb.multi_stats_names() for sb in actual.stat_book_list()]
+        self.assertListEqual(expected_ms_names, actual_ms_names)
+
+    def test_save(self):
+        sbc = StatBookCollection()
+        sbc.create_shared_stat_books(self.sb_names, self.ms_names)
+
+        fname = "test_save"
+        out_fname = sbc.save(fname)
+
+        self.addCleanup(os.remove, out_fname)
+
+    def test_load(self):
+        sbc = StatBookCollection()
+        sbc.create_shared_stat_books(self.sb_names, self.ms_names)
+
+        fname = "test_save"
+        out_fname = sbc.save(fname)
+
+        new_sbc = StatBookCollection.load(out_fname)
+
+        self.assertEqual(sbc.stat_book_names(), new_sbc.stat_book_names())
+
+        expected_ms_names = [sb.multi_stats_names() for sb in sbc.stat_book_list()]
+        actual_ms_names = [sb.multi_stats_names() for sb in new_sbc.stat_book_list()]
+        self.assertListEqual(expected_ms_names, actual_ms_names)
+
+        self.addCleanup(os.remove, out_fname)
