@@ -80,6 +80,16 @@ class ModelSearchTracker:
         stat_book = self.stat_book_collection.stat_books[self.evaluations_name]
         update_stat_book(stat_book, models, x, grammar.base_kernel_names, grammar.n_dims)
 
+    def save(self, output_file_name: str):
+        self.stat_book_collection.save(output_file_name)
+
+    @staticmethod
+    def load(output_file_name: str):
+        mst = ModelSearchTracker()
+        sbc = StatBookCollection.load(output_file_name)
+        mst.stat_book_collection = sbc
+        return mst
+
 
 def update_stat_book(stat_book: StatBook,
                      gp_models: List[GPModel],
