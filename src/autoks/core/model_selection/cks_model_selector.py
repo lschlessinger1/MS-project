@@ -2,8 +2,9 @@ from typing import List, Callable, Optional
 
 import numpy as np
 
-from src.autoks.backend.model import BIC, RawGPModelType
+from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance
+from src.autoks.core.fitness_functions import negative_bic
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import CKSGrammar
@@ -25,12 +26,8 @@ class CKSModelSelector(ModelSelector):
             grammar = CKSGrammar()
 
         if fitness_fn is None:
-            def negative_BIC(m):
-                """Computes the negative of the Bayesian Information Criterion (BIC)."""
-                return -BIC(m)
-
             # Use the negative BIC because we want to maximize the fitness_fn.
-            fitness_fn = negative_BIC
+            fitness_fn = negative_bic
 
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 

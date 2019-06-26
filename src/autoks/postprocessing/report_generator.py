@@ -7,8 +7,9 @@ from pylatex import Document, Section, Figure, NoEscape, SubFigure, Center, Tabu
     Subsection, Command, HorizontalSpace
 from pylatex.utils import bold, italic
 
-from src.autoks.backend.model import AIC, BIC, pl2, log_likelihood_normalized
+from src.autoks.core.fitness_functions import log_likelihood_normalized
 from src.autoks.core.gp_model import GPModel
+from src.autoks.model_selection_criteria import AIC, BIC, pl2
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_lin_reg, rmse_svr, rmse_rbf, rmse_knn
 from src.evalg.plotting import plot_distribution, plot_best_so_far
 

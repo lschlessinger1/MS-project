@@ -2,8 +2,9 @@ from typing import List, Callable, Optional
 
 import numpy as np
 
-from src.autoks.backend.model import log_likelihood_normalized, RawGPModelType
+from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance
+from src.autoks.core.fitness_functions import log_likelihood_normalized
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import RandomGrammar

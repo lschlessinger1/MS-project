@@ -6,7 +6,6 @@ from GPy.core.model import Model
 
 from src.autoks.backend.kernel import kernel_to_infix_tokens, tokens_to_str, RawKernelType
 from src.evalg.encoding import infix_tokens_to_postfix_tokens, postfix_tokens_to_binexp_tree, BinaryTree
-from src.evalg.fitness import covariant_parsimony_pressure
 
 RawGPModelType = GP
 RawModelType = Model
@@ -93,86 +92,17 @@ def is_nan_model(model: RawGPModelType) -> bool:
     return np.isnan(model.param_array).any()
 
 
-# Model selection criteria
-
-def log_likelihood_normalized(model: RawGPModelType) -> float:
-    """Computes the normalized log likelihood.
-
-    :param model:
-    :return:
-    """
-    return model.log_likelihood() / model.num_data
+def n_data(model: RawGPModelType) -> int:
+    """Get the number of data points of a model."""
+    return model.num_data
 
 
-def BIC(model: RawGPModelType) -> float:
-    """Bayesian Information Criterion (BIC).
-
-    Calculate the BIC for a GPy `model` with maximum likelihood hyperparameters on a
-    given dataset.
-    https://en.wikipedia.org/wiki/Bayesian_information_criterion
-
-    BIC = ln(n)k - 2ln(L^)
-    """
-    # model.log_likelihood() is the natural logarithm of the marginal likelihood of the Gaussian process.
-    # len(model.x) is the number of data points.
-    # model._size_transformed() is the number of optimisation parameters.
-    n = len(model.X)
+def n_params(model: RawGPModelType) -> int:
+    """Get the number of optimization parameters."""
     # noinspection PyProtectedMember
-    k = model._size_transformed()
-    return np.log(n) * k - 2 * model.log_likelihood()
+    return model._size_transformed()
 
 
-def AIC(model: RawGPModelType) -> float:
-    """Akaike Information Criterion (AIC).
-
-    Calculate the AIC for a GPy `model` with maximum likelihood hyperparameters on a
-    given dataset.
-    https://en.wikipedia.org/wiki/Akaike_information_criterion
-
-    AIC = 2k - 2ln(L^)
-    """
-    # model.log_likelihood() is the natural logarithm of the marginal likelihood of the Gaussian process.
-    # model._size_transformed() is the number of optimisation parameters.
-    # noinspection PyProtectedMember
-    k = model._size_transformed()
-    return 2 * k - 2 * model.log_likelihood()
-
-
-def pl2(model: RawGPModelType) -> float:
-    """Compute the modified expected log-predictive likelihood (PL2) score of a model.
-
-    Ando & Tsay, 2009
-    :param model:
-    :return:
-    """
-    n = len(model.X)
-    # noinspection PyProtectedMember
-    k = model._size_transformed()
-    nll = -model.log_likelihood()
-    return nll / n + k / (2 * n)
-
-
-def cov_parsimony_pressure(model: RawGPModelType,
-                           model_scores: List[float],
-                           model_sizes: List[int]) -> float:
-    """Covariant parsimony pressure method of a model."""
-    # noinspection PyProtectedMember
-    model_size = model._size_transformed()
-    lml = model.log_likelihood()
-    return covariant_parsimony_pressure(fitness=lml, size=model_size, sizes=model_sizes, fitness_list=model_scores)
-
-
-# Model comparison scores
-
-def bayes_factor(model_1: RawGPModelType,
-                 model_2: RawGPModelType) -> float:
-    """Compute the Bayes factor between two models.
-    https://en.wikipedia.org/wiki/Bayes_factor
-
-    :param model_1:
-    :param model_2:
-    :return:
-    """
-    model_evidence_1 = np.exp(model_1.log_likelihood())
-    model_evidence_2 = np.exp(model_2.log_likelihood())
-    return model_evidence_1 / model_evidence_2
+def log_likelihood(model: RawGPModelType) -> float:
+    """Get the natural logarithm of the marginal likelihood of the Gaussian process model."""
+    return model.log_likelihood()
