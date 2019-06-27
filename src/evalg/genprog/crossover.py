@@ -1,3 +1,4 @@
+import importlib
 from abc import ABC
 from typing import List, Tuple, Optional
 
@@ -74,6 +75,21 @@ class SubtreeExchangeRecombinatorBase(Recombinator, ABC):
             return True
 
         return False
+
+    def to_dict(self) -> dict:
+        input_dict = dict()
+        input_dict["module_name"] = self.__module__
+        input_dict["class_name"] = self.__class__.__name__
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        module_name = input_dict.pop("module_name")
+        class_name = input_dict.pop("class_name")
+        module = importlib.import_module(module_name)
+        cls = getattr(module, class_name)
+
+        return cls(**input_dict)
 
 
 class SubtreeExchangeRecombinator(SubtreeExchangeRecombinatorBase):
@@ -170,6 +186,11 @@ class SubtreeExchangeLeafBiasedRecombinator(SubtreeExchangeRecombinatorBase):
         self._swap_subtrees(node_1, node_2, tree_1, tree_2)
 
         return tree_1, tree_2
+
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["t_prob"] = self.t_prob
+        return input_dict
 
 
 NodePair = Tuple[BinaryTreeNode, BinaryTreeNode]
@@ -312,6 +333,11 @@ class OnePointLeafBiasedRecombinator(OnePointRecombinatorBase):
                 r = np.random.choice(internals)
                 return common_region[r]
 
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["t_prob"] = self.t_prob
+        return input_dict
+
 
 class OnePointStrictLeafBiasedRecombinator(OnePointRecombinatorBase):
     t_prob: float
@@ -323,3 +349,8 @@ class OnePointStrictLeafBiasedRecombinator(OnePointRecombinatorBase):
         allowed_node_pairs = OnePointStrictRecombinator.get_allowed_pairs(common_region)
         recombinator = OnePointLeafBiasedRecombinator(t_prob=self.t_prob)
         return recombinator.select_node_pair(allowed_node_pairs)
+
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["t_prob"] = self.t_prob
+        return input_dict
