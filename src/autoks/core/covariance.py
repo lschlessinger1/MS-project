@@ -1,6 +1,7 @@
 from typing import Optional, List, Union
 
 import numpy as np
+from GPy.kern import Kern
 from graphviz import Source
 from scipy.spatial.distance import cdist, pdist
 from sympy import pprint, latex, mathml, dotprint
@@ -39,6 +40,16 @@ class Covariance:
         postfix_token_symbols = tokens_to_kernel_symbols(self.postfix_tokens)
         self.symbolic_expr = postfix_tokens_to_symbol(postfix_token_symbols)
         self.symbolic_expr_expanded = self.symbolic_expr.expand()
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        input_dict["kernel"] = Kern.from_dict(input_dict["kernel"])
+        return Covariance(**input_dict)
+
+    def to_dict(self) -> dict:
+        input_dict = dict()
+        input_dict["kernel"] = self.raw_kernel.to_dict()
+        return input_dict
 
     def to_binary_tree(self) -> KernelTree:
         """Get the binary tree representation of the kernel
