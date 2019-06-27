@@ -89,6 +89,21 @@ class TestTreeMutator(TestCase):
         self.assertRaises(TypeError, TreeMutator.mutate, 1)
         self.assertRaises(TypeError, TreeMutator.mutate, True)
 
+    def test_to_dict(self):
+        mutator = TreeMutator(BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("TreeMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+
+    def test_from_dict(self):
+        mutator = TreeMutator(BinaryTreeNode)
+        actual = TreeMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, TreeMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+
 
 class TestTreePointMutator(TestCase):
 
@@ -105,6 +120,21 @@ class TestTreePointMutator(TestCase):
         tree = mutator.mutate(['+', '*'], ['A', 'B', 'C', 'D'], self.tree)
         self.assertEqual(tree.root.label, '+')
         self.assertIsInstance(tree, BinaryTree)
+
+    def test_to_dict(self):
+        mutator = TreePointMutator(BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("TreePointMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+
+    def test_from_dict(self):
+        mutator = TreePointMutator(BinaryTreeNode)
+        actual = TreePointMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, TreePointMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
 
     def tearDown(self):
         # reset random seed
@@ -148,6 +178,23 @@ class TestSubTreeExchangeMutator(TestCase):
         self.assertEqual(self.tree.root.left.left, ll)
         self.assertEqual(self.tree.root.left.right, lr)
 
+    def test_to_dict(self):
+        mutator = SubTreeExchangeMutator(4, BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("SubTreeExchangeMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+        self.assertEqual(mutator.max_depth, actual["max_depth"])
+
+    def test_from_dict(self):
+        mutator = SubTreeExchangeMutator(4, BinaryTreeNode)
+        actual = SubTreeExchangeMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, SubTreeExchangeMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+        self.assertEqual(mutator.max_depth, actual.max_depth)
+
 
 class TestGrowMutator(TestCase):
 
@@ -166,6 +213,23 @@ class TestGrowMutator(TestCase):
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
+
+    def test_to_dict(self):
+        mutator = GrowMutator(4, BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("GrowMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+        self.assertEqual(mutator.max_depth, actual["max_depth"])
+
+    def test_from_dict(self):
+        mutator = GrowMutator(4, BinaryTreeNode)
+        actual = GrowMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, GrowMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+        self.assertEqual(mutator.max_depth, actual.max_depth)
 
 
 class TestFullMutator(TestCase):
@@ -186,6 +250,23 @@ class TestFullMutator(TestCase):
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
 
+    def test_to_dict(self):
+        mutator = FullMutator(4, BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("FullMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+        self.assertEqual(mutator.max_depth, actual["max_depth"])
+
+    def test_from_dict(self):
+        mutator = FullMutator(4, BinaryTreeNode)
+        actual = FullMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, FullMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+        self.assertEqual(mutator.max_depth, actual.max_depth)
+
 
 class TestHalfAndHalfMutator(TestCase):
 
@@ -204,6 +285,23 @@ class TestHalfAndHalfMutator(TestCase):
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
+
+    def test_to_dict(self):
+        mutator = HalfAndHalfMutator(4, BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("HalfAndHalfMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+        self.assertEqual(mutator.max_depth, actual["max_depth"])
+
+    def test_from_dict(self):
+        mutator = HalfAndHalfMutator(4, BinaryTreeNode)
+        actual = HalfAndHalfMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, HalfAndHalfMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+        self.assertEqual(mutator.max_depth, actual.max_depth)
 
 
 class TestSubtreeExchangeRecombinatorBase(NodeCheckTestCase):
@@ -518,6 +616,18 @@ class TestSubtreeExchangeRecombinatorBase(NodeCheckTestCase):
         result = SubtreeExchangeRecombinatorBase._valid_pair('+', 'B')
         self.assertFalse(result)
 
+    def test_to_dict(self):
+        recombinator = SubtreeExchangeRecombinatorBase()
+        actual = recombinator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.crossover", actual["module_name"])
+        self.assertEqual("SubtreeExchangeRecombinatorBase", actual["class_name"])
+
+    def test_from_dict(self):
+        recombinator = SubtreeExchangeRecombinatorBase()
+        actual = SubtreeExchangeRecombinatorBase.from_dict(recombinator.to_dict())
+        self.assertIsInstance(actual, SubtreeExchangeRecombinatorBase)
+
     def tearDown(self):
         np.random.seed()
 
@@ -563,6 +673,18 @@ class TestSubtreeExchangeRecombinator(TestCase):
         self.assertEqual(tokens_1[idx_1], 'B')
         self.assertEqual(tokens_2[idx_2], 'D')
 
+    def test_to_dict(self):
+        recombinator = SubtreeExchangeRecombinator()
+        actual = recombinator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.crossover", actual["module_name"])
+        self.assertEqual("SubtreeExchangeRecombinator", actual["class_name"])
+
+    def test_from_dict(self):
+        recombinator = SubtreeExchangeRecombinator()
+        actual = SubtreeExchangeRecombinator.from_dict(recombinator.to_dict())
+        self.assertIsInstance(actual, SubtreeExchangeRecombinator)
+
     def tearDown(self):
         np.random.seed()
 
@@ -604,6 +726,20 @@ class TestSubtreeExchangeLeafBiasedRecombinator(TestCase):
         result_1, result_2 = recombinator.crossover([tree_1, stump])
         self.assertIsInstance(result_1, BinaryTree)
         self.assertIsInstance(result_2, BinaryTree)
+
+    def test_to_dict(self):
+        recombinator = SubtreeExchangeLeafBiasedRecombinator(t_prob=0.3)
+        actual = recombinator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.crossover", actual["module_name"])
+        self.assertEqual("SubtreeExchangeLeafBiasedRecombinator", actual["class_name"])
+        self.assertEqual(recombinator.t_prob, actual["t_prob"])
+
+    def test_from_dict(self):
+        recombinator = SubtreeExchangeLeafBiasedRecombinator(t_prob=0.4)
+        actual = SubtreeExchangeLeafBiasedRecombinator.from_dict(recombinator.to_dict())
+        self.assertIsInstance(actual, SubtreeExchangeLeafBiasedRecombinator)
+        self.assertEqual(recombinator.t_prob, actual.t_prob)
 
     def tearDown(self):
         np.random.seed()
@@ -820,6 +956,18 @@ class TestOnePointRecombinatorBase(NodeCheckTestCase):
         self.check_leaf(result_2.root.right.left, 'D', '*')
         self.check_leaf(result_2.root.right.right, 'M', '*')
 
+    def test_to_dict(self):
+        recombinator = OnePointRecombinatorBase()
+        actual = recombinator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.crossover", actual["module_name"])
+        self.assertEqual("OnePointRecombinatorBase", actual["class_name"])
+
+    def test_from_dict(self):
+        recombinator = OnePointRecombinatorBase()
+        actual = OnePointRecombinatorBase.from_dict(recombinator.to_dict())
+        self.assertIsInstance(actual, OnePointRecombinatorBase)
+
     def tearDown(self):
         np.random.seed()
 
@@ -841,6 +989,18 @@ class TestOnePointRecombinator(TestCase):
         common_region = [(node_1, node_2), (node_3, node_4)]
         result = self.recombinator.select_node_pair(common_region)
         self.assertIn(result, common_region)
+
+    def test_to_dict(self):
+        recombinator = OnePointRecombinator()
+        actual = recombinator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.crossover", actual["module_name"])
+        self.assertEqual("OnePointRecombinator", actual["class_name"])
+
+    def test_from_dict(self):
+        recombinator = OnePointRecombinator()
+        actual = OnePointRecombinator.from_dict(recombinator.to_dict())
+        self.assertIsInstance(actual, OnePointRecombinator)
 
 
 class TestOnePointLeafBiasedRecombinator(NodeCheckTestCase):
@@ -970,3 +1130,15 @@ class TestOnePointStrictRecombinator(NodeCheckTestCase):
         common_region = [(node_1, node_2), (node_3, node_4)]
         result = self.recombinator.select_node_pair(common_region)
         self.assertIn(result, common_region)
+
+    def test_to_dict(self):
+        recombinator = OnePointStrictRecombinator()
+        actual = recombinator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.crossover", actual["module_name"])
+        self.assertEqual("OnePointStrictRecombinator", actual["class_name"])
+
+    def test_from_dict(self):
+        recombinator = OnePointStrictRecombinator()
+        actual = OnePointStrictRecombinator.from_dict(recombinator.to_dict())
+        self.assertIsInstance(actual, OnePointStrictRecombinator)
