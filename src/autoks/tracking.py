@@ -80,6 +80,18 @@ class ModelSearchTracker:
         stat_book = self.stat_book_collection.stat_books[self.evaluations_name]
         update_stat_book(stat_book, models, x, grammar.base_kernel_names, grammar.n_dims)
 
+    def to_dict(self) -> dict:
+        output_dict = dict()
+        output_dict["stat_book_collection"] = self.stat_book_collection.to_dict()
+        return output_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        stat_book_collection = StatBookCollection.from_dict(input_dict.pop("stat_book_collection"))
+        tracker = ModelSearchTracker()
+        tracker.stat_book_collection = stat_book_collection
+        return tracker
+
     def save(self, output_file_name: str):
         self.stat_book_collection.save(output_file_name)
 
