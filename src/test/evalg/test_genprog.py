@@ -89,6 +89,21 @@ class TestTreeMutator(TestCase):
         self.assertRaises(TypeError, TreeMutator.mutate, 1)
         self.assertRaises(TypeError, TreeMutator.mutate, True)
 
+    def test_to_dict(self):
+        mutator = TreeMutator(BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("TreeMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+
+    def test_from_dict(self):
+        mutator = TreeMutator(BinaryTreeNode)
+        actual = TreeMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, TreeMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+
 
 class TestTreePointMutator(TestCase):
 
@@ -105,6 +120,21 @@ class TestTreePointMutator(TestCase):
         tree = mutator.mutate(['+', '*'], ['A', 'B', 'C', 'D'], self.tree)
         self.assertEqual(tree.root.label, '+')
         self.assertIsInstance(tree, BinaryTree)
+
+    def test_to_dict(self):
+        mutator = TreePointMutator(BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("TreePointMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+
+    def test_from_dict(self):
+        mutator = TreePointMutator(BinaryTreeNode)
+        actual = TreePointMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, TreePointMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
 
     def tearDown(self):
         # reset random seed
@@ -148,6 +178,23 @@ class TestSubTreeExchangeMutator(TestCase):
         self.assertEqual(self.tree.root.left.left, ll)
         self.assertEqual(self.tree.root.left.right, lr)
 
+    def test_to_dict(self):
+        mutator = SubTreeExchangeMutator(4, BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("SubTreeExchangeMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+        self.assertEqual(mutator.max_depth, actual["max_depth"])
+
+    def test_from_dict(self):
+        mutator = SubTreeExchangeMutator(4, BinaryTreeNode)
+        actual = SubTreeExchangeMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, SubTreeExchangeMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+        self.assertEqual(mutator.max_depth, actual.max_depth)
+
 
 class TestGrowMutator(TestCase):
 
@@ -166,6 +213,23 @@ class TestGrowMutator(TestCase):
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
+
+    def test_to_dict(self):
+        mutator = GrowMutator(4, BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("GrowMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+        self.assertEqual(mutator.max_depth, actual["max_depth"])
+
+    def test_from_dict(self):
+        mutator = GrowMutator(4, BinaryTreeNode)
+        actual = GrowMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, GrowMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+        self.assertEqual(mutator.max_depth, actual.max_depth)
 
 
 class TestFullMutator(TestCase):
@@ -186,6 +250,23 @@ class TestFullMutator(TestCase):
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
 
+    def test_to_dict(self):
+        mutator = FullMutator(4, BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("FullMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+        self.assertEqual(mutator.max_depth, actual["max_depth"])
+
+    def test_from_dict(self):
+        mutator = FullMutator(4, BinaryTreeNode)
+        actual = FullMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, FullMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+        self.assertEqual(mutator.max_depth, actual.max_depth)
+
 
 class TestHalfAndHalfMutator(TestCase):
 
@@ -204,6 +285,23 @@ class TestHalfAndHalfMutator(TestCase):
         self.assertIsInstance(result, BinaryTree)
         max_height = mutator.max_depth + 1
         self.assertLessEqual(result.height(), self.tree.height() + max_height)
+
+    def test_to_dict(self):
+        mutator = HalfAndHalfMutator(4, BinaryTreeNode)
+        actual = mutator.to_dict()
+        self.assertIsInstance(actual, dict)
+        self.assertEqual("src.evalg.genprog.mutation", actual["module_name"])
+        self.assertEqual("HalfAndHalfMutator", actual["class_name"])
+        self.assertEqual("src.evalg.encoding", actual["binary_tree_node_module_name"])
+        self.assertEqual("BinaryTreeNode", actual["binary_tree_node_cls_name"])
+        self.assertEqual(mutator.max_depth, actual["max_depth"])
+
+    def test_from_dict(self):
+        mutator = HalfAndHalfMutator(4, BinaryTreeNode)
+        actual = HalfAndHalfMutator.from_dict(mutator.to_dict())
+        self.assertIsInstance(actual, HalfAndHalfMutator)
+        self.assertEqual(BinaryTreeNode, actual.binary_tree_node_cls)
+        self.assertEqual(mutator.max_depth, actual.max_depth)
 
 
 class TestSubtreeExchangeRecombinatorBase(NodeCheckTestCase):

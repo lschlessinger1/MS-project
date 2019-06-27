@@ -1,3 +1,4 @@
+import importlib
 from abc import ABC
 
 import numpy as np
@@ -24,6 +25,29 @@ class TreeMutator:
         :return:
         """
         raise NotImplementedError('mutate must be implemented in a child class.')
+
+    def to_dict(self) -> dict:
+        input_dict = dict()
+        input_dict["module_name"] = self.__module__
+        input_dict["class_name"] = self.__class__.__name__
+        input_dict["binary_tree_node_module_name"] = self.binary_tree_node_cls.__module__
+        input_dict["binary_tree_node_cls_name"] = self.binary_tree_node_cls.__qualname__
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        module_name = input_dict.pop("module_name")
+        class_name = input_dict.pop("class_name")
+        module = importlib.import_module(module_name)
+        cls = getattr(module, class_name)
+
+        b_tree_module_name = input_dict.pop("binary_tree_node_module_name")
+        b_tree_cls_name = input_dict.pop("binary_tree_node_cls_name")
+        b_tree_module = importlib.import_module(b_tree_module_name)
+        binary_tree_node_cls = getattr(b_tree_module, b_tree_cls_name)
+        input_dict["binary_tree_node_cls"] = binary_tree_node_cls
+
+        return cls(**input_dict)
 
     def __repr__(self):
         return f'{self.__class__.__name__}'
@@ -130,6 +154,11 @@ class SubTreeExchangeMutator(TreeMutator, ABC):
             new_tree = BinaryTree()
             new_tree.root = random_tree.root
             return new_tree
+
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["max_depth"] = self.max_depth
+        return input_dict
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'max_depth={self.max_depth!r})'
