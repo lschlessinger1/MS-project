@@ -2,10 +2,11 @@ from typing import Optional, TypeVar
 
 import numpy as np
 
+from src.evalg.serialization import Serializable
 from src.evalg.util import swap
 
 
-class Mutator:
+class Mutator(Serializable):
     T = TypeVar('T')
 
     def mutate(self, individual: T) -> T:

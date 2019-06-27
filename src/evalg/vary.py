@@ -1,12 +1,14 @@
+import importlib
 from typing import List, Union, TypeVar
 
 import numpy as np
 
 from src.evalg.crossover import Recombinator
 from src.evalg.mutation import Mutator
+from src.evalg.serialization import Serializable
 
 
-class Variator:
+class Variator(Serializable):
 
     def __init__(self, operator: Union[Mutator, Recombinator]):
         self.operator = operator
@@ -20,6 +22,22 @@ class Variator:
         :return:
         """
         raise NotImplementedError('vary must be implemented in a child class')
+
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["operator"] = self.operator.to_dict()
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        # Set operator
+        operator_dict = input_dict["operator"]
+        operator_class_name = operator_dict["__class__"]
+        operator_module_name = operator_dict["__module__"]
+        operator_module = importlib.import_module(operator_module_name)
+        operator_class_ = getattr(operator_module, operator_class_name)
+        input_dict["operator"] = operator_class_.from_dict(operator_dict)
+        return Serializable.from_dict(input_dict)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operator={self.operator!r})'
@@ -78,6 +96,13 @@ class CrossoverVariator(Variator):
         """
         return self.crossover_all(parents)
 
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["n_offspring"] = self.n_offspring
+        input_dict["n_way"] = self.n_way
+        input_dict["c_prob"] = self.c_prob
+        return input_dict
+
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operator={self.operator!r}, n_offspring={self.n_offspring!r}, ' \
             f'n_way={self.n_way!r}, c_prob={self.c_prob!r})'
@@ -120,11 +145,16 @@ class MutationVariator(Variator):
     def vary(self, parents: List[T], **kwargs) -> List[T]:
         return self.mutate_all(parents, **kwargs)
 
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["m_prob"] = self.m_prob
+        return input_dict
+
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operator={self.operator!r}, m_prob={self.m_prob!r})'
 
 
-class PopulationOperator:
+class PopulationOperator(Serializable):
     """Collection of variators."""
 
     def __init__(self, variators: List[Variator]):
@@ -154,6 +184,16 @@ class PopulationOperator:
         for variator in self.variators:
             offspring = variator.vary(offspring, **kwargs)
         return offspring
+
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["variators"] = [variator.to_dict() for variator in self.variators]
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        input_dict["variators"] = [Variator.from_dict(v) for v in input_dict["variators"]]
+        return Serializable.from_dict(input_dict)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'variators={self.variators!r})'

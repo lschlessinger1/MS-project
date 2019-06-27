@@ -2,8 +2,9 @@ from typing import List, Callable, Tuple
 
 import numpy as np
 
-
 # Decorators
+from src.evalg.serialization import Serializable
+
 
 def check_gte_two_parents(f: Callable) -> Callable:
     """Check for at least two parents.
@@ -33,7 +34,7 @@ def check_two_parents(f: Callable) -> Callable:
     return wrapper
 
 
-class Recombinator:
+class Recombinator(Serializable):
 
     @check_gte_two_parents
     def crossover(self, parents: list) -> list:

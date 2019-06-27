@@ -1,4 +1,3 @@
-import importlib
 from abc import ABC
 from typing import List, Tuple, Optional
 
@@ -75,21 +74,6 @@ class SubtreeExchangeRecombinatorBase(Recombinator, ABC):
             return True
 
         return False
-
-    def to_dict(self) -> dict:
-        input_dict = dict()
-        input_dict["module_name"] = self.__module__
-        input_dict["class_name"] = self.__class__.__name__
-        return input_dict
-
-    @staticmethod
-    def from_dict(input_dict: dict):
-        module_name = input_dict.pop("module_name")
-        class_name = input_dict.pop("class_name")
-        module = importlib.import_module(module_name)
-        cls = getattr(module, class_name)
-
-        return cls(**input_dict)
 
 
 class SubtreeExchangeRecombinator(SubtreeExchangeRecombinatorBase):
