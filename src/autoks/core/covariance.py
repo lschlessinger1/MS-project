@@ -59,6 +59,10 @@ class Covariance:
         return kernel_to_tree(self.raw_kernel)
 
     def canonical(self) -> RawKernelType:
+        """Get canonical form of backend kernel.
+
+        :return:
+        """
         return sort_kernel(self.raw_kernel)
 
     def to_additive_form(self) -> RawKernelType:
@@ -83,37 +87,50 @@ class Covariance:
         print(self.infix_full)
 
     def is_base(self) -> bool:
+        """Determine whether backend kernel is a 1-d base kernel."""
         return is_base_kernel(self.raw_kernel)
 
     def is_sum(self) -> bool:
+        """Determine whether backend kernel is a sum kernel."""
         return is_sum_kernel(self.raw_kernel)
 
     def is_prod(self) -> bool:
+        """Determine whether backend kernel is a product kernel."""
         return is_prod_kernel(self.raw_kernel)
 
     def priors(self) -> Optional:
+        """Get the priors of the kernel."""
         raise NotImplementedError('This will be implemented soon')
 
     def symbolically_equals(self, other) -> bool:
+        """Determine whether this covariance's kernel expression is the same as another's kernel expression."""
         return self.symbolic_expr == other.symbolic_expr
 
     def symbolic_expanded_equals(self, other) -> bool:
+        """Determine whether this covariance's expanded kernel expression is the same as another's expanded kernel
+        expression."""
         return self.symbolic_expr_expanded == other.symbolic_expr_expanded
 
     def infix_equals(self, other) -> bool:
+        """Determine whether this covariance's kernel infix expression is the same as another's infix kernel
+        expression."""
         # naively compare based on infix
         return isinstance(other, Covariance) and other.infix == self.infix
 
     def as_latex(self) -> str:
+        """Get a LaTeX representation of this covariance."""
         return latex(self.symbolic_expr)
 
     def as_mathml(self) -> str:
+        """Get a MathML representation of this covariance."""
         return mathml(self.symbolic_expr)
 
     def as_dot(self) -> str:
+        """Get a DOT representation of this covariance."""
         return dotprint(self.symbolic_expr)
 
     def as_graph(self) -> Source:
+        """Get a GraphViz Source representation of this covariance."""
         return Source(self.as_dot())
 
     def __add__(self, other):
@@ -131,6 +148,7 @@ class Covariance:
 
 def pretty_print_covariances(covariances: List[Covariance],
                              kernel_type_label: Optional[str] = None):
+    """Pretty print a list of covariances."""
     n_kernels = len(covariances)
 
     plural_suffix = 's' if n_kernels > 1 else ''
