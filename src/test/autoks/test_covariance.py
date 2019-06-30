@@ -47,6 +47,23 @@ class TestCovariance(TestCase):
         tree = cov.to_binary_tree()
         self.assertIsInstance(tree, KernelTree)
 
+    def test_to_dict(self):
+        kern = self.se_0
+        cov = Covariance(kern)
+        actual = cov.to_dict()
+
+        self.assertIsInstance(actual, dict)
+        self.assertIn('kernel', actual)
+        self.assertEqual(kern.to_dict(), actual['kernel'])
+
+    def test_from_dict(self):
+        kern = self.se_0
+        cov = Covariance(kern)
+        actual = Covariance.from_dict(cov.to_dict())
+
+        self.assertIsInstance(actual, Covariance)
+        self.assertEqual(cov.infix, actual.infix)
+
     def test_canonical(self):
         kern = self.se_0
         cov = Covariance(kern)
