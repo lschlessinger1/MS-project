@@ -29,6 +29,32 @@ class TestBinaryTreeGenerator(TestCase):
     def test_generate(self):
         self.assertRaises(NotImplementedError, self.generator.generate, self.operators, self.operands)
 
+    def test_to_dict(self):
+        actual = self.generator.to_dict()
+
+        self.assertIsInstance(actual, dict)
+
+        self.assertIn('max_depth', actual)
+        self.assertIn('__module__', actual)
+        self.assertIn('__class__', actual)
+        self.assertIn('binary_tree_node_module_name', actual)
+        self.assertIn('binary_tree_node_cls_name', actual)
+
+        self.assertEqual(self.generator.max_depth, actual['max_depth'])
+        self.assertEqual(self.generator.__module__, actual["__module__"])
+        self.assertEqual(self.generator.__class__.__name__, actual["__class__"])
+        self.assertEqual(self.generator.binary_tree_node_cls.__module__, actual["binary_tree_node_module_name"])
+        self.assertEqual(self.generator.binary_tree_node_cls.__name__, actual["binary_tree_node_cls_name"])
+
+    def test_from_dict(self):
+        actual = BinaryTreeGenerator.from_dict(self.generator.to_dict())
+
+        self.assertIsInstance(actual, BinaryTreeGenerator)
+
+        self.assertEqual(self.generator.max_depth, actual.max_depth)
+        self.assertEqual(self.generator.binary_tree_node_cls.__module__, actual.binary_tree_node_cls.__module__)
+        self.assertEqual(self.generator.binary_tree_node_cls.__name__, actual.binary_tree_node_cls.__name__)
+
 
 class TestGrowGenerator(TestCase):
 
@@ -46,6 +72,32 @@ class TestGrowGenerator(TestCase):
     def test_grow(self):
         self.assertRaises(ValueError, self.generator.grow, self.operators, self.operands, -2)
         self.assertIsInstance(self.generator.grow(self.operators, self.operands, 0), BinaryTreeNode)
+
+    def test_to_dict(self):
+        actual = self.generator.to_dict()
+
+        self.assertIsInstance(actual, dict)
+
+        self.assertIn('max_depth', actual)
+        self.assertIn('__module__', actual)
+        self.assertIn('__class__', actual)
+        self.assertIn('binary_tree_node_module_name', actual)
+        self.assertIn('binary_tree_node_cls_name', actual)
+
+        self.assertEqual(self.generator.max_depth, actual['max_depth'])
+        self.assertEqual(self.generator.__module__, actual["__module__"])
+        self.assertEqual(self.generator.__class__.__name__, actual["__class__"])
+        self.assertEqual(self.generator.binary_tree_node_cls.__module__, actual["binary_tree_node_module_name"])
+        self.assertEqual(self.generator.binary_tree_node_cls.__name__, actual["binary_tree_node_cls_name"])
+
+    def test_from_dict(self):
+        actual = GrowGenerator.from_dict(self.generator.to_dict())
+
+        self.assertIsInstance(actual, GrowGenerator)
+
+        self.assertEqual(self.generator.max_depth, actual.max_depth)
+        self.assertEqual(self.generator.binary_tree_node_cls.__module__, actual.binary_tree_node_cls.__module__)
+        self.assertEqual(self.generator.binary_tree_node_cls.__name__, actual.binary_tree_node_cls.__name__)
 
 
 class TestFullGenerator(TestCase):
@@ -66,6 +118,32 @@ class TestFullGenerator(TestCase):
         self.assertRaises(ValueError, self.generator.full, self.operators, self.operands, -2)
         self.assertIsInstance(self.generator.full(self.operators, self.operands, 0), BinaryTreeNode)
 
+    def test_to_dict(self):
+        actual = self.generator.to_dict()
+
+        self.assertIsInstance(actual, dict)
+
+        self.assertIn('max_depth', actual)
+        self.assertIn('__module__', actual)
+        self.assertIn('__class__', actual)
+        self.assertIn('binary_tree_node_module_name', actual)
+        self.assertIn('binary_tree_node_cls_name', actual)
+
+        self.assertEqual(self.generator.max_depth, actual['max_depth'])
+        self.assertEqual(self.generator.__module__, actual["__module__"])
+        self.assertEqual(self.generator.__class__.__name__, actual["__class__"])
+        self.assertEqual(self.generator.binary_tree_node_cls.__module__, actual["binary_tree_node_module_name"])
+        self.assertEqual(self.generator.binary_tree_node_cls.__name__, actual["binary_tree_node_cls_name"])
+
+    def test_from_dict(self):
+        actual = FullGenerator.from_dict(self.generator.to_dict())
+
+        self.assertIsInstance(actual, FullGenerator)
+
+        self.assertEqual(self.generator.max_depth, actual.max_depth)
+        self.assertEqual(self.generator.binary_tree_node_cls.__module__, actual.binary_tree_node_cls.__module__)
+        self.assertEqual(self.generator.binary_tree_node_cls.__name__, actual.binary_tree_node_cls.__name__)
+
 
 class TestHalfAndHalfGenerator(TestCase):
 
@@ -80,6 +158,32 @@ class TestHalfAndHalfGenerator(TestCase):
         self.assertIsInstance(tree, BinaryTree)
         max_height = self.max_depth + 1  # depth of a stump is 0
         self.assertLessEqual(tree.height(), max_height)
+
+    def test_to_dict(self):
+        actual = self.generator.to_dict()
+
+        self.assertIsInstance(actual, dict)
+
+        self.assertIn('max_depth', actual)
+        self.assertIn('__module__', actual)
+        self.assertIn('__class__', actual)
+        self.assertIn('binary_tree_node_module_name', actual)
+        self.assertIn('binary_tree_node_cls_name', actual)
+
+        self.assertEqual(self.generator.max_depth, actual['max_depth'])
+        self.assertEqual(self.generator.__module__, actual["__module__"])
+        self.assertEqual(self.generator.__class__.__name__, actual["__class__"])
+        self.assertEqual(self.generator.binary_tree_node_cls.__module__, actual["binary_tree_node_module_name"])
+        self.assertEqual(self.generator.binary_tree_node_cls.__name__, actual["binary_tree_node_cls_name"])
+
+    def test_from_dict(self):
+        actual = HalfAndHalfGenerator.from_dict(self.generator.to_dict())
+
+        self.assertIsInstance(actual, HalfAndHalfGenerator)
+
+        self.assertEqual(self.generator.max_depth, actual.max_depth)
+        self.assertEqual(self.generator.binary_tree_node_cls.__module__, actual.binary_tree_node_cls.__module__)
+        self.assertEqual(self.generator.binary_tree_node_cls.__name__, actual.binary_tree_node_cls.__name__)
 
 
 class TestTreeMutator(TestCase):

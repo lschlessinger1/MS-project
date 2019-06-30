@@ -1,11 +1,13 @@
+import importlib
 from typing import List
 
 import numpy as np
 
 from src.evalg.encoding import BinaryTree, BinaryTreeNode
+from src.evalg.serialization import Serializable
 
 
-class BinaryTreeGenerator:
+class BinaryTreeGenerator(Serializable):
     _max_depth: int
 
     def __init__(self, max_depth: int, binary_tree_node_cls: type):
@@ -28,6 +30,23 @@ class BinaryTreeGenerator:
         :return:
         """
         raise NotImplementedError('generate must be implemented in a child class.')
+
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["max_depth"] = self.max_depth
+        input_dict["binary_tree_node_module_name"] = self.binary_tree_node_cls.__module__
+        input_dict["binary_tree_node_cls_name"] = self.binary_tree_node_cls.__qualname__
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        b_tree_module_name = input_dict.pop("binary_tree_node_module_name")
+        b_tree_cls_name = input_dict.pop("binary_tree_node_cls_name")
+        b_tree_module = importlib.import_module(b_tree_module_name)
+        binary_tree_node_cls = getattr(b_tree_module, b_tree_cls_name)
+        input_dict["binary_tree_node_cls"] = binary_tree_node_cls
+
+        return Serializable.from_dict(input_dict)
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'max_depth={self.max_depth!r})'
