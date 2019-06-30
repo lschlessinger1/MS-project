@@ -5,7 +5,7 @@ import numpy as np
 
 from src.autoks.core.acquisition_function import AcquisitionFunction, UniformScorer
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.hyperprior import Hyperpriors
+from src.autoks.core.hyperprior import PriorsMap
 from src.evalg.selection import Selector, AllSelector
 
 
@@ -27,7 +27,7 @@ class QueryStrategy(Selector, ABC):
               all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
+              hyperpriors: Optional[PriorsMap] = None,
               surrogate_model: Optional = None,
               **kwargs) -> Tuple[np.ndarray, List[float]]:
         """Query the next round of gp_models using the acquisition function.
@@ -53,7 +53,7 @@ class QueryStrategy(Selector, ABC):
                       all_kernels: List[GPModel],
                       x_train: np.ndarray,
                       y_train: np.ndarray,
-                      hyperpriors: Optional[Hyperpriors] = None,
+                      hyperpriors: Optional[PriorsMap] = None,
                       surrogate_model: Optional = None,
                       **kwargs) -> List[float]:
         """Score all gp_models using the scoring function.

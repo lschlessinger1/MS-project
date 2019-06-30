@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 
 from src.autoks.backend.kernel import n_base_kernels
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.hyperprior import Hyperpriors
+from src.autoks.core.hyperprior import PriorsMap
 
 
 class AcquisitionFunction:
@@ -18,7 +18,7 @@ class AcquisitionFunction:
             all_kernels: List[GPModel],
             x_train: np.ndarray,
             y_train: np.ndarray,
-            hyperpriors: Optional[Hyperpriors] = None,
+            hyperpriors: Optional[PriorsMap] = None,
             surrogate_model: Optional = None,
             **kwargs) -> float:
         """Acquisition function score.
@@ -43,7 +43,7 @@ class UniformScorer(AcquisitionFunction):
               all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
+              hyperpriors: Optional[PriorsMap] = None,
               surrogate_model: Optional = None,
               **kwargs) -> float:
         """Same score for all gp_models.
@@ -65,7 +65,7 @@ class ExpectedImprovement(AcquisitionFunction):
               all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
+              hyperpriors: Optional[PriorsMap] = None,
               surrogate_model=None,
               **kwargs) -> float:
         """Expected improvement (EI) acquisition function
@@ -102,7 +102,7 @@ class ExpectedImprovementPerSec(AcquisitionFunction):
               all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
+              hyperpriors: Optional[PriorsMap] = None,
               surrogate_model: Optional = None,
               durations=None,
               n_hyperparams=None,
@@ -127,7 +127,7 @@ class RandomScorer(AcquisitionFunction):
               all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
+              hyperpriors: Optional[PriorsMap] = None,
               surrogate_model: Optional = None,
               **kwargs) -> float:
         """Random acquisition function
@@ -151,7 +151,7 @@ class ParamProportionalScorer(AcquisitionFunction):
               all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
+              hyperpriors: Optional[PriorsMap] = None,
               surrogate_model: Optional = None,
               **kwargs) -> float:
         """Score proportional to number of kernel hyperparameters.
@@ -174,7 +174,7 @@ class OperandProportionalScorer(AcquisitionFunction):
               all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
+              hyperpriors: Optional[PriorsMap] = None,
               surrogate_model: Optional = None,
               **kwargs) -> float:
         """Score proportional to the number of 1D gp_models (operands).
@@ -196,7 +196,7 @@ class KernComplexityProportionalScorer(AcquisitionFunction):
               all_kernels: List[GPModel],
               x_train: np.ndarray,
               y_train: np.ndarray,
-              hyperpriors: Optional[Hyperpriors] = None,
+              hyperpriors: Optional[PriorsMap] = None,
               surrogate_model: Optional = None,
               **kwargs) -> float:
         """Score proportional to the complexity of a kernel

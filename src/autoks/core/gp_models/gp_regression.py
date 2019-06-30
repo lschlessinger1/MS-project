@@ -4,11 +4,11 @@ from GPy import likelihoods
 from GPy.inference.latent_function_inference import Laplace
 
 from src.autoks.backend.kernel import set_priors
-from src.autoks.core.hyperprior import Hyperprior
+from src.autoks.core.hyperprior import PriorMap
 
 
 def gp_regression(inference_method: Optional[str] = None,
-                  likelihood_hyperprior: Optional[Hyperprior] = None) -> dict:
+                  likelihood_hyperprior: Optional[PriorMap] = None) -> dict:
     """Build model dict of GP regression."""
     model_dict = dict()
 

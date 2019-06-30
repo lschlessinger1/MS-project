@@ -1,5 +1,4 @@
 from unittest import TestCase
-from unittest.mock import MagicMock
 
 import numpy as np
 from GPy.core.parameterization.priors import LogGaussian
@@ -8,6 +7,7 @@ from GPy.kern import RBF, RationalQuadratic, Add, Prod
 from src.autoks.backend.kernel import get_allowable_kernels, get_matching_kernels, create_1d_kernel, get_priors, \
     set_priors, subkernel_expression, sort_kernel, get_all_1d_kernels, additive_part_to_vec, decode_kernel, \
     encode_kernel, kernels_to_kernel_vecs, KERNEL_DICT
+from src.autoks.core.prior import PriorDist
 from src.test.autoks.support.util import has_combo_kernel_type
 
 
@@ -64,10 +64,10 @@ class TestBackendKernel(TestCase):
     def test_set_priors(self):
         priors = dict()
         param = RBF(1)
-        mock_prior = MagicMock()
-        priors['variance'] = mock_prior
+        log_normal = LogGaussian
+        priors['variance'] = PriorDist(log_normal, {'mu': 1, 'sigma': 2})
         result = set_priors(param, priors)
-        self.assertEqual(result['variance'].priors.properties()[0], mock_prior)
+        self.assertEqual(result['variance'].priors.properties()[0], priors['variance'].raw_prior)
 
     def test_subkernel_expression(self):
         kernel = RBF(1, variance=3, lengthscale=2)

@@ -8,7 +8,8 @@ from GPy.kern import Add, Prod
 from GPy.kern import Kern, RationalQuadratic, RBF, LinScaleShift, StandardPeriodic
 from GPy.kern.src.kern import CombinationKernel
 
-from src.autoks.core.hyperprior import Hyperprior, Hyperpriors
+from src.autoks.core.hyperprior import PriorsMap, PriorMap
+from src.autoks.core.prior import PriorDist
 from src.autoks.util import tokenize, flatten, remove_outer_parens, join_operands, arg_sort
 
 RawKernelType = Kern
@@ -41,7 +42,7 @@ def create_1d_kernel(kernel_family: str,
                      active_dim: int,
                      kernel_mapping: Optional[Dict[str, Type[RawKernelType]]] = None,
                      kernel_cls: Optional[Type[RawKernelType]] = None,
-                     hyperpriors: Optional[Hyperprior] = None) -> RawKernelType:
+                     hyperpriors: Optional[PriorMap] = None) -> RawKernelType:
     """Create a 1D kernel.
 
     :param kernel_family:
@@ -66,7 +67,7 @@ def create_1d_kernel(kernel_family: str,
 
 def get_all_1d_kernels(base_kernel_names: List[str],
                        n_dims: int,
-                       hyperpriors: Optional[Hyperpriors] = None) -> List[RawKernelType]:
+                       hyperpriors: Optional[PriorsMap] = None) -> List[RawKernelType]:
     """Get all possible 1-D kernels.
 
     :param base_kernel_names:
@@ -80,7 +81,7 @@ def get_all_1d_kernels(base_kernel_names: List[str],
     for kern_fam in base_kernel_names:
         kern_cls = kernel_mapping[kern_fam]
         for d in range(n_dims):
-            hyperprior = None if hyperpriors is None else hyperpriors[kern_fam]
+            hyperprior = None if hyperpriors is None or hyperpriors == {} else hyperpriors[kern_fam]
             kernel = create_1d_kernel(kern_fam, d, kernel_mapping=kernel_mapping, kernel_cls=kern_cls,
                                       hyperpriors=hyperprior)
             kernels.append(kernel)
@@ -101,11 +102,11 @@ def get_priors(kernel: RawKernelType):
     return priors
 
 
-def set_priors(param: Parameterized, priors: Dict[str, Prior]) -> Parameterized:
+def set_priors(param: Parameterized, priors: Dict[str, PriorDist]) -> Parameterized:
     param_copy = param.copy()
     for param_name in priors:
         if param_name in param_copy.parameter_names():
-            param_copy[param_name].set_prior(priors[param_name], warning=False)
+            param_copy[param_name].set_prior(priors[param_name].raw_prior, warning=False)
         else:
             warnings.warn(f'parameter {param_name} not found in {param.__class__.__name__}.')
     return param_copy
