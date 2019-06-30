@@ -14,7 +14,7 @@ from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import BaseGrammar
-from src.autoks.core.hyperprior import Hyperpriors
+from src.autoks.core.hyperprior import PriorsMap
 from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy
 from src.evalg.selection import TruncationSelector
 
@@ -60,10 +60,11 @@ class ModelSelector:
 
         # Build default model dict of GP.
         gp_args = gp_args or {}
-        if grammar.hyperpriors is not None:
-            gp_args = gp_args or {}
-            # Set likelihood hyperpriors.
-            gp_args["likelihood_hyperprior"] = grammar.hyperpriors['GP']
+        if grammar.hyperpriors:
+            if 'GP' in grammar.hyperpriors:
+                gp_args = gp_args or {}
+                # Set likelihood hyperpriors.
+                gp_args["likelihood_hyperprior"] = grammar.hyperpriors['GP']
         self.model_dict = gp_fn(**gp_args)
 
         # visited set of all expanded kernel expressions previously evaluated
@@ -373,7 +374,7 @@ class SurrogateBasedModelSelector(ModelSelector, ABC):
                      query_strategy: QueryStrategy,
                      x_train,
                      y_train,
-                     hyperpriors: Optional[Hyperpriors] = None,
+                     hyperpriors: Optional[PriorsMap] = None,
                      verbose: int = 0) \
             -> Tuple[List[GPModel], List[int], List[float]]:
         """Select gp_models using the acquisition function of the query strategy.
