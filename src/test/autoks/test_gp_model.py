@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 
 import numpy as np
@@ -17,6 +18,51 @@ class TestGPModel(TestCase):
         result = gp_model.covariance.to_binary_tree()
         self.assertIsInstance(result, KernelTree)
         self.assertCountEqual(result.postfix_tokens(), ['SE_1', 'SE_1', '*', 'RQ_1', '+'])
+
+    def test_to_dict(self):
+        kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))
+        gp_model = GPModel(kernel)
+        actual = gp_model.to_dict()
+
+        self.assertIsInstance(actual, dict)
+
+        self.assertIn('likelihood', actual)
+        self.assertIn('covariance', actual)
+
+        self.assertEqual(None, actual['likelihood'])
+        self.assertEqual(gp_model.covariance.to_dict(), actual['covariance'])
+
+    def test_from_dict(self):
+        kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))
+        gp_model = GPModel(kernel)
+        actual = GPModel.from_dict(gp_model.to_dict())
+
+        self.assertIsInstance(actual, GPModel)
+        self.assertEqual(gp_model.likelihood, actual.likelihood)
+        self.assertEqual(gp_model.covariance.infix, actual.covariance.infix)
+
+    def test_save(self):
+        kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))
+        gp_model = GPModel(kernel)
+
+        file_name = "test_save"
+        out_fname = gp_model.save(file_name)
+
+        self.addCleanup(os.remove, out_fname)
+
+    def test_load(self):
+        kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))
+        gp_model = GPModel(kernel)
+
+        file_name = "test_save"
+        out_file_name = gp_model.save(file_name)
+
+        self.addCleanup(os.remove, out_file_name)
+
+        new_gp_model = GPModel.load(out_file_name)
+
+        self.assertIsInstance(new_gp_model, GPModel)
+        self.assertEqual(gp_model.covariance.infix, new_gp_model.covariance.infix)
 
 
 class TestGPModelModule(TestCase):

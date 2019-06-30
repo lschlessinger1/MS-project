@@ -1,3 +1,5 @@
+import gzip
+import json
 from typing import Optional, List, FrozenSet, Callable
 
 import numpy as np
@@ -70,6 +72,50 @@ class GPModel:
         self._score = score
         # Update evaluated as well
         self.evaluated = True
+
+    def to_dict(self) -> dict:
+        # Get likelihood and covariance
+        input_dict = dict()
+
+        input_dict["likelihood"] = None if self.likelihood is None else self.likelihood.to_dict()
+        input_dict["covariance"] = self.covariance.to_dict()
+
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        input_dict["covariance"] = Covariance.from_dict(input_dict["covariance"])
+        input_dict["likelihood"] = None if input_dict['likelihood'] is None else Likelihood.from_dict(
+            input_dict["likelihood"])
+        return GPModel(**input_dict)
+
+    @staticmethod
+    def load(output_file_name: str):
+        compress = output_file_name.split(".")[-1] == "zip"
+
+        if compress:
+            with gzip.GzipFile(output_file_name, 'r') as json_data:
+                json_bytes = json_data.read()
+                json_str = json_bytes.decode('utf-8')
+                output_dict = json.loads(json_str)
+        else:
+            with open(output_file_name) as json_data:
+                output_dict = json.load(json_data)
+
+        return GPModel.from_dict(output_dict)
+
+    def save(self, output_filename: str, compress: bool = True):
+        output_dict = self.to_dict()
+        if compress:
+            with gzip.GzipFile(output_filename + ".zip", 'w') as outfile:
+                json_str = json.dumps(output_dict)
+                json_bytes = json_str.encode('utf-8')
+                outfile.write(json_bytes)
+                return outfile.name
+        else:
+            with open(output_filename + ".json", 'w') as outfile:
+                json.dump(output_dict, outfile)
+                return outfile.name
 
     def __str__(self):
         return str(self.covariance.symbolic_expr)
