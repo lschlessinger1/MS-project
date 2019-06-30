@@ -6,22 +6,23 @@ import numpy as np
 from src.autoks.backend.kernel import get_all_1d_kernels, sort_kernel
 from src.autoks.core.covariance import Covariance, remove_duplicate_kernels, pretty_print_covariances
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
-from src.autoks.core.hyperprior import Hyperpriors, boms_hyperpriors
+from src.autoks.core.hyperprior import boms_hyperpriors, HyperpriorMap
 from src.autoks.core.kernel_encoding import tree_to_kernel
 from src.evalg.genprog.crossover import OnePointRecombinatorBase
+from src.evalg.serialization import Serializable
 from src.evalg.vary import PopulationOperator
 
 
-class BaseGrammar:
+class BaseGrammar(Serializable):
     DEFAULT_OPERATORS: ClassVar[List[str]] = ['+', '*']
     operators: List[str]
 
     def __init__(self,
                  base_kernel_names: Optional[List[str]],
-                 hyperpriors: Optional[Hyperpriors] = None):
+                 hyperpriors: Optional[HyperpriorMap] = None):
         self.operators = BaseGrammar.DEFAULT_OPERATORS
         self.base_kernel_names = base_kernel_names
-        self.hyperpriors = hyperpriors
+        self.hyperpriors = hyperpriors or HyperpriorMap()
         self.n_dims = None
         self.base_kernels = None
         self.built = False
@@ -66,13 +67,41 @@ class BaseGrammar:
         if self.base_kernel_names is None:
             self.base_kernel_names = self._get_default_base_kernel_names(n_dims)
         self.n_dims = n_dims
-        raw_kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, hyperpriors=self.hyperpriors)
+        raw_kernels = get_all_1d_kernels(self.base_kernel_names, self.n_dims, hyperpriors=self.hyperpriors.prior_map)
         self.base_kernels = [Covariance(kernel) for kernel in raw_kernels]
         self.built = True
 
     @staticmethod
     def _get_default_base_kernel_names(n_dims: int) -> List[str]:
         return ['SE', 'RQ']
+
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["operators"] = self.operators
+        input_dict["base_kernel_names"] = self.base_kernel_names
+        input_dict["hyperpriors"] = self.hyperpriors.to_dict()
+        input_dict["n_dims"] = self.n_dims
+        input_dict["base_kernels"] = None if self.base_kernels is None else [k.to_dict() for k in self.base_kernels]
+        input_dict["built"] = self.built
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        operators = input_dict.pop('operators')
+        n_dims = input_dict.pop('n_dims')
+        base_kernels = input_dict.pop('base_kernels')
+        built = input_dict.pop('built')
+
+        input_dict['hyperpriors'] = HyperpriorMap.from_dict(input_dict['hyperpriors'])
+
+        grammar = Serializable.from_dict(input_dict)
+
+        grammar.operators = operators
+        grammar.n_dims = n_dims
+        grammar.base_kernels = None if base_kernels is None else [Covariance.from_dict(k) for k in base_kernels]
+        grammar.built = built
+
+        return grammar
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
@@ -84,7 +113,7 @@ class EvolutionaryGrammar(BaseGrammar):
     def __init__(self,
                  population_operator: PopulationOperator,
                  base_kernel_names: Optional[List[str]] = None,
-                 hyperpriors: Optional[Hyperpriors] = None):
+                 hyperpriors: Optional[HyperpriorMap] = None):
         super().__init__(base_kernel_names, hyperpriors)
         self.population_operator = population_operator
 
@@ -126,6 +155,16 @@ class EvolutionaryGrammar(BaseGrammar):
     def _get_default_base_kernel_names(n_dims: int) -> List[str]:
         return CKSGrammar.default_base_kernel_names(n_dims)
 
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict["population_operator"] = self.population_operator.to_dict()
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        input_dict['population_operator'] = PopulationOperator.from_dict(input_dict['population_operator'])
+        return BaseGrammar.from_dict(input_dict)
+
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
             f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r},' \
@@ -139,7 +178,7 @@ class CKSGrammar(BaseGrammar):
 
     def __init__(self,
                  base_kernel_names: Optional[List[str]] = None,
-                 hyperpriors: Optional[Hyperpriors] = None):
+                 hyperpriors: Optional[HyperpriorMap] = None):
         super().__init__(base_kernel_names, hyperpriors)
 
     @staticmethod
@@ -282,7 +321,7 @@ class BomsGrammar(CKSGrammar):
 
     def __init__(self,
                  base_kernel_names: Optional[List[str]] = None,
-                 hyperpriors: Optional[Hyperpriors] = None):
+                 hyperpriors: Optional[HyperpriorMap] = None):
 
         if hyperpriors is None:
             hyperpriors = boms_hyperpriors()
@@ -361,13 +400,31 @@ class BomsGrammar(CKSGrammar):
 
         return new_kernels
 
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict['random_walk_geometric_dist_parameter'] = self._random_walk_geometric_dist_parameter
+        input_dict['number_of_top_k_best'] = self._number_of_top_k_best
+        input_dict['number_of_random_walks'] = self._number_of_random_walks
+        return input_dict
+
+    @staticmethod
+    def from_dict(input_dict: dict):
+        random_walk_geometric_dist_parameter = input_dict.pop('random_walk_geometric_dist_parameter')
+        number_of_top_k_best = input_dict.pop('number_of_top_k_best')
+        number_of_random_walks = input_dict.pop('number_of_random_walks')
+        grammar = BaseGrammar.from_dict(input_dict)
+        grammar._random_walk_geometric_dist_parameter = random_walk_geometric_dist_parameter
+        grammar._number_of_top_k_best = number_of_top_k_best
+        grammar._number_of_random_walks = number_of_random_walks
+        return grammar
+
 
 class RandomGrammar(BomsGrammar):
     """Random grammar randomly expands nodes using a CKS expansion"""
 
     def __init__(self,
                  base_kernel_names: List[str] = None,
-                 hyperpriors: Optional[Hyperpriors] = None):
+                 hyperpriors: Optional[HyperpriorMap] = None):
         super().__init__(base_kernel_names, hyperpriors)
 
     def expand(self,

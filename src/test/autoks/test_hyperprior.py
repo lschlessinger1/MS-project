@@ -1,16 +1,15 @@
 from unittest import TestCase
 
-from GPy.core.parameterization.priors import LogGaussian
+from src.autoks.core.hyperprior import boms_hyperpriors, HyperpriorMap
+from src.autoks.core.prior import PriorDist
 
-from src.autoks.core.hyperprior import boms_hyperpriors
 
-
-class TestGrammar(TestCase):
+class TestHyperprior(TestCase):
 
     def test_boms_hyperpriors(self):
         result = boms_hyperpriors()
 
-        self.assertIsInstance(result, dict)
+        self.assertIsInstance(result, HyperpriorMap)
 
         self.assertIn('SE', result)
         self.assertIn('RQ', result)
@@ -20,45 +19,84 @@ class TestGrammar(TestCase):
 
         self.assertEqual(len(result), 5)
 
-        self.assertIsInstance(result['SE']['variance'], LogGaussian)
-        self.assertIsInstance(result['SE']['lengthscale'], LogGaussian)
+        self.assertIsInstance(result['SE']['variance'], PriorDist)
+        self.assertIsInstance(result['SE']['lengthscale'], PriorDist)
 
-        self.assertIsInstance(result['RQ']['variance'], LogGaussian)
-        self.assertIsInstance(result['RQ']['lengthscale'], LogGaussian)
-        self.assertIsInstance(result['RQ']['power'], LogGaussian)
+        self.assertIsInstance(result['RQ']['variance'], PriorDist)
+        self.assertIsInstance(result['RQ']['lengthscale'], PriorDist)
+        self.assertIsInstance(result['RQ']['power'], PriorDist)
 
-        self.assertIsInstance(result['PER']['variance'], LogGaussian)
-        self.assertIsInstance(result['PER']['lengthscale'], LogGaussian)
-        self.assertIsInstance(result['PER']['period'], LogGaussian)
+        self.assertIsInstance(result['PER']['variance'], PriorDist)
+        self.assertIsInstance(result['PER']['lengthscale'], PriorDist)
+        self.assertIsInstance(result['PER']['period'], PriorDist)
 
-        self.assertIsInstance(result['LIN']['variances'], LogGaussian)
-        self.assertIsInstance(result['LIN']['shifts'], LogGaussian)
+        self.assertIsInstance(result['LIN']['variances'], PriorDist)
+        self.assertIsInstance(result['LIN']['shifts'], PriorDist)
 
-        self.assertIsInstance(result['GP']['variance'], LogGaussian)
+        self.assertIsInstance(result['GP']['variance'], PriorDist)
 
-        self.assertEqual(result['SE']['variance'].mu, 0.4)
-        self.assertEqual(result['SE']['variance'].sigma, 0.7 ** 2)
-        self.assertEqual(result['SE']['lengthscale'].mu, 0.1)
-        self.assertEqual(result['SE']['lengthscale'].sigma, 0.7 ** 2)
+        self.assertEqual(result['SE']['variance'].raw_prior.mu, 0.4)
+        self.assertEqual(result['SE']['variance'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['SE']['lengthscale'].raw_prior.mu, 0.1)
+        self.assertEqual(result['SE']['lengthscale'].raw_prior.sigma, 0.7 ** 2)
 
-        self.assertEqual(result['RQ']['variance'].mu, 0.4)
-        self.assertEqual(result['RQ']['variance'].sigma, 0.7 ** 2)
-        self.assertEqual(result['RQ']['lengthscale'].mu, 0.1)
-        self.assertEqual(result['RQ']['lengthscale'].sigma, 0.7 ** 2)
-        self.assertEqual(result['RQ']['power'].mu, 0.05)
-        self.assertEqual(result['RQ']['power'].sigma, 0.7 ** 2)
+        self.assertEqual(result['RQ']['variance'].raw_prior.mu, 0.4)
+        self.assertEqual(result['RQ']['variance'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['RQ']['lengthscale'].raw_prior.mu, 0.1)
+        self.assertEqual(result['RQ']['lengthscale'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['RQ']['power'].raw_prior.mu, 0.05)
+        self.assertEqual(result['RQ']['power'].raw_prior.sigma, 0.7 ** 2)
 
-        self.assertEqual(result['PER']['variance'].mu, 0.4)
-        self.assertEqual(result['PER']['variance'].sigma, 0.7 ** 2)
-        self.assertEqual(result['PER']['lengthscale'].mu, 0.1)
-        self.assertEqual(result['PER']['lengthscale'].sigma, 0.7 ** 2)
-        self.assertEqual(result['PER']['period'].mu, 2)
-        self.assertEqual(result['PER']['period'].sigma, 0.7 ** 2)
+        self.assertEqual(result['PER']['variance'].raw_prior.mu, 0.4)
+        self.assertEqual(result['PER']['variance'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['PER']['lengthscale'].raw_prior.mu, 0.1)
+        self.assertEqual(result['PER']['lengthscale'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['PER']['period'].raw_prior.mu, 2)
+        self.assertEqual(result['PER']['period'].raw_prior.sigma, 0.7 ** 2)
 
-        self.assertEqual(result['LIN']['variances'].mu, 0.4)
-        self.assertEqual(result['LIN']['variances'].sigma, 0.7 ** 2)
-        self.assertEqual(result['LIN']['shifts'].mu, 0)
-        self.assertEqual(result['LIN']['shifts'].sigma, 2 ** 2)
+        self.assertEqual(result['LIN']['variances'].raw_prior.mu, 0.4)
+        self.assertEqual(result['LIN']['variances'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['LIN']['shifts'].raw_prior.mu, 0)
+        self.assertEqual(result['LIN']['shifts'].raw_prior.sigma, 2 ** 2)
 
-        self.assertEqual(result['GP']['variance'].mu, 0.1)
-        self.assertEqual(result['GP']['variance'].sigma, 1 ** 2)
+        self.assertEqual(result['GP']['variance'].raw_prior.mu, 0.1)
+        self.assertEqual(result['GP']['variance'].raw_prior.sigma, 1 ** 2)
+
+    def test_to_dict(self):
+        prior_map = dict()
+        prior_l = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.1, 'sigma': 0.7 ** 2})
+        prior_sigma = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.4, 'sigma': 0.7 ** 2})
+        prior_map['SE'] = {
+            'variance': prior_sigma,
+            'lengthscale': prior_l
+        }
+        hyperprior_map = HyperpriorMap(prior_map)
+
+        actual = hyperprior_map.to_dict()
+
+        self.assertIsInstance(actual, dict)
+        self.assertIn('prior_map', actual)
+        self.assertIn('SE', actual['prior_map'])
+        self.assertIn('variance', actual['prior_map']['SE'])
+        self.assertIn('lengthscale', actual['prior_map']['SE'])
+        self.assertEqual(prior_map['SE']['variance'].to_dict(), actual['prior_map']['SE']['variance'])
+        self.assertEqual(prior_map['SE']['lengthscale'].to_dict(), actual['prior_map']['SE']['lengthscale'])
+
+    def test_from_dict(self):
+        prior_map = dict()
+        prior_l = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.1, 'sigma': 0.7 ** 2})
+        prior_sigma = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.4, 'sigma': 0.7 ** 2})
+        prior_map['SE'] = {
+            'variance': prior_sigma,
+            'lengthscale': prior_l
+        }
+        hyperprior_map = HyperpriorMap(prior_map)
+
+        actual = HyperpriorMap.from_dict(hyperprior_map.to_dict())
+
+        self.assertIsInstance(actual, HyperpriorMap)
+        self.assertIn('SE', actual)
+        self.assertIn('variance', actual['SE'])
+        self.assertIn('lengthscale', actual['SE'])
+        self.assertEqual(prior_map['SE']['variance'].__class__, actual['SE']['variance'].__class__)
+        self.assertEqual(prior_map['SE']['lengthscale'].__class__, actual['SE']['lengthscale'].__class__)
