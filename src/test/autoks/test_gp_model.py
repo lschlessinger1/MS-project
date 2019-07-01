@@ -21,17 +21,27 @@ class TestGPModel(TestCase):
         self.assertCountEqual(result.postfix_tokens(), ['SE_1', 'SE_1', '*', 'RQ_1', '+'])
 
     def test_to_dict(self):
-        kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))
-        gp_model = GPModel(kernel)
-        actual = gp_model.to_dict()
+        test_cases = (
+            (None, 'None score'),
+            (10., 'Positive score')
+        )
+        for score, description in test_cases:
+            with self.subTest(description=description):
+                kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))
+                gp_model = GPModel(kernel)
+                gp_model.score = score
 
-        self.assertIsInstance(actual, dict)
+                actual = gp_model.to_dict()
 
-        self.assertIn('likelihood', actual)
-        self.assertIn('covariance', actual)
+                self.assertIsInstance(actual, dict)
 
-        self.assertEqual(None, actual['likelihood'])
-        self.assertEqual(gp_model.covariance.to_dict(), actual['covariance'])
+                self.assertIn('likelihood', actual)
+                self.assertIn('covariance', actual)
+                self.assertIn('score', actual)
+
+                self.assertEqual(None, actual['likelihood'])
+                self.assertEqual(gp_model.covariance.to_dict(), actual['covariance'])
+                self.assertEqual(gp_model.score, actual['score'])
 
     def test_from_dict(self):
         test_cases = (GPModel, Serializable)

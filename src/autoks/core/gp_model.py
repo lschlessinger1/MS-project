@@ -78,8 +78,16 @@ class GPModel(Serializable):
 
         input_dict["likelihood"] = None if self.likelihood is None else self.likelihood.to_dict()
         input_dict["covariance"] = self.covariance.to_dict()
+        input_dict["score"] = self.score
 
         return input_dict
+
+    @classmethod
+    def _build_from_input_dict(cls, input_dict: dict):
+        score = input_dict.pop('score')
+        gp_model = super()._build_from_input_dict(input_dict)
+        gp_model.score = score
+        return gp_model
 
     @classmethod
     def _format_input_dict(cls, input_dict: dict) -> dict:
