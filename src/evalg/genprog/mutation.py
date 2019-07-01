@@ -33,15 +33,16 @@ class TreeMutator(Serializable):
         input_dict["binary_tree_node_cls_name"] = self.binary_tree_node_cls.__qualname__
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict) -> dict:
+        input_dict = super()._format_input_dict(input_dict)
+
         b_tree_module_name = input_dict.pop("binary_tree_node_module_name")
         b_tree_cls_name = input_dict.pop("binary_tree_node_cls_name")
         b_tree_module = importlib.import_module(b_tree_module_name)
         binary_tree_node_cls = getattr(b_tree_module, b_tree_cls_name)
         input_dict["binary_tree_node_cls"] = binary_tree_node_cls
-
-        return Serializable.from_dict(input_dict)
+        return input_dict
 
     def __repr__(self):
         return f'{self.__class__.__name__}'

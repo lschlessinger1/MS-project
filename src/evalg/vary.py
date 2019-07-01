@@ -28,8 +28,9 @@ class Variator(Serializable):
         input_dict["operator"] = self.operator.to_dict()
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict) -> dict:
+        input_dict = super()._format_input_dict(input_dict)
         # Set operator
         operator_dict = input_dict["operator"]
         operator_class_name = operator_dict["__class__"]
@@ -37,7 +38,7 @@ class Variator(Serializable):
         operator_module = importlib.import_module(operator_module_name)
         operator_class_ = getattr(operator_module, operator_class_name)
         input_dict["operator"] = operator_class_.from_dict(operator_dict)
-        return Serializable.from_dict(input_dict)
+        return input_dict
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operator={self.operator!r})'
@@ -190,10 +191,11 @@ class PopulationOperator(Serializable):
         input_dict["variators"] = [variator.to_dict() for variator in self.variators]
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict):
+        input_dict = super()._format_input_dict(input_dict)
         input_dict["variators"] = [Variator.from_dict(v) for v in input_dict["variators"]]
-        return Serializable.from_dict(input_dict)
+        return input_dict
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'variators={self.variators!r})'

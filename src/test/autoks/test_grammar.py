@@ -9,6 +9,7 @@ from src.autoks.core.gp_model import GPModel
 from src.autoks.core.grammar import BaseGrammar, CKSGrammar, BomsGrammar, EvolutionaryGrammar, RandomGrammar
 from src.autoks.core.hyperprior import HyperpriorMap
 from src.autoks.core.model_selection import EvolutionaryModelSelector
+from src.evalg.serialization import Serializable
 
 
 class TestBaseGrammar(unittest.TestCase):
@@ -299,19 +300,22 @@ class TestCKSGrammar(unittest.TestCase):
         self.assertEqual(grammar.built, actual['built'])
 
     def test_from_dict(self):
-        grammar = CKSGrammar(base_kernel_names=['SE', 'RQ', 'LIN'])
-        grammar.build(n_dims=1)
-        actual = CKSGrammar.from_dict(grammar.to_dict())
+        test_cases = (BaseGrammar, CKSGrammar, Serializable)
+        for cls in test_cases:
+            with self.subTest(name=cls.__name__):
+                grammar = CKSGrammar(base_kernel_names=['SE', 'RQ', 'LIN'])
+                grammar.build(n_dims=1)
+                actual = cls.from_dict(grammar.to_dict())
 
-        self.assertIsInstance(actual, CKSGrammar)
+                self.assertIsInstance(actual, CKSGrammar)
 
-        self.assertEqual(grammar.operators, actual.operators)
-        self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
-        self.assertEqual(grammar.hyperpriors.__class__, actual.hyperpriors.__class__)
-        self.assertEqual(grammar.n_dims, actual.n_dims)
-        for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
-            self.assertEqual(expected_cov.infix, actual_cov.infix)
-        self.assertEqual(grammar.built, actual.built)
+                self.assertEqual(grammar.operators, actual.operators)
+                self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
+                self.assertEqual(grammar.hyperpriors.__class__, actual.hyperpriors.__class__)
+                self.assertEqual(grammar.n_dims, actual.n_dims)
+                for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
+                    self.assertEqual(expected_cov.infix, actual_cov.infix)
+                self.assertEqual(grammar.built, actual.built)
 
 
 class TestBomsGrammar(unittest.TestCase):
@@ -439,22 +443,26 @@ class TestBomsGrammar(unittest.TestCase):
         self.assertEqual(grammar._number_of_random_walks, actual['number_of_random_walks'])
 
     def test_from_dict(self):
-        grammar = BomsGrammar(base_kernel_names=['SE', 'RQ', 'LIN'])
-        grammar.build(n_dims=1)
-        actual = BomsGrammar.from_dict(grammar.to_dict())
+        test_cases = (BaseGrammar, BomsGrammar, Serializable)
+        for cls in test_cases:
+            with self.subTest(name=cls.__name__):
+                grammar = BomsGrammar(base_kernel_names=['SE', 'RQ', 'LIN'])
+                grammar.build(n_dims=1)
+                actual = cls.from_dict(grammar.to_dict())
 
-        self.assertIsInstance(actual, BomsGrammar)
+                self.assertIsInstance(actual, BomsGrammar)
 
-        self.assertEqual(grammar.operators, actual.operators)
-        self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
-        self.assertEqual(grammar.hyperpriors.__class__, actual.hyperpriors.__class__)
-        self.assertEqual(grammar.n_dims, actual.n_dims)
-        for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
-            self.assertEqual(expected_cov.infix, actual_cov.infix)
-        self.assertEqual(grammar.built, actual.built)
-        self.assertEqual(grammar._random_walk_geometric_dist_parameter, actual._random_walk_geometric_dist_parameter)
-        self.assertEqual(grammar._number_of_top_k_best, actual._number_of_top_k_best)
-        self.assertEqual(grammar._number_of_random_walks, actual._number_of_random_walks)
+                self.assertEqual(grammar.operators, actual.operators)
+                self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
+                self.assertEqual(grammar.hyperpriors.__class__, actual.hyperpriors.__class__)
+                self.assertEqual(grammar.n_dims, actual.n_dims)
+                for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
+                    self.assertEqual(expected_cov.infix, actual_cov.infix)
+                self.assertEqual(grammar.built, actual.built)
+                self.assertEqual(grammar._random_walk_geometric_dist_parameter,
+                                 actual._random_walk_geometric_dist_parameter)
+                self.assertEqual(grammar._number_of_top_k_best, actual._number_of_top_k_best)
+                self.assertEqual(grammar._number_of_random_walks, actual._number_of_random_walks)
 
     def tearDown(self) -> None:
         np.random.seed()
@@ -489,19 +497,22 @@ class TestEvolutionaryGrammar(unittest.TestCase):
         self.assertEqual(grammar.population_operator.to_dict(), actual['population_operator'])
 
     def test_from_dict(self):
-        grammar = self.grammar
-        actual = EvolutionaryGrammar.from_dict(grammar.to_dict())
+        test_cases = (BaseGrammar, EvolutionaryGrammar, Serializable)
+        for cls in test_cases:
+            with self.subTest(name=cls.__name__):
+                grammar = self.grammar
+                actual = cls.from_dict(grammar.to_dict())
 
-        self.assertIsInstance(actual, EvolutionaryGrammar)
+                self.assertIsInstance(actual, EvolutionaryGrammar)
 
-        self.assertEqual(grammar.operators, actual.operators)
-        self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
-        self.assertEqual(grammar.hyperpriors.__class__, actual.hyperpriors.__class__)
-        self.assertEqual(grammar.n_dims, actual.n_dims)
-        for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
-            self.assertEqual(expected_cov.infix, actual_cov.infix)
-        self.assertEqual(grammar.built, actual.built)
-        self.assertEqual(grammar.population_operator.__class__, actual.population_operator.__class__)
+                self.assertEqual(grammar.operators, actual.operators)
+                self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
+                self.assertEqual(grammar.hyperpriors.__class__, actual.hyperpriors.__class__)
+                self.assertEqual(grammar.n_dims, actual.n_dims)
+                for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
+                    self.assertEqual(expected_cov.infix, actual_cov.infix)
+                self.assertEqual(grammar.built, actual.built)
+                self.assertEqual(grammar.population_operator.__class__, actual.population_operator.__class__)
 
 
 class TestRandomGrammar(unittest.TestCase):
@@ -528,16 +539,19 @@ class TestRandomGrammar(unittest.TestCase):
         self.assertEqual(grammar.built, actual['built'])
 
     def test_from_dict(self):
-        grammar = RandomGrammar()
-        grammar.build(n_dims=1)
-        actual = RandomGrammar.from_dict(grammar.to_dict())
+        test_cases = (BaseGrammar, RandomGrammar, Serializable)
+        for cls in test_cases:
+            with self.subTest(name=cls.__name__):
+                grammar = RandomGrammar()
+                grammar.build(n_dims=1)
+                actual = cls.from_dict(grammar.to_dict())
 
-        self.assertIsInstance(actual, RandomGrammar)
+                self.assertIsInstance(actual, RandomGrammar)
 
-        self.assertEqual(grammar.operators, actual.operators)
-        self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
-        self.assertEqual(grammar.hyperpriors.__class__, actual.hyperpriors.__class__)
-        self.assertEqual(grammar.n_dims, actual.n_dims)
-        for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
-            self.assertEqual(expected_cov.infix, actual_cov.infix)
-        self.assertEqual(grammar.built, actual.built)
+                self.assertEqual(grammar.operators, actual.operators)
+                self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
+                self.assertEqual(grammar.hyperpriors.__class__, actual.hyperpriors.__class__)
+                self.assertEqual(grammar.n_dims, actual.n_dims)
+                for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
+                    self.assertEqual(expected_cov.infix, actual_cov.infix)
+                self.assertEqual(grammar.built, actual.built)

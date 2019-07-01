@@ -85,16 +85,14 @@ class BaseGrammar(Serializable):
         input_dict["built"] = self.built
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _build_from_input_dict(cls, input_dict: dict):
         operators = input_dict.pop('operators')
         n_dims = input_dict.pop('n_dims')
         base_kernels = input_dict.pop('base_kernels')
         built = input_dict.pop('built')
 
-        input_dict['hyperpriors'] = HyperpriorMap.from_dict(input_dict['hyperpriors'])
-
-        grammar = Serializable.from_dict(input_dict)
+        grammar = super()._build_from_input_dict(input_dict)
 
         grammar.operators = operators
         grammar.n_dims = n_dims
@@ -102,6 +100,12 @@ class BaseGrammar(Serializable):
         grammar.built = built
 
         return grammar
+
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict) -> dict:
+        input_dict = super()._format_input_dict(input_dict)
+        input_dict['hyperpriors'] = HyperpriorMap.from_dict(input_dict['hyperpriors'])
+        return input_dict
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
@@ -160,10 +164,11 @@ class EvolutionaryGrammar(BaseGrammar):
         input_dict["population_operator"] = self.population_operator.to_dict()
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict):
+        input_dict = super()._format_input_dict(input_dict)
         input_dict['population_operator'] = PopulationOperator.from_dict(input_dict['population_operator'])
-        return BaseGrammar.from_dict(input_dict)
+        return input_dict
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
@@ -407,15 +412,18 @@ class BomsGrammar(CKSGrammar):
         input_dict['number_of_random_walks'] = self._number_of_random_walks
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _build_from_input_dict(cls, input_dict: dict):
         random_walk_geometric_dist_parameter = input_dict.pop('random_walk_geometric_dist_parameter')
         number_of_top_k_best = input_dict.pop('number_of_top_k_best')
         number_of_random_walks = input_dict.pop('number_of_random_walks')
-        grammar = BaseGrammar.from_dict(input_dict)
+
+        grammar = super()._build_from_input_dict(input_dict)
+
         grammar._random_walk_geometric_dist_parameter = random_walk_geometric_dist_parameter
         grammar._number_of_top_k_best = number_of_top_k_best
         grammar._number_of_random_walks = number_of_random_walks
+
         return grammar
 
 
