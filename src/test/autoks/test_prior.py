@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from src.autoks.backend.prior import PRIOR_DICT
 from src.autoks.core.prior import PriorDist
+from src.evalg.serialization import Serializable
 
 
 class TestPrior(TestCase):
@@ -29,9 +30,12 @@ class TestPrior(TestCase):
         self.assertEqual(actual["raw_prior_args"], self.input_dict)
 
     def test_from_dict(self):
-        key = 'GAUSSIAN'
-        prior = PriorDist.from_prior_str(key, self.input_dict)
-        actual = PriorDist.from_dict(prior.to_dict())
-        self.assertIsInstance(actual, PriorDist)
-        self.assertEqual(self.input_dict, actual._raw_prior_args)
-        self.assertEqual(PRIOR_DICT[key], actual._raw_prior_cls)
+        test_cases = (PriorDist, Serializable)
+        for cls in test_cases:
+            with self.subTest(name=cls.__name__):
+                key = 'GAUSSIAN'
+                prior = PriorDist.from_prior_str(key, self.input_dict)
+                actual = cls.from_dict(prior.to_dict())
+                self.assertIsInstance(actual, PriorDist)
+                self.assertEqual(self.input_dict, actual._raw_prior_args)
+                self.assertEqual(PRIOR_DICT[key], actual._raw_prior_cls)

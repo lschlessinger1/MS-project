@@ -31,20 +31,12 @@ class PriorDist(Serializable):
 
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
-        """Function that takes in a dict and returns a custom object associated with the dict.
-
-        This function makes use of the `__module__` and `__class__` metadata in the dictionary.
-        to know which object type to create.
-
-        :param input_dict: input dictionary.
-        :return: Object associated with the input dictionary.
-        """
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict) -> dict:
+        input_dict = super()._format_input_dict(input_dict)
         class_name = input_dict.pop("raw_prior_cls")
         module_name = input_dict.pop("raw_prior_module")
         module = importlib.import_module(module_name)
         class_ = getattr(module, class_name)
         input_dict["raw_prior_cls"] = class_
-
-        return Serializable.from_dict(input_dict)
+        return input_dict
