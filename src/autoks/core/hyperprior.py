@@ -1,18 +1,19 @@
 from typing import Dict, Optional
 
 from src.autoks.core.prior import PriorDist
+from src.evalg.serialization import Serializable
 
 PriorMap = Dict[str, PriorDist]
 PriorsMap = Dict[str, PriorMap]
 
 
-class HyperpriorMap:
+class HyperpriorMap(Serializable):
 
     def __init__(self, prior_map: Optional[PriorsMap] = None):
         self.prior_map = prior_map or {}
 
     def to_dict(self):
-        input_dict = dict()
+        input_dict = super().to_dict()
 
         prior_map_cp = dict()
         for key, val in self.prior_map.items():
@@ -24,15 +25,14 @@ class HyperpriorMap:
         input_dict["prior_map"] = prior_map_cp
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict) -> dict:
+        input_dict = super()._format_input_dict(input_dict)
         if 'prior_map' in input_dict:
             for key, val in input_dict["prior_map"].items():
                 for param_name, prior in val.items():
                     input_dict["prior_map"][key][param_name] = PriorDist.from_dict(prior)
-            return HyperpriorMap(**input_dict)
-        else:
-            return HyperpriorMap()
+        return input_dict
 
     def __len__(self):
         return len(self.prior_map)

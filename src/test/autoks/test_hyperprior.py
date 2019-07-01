@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from src.autoks.core.hyperprior import boms_hyperpriors, HyperpriorMap
 from src.autoks.core.prior import PriorDist
+from src.evalg.serialization import Serializable
 
 
 class TestHyperprior(TestCase):
@@ -83,20 +84,23 @@ class TestHyperprior(TestCase):
         self.assertEqual(prior_map['SE']['lengthscale'].to_dict(), actual['prior_map']['SE']['lengthscale'])
 
     def test_from_dict(self):
-        prior_map = dict()
-        prior_l = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.1, 'sigma': 0.7 ** 2})
-        prior_sigma = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.4, 'sigma': 0.7 ** 2})
-        prior_map['SE'] = {
-            'variance': prior_sigma,
-            'lengthscale': prior_l
-        }
-        hyperprior_map = HyperpriorMap(prior_map)
+        test_cases = (HyperpriorMap, Serializable)
+        for cls in test_cases:
+            with self.subTest(name=cls.__name__):
+                prior_map = dict()
+                prior_l = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.1, 'sigma': 0.7 ** 2})
+                prior_sigma = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.4, 'sigma': 0.7 ** 2})
+                prior_map['SE'] = {
+                    'variance': prior_sigma,
+                    'lengthscale': prior_l
+                }
+                hyperprior_map = HyperpriorMap(prior_map)
 
-        actual = HyperpriorMap.from_dict(hyperprior_map.to_dict())
+                actual = cls.from_dict(hyperprior_map.to_dict())
 
-        self.assertIsInstance(actual, HyperpriorMap)
-        self.assertIn('SE', actual)
-        self.assertIn('variance', actual['SE'])
-        self.assertIn('lengthscale', actual['SE'])
-        self.assertEqual(prior_map['SE']['variance'].__class__, actual['SE']['variance'].__class__)
-        self.assertEqual(prior_map['SE']['lengthscale'].__class__, actual['SE']['lengthscale'].__class__)
+                self.assertIsInstance(actual, HyperpriorMap)
+                self.assertIn('SE', actual)
+                self.assertIn('variance', actual['SE'])
+                self.assertIn('lengthscale', actual['SE'])
+                self.assertEqual(prior_map['SE']['variance'].__class__, actual['SE']['variance'].__class__)
+                self.assertEqual(prior_map['SE']['lengthscale'].__class__, actual['SE']['lengthscale'].__class__)
