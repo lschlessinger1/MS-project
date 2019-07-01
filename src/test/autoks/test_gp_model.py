@@ -8,6 +8,7 @@ from src.autoks.backend.kernel import encode_kernel
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import remove_duplicate_gp_models, GPModel, encode_gp_model, encode_gp_models
 from src.autoks.core.kernel_encoding import KernelTree
+from src.evalg.serialization import Serializable
 
 
 class TestGPModel(TestCase):
@@ -33,13 +34,16 @@ class TestGPModel(TestCase):
         self.assertEqual(gp_model.covariance.to_dict(), actual['covariance'])
 
     def test_from_dict(self):
-        kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))
-        gp_model = GPModel(kernel)
-        actual = GPModel.from_dict(gp_model.to_dict())
+        test_cases = (GPModel, Serializable)
+        for cls in test_cases:
+            with self.subTest(name=cls.__name__):
+                kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))
+                gp_model = GPModel(kernel)
+                actual = cls.from_dict(gp_model.to_dict())
 
-        self.assertIsInstance(actual, GPModel)
-        self.assertEqual(gp_model.likelihood, actual.likelihood)
-        self.assertEqual(gp_model.covariance.infix, actual.covariance.infix)
+                self.assertIsInstance(actual, GPModel)
+                self.assertEqual(gp_model.likelihood, actual.likelihood)
+                self.assertEqual(gp_model.covariance.infix, actual.covariance.infix)
 
     def test_save(self):
         kernel = Covariance(RBF(1) * RBF(1) + RationalQuadratic(1))

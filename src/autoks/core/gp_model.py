@@ -9,9 +9,10 @@ from src.autoks.backend.kernel import encode_prior, get_priors, encode_kernel, s
 from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance, pretty_print_covariances
 from src.autoks.util import remove_duplicates
+from src.evalg.serialization import Serializable
 
 
-class GPModel:
+class GPModel(Serializable):
     """GPy model wrapper."""
     model_input_dict: Optional[dict]
 
@@ -75,19 +76,20 @@ class GPModel:
 
     def to_dict(self) -> dict:
         # Get likelihood and covariance
-        input_dict = dict()
+        input_dict = super().to_dict()
 
         input_dict["likelihood"] = None if self.likelihood is None else self.likelihood.to_dict()
         input_dict["covariance"] = self.covariance.to_dict()
 
         return input_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict) -> dict:
+        input_dict = super()._format_input_dict(input_dict)
         input_dict["covariance"] = Covariance.from_dict(input_dict["covariance"])
-        input_dict["likelihood"] = None if input_dict['likelihood'] is None else Likelihood.from_dict(
-            input_dict["likelihood"])
-        return GPModel(**input_dict)
+        input_dict["likelihood"] = None if input_dict['likelihood'] is None else \
+            Likelihood.from_dict(input_dict["likelihood"])
+        return input_dict
 
     @staticmethod
     def load(output_file_name: str):
