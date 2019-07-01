@@ -7,9 +7,10 @@ from src.autoks.core.covariance import all_pairs_avg_dist, pairwise_centered_ali
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.statistics import StatBook, StatBookCollection, Statistic
+from src.evalg.serialization import Serializable
 
 
-class ModelSearchTracker:
+class ModelSearchTracker(Serializable):
 
     def __init__(self):
         # statistics used for plotting
@@ -85,10 +86,10 @@ class ModelSearchTracker:
         output_dict["stat_book_collection"] = self.stat_book_collection.to_dict()
         return output_dict
 
-    @staticmethod
-    def from_dict(input_dict: dict):
+    @classmethod
+    def _build_from_input_dict(cls, input_dict: dict):
         stat_book_collection = StatBookCollection.from_dict(input_dict.pop("stat_book_collection"))
-        tracker = ModelSearchTracker()
+        tracker = super()._build_from_input_dict(input_dict)
         tracker.stat_book_collection = stat_book_collection
         return tracker
 
