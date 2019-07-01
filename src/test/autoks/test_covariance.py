@@ -12,6 +12,7 @@ from src.autoks.core.kernel_encoding import KernelTree
 from src.autoks.core.kernel_kernel import shd_kernel_kernel, euclidean_kernel_kernel
 from src.autoks.distance.metrics import shd_metric, euclidean_metric
 from src.autoks.symbolic.kernel_symbol import KernelSymbol
+from src.evalg.serialization import Serializable
 
 
 class TestCovariance(TestCase):
@@ -57,12 +58,15 @@ class TestCovariance(TestCase):
         self.assertEqual(kern.to_dict(), actual['kernel'])
 
     def test_from_dict(self):
-        kern = self.se_0
-        cov = Covariance(kern)
-        actual = Covariance.from_dict(cov.to_dict())
+        test_cases = (Covariance, Serializable)
+        for cls in test_cases:
+            with self.subTest(name=cls.__name__):
+                kern = self.se_0
+                cov = Covariance(kern)
+                actual = cls.from_dict(cov.to_dict())
 
-        self.assertIsInstance(actual, Covariance)
-        self.assertEqual(cov.infix, actual.infix)
+                self.assertIsInstance(actual, Covariance)
+                self.assertEqual(cov.infix, actual.infix)
 
     def test_canonical(self):
         kern = self.se_0

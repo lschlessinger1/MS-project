@@ -13,10 +13,11 @@ from src.autoks.symbolic.kernel_symbol import KernelSymbol
 from src.autoks.symbolic.util import postfix_tokens_to_symbol
 from src.autoks.util import remove_duplicates
 from src.evalg.encoding import infix_tokens_to_postfix_tokens
+from src.evalg.serialization import Serializable
 from src.test.autoks.test_kernel_encoding import KernelTree
 
 
-class Covariance:
+class Covariance(Serializable):
     """A wrapper for a GPy Kern"""
 
     def __init__(self, kernel: RawKernelType):
@@ -41,14 +42,15 @@ class Covariance:
         self.symbolic_expr = postfix_tokens_to_symbol(postfix_token_symbols)
         self.symbolic_expr_expanded = self.symbolic_expr.expand()
 
-    @staticmethod
-    def from_dict(input_dict: dict):
-        input_dict["kernel"] = Kern.from_dict(input_dict["kernel"])
-        return Covariance(**input_dict)
-
     def to_dict(self) -> dict:
-        input_dict = dict()
+        input_dict = super().to_dict()
         input_dict["kernel"] = self.raw_kernel.to_dict()
+        return input_dict
+
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict) -> dict:
+        input_dict = super()._format_input_dict(input_dict)
+        input_dict["kernel"] = Kern.from_dict(input_dict["kernel"])
         return input_dict
 
     def to_binary_tree(self) -> KernelTree:
