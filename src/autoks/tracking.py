@@ -82,7 +82,7 @@ class ModelSearchTracker(Serializable):
         update_stat_book(stat_book, models, x, grammar.base_kernel_names, grammar.n_dims)
 
     def to_dict(self) -> dict:
-        output_dict = dict()
+        output_dict = super().to_dict()
         output_dict["stat_book_collection"] = self.stat_book_collection.to_dict()
         return output_dict
 
