@@ -6,7 +6,9 @@
       <w>genotypic</w>
       <w>hellinger</w>
       <w>hyperpriors</w>
+      <w>nlpd</w>
       <w>phenotypic</w>
+      <w>rmse</w>
       <w>runtimes</w>
       <w>smse</w>
     </words>
