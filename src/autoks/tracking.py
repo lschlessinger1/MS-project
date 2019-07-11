@@ -84,13 +84,16 @@ class ModelSearchTracker(Serializable):
     def to_dict(self) -> dict:
         output_dict = super().to_dict()
         output_dict["stat_book_collection"] = self.stat_book_collection.to_dict()
+        output_dict["base_kern_freq_names"] = self.base_kern_freq_names
         return output_dict
 
     @classmethod
     def _build_from_input_dict(cls, input_dict: dict):
         stat_book_collection = StatBookCollection.from_dict(input_dict.pop("stat_book_collection"))
+        base_kern_freq_names = input_dict.pop("base_kern_freq_names")
         tracker = super()._build_from_input_dict(input_dict)
         tracker.stat_book_collection = stat_book_collection
+        tracker.base_kern_freq_names = base_kern_freq_names
         return tracker
 
     def save(self, output_file_name: str):
