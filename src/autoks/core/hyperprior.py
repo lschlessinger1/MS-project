@@ -19,8 +19,7 @@ class HyperpriorMap(Serializable):
         for key, val in self.prior_map.items():
             prior_map_cp[key] = {}
             for param_name, prior in val.items():
-                prior_dict = prior.to_dict()
-                prior_map_cp[key][param_name] = prior_dict
+                prior_map_cp[key][param_name] = prior.to_dict()
 
         input_dict["prior_map"] = prior_map_cp
         return input_dict
