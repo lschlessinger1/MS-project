@@ -40,3 +40,8 @@ class PriorDist(Serializable):
         class_ = getattr(module, class_name)
         input_dict["raw_prior_cls"] = class_
         return input_dict
+
+    def __eq__(self, other):
+        if isinstance(other, PriorDist):
+            return self._raw_prior_cls == other._raw_prior_cls and self._raw_prior_args == other._raw_prior_args
+        return False
