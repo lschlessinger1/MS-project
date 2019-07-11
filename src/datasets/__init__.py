@@ -4,3 +4,4 @@ from .housing import HousingDataset
 from .mauna import MaunaDataset
 from .methane import MethaneDataset
 from .solar import SolarDataset
+from .synthetic.synthetic_data import *
