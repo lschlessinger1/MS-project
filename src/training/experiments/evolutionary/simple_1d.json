@@ -1,0 +1,20 @@
+{
+  "experiment_group": "Evolutionary Simple 1D Experiments",
+  "experiments": [
+    {
+      "dataset": "Sinusoid1Dataset",
+      "dataset_args": {
+        "input_dim": 1
+      },
+      "model_selector": "EvolutionaryModelSelector",
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "laplace"
+      },
+      "train_args": {
+        "eval_budget": 50,
+        "verbose": 1
+      }
+    }
+  ]
+}
