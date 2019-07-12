@@ -1,0 +1,17 @@
+{
+  "experiment_group": "BOMS Airline Experiments",
+  "experiments": [
+    {
+      "dataset": "AirlineDataset",
+      "model_selector": "BomsModelSelector",
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "laplace"
+      },
+      "train_args": {
+        "eval_budget": 50,
+        "verbose": 1
+      }
+    }
+  ]
+}
