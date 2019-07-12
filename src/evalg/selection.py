@@ -233,7 +233,12 @@ class FitnessProportionalSelector(Selector, ProbabilityMixin):
         return ind
 
     def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
-        return raw_fitness / np.sum(raw_fitness)
+        min_fitness = raw_fitness.min()
+        if min_fitness < 0:
+            fitness_normalized = raw_fitness + np.abs(min_fitness)
+        else:
+            fitness_normalized = raw_fitness
+        return fitness_normalized / np.sum(fitness_normalized)
 
 
 class SigmaScalingSelector(Selector, ProbabilityMixin):

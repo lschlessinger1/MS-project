@@ -85,14 +85,15 @@ class TestFitnessProportionalSelector(TestCase):
 
     def test_get_probabilities(self):
         test_cases = (
-            ([0, 1], np.array([0, 10])),
-            ([0, 0.1, 0.9], np.array([0, 10, 90])),
-            ([0, 0.1, 0, 0.5, 0.2, 0.2], np.array([0, 10, 0, 50, 20, 20]))
+            ([0., 1.], [0, 10]),
+            ([0., 0.1, 0.9], [0, 10, 90]),
+            ([0., 0.1, 0., 0.5, 0.2, 0.2], [0, 10, 0, 50, 20, 20]),
+            ([1 / 3., 0., 2 / 3.], [20, -20, 60])
         )
         for expected_probabilities, fitness_list in test_cases:
             with self.subTest():
                 selector = FitnessProportionalSelector(n_individuals=10)
-                result = selector.get_probabilities(fitness_list)
+                result = selector.get_probabilities(np.array(fitness_list))
                 self.assertIsInstance(result, np.ndarray)
                 self.assertListEqual(expected_probabilities, list(result.tolist()))
                 self.assertAlmostEqual(result.sum(), 1)
