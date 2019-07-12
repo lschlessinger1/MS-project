@@ -1,0 +1,21 @@
+{
+  "experiment_group": "Fast Evolutionary Experiment",
+  "experiments": [
+    {
+      "dataset": "Sinosoid2Dataset",
+      "dataset_args": {
+        "n_samples": 26,
+        "input_dim": 1
+      },
+      "model_selector": "EvolutionaryModelSelector",
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "laplace"
+      },
+      "train_args": {
+        "eval_budget": 25,
+        "verbose": 3
+      }
+    }
+  ]
+}

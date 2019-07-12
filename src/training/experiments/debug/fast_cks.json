@@ -1,0 +1,24 @@
+{
+  "experiment_group": "Fast CKS Experiment",
+  "experiments": [
+    {
+      "dataset": "CubicSine1dDataset",
+      "dataset_args": {
+        "n_samples": 60
+      },
+      "model_selector": "CKSModelSelector",
+      "model_selector_args": {
+        "optimizer": null,
+        "fitness_fn": "loglikn"
+      },
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "laplace"
+      },
+      "train_args": {
+        "eval_budget": 8,
+        "verbose": 3
+      }
+    }
+  ]
+}
