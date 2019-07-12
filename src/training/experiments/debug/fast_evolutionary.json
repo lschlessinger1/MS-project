@@ -2,7 +2,7 @@
   "experiment_group": "Fast Evolutionary Experiment",
   "experiments": [
     {
-      "dataset": "Sinosoid2Dataset",
+      "dataset": "Sinusoid2Dataset",
       "dataset_args": {
         "n_samples": 26,
         "input_dim": 1

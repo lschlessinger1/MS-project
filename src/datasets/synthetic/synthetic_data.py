@@ -8,7 +8,7 @@ from src.datasets.synthetic.known_gp_dataset import KnownGPDataset
 from src.datasets.synthetic.synthetic_dataset import SyntheticDataset, Input1DSyntheticDataset
 
 
-class Sinosoid1Dataset(SyntheticDataset):
+class Sinusoid1Dataset(SyntheticDataset):
 
     def __init__(self, n_samples=50, input_dim=1):
         super().__init__(n_samples, input_dim)
@@ -23,7 +23,7 @@ class Sinosoid1Dataset(SyntheticDataset):
         self.x, self.y = x, y
 
 
-class Sinosoid2Dataset(SyntheticDataset):
+class Sinusoid2Dataset(SyntheticDataset):
 
     def __init__(self, n_samples=30, input_dim=1):
         super().__init__(n_samples, input_dim)
