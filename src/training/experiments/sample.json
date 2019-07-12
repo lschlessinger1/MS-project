@@ -1,0 +1,30 @@
+{
+  "experiment_group": "Sample Experiments",
+  "experiments": [
+    {
+      "dataset": "AirlineDataset",
+      "model_selector": "EvolutionaryModelSelector",
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "laplace"
+      },
+      "train_args": {
+        "eval_budget": 50,
+        "verbose": 1
+      }
+    },
+    {
+      "dataset": "AirlineDataset",
+      "model": "EvolutionaryModelSelector",
+      "model_selector": "EvolutionaryModelSelector",
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "nbic"
+      },
+      "train_args": {
+        "eval_budget": 50,
+        "verbose": 1
+      }
+    }
+  ]
+}
