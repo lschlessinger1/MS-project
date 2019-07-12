@@ -1,12 +1,10 @@
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Union
 
 import numpy as np
 
 from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance
-from src.autoks.core.fitness_functions import log_likelihood_normalized
 from src.autoks.core.gp_model_population import GPModelPopulation
-from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import RandomGrammar
 from src.autoks.core.model_selection.base import ModelSelector
 
@@ -14,13 +12,13 @@ from src.autoks.core.model_selection.base import ModelSelector
 class RandomModelSelector(ModelSelector):
 
     def __init__(self,
-                 grammar: Optional[RandomGrammar],
-                 fitness_fn: Callable[[RawGPModelType], float] = log_likelihood_normalized,
+                 grammar: Optional[RandomGrammar] = None,
+                 fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
                  n_parents: int = 1,
                  additive_form: bool = False,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 3,
-                 gp_fn: Callable = gp_regression,
+                 gp_fn: Union[str, Callable] = 'gp_regression',
                  gp_args: Optional[dict] = None):
         if grammar is None:
             grammar = RandomGrammar()
@@ -57,3 +55,18 @@ class RandomModelSelector(ModelSelector):
             depth += 1
 
         return population
+
+    @classmethod
+    def _build_from_input_dict(cls, input_dict: dict):
+        standardize_x = input_dict.pop('standardize_x')
+        standardize_y = input_dict.pop('standardize_y')
+
+        model_selector = super()._build_from_input_dict(input_dict)
+
+        model_selector.standardize_x = standardize_x
+        model_selector.standardize_y = standardize_y
+
+        return model_selector
+
+    def __str__(self):
+        return self.name

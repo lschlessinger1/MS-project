@@ -1,18 +1,17 @@
 import warnings
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Union
 
 import numpy as np
 
 from src.autoks.backend.kernel import compute_kernel
 from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance, centered_alignment
-from src.autoks.core.fitness_functions import log_likelihood_normalized
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
-from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import EvolutionaryGrammar
 from src.autoks.core.kernel_encoding import tree_to_kernel, KernelNode
 from src.autoks.core.model_selection.base import ModelSelector, SurrogateBasedModelSelector
+from src.autoks.core.query_strategy import QueryStrategy
 from src.evalg.fitness import shared_fitness_scores
 from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeLeafBiasedRecombinator
 from src.evalg.genprog.generators import BinaryTreeGenerator, HalfAndHalfGenerator
@@ -24,7 +23,7 @@ class EvolutionaryModelSelector(ModelSelector):
 
     def __init__(self,
                  grammar: Optional[EvolutionaryGrammar] = None,
-                 fitness_fn: Callable[[RawGPModelType], float] = log_likelihood_normalized,
+                 fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
                  initializer: Optional[BinaryTreeGenerator] = None,
                  n_init_trees: int = 10,
                  n_parents: int = 10,
@@ -35,7 +34,7 @@ class EvolutionaryModelSelector(ModelSelector):
                  fitness_sharing: bool = False,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 3,
-                 gp_fn: Callable = gp_regression,
+                 gp_fn: Union[str, Callable] = 'gp_regression',
                  gp_args: Optional[dict] = None):
         if grammar is None:
             variation_pct = m_prob + cx_prob  # 60% of individuals created using crossover and 10% mutation
@@ -121,8 +120,35 @@ class EvolutionaryModelSelector(ModelSelector):
         else:
             return self.grammar.base_kernels
 
+    def to_dict(self) -> dict:
+        input_dict = super().to_dict()
+        input_dict['initializer'] = self.initializer.to_dict()
+        input_dict['n_init_trees'] = self.n_init_trees
+        input_dict['max_offspring'] = self.max_offspring
+        input_dict['fitness_sharing'] = self.fitness_sharing
+        return input_dict
+
+    @classmethod
+    def _build_from_input_dict(cls, input_dict: dict):
+        standardize_x = input_dict.pop('standardize_x')
+        standardize_y = input_dict.pop('standardize_y')
+
+        model_selector = super()._build_from_input_dict(input_dict)
+
+        model_selector.standardize_x = standardize_x
+        model_selector.standardize_y = standardize_y
+
+        return model_selector
+
+    @classmethod
+    def _format_input_dict(cls, input_dict: dict) -> dict:
+        input_dict = super()._format_input_dict(input_dict)
+        input_dict['pop_size'] = input_dict.pop('max_offspring')
+        input_dict['initializer'] = BinaryTreeGenerator.from_dict(input_dict['initializer'])
+        return input_dict
+
     @staticmethod
-    def _create_default_grammar(n_offspring, cx_prob, m_prob):
+    def _create_default_grammar(n_offspring: int, cx_prob: float, m_prob: float):
         mutator = HalfAndHalfMutator(binary_tree_node_cls=KernelNode, max_depth=1)
         recombinator = SubtreeExchangeLeafBiasedRecombinator()
 
@@ -133,14 +159,16 @@ class EvolutionaryModelSelector(ModelSelector):
 
         return EvolutionaryGrammar(population_operator=pop_operator)
 
+    def __str__(self):
+        return self.name
+
 
 class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
-    grammar: EvolutionaryGrammar
 
     def __init__(self,
                  grammar: Optional[EvolutionaryGrammar] = None,
-                 fitness_fn: Callable[[RawGPModelType], float] = log_likelihood_normalized,
-                 query_strategy=None,
+                 fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
+                 query_strategy: Optional[QueryStrategy] = None,
                  initializer: Optional[BinaryTreeGenerator] = None,
                  n_init_trees: int = 10,
                  n_parents: int = 10,
@@ -148,7 +176,7 @@ class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
                  additive_form: bool = False,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 3,
-                 gp_fn: Callable = gp_regression,
+                 gp_fn: Union[str, Callable] = 'gp_regression',
                  gp_args: Optional[dict] = None):
         super().__init__(grammar, fitness_fn, query_strategy, n_parents, additive_form, gp_fn, gp_args, optimizer,
                          n_restarts_optimizer)

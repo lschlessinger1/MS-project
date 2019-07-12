@@ -1,13 +1,11 @@
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Union
 
 import numpy as np
 
 from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
-from src.autoks.core.fitness_functions import log_likelihood_normalized
 from src.autoks.core.gp_model_population import GPModelPopulation
-from src.autoks.core.gp_models import gp_regression
 from src.autoks.core.grammar import BomsGrammar
 from src.autoks.core.hyperprior import boms_hyperpriors
 from src.autoks.core.model_selection.base import SurrogateBasedModelSelector
@@ -18,11 +16,11 @@ class BomsModelSelector(SurrogateBasedModelSelector):
 
     def __init__(self,
                  grammar: Optional[BomsGrammar] = None,
-                 fitness_fn: Callable[[RawGPModelType], float] = log_likelihood_normalized,
+                 fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
                  n_parents: int = 1,
                  query_strategy: Optional[QueryStrategy] = None,
                  additive_form: bool = False,
-                 gp_fn: Callable = gp_regression,
+                 gp_fn: Union[str, Callable] = 'gp_regression',
                  gp_args: Optional[dict] = None,
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 3):
@@ -35,7 +33,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
             acq = ExpectedImprovementPerSec()
             query_strategy = BestScoreStrategy(scoring_func=acq)
 
-        # Use laplace inference by default.
+        # Use Laplace inference by default.
         if gp_args is not None and 'inference_method' not in gp_args:
             gp_args['inference_method'] = 'laplace'
         else:
@@ -71,3 +69,18 @@ class BomsModelSelector(SurrogateBasedModelSelector):
         population.update(initial_candidates)
 
         return population
+
+    @classmethod
+    def _build_from_input_dict(cls, input_dict: dict):
+        standardize_x = input_dict.pop('standardize_x')
+        standardize_y = input_dict.pop('standardize_y')
+
+        model_selector = super()._build_from_input_dict(input_dict)
+
+        model_selector.standardize_x = standardize_x
+        model_selector.standardize_y = standardize_y
+
+        return model_selector
+
+    def __str__(self):
+        return self.name
