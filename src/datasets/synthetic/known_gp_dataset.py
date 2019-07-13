@@ -9,18 +9,18 @@ from src.datasets.dataset import Dataset
 
 
 class KnownGPDataset(Dataset):
-    kernel: Covariance
-    noise_var: float
-    n_pts: int
 
-    def __init__(self, kernel, noise_var, n_pts=100):
+    def __init__(self,
+                 covariance: Covariance,
+                 noise_var: float,
+                 n_pts: int = 100):
         super().__init__()
-        self.kernel = kernel
+        self.covariance = covariance
         self.noise_var = noise_var
         self.n_pts = n_pts
 
     def load_or_generate_data(self) -> None:
-        self.x, self.y = sample_gp(self.kernel.raw_kernel, self.n_pts, self.noise_var)
+        self.x, self.y = sample_gp(self.covariance.raw_kernel, self.n_pts, self.noise_var)
 
     def snr(self):
         # assume signal variance always = 1
@@ -28,7 +28,7 @@ class KnownGPDataset(Dataset):
         return signal_variance / self.noise_var
 
     def __repr__(self):
-        return f'{self.__class__.__name__}('f'kernel={self.kernel.infix_full!r}, n=' \
+        return f'{self.__class__.__name__}('f'kernel={self.covariance.infix_full!r}, n=' \
             f'{self.n_pts!r}, SNR={self.snr() !r})'
 
 
