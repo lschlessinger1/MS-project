@@ -186,6 +186,7 @@ class ModelSelector(Serializable):
         # Progress bar
         if verbose:
             self.pbar = tqdm(total=eval_budget, unit='ev', desc='Model Evaluations')
+            self.pbar.set_postfix(best_so_far=float('-inf'))
 
         t_init = time()
         population = self._train(x, y, eval_budget=eval_budget, max_generations=max_generations, verbose=verbose)
@@ -513,8 +514,10 @@ class ModelSelector(Serializable):
             best_kernel.covariance.pretty_print()
             print('')
         elif verbose == 1:
-            print()
-            print('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
+            # print()
+            self.pbar.set_postfix(best_so_far=best_objective)
+            # tqdm.write('Evaluated %d: best-so-far = %.5f' % (self.n_evals, best_objective))
+            # print()
 
     def _covariances_to_gp_models(self, covariances: List[Covariance]) -> List[GPModel]:
         """Convert covariances to GP models."""
