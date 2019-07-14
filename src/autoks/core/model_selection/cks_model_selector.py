@@ -13,6 +13,7 @@ class CKSModelSelector(ModelSelector):
 
     def __init__(self,
                  grammar: Optional[CKSGrammar] = None,
+                 base_kernel_names: Optional[List[str]] = None,
                  fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'nbic',
                  n_parents: int = 1,
                  additive_form: bool = False,
@@ -21,7 +22,7 @@ class CKSModelSelector(ModelSelector):
                  optimizer: Optional[str] = 'scg',
                  n_restarts_optimizer: int = 3):
         if grammar is None:
-            grammar = CKSGrammar()
+            grammar = CKSGrammar(base_kernel_names=base_kernel_names)
 
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 

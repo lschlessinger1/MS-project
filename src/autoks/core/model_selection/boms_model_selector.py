@@ -16,6 +16,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
 
     def __init__(self,
                  grammar: Optional[BomsGrammar] = None,
+                 base_kernel_names: Optional[List[str]] = None,
                  fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
                  n_parents: int = 1,
                  query_strategy: Optional[QueryStrategy] = None,
@@ -27,7 +28,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
 
         if grammar is None:
             hyperpriors = boms_hyperpriors()
-            grammar = BomsGrammar(hyperpriors=hyperpriors)
+            grammar = BomsGrammar(hyperpriors=hyperpriors, base_kernel_names=base_kernel_names)
 
         if query_strategy is None:
             acq = ExpectedImprovementPerSec()

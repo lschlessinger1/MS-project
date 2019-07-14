@@ -13,6 +13,7 @@ class RandomModelSelector(ModelSelector):
 
     def __init__(self,
                  grammar: Optional[RandomGrammar] = None,
+                 base_kernel_names: Optional[List[str]] = None,
                  fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
                  n_parents: int = 1,
                  additive_form: bool = False,
@@ -21,7 +22,7 @@ class RandomModelSelector(ModelSelector):
                  gp_fn: Union[str, Callable] = 'gp_regression',
                  gp_args: Optional[dict] = None):
         if grammar is None:
-            grammar = RandomGrammar()
+            grammar = RandomGrammar(base_kernel_names=base_kernel_names)
 
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 

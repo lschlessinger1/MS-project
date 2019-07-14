@@ -23,6 +23,7 @@ class EvolutionaryModelSelector(ModelSelector):
 
     def __init__(self,
                  grammar: Optional[EvolutionaryGrammar] = None,
+                 base_kernel_names: Optional[List[str]] = None,
                  fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
                  initializer: Optional[BinaryTreeGenerator] = None,
                  n_init_trees: int = 10,
@@ -40,7 +41,7 @@ class EvolutionaryModelSelector(ModelSelector):
             variation_pct = m_prob + cx_prob  # 60% of individuals created using crossover and 10% mutation
             n_offspring = int(variation_pct * pop_size)
             n_parents = n_offspring
-            grammar = self._create_default_grammar(n_offspring, cx_prob, m_prob)
+            grammar = self._create_default_grammar(n_offspring, cx_prob, m_prob, base_kernel_names=base_kernel_names)
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
         if initializer is None:
@@ -148,7 +149,10 @@ class EvolutionaryModelSelector(ModelSelector):
         return input_dict
 
     @staticmethod
-    def _create_default_grammar(n_offspring: int, cx_prob: float, m_prob: float):
+    def _create_default_grammar(n_offspring: int,
+                                cx_prob: float,
+                                m_prob: float,
+                                base_kernel_names: Optional[List[str]] = None):
         mutator = HalfAndHalfMutator(binary_tree_node_cls=KernelNode, max_depth=1)
         recombinator = SubtreeExchangeLeafBiasedRecombinator()
 
@@ -157,7 +161,7 @@ class EvolutionaryModelSelector(ModelSelector):
         variators = [cx_variator, mut_variator]
         pop_operator = CrossMutPopOperator(variators)
 
-        return EvolutionaryGrammar(population_operator=pop_operator)
+        return EvolutionaryGrammar(population_operator=pop_operator, base_kernel_names=base_kernel_names)
 
     def __str__(self):
         return self.name
