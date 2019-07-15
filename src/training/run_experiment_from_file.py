@@ -74,7 +74,7 @@ def main():
         with Pool(processes=args.num_processes) as p:
             results = p.starmap(run_experiments, [(args.experiments_filename, args.save)] * args.n_repeats)
     else:
-        results = [run_experiments(args.experiments_filename, args.save) for i in range(args.n_repeats)]
+        results = [run_experiments(args.experiments_filename, args.save) for _ in range(args.n_repeats)]
 
     if args.summarize:
         for results_dir_names in results:
