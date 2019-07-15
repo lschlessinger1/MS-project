@@ -466,19 +466,6 @@ class ModelSelector(Serializable):
 
         return labels, x, x_pct
 
-    def timing_report_to_dict(self) -> dict:
-        eval_time = self.total_eval_time
-        expansion_time = self.total_expansion_time
-        total_time = self.total_model_search_time
-        other_time = total_time - eval_time - expansion_time
-
-        output_dict = dict()
-        output_dict["Evaluation"] = eval_time
-        output_dict["Expansion"] = expansion_time
-        output_dict["Other"] = other_time
-
-        return output_dict
-
     def _print_search_summary(self,
                               depth: int,
                               population: ActiveModelPopulation,
