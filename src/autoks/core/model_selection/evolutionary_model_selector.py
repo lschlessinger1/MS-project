@@ -52,13 +52,11 @@ class EvolutionaryModelSelector(ModelSelector):
         self.fitness_sharing = fitness_sharing
 
     def _train(self,
-               x: np.ndarray,
-               y: np.ndarray,
                eval_budget: int,
                max_generations: int,
                verbose: int = 1) -> GPModelPopulation:
-        population = self.initialize(x, y, eval_budget, verbose=verbose)
-        self.active_set_callback(population.models, self, x, y)
+        population = self.initialize(eval_budget, verbose=verbose)
+        self.active_set_callback(population.models, self, self._x_train, self._y_train)
 
         depth = 0
         while self.n_evals < eval_budget:
@@ -67,20 +65,20 @@ class EvolutionaryModelSelector(ModelSelector):
 
             self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
-            new_models = self.propose_new_models(population, x, y, verbose=verbose)
-            self.expansion_callback(new_models, self, x, y)
+            new_models = self.propose_new_models(population, verbose=verbose)
+            self.expansion_callback(new_models, self, self._x_train, self._y_train)
             population.update(new_models)
 
-            self.evaluate_models(population.candidates(), x, y, eval_budget, verbose=verbose)
+            self.evaluate_models(population.candidates(), eval_budget, verbose=verbose)
 
             population.models = self.select_offspring(population)
-            self.active_set_callback(population.models, self, x, y)
+            self.active_set_callback(population.models, self, self._x_train, self._y_train)
 
             depth += 1
 
         return population
 
-    def select_parents(self, population: ActiveModelPopulation, x, y) -> List[GPModel]:
+    def select_parents(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Select parents to expand.
 
         Here, exponential ranking selection is used.
@@ -91,7 +89,7 @@ class EvolutionaryModelSelector(ModelSelector):
         if self.fitness_sharing:
             if not isinstance(selector, FitnessProportionalSelector):
                 warnings.warn('When using fitness sharing, fitness proportional selection is assumed.')
-            individuals = [compute_kernel(gp_model.covariance.raw_kernel, x) for gp_model in models]
+            individuals = [compute_kernel(gp_model.covariance.raw_kernel, self._x_train) for gp_model in models]
             metric = centered_alignment
             effective_fitness_scores = shared_fitness_scores(individuals, raw_fitness_scores, metric)
         else:
@@ -189,8 +187,6 @@ class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
         self.max_offspring = max_offspring
 
     def _train(self,
-               x: np.ndarray,
-               y: np.ndarray,
                eval_budget: int,
                max_generations: int,
                verbose: int = 1) -> GPModelPopulation:

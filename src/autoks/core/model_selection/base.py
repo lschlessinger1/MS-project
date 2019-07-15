@@ -6,7 +6,7 @@ from time import time
 from typing import List, Tuple, Optional, Callable, Union
 
 import numpy as np
-from sklearn.utils import check_X_y
+from sklearn.utils import check_X_y, check_array
 from tqdm import tqdm
 
 from src.autoks.backend.model import RawGPModelType
@@ -118,8 +118,10 @@ class ModelSelector(Serializable):
         self.built = False
 
         self.selected_models = []
+        self._x_train = None
         self._x_train_mean = None
         self._x_train_std = None
+        self._y_train = None
         self._y_train_mean = None
         self._y_train_std = None
 
@@ -148,6 +150,7 @@ class ModelSelector(Serializable):
         x, y = check_X_y(x, y, multi_output=True, y_numeric=True)
 
         x, y = self._prepare_data(x, y)  # create grammar and standardize data
+        self._x_train, self._y_train = x, y
 
         if max_generations is None:
             # By default, the model search is terminated only when the evaluation budget is expended.
@@ -189,7 +192,7 @@ class ModelSelector(Serializable):
             self.pbar.set_postfix(best_so_far=float('-inf'))
 
         t_init = time()
-        population = self._train(x, y, eval_budget=eval_budget, max_generations=max_generations, verbose=verbose)
+        population = self._train(eval_budget=eval_budget, max_generations=max_generations, verbose=verbose)
         self.total_model_search_time += time() - t_init
 
         if verbose:
@@ -223,20 +226,18 @@ class ModelSelector(Serializable):
         return x, y
 
     def _train(self,
-               x: np.ndarray,
-               y: np.ndarray,
                eval_budget: int,
                max_generations: int,
                verbose: int = 1) -> GPModelPopulation:
         raise NotImplementedError
 
-    def predict(self, x: np.ndarray) -> np.ndarray:
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """Predict on test inputs."""
-        # TODO: implement this function
         # For now, just use best model to predict. In the future, model averaging should be used.
-        # sort selected models by scores
-        # x = check_array(x)
-        pass
+        x = check_array(x)
+        best_gp_model = self.best_model()
+        gp = best_gp_model.build_model(self._x_train, self._y_train)
+        return gp.predict(x, **kwargs)
 
     def score(self,
               x: np.ndarray,
@@ -269,8 +270,6 @@ class ModelSelector(Serializable):
         return self._covariances_to_gp_models(initial_covariances)
 
     def initialize(self,
-                   x: np.ndarray,
-                   y: np.ndarray,
                    eval_budget: int,
                    verbose: int = 0) -> ActiveModelPopulation:
         """Initialize models."""
@@ -283,14 +282,12 @@ class ModelSelector(Serializable):
         if verbose == 3:
             pretty_print_gp_models(population.models, 'Initial candidate')
 
-        self.evaluate_models(population.candidates(), x, y, eval_budget, verbose=verbose)
+        self.evaluate_models(population.candidates(), eval_budget, verbose=verbose)
 
         return population
 
     def select_parents(self,
-                       population: ActiveModelPopulation,
-                       x: np.ndarray,
-                       y: np.ndarray) -> List[GPModel]:
+                       population: ActiveModelPopulation) -> List[GPModel]:
         """Select parents to expand.
 
         By default, choose top k models.
@@ -300,8 +297,6 @@ class ModelSelector(Serializable):
 
     def propose_new_models(self,
                            population: ActiveModelPopulation,
-                           x: np.ndarray,
-                           y: np.ndarray,
                            verbose: int = 0) -> List[GPModel]:
         """Propose new models using the grammar.
 
@@ -309,7 +304,7 @@ class ModelSelector(Serializable):
         :param verbose:
         :return:
         """
-        parents = self.select_parents(population, x, y)
+        parents = self.select_parents(population)
         t0_exp = time()
         new_covariances = self.grammar.get_candidates(parents, verbose=verbose)
         self.total_expansion_time += time() - t0_exp
@@ -318,8 +313,6 @@ class ModelSelector(Serializable):
 
     def evaluate_models(self,
                         models: List[GPModel],
-                        x: np.ndarray,
-                        y: np.ndarray,
                         eval_budget: int,
                         verbose: int = 0) -> List[GPModel]:
         """Evaluate a set models on some training data.
@@ -347,7 +340,7 @@ class ModelSelector(Serializable):
 
             if not gp_model.evaluated:
                 t0 = time()
-                gp_model.score_model(x, y, self.fitness_fn, optimizer=self.optimizer,
+                gp_model.score_model(self._x_train, self._y_train, self.fitness_fn, optimizer=self.optimizer,
                                      n_restarts=self.n_restarts_optimizer)
                 self.total_eval_time += time() - t0
                 self.n_evals += 1
@@ -356,7 +349,7 @@ class ModelSelector(Serializable):
                     self.pbar.update()
 
             evaluated_models.append(gp_model)
-            self.eval_callback([gp_model], self, x, y)
+            self.eval_callback([gp_model], self, self._x_train, self._y_train)
 
         if verbose == 3:
             print('Printing all results')

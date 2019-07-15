@@ -1,7 +1,5 @@
 from typing import List, Callable, Optional, Union
 
-import numpy as np
-
 from src.autoks.backend.model import RawGPModelType
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
@@ -27,13 +25,11 @@ class CKSModelSelector(ModelSelector):
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
     def _train(self,
-               x: np.ndarray,
-               y: np.ndarray,
                eval_budget: int,
                max_generations: int = 10,
                verbose: int = 1) -> GPModelPopulation:
-        population = self.initialize(x, y, eval_budget, verbose=verbose)
-        self.active_set_callback(population.models, self, x, y)
+        population = self.initialize(eval_budget, verbose=verbose)
+        self.active_set_callback(population.models, self, self._x_train, self._y_train)
 
         depth = 0
         while self.n_evals < eval_budget:
@@ -42,13 +38,13 @@ class CKSModelSelector(ModelSelector):
 
             self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
-            new_models = self.propose_new_models(population, x, y, verbose=verbose)
-            self.expansion_callback(new_models, self, x, y)
+            new_models = self.propose_new_models(population, verbose=verbose)
+            self.expansion_callback(new_models, self, self._x_train, self._y_train)
             population.models = new_models
 
-            self.evaluate_models(population.candidates(), x, y, eval_budget, verbose=verbose)
+            self.evaluate_models(population.candidates(), eval_budget, verbose=verbose)
 
-            self.active_set_callback(population.models, self, x, y)
+            self.active_set_callback(population.models, self, self._x_train, self._y_train)
 
             depth += 1
 
