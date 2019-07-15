@@ -239,13 +239,6 @@ class ModelSelector(Serializable):
         gp = best_gp_model.build_model(self._x_train, self._y_train)
         return gp.predict(x, **kwargs)
 
-    def score(self,
-              x: np.ndarray,
-              y: np.ndarray) -> float:
-        """Score the model selector on test data."""
-        # TODO: implement this function
-        pass
-
     def evaluate(self, x: np.ndarray, y: np.ndarray) -> float:
         """Evaluate the model selector on test data."""
         x, y = check_X_y(x, y, multi_output=True, y_numeric=True)
