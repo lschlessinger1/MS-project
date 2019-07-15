@@ -40,7 +40,7 @@ class TestModelSelector(TestCase):
 
         pop = ActiveModelPopulation()
         pop.update(self.gp_models)
-        actual = self.model_selector.propose_new_models(pop)
+        actual = self.model_selector._propose_new_models(pop)
         self.assertIsInstance(actual, list)
         self.assertEqual(len(expected), len(actual))
         for expected_cov, actual_cov in zip(expected, actual):
@@ -172,7 +172,7 @@ class TestCKSModelSelector(TestCase):
 
         model_selector = CKSModelSelector(grammar)
 
-        actual = model_selector.get_initial_candidate_covariances()
+        actual = model_selector._get_initial_candidate_covariances()
         expected = [self.se0, self.se1, self.rq0, self.rq1]
         self.assertIsInstance(actual, list)
         self.assertEqual(len(expected), len(actual))
@@ -184,7 +184,7 @@ class TestCKSModelSelector(TestCase):
 
         model_selector = CKSModelSelector(grammar)
 
-        actual = model_selector.get_initial_candidate_covariances()
+        actual = model_selector._get_initial_candidate_covariances()
         expected = [self.se0, self.rq0]
         self.assertIsInstance(actual, list)
         self.assertEqual(len(expected), len(actual))

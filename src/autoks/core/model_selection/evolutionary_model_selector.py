@@ -55,7 +55,7 @@ class EvolutionaryModelSelector(ModelSelector):
                eval_budget: int,
                max_generations: int,
                verbose: int = 1) -> GPModelPopulation:
-        population = self.initialize(eval_budget, verbose=verbose)
+        population = self._initialize(eval_budget, verbose=verbose)
         self.active_set_callback(population.models, self, self._x_train, self._y_train)
 
         depth = 0
@@ -65,11 +65,11 @@ class EvolutionaryModelSelector(ModelSelector):
 
             self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
-            new_models = self.propose_new_models(population, verbose=verbose)
+            new_models = self._propose_new_models(population, verbose=verbose)
             self.expansion_callback(new_models, self, self._x_train, self._y_train)
             population.update(new_models)
 
-            self.evaluate_models(population.candidates(), eval_budget, verbose=verbose)
+            self._evaluate_models(population.candidates(), eval_budget, verbose=verbose)
 
             population.models = self.select_offspring(population)
             self.active_set_callback(population.models, self, self._x_train, self._y_train)
@@ -78,7 +78,7 @@ class EvolutionaryModelSelector(ModelSelector):
 
         return population
 
-    def select_parents(self, population: ActiveModelPopulation) -> List[GPModel]:
+    def _select_parents(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Select parents to expand.
 
         Here, exponential ranking selection is used.
@@ -106,7 +106,7 @@ class EvolutionaryModelSelector(ModelSelector):
         offspring = list(selector.select(np.array(population.models), np.array(population.fitness_scores())).tolist())
         return offspring
 
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
+    def _get_initial_candidate_covariances(self) -> List[Covariance]:
         if self.initializer is not None:
             # Generate trees
             operators = self.grammar.operators
@@ -192,7 +192,7 @@ class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
                verbose: int = 1) -> GPModelPopulation:
         pass
 
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
+    def _get_initial_candidate_covariances(self) -> List[Covariance]:
         if self.initializer is not None:
             # Generate trees
             operators = self.grammar.operators

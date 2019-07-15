@@ -47,21 +47,21 @@ class BomsModelSelector(SurrogateBasedModelSelector):
                verbose: int = 1) -> GPModelPopulation:
         pass
 
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
+    def _get_initial_candidate_covariances(self) -> List[Covariance]:
         initial_level_depth = 2
         max_number_of_initial_models = 500
         initial_candidates = self.grammar.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
         return initial_candidates
 
-    def initialize(self, eval_budget: int, verbose: int = 0) -> GPModelPopulation:
+    def _initialize(self, eval_budget: int, verbose: int = 0) -> GPModelPopulation:
         population = GPModelPopulation()
 
         # initialize models
-        initial_candidates = self.get_initial_candidates()
+        initial_candidates = self._get_initial_candidates()
         indices = [0]
         initial_models = [initial_candidates[i] for i in indices]
 
-        self.evaluate_models(initial_models, eval_budget, verbose=verbose)
+        self._evaluate_models(initial_models, eval_budget, verbose=verbose)
 
         population.update(initial_candidates)
 

@@ -253,34 +253,34 @@ class ModelSelector(Serializable):
 
         return self.fitness_fn(best_gp_model.build_model(x, y))
 
-    def get_initial_candidate_covariances(self) -> List[Covariance]:
+    def _get_initial_candidate_covariances(self) -> List[Covariance]:
         """Get the initial set of candidate covariances."""
         raise NotImplementedError
 
-    def get_initial_candidates(self) -> List[GPModel]:
+    def _get_initial_candidates(self) -> List[GPModel]:
         """Get initial set of candidate GP models."""
-        initial_covariances = self.get_initial_candidate_covariances()
+        initial_covariances = self._get_initial_candidate_covariances()
         return self._covariances_to_gp_models(initial_covariances)
 
-    def initialize(self,
-                   eval_budget: int,
-                   verbose: int = 0) -> ActiveModelPopulation:
+    def _initialize(self,
+                    eval_budget: int,
+                    verbose: int = 0) -> ActiveModelPopulation:
         """Initialize models."""
         population = ActiveModelPopulation()
 
-        initial_candidates = self.get_initial_candidates()
+        initial_candidates = self._get_initial_candidates()
 
         population.update(initial_candidates)
 
         if verbose == 3:
             pretty_print_gp_models(population.models, 'Initial candidate')
 
-        self.evaluate_models(population.candidates(), eval_budget, verbose=verbose)
+        self._evaluate_models(population.candidates(), eval_budget, verbose=verbose)
 
         return population
 
-    def select_parents(self,
-                       population: ActiveModelPopulation) -> List[GPModel]:
+    def _select_parents(self,
+                        population: ActiveModelPopulation) -> List[GPModel]:
         """Select parents to expand.
 
         By default, choose top k models.
@@ -288,26 +288,26 @@ class ModelSelector(Serializable):
         parent_selector = TruncationSelector(self.n_parents)
         return list(parent_selector.select(np.array(population.models), np.array(population.fitness_scores())).tolist())
 
-    def propose_new_models(self,
-                           population: ActiveModelPopulation,
-                           verbose: int = 0) -> List[GPModel]:
+    def _propose_new_models(self,
+                            population: ActiveModelPopulation,
+                            verbose: int = 0) -> List[GPModel]:
         """Propose new models using the grammar.
 
         :param population:
         :param verbose:
         :return:
         """
-        parents = self.select_parents(population)
+        parents = self._select_parents(population)
         t0_exp = time()
         new_covariances = self.grammar.get_candidates(parents, verbose=verbose)
         self.total_expansion_time += time() - t0_exp
 
         return self._covariances_to_gp_models(new_covariances)
 
-    def evaluate_models(self,
-                        models: List[GPModel],
-                        eval_budget: int,
-                        verbose: int = 0) -> List[GPModel]:
+    def _evaluate_models(self,
+                         models: List[GPModel],
+                         eval_budget: int,
+                         verbose: int = 0) -> List[GPModel]:
         """Evaluate a set models on some training data.
 
         :param models:
