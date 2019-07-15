@@ -248,6 +248,9 @@ def all_pairs_avg_dist(covariances: List[Covariance],
     :param n_dims:
     :return:
     """
+    if len(covariances) < 2:
+        return 0.
+
     raw_kernels = [cov.raw_kernel for cov in covariances]
     kernel_vecs = kernels_to_kernel_vecs(raw_kernels, base_kernels, n_dims)
 
