@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
+from src.autoks.callbacks import ModelSearchLogger
 from src.autoks.core.fitness_functions import log_likelihood_normalized
 from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.model_selection_criteria import AIC, BIC, pl2
@@ -15,7 +16,6 @@ from src.autoks.plotting import plot_kernel_tree, plot_best_scores, plot_cov_dis
     plot_score_summary
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, rmse_to_smse
 from src.autoks.statistics import StatBook
-from src.autoks.tracking import ModelSearchTracker
 from src.autoks.util import pretty_time_delta
 
 
@@ -33,9 +33,9 @@ def summarize(experiment_dirname):
     best_gp_model = model_selector.best_model()
     print(best_gp_model)
 
-    # Get tracker.
-    tracker = ModelSearchTracker.from_dict(exp_dict["tracker"])
-    print(tracker)
+    # Get model search history.
+    history = ModelSearchLogger.from_dict(exp_dict["history"])
+    print(history)
 
     # Get timing report.
     timing_report = model_selector.get_timing_report()
@@ -73,7 +73,7 @@ def summarize(experiment_dirname):
 
     best_model = best_gp_model.build_model(x, y)  # assumes no test set
 
-    create_figures(best_gp_model, best_model, tracker)
+    create_figures(best_gp_model, best_model, history)
     print_summary(best_gp_model, best_model, x, y, x_test, y_test)
     print_timing_report(timing_report)
 

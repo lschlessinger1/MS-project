@@ -1,6 +1,7 @@
 from typing import List, Callable, Optional, Union
 
 from src.autoks.backend.model import RawGPModelType
+from src.autoks.callbacks import CallbackList
 from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
@@ -44,6 +45,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
     def _train(self,
                eval_budget: int,
                max_generations: int,
+               callbacks: CallbackList,
                verbose: int = 1) -> GPModelPopulation:
         pass
 
@@ -53,7 +55,10 @@ class BomsModelSelector(SurrogateBasedModelSelector):
         initial_candidates = self.grammar.expand_full_brute_force(initial_level_depth, max_number_of_initial_models)
         return initial_candidates
 
-    def _initialize(self, eval_budget: int, verbose: int = 0) -> GPModelPopulation:
+    def _initialize(self,
+                    eval_budget: int,
+                    callbacks: CallbackList,
+                    verbose: int = 0) -> GPModelPopulation:
         population = GPModelPopulation()
 
         # initialize models
@@ -61,7 +66,7 @@ class BomsModelSelector(SurrogateBasedModelSelector):
         indices = [0]
         initial_models = [initial_candidates[i] for i in indices]
 
-        self._evaluate_models(initial_models, eval_budget, verbose=verbose)
+        self._evaluate_models(initial_models, eval_budget, callbacks=callbacks, verbose=verbose)
 
         population.update(initial_candidates)
 

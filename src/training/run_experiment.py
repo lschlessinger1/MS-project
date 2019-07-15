@@ -76,7 +76,7 @@ def run_experiment(experiment_config: dict,
     # Starting time of experiment (used if saving experiment)
     timestamp = str("_".join(str(datetime.today()).split(" "))).replace(":", "-")
 
-    model, tracker = train_model(
+    model, history = train_model(
         model_selector,
         dataset,
         eval_budget=experiment_config['train_args']['eval_budget'],
@@ -97,7 +97,7 @@ def run_experiment(experiment_config: dict,
     if save_experiment:
         # Create output dictionary.
         output_dict = dict()
-        output_dict["tracker"] = tracker.to_dict()
+        output_dict["history"] = history.to_dict()
         output_dict["dataset_cls"] = experiment_config['dataset']
         output_dict["dataset_args"] = dataset_args
         output_dict['model_selector'] = model_selector.to_dict()

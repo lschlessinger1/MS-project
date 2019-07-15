@@ -39,7 +39,7 @@ class Statistic:
         input_dict["name"] = self.name
 
         if len(self.data) > 0 and isinstance(self.data[0], np.ndarray):
-            data_out = [a.tolist() for a in self.data]
+            data_out = [a if isinstance(a, list) else a.tolist() for a in self.data]
         else:
             data_out = self.data
         input_dict["data"] = data_out

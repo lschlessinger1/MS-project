@@ -9,7 +9,9 @@ import numpy as np
 from sklearn.utils import check_X_y, check_array
 from tqdm import tqdm
 
+from src.autoks import callbacks as cbks
 from src.autoks.backend.model import RawGPModelType
+from src.autoks.callbacks import ModelSearchLogger, CallbackList
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.fitness_functions import negative_bic, log_likelihood_normalized
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
@@ -137,7 +139,7 @@ class ModelSelector(Serializable):
               eval_budget: int = 50,
               max_generations: Optional[int] = None,
               verbose: int = 1,
-              tracker: Optional = None):
+              callbacks: Optional = None):
         """Train the model selector.
 
         :param x: Input data.
@@ -145,6 +147,7 @@ class ModelSelector(Serializable):
         :param eval_budget: Number of model evaluations (budget).
         :param max_generations: Maximum number of generations.
         :param verbose: Integer. 0, 1, 2, or 3. Verbosity mode.
+        :param callbacks:
         :return:
         """
         x, y = check_X_y(x, y, multi_output=True, y_numeric=True)
@@ -159,47 +162,39 @@ class ModelSelector(Serializable):
         else:
             max_generations = max_generations
 
-        # TODO: make callbacks into a single object and pass them down
-        # Callbacks
-        def do_nothing(*args, **kwargs):
-            pass
+        self.history = cbks.History()
+        ms_logger = ModelSearchLogger()
+        ms_logger.set_stat_book_collection(self.grammar.base_kernel_names)
+        _callbacks = [cbks.BaseLogger()]
+        _callbacks += (callbacks or []) + [self.history] + [ms_logger]
 
-        if tracker is not None:
-            tracker.set_stat_book_collection(self.grammar.base_kernel_names)
-
-            if tracker.active_set_callback is None:
-                self.active_set_callback = do_nothing
-            else:
-                self.active_set_callback = tracker.active_set_callback
-
-            if tracker.evaluations_callback is None:
-                self.eval_callback = do_nothing
-            else:
-                self.eval_callback = tracker.evaluations_callback
-
-            if tracker.expansion_callback is None:
-                self.expansion_callback = do_nothing
-            else:
-                self.expansion_callback = tracker.expansion_callback
-        else:
-            self.active_set_callback = do_nothing
-            self.eval_callback = do_nothing
-            self.eval_callback = do_nothing
+        callbacks = cbks.CallbackList(_callbacks)
+        callback_model = self._get_callback_model()
+        callbacks.set_model(callback_model)
+        callbacks.set_params({
+            'eval_budget': eval_budget,
+            'max_generations': max_generations,
+            'verbose': verbose
+        })
 
         # Progress bar
         if verbose:
             self.pbar = tqdm(total=eval_budget, unit='ev', desc='Model Evaluations')
             self.pbar.set_postfix(best_so_far=float('-inf'))
 
+        # Perform model search.
+        callbacks.on_train_begin()
         t_init = time()
-        population = self._train(eval_budget=eval_budget, max_generations=max_generations, verbose=verbose)
+        population = self._train(eval_budget=eval_budget, max_generations=max_generations, verbose=verbose,
+                                 callbacks=callbacks)
         self.total_model_search_time += time() - t_init
+        callbacks.on_train_end()
 
         if verbose:
             self.pbar.close()
 
-        self.selected_models = population.models
-        return tracker
+        self.selected_models = [model for model in population.models if model.evaluated]
+        return ms_logger  # self.history
 
     def _prepare_data(self, x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Prepare input and output data for model search."""
@@ -228,6 +223,7 @@ class ModelSelector(Serializable):
     def _train(self,
                eval_budget: int,
                max_generations: int,
+               callbacks: CallbackList,
                verbose: int = 1) -> GPModelPopulation:
         raise NotImplementedError
 
@@ -264,6 +260,7 @@ class ModelSelector(Serializable):
 
     def _initialize(self,
                     eval_budget: int,
+                    callbacks: CallbackList,
                     verbose: int = 0) -> ActiveModelPopulation:
         """Initialize models."""
         population = ActiveModelPopulation()
@@ -275,7 +272,7 @@ class ModelSelector(Serializable):
         if verbose == 3:
             pretty_print_gp_models(population.models, 'Initial candidate')
 
-        self._evaluate_models(population.candidates(), eval_budget, verbose=verbose)
+        self._evaluate_models(population.candidates(), eval_budget, callbacks=callbacks, verbose=verbose)
 
         return population
 
@@ -290,6 +287,7 @@ class ModelSelector(Serializable):
 
     def _propose_new_models(self,
                             population: ActiveModelPopulation,
+                            callbacks: CallbackList,
                             verbose: int = 0) -> List[GPModel]:
         """Propose new models using the grammar.
 
@@ -297,16 +295,25 @@ class ModelSelector(Serializable):
         :param verbose:
         :return:
         """
+        callbacks.on_propose_new_models_begin()
         parents = self._select_parents(population)
         t0_exp = time()
         new_covariances = self.grammar.get_candidates(parents, verbose=verbose)
         self.total_expansion_time += time() - t0_exp
+        new_models = self._covariances_to_gp_models(new_covariances)
 
-        return self._covariances_to_gp_models(new_covariances)
+        new_model_logs = {
+            'gp_models': new_models,
+            'x': self._x_train
+        }
+        callbacks.on_propose_new_models_end(new_model_logs)
+
+        return new_models
 
     def _evaluate_models(self,
                          models: List[GPModel],
                          eval_budget: int,
+                         callbacks: CallbackList,
                          verbose: int = 0) -> List[GPModel]:
         """Evaluate a set models on some training data.
 
@@ -317,9 +324,12 @@ class ModelSelector(Serializable):
         :param verbose:
         :return:
         """
+        callbacks.on_evaluate_all_begin(logs={'gp_models': models})
         evaluated_models = []
 
         for gp_model in models:
+            callbacks.on_evaluate_begin(logs={'gp_model': gp_model})
+
             if self.n_evals >= eval_budget:
                 if verbose == 3:
                     print('Stopping optimization and evaluation. Evaluation budget reached.\n')
@@ -342,7 +352,18 @@ class ModelSelector(Serializable):
                     self.pbar.update()
 
             evaluated_models.append(gp_model)
-            self.eval_callback([gp_model], self, self._x_train, self._y_train)
+
+            eval_logs = {
+                'gp_model': gp_model,
+                'x': self._x_train
+            }
+            callbacks.on_evaluate_end(eval_logs)
+
+        eval_all_logs = {
+            'gp_models': evaluated_models,
+            'x': self._x_train
+        }
+        callbacks.on_evaluate_all_end(eval_all_logs)
 
         if verbose == 3:
             print('Printing all results')
@@ -449,6 +470,12 @@ class ModelSelector(Serializable):
                 input_dict['gp_args']['likelihood_hyperprior'][param_name] = PriorDist.from_dict(prior)
 
         return input_dict
+
+    def _get_callback_model(self):
+        """Returns the Callback Model for this Model."""
+        if hasattr(self, 'callback_model') and self.callback_model:
+            return self.callback_model
+        return self
 
     def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
         """Get the runtime report of the model search.

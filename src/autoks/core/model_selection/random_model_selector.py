@@ -1,6 +1,7 @@
 from typing import List, Callable, Optional, Union
 
 from src.autoks.backend.model import RawGPModelType
+from src.autoks.callbacks import CallbackList
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.grammar import RandomGrammar
@@ -30,25 +31,25 @@ class RandomModelSelector(ModelSelector):
     def _train(self,
                eval_budget: int,
                max_generations: int,
+               callbacks: CallbackList,
                verbose: int = 0) -> GPModelPopulation:
-        population = self._initialize(eval_budget, verbose=verbose)
-        self.active_set_callback(population.models, self, self._x_train, self._y_train)
+        population = self._initialize(eval_budget, callbacks=callbacks, verbose=verbose)
 
         depth = 0
         while self.n_evals < eval_budget:
+            callbacks.on_generation_begin(generation=depth, logs={'gp_models': population.models})
+
             if depth > max_generations:
                 break
 
             self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
-            new_models = self._propose_new_models(population, verbose=verbose)
-            self.expansion_callback(new_models, self, self._x_train, self._y_train)
+            new_models = self._propose_new_models(population, callbacks=callbacks, verbose=verbose)
             population.models = new_models
 
-            self._evaluate_models(population.candidates(), eval_budget, verbose=verbose)
+            self._evaluate_models(population.candidates(), eval_budget, callbacks=callbacks, verbose=verbose)
 
-            self.active_set_callback(population.models, self, self._x_train, self._y_train)
-
+            callbacks.on_generation_end(generation=depth, logs={'gp_models': population.models})
             depth += 1
 
         return population

@@ -40,7 +40,7 @@ class TestModelSelector(TestCase):
 
         pop = ActiveModelPopulation()
         pop.update(self.gp_models)
-        actual = self.model_selector._propose_new_models(pop)
+        actual = self.model_selector._propose_new_models(pop, callbacks=MagicMock())
         self.assertIsInstance(actual, list)
         self.assertEqual(len(expected), len(actual))
         for expected_cov, actual_cov in zip(expected, actual):
