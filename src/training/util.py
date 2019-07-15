@@ -25,6 +25,6 @@ def train_model(
             warnings.simplefilter("ignore")
         t = time()
         _tracker = model.train(dataset.x, dataset.y, eval_budget=eval_budget, verbose=verbose, tracker=tracker)
-        print('Training took {:2f}s'.format(time() - t))
+        print(f'Training took {time() - t:,.2f}s')
 
     return model, tracker
