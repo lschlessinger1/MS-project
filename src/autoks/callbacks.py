@@ -152,12 +152,18 @@ class BaseLogger(Callback):
 
 
 class History(Callback):
+    """Callback that records events into a `History` object.
+    
+    This callback is automatically applied to
+    every model selector. The `History` object
+    gets returned by the `train` method of model selectors.
+    """
 
     def on_train_begin(self, logs: Optional[dict] = None):
         self.generation = []
         self.history = {}
 
-    def on_generation_end(self, generation, logs: Optional[dict] = None):
+    def on_generation_end(self, generation: int, logs: Optional[dict] = None):
         logs = logs or {}
         self.generation.append(generation)
         for k, v in logs.items():
