@@ -146,9 +146,52 @@ class CallbackList:
 
 
 class BaseLogger(Callback):
+    """Callback that accumulates generational averages of metrics.
 
-    def __init__(self):
+    This callback is automatically applied to every model selector.
+
+    Attributes:
+        stateful_metrics: An optional iterable of string names of metrics
+        that should *not* be averaged over an epoch.
+        Metrics in this list will be logged as-is in `on_generation_end`.
+        All others will be averaged in `on_generation_end`.
+    """
+
+    def __init__(self, stateful_metrics: Optional[Iterable[str]] = None):
         super().__init__()
+
+        if stateful_metrics:
+            self.stateful_metrics = set(stateful_metrics)
+        else:
+            self.stateful_metrics = set()
+
+    def on_generation_begin(self, gen: int, logs: Optional[dict] = None):
+        self.seen = 0
+        self.totals = {}
+
+    def on_evaluate_all_end(self, logs: Optional[dict] = None):
+        logs = logs or {}
+        model_group_size = logs.get('size', 0)
+        self.seen += model_group_size
+
+        for k, v in logs.items():
+            if k in self.stateful_metrics:
+                self.totals[k] = v
+            else:
+                if k in self.totals:
+                    self.totals[k] += v * model_group_size
+                else:
+                    self.totals[k] = v * model_group_size
+
+    def on_generation_end(self, gen: int, logs: Optional[dict] = None):
+        if logs is not None:
+            for k in self.params['metrics']:
+                if k in self.totals:
+                    # Make value available to next callbacks.
+                    if k in self.stateful_metrics:
+                        logs[k] = self.totals[k]
+                    else:
+                        logs[k] = self.totals[k] / self.seen
 
 
 class History(Callback):
