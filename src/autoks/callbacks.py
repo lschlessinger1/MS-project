@@ -165,6 +165,9 @@ class BaseLogger(Callback):
         else:
             self.stateful_metrics = set()
 
+        self.seen = 0
+        self.totals = {}
+
     def on_generation_begin(self, gen: int, logs: Optional[dict] = None):
         self.seen = 0
         self.totals = {}
