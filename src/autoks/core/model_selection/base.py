@@ -139,7 +139,8 @@ class ModelSelector(Serializable):
               eval_budget: int = 50,
               max_generations: Optional[int] = None,
               verbose: int = 1,
-              callbacks: Optional = None):
+              callbacks: Optional = None,
+              callback_metrics: Optional[List[str]] = None):
         """Train the model selector.
 
         :param x: Input data.
@@ -147,7 +148,9 @@ class ModelSelector(Serializable):
         :param eval_budget: Number of model evaluations (budget).
         :param max_generations: Maximum number of generations.
         :param verbose: Integer. 0, 1, 2, or 3. Verbosity mode.
-        :param callbacks:
+        :param callbacks: List of callbacks to be called during training.
+        :param callback_metrics: List of the display names of the metrics passed
+        to the callbacks.
         :return:
         """
         x, y = check_X_y(x, y, multi_output=True, y_numeric=True)
@@ -174,7 +177,8 @@ class ModelSelector(Serializable):
         callbacks.set_params({
             'eval_budget': eval_budget,
             'max_generations': max_generations,
-            'verbose': verbose
+            'verbose': verbose,
+            'metrics': callback_metrics or [],
         })
 
         # Progress bar
