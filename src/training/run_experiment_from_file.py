@@ -1,5 +1,6 @@
 import argparse
 import json
+import warnings
 from multiprocessing.pool import Pool
 
 from src.autoks.postprocessing.summary import summarize
@@ -53,7 +54,7 @@ def main():
 
     parser.add_argument(
         "--parallel",
-        default=True,
+        default=False,
         dest='parallel',
         action='store_true',
         help="If true, then the experiment will use multiprocessing"
@@ -74,6 +75,8 @@ def main():
         with Pool(processes=args.num_processes) as p:
             results = p.starmap(run_experiments, [(args.experiments_filename, args.save)] * args.n_repeats)
     else:
+        if args.num_processes:
+            warnings.warn("--num_processes was set, but --parallel was not. Experiments will be run sequentially.")
         results = [run_experiments(args.experiments_filename, args.save) for _ in range(args.n_repeats)]
 
     if args.summarize:
