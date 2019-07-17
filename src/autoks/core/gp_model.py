@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, List, FrozenSet, Callable
 
 import numpy as np
@@ -25,13 +26,19 @@ class GPModel(Serializable):
         self.model_input_dict = dict()  # Only save keyword arguments of GP
         self.likelihood = likelihood
 
+        self.failed_fitting = False
+
     def score_model(self,
                     x: np.ndarray,
                     y: np.ndarray,
                     scoring_func: Callable[[RawGPModelType], float],
                     **fit_kwargs):
         model = self.fit(x, y, **fit_kwargs)
-        self.score = scoring_func(model)
+
+        if not self.failed_fitting:
+            self.score = scoring_func(model)
+        else:
+            self.score = np.nan
         return self.score
 
     def build_model(self,
@@ -56,6 +63,18 @@ class GPModel(Serializable):
         model = self.build_model(x, y)
         model.optimize_restarts(ipython_notebook=False, optimizer=optimizer, num_restarts=n_restarts, verbose=False,
                                 robust=True, messages=False)
+
+        # Test that optimization was successful.
+        bad_values = (float('-inf'), float('inf'), np.nan)
+        if model.log_likelihood() in bad_values:
+            logging.warning(f'Model log likelihood is {model.log_likelihood()}. Attempting to restart optimization.')
+            # Try to recover from numerical issue by restarting optimization runs.
+            model.optimize_restarts(ipython_notebook=False, optimizer=optimizer, num_restarts=n_restarts, verbose=False,
+                                    robust=True, messages=False)
+            # If still bad value, flag this model.
+            if model.log_likelihood() in bad_values:
+                logging.warning(f'Model failed fitting (again). log likelihood is {model.log_likelihood()}.')
+                self.failed_fitting = True
 
         self.covariance.raw_kernel = model.kern
         self.likelihood = model.likelihood

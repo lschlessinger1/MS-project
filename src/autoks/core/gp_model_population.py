@@ -69,7 +69,7 @@ class ActiveModelPopulation(GPModelPopulation):
 
     def fitness_scores(self) -> List[float]:
         """List of all fitness scores."""
-        return [gp_model.score for gp_model in self.models]
+        return [gp_model.score for gp_model in self.models if not gp_model.failed_fitting]
 
     def mean_fitness(self) -> float:
         """Average fitness"""
