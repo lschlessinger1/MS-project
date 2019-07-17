@@ -25,8 +25,7 @@ def summarize(experiment_dirname):
     exp_dict = _parse_experiment(experiment_dirname)
 
     # Get model selector.
-    model_selector_input_dict = exp_dict['model_selector']
-    model_selector = ModelSelector.from_dict(model_selector_input_dict)
+    model_selector = exp_dict['model_selector']
     print(model_selector)
 
     # Get best GP model.
@@ -34,7 +33,7 @@ def summarize(experiment_dirname):
     print(best_gp_model)
 
     # Get model search history.
-    history = ModelSearchLogger.from_dict(exp_dict["history"])
+    history = exp_dict["history"]
     print(history)
 
     # Get timing report.
@@ -78,6 +77,13 @@ def summarize(experiment_dirname):
     print_timing_report(timing_report)
 
 
+def _format_exp_dict(exp_dict: dict) -> dict:
+    """Format experiment dictionary."""
+    exp_dict['model_selector'] = ModelSelector.from_dict(exp_dict['model_selector'])
+    exp_dict["history"] = ModelSearchLogger.from_dict(exp_dict["history"])
+    return exp_dict
+
+
 # TODO: use serializer here
 def _parse_experiment(experiment_dirname: str) -> dict:
     compress = experiment_dirname.split(".")[-1] == "zip"
@@ -91,7 +97,7 @@ def _parse_experiment(experiment_dirname: str) -> dict:
         with open(experiment_dirname) as json_data:
             output_dict = json.load(json_data)
 
-    return output_dict
+    return _format_exp_dict(output_dict)
 
 
 def create_figures(best_gp_model, best_model, tracker):
