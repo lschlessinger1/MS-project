@@ -4,10 +4,8 @@ python:
 before_install:
   - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
 install:
-  - pip install -r requirements.txt
-  - pip install pytest-cov
-  - pip install coveralls
-  - pip install codecov
+  - pip install pipenv
+  - pipenv install --dev
 script:
   - export PYTHONWARNINGS="ignore::DeprecationWarning"
   - pytest --cov=src/

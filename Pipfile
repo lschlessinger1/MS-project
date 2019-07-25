@@ -1,0 +1,27 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest-cov = "*"
+coveralls = "*"
+codecov = "*"
+
+[packages]
+graphviz = "==0.11"
+scipy = "==1.2.1"
+scikit-learn = "==0.21.2"
+matplotlib = "==3.1.1"
+numpy = "==1.16.4"
+sympy = "==1.4"
+statsmodels = "==0.10.0"
+tqdm = "==4.32.2"
+toml = "==0.10.0"
+PyLaTeX = "==1.3.0"
+sobol_seq = "==0.1.2"
+GPy = {git = "git://github.com/lschlessinger1/GPy"}
+cython = "*"
+
+[requires]
+python_version = "3.6"
