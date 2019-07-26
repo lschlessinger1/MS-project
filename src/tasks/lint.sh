@@ -10,6 +10,9 @@ pipenv check  # Not reporting failure here, because sometimes this fails due to 
 echo "pylint"
 pipenv run pylint --ignore=playground,demos evalg autoks training datasets || FAILURE=true
 
+echo "pycodestyle"
+pipenv run pycodestyle --exclude=playground,demos,.ipynb_checkpoints evalg autoks training datasets || FAILURE=true
+
 echo "bandit"
 pipenv run bandit -ll -r {autoks,evalg,datasets,training} -x demos,playground || FAILURE=true
 

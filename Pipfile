@@ -9,6 +9,7 @@ coveralls = "*"
 codecov = "*"
 bandit = "*"
 pylint = "*"
+pycodestyle = "*"
 
 [packages]
 graphviz = "==0.11"
