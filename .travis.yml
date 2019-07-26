@@ -9,7 +9,7 @@ install:
 script:
   - export PYTHONWARNINGS="ignore::DeprecationWarning"
   - cd src/ && bash tasks/lint.sh
-  - pipenv run pytest --cov=
+  - cd - && pipenv run pytest --cov=src/
 after_success:
   - codecov
   - coveralls
