@@ -109,3 +109,6 @@ src/experiments/results/*.tex
 # for PyCharm LaTeX compiler
 auxil/
 out/
+
+# Default ignored files
+/workspace.xml
