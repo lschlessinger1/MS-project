@@ -9,7 +9,9 @@ install:
 script:
   - export PYTHONWARNINGS="ignore::DeprecationWarning"
   - cd src/ && bash tasks/lint.sh
-  - pytest --cov=src/
+  - echo $PYTHONPATH
+  - echo $TRAVIS_BUILD_DIR
+  - pipenv run pytest --cov=test
 after_success:
   - codecov
   - coveralls
