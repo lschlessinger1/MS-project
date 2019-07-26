@@ -7,6 +7,7 @@ verify_ssl = true
 pytest-cov = "*"
 coveralls = "*"
 codecov = "*"
+bandit = "*"
 
 [packages]
 graphviz = "==0.11"

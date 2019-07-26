@@ -7,6 +7,9 @@ FAILURE=false
 echo "pipenv check"
 pipenv check  # Not reporting failure here, because sometimes this fails due to API request limit
 
+echo "bandit"
+pipenv run bandit -ll -r {autoks,evalg,datasets,training} -x demos,playground || FAILURE=true
+
 echo "shellcheck"
 shellcheck tasks/*.sh || FAILURE=true
 
