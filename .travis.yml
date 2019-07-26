@@ -8,6 +8,7 @@ install:
   - pipenv install --dev
 script:
   - export PYTHONWARNINGS="ignore::DeprecationWarning"
+  - cd src && PYTHONPATH=. ./tasks/lint.sh
   - pytest --cov=src/
 after_success:
   - codecov
