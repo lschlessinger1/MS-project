@@ -8,6 +8,7 @@ pytest-cov = "*"
 coveralls = "*"
 codecov = "*"
 bandit = "*"
+pylint = "*"
 
 [packages]
 graphviz = "==0.11"
