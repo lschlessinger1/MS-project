@@ -10,6 +10,7 @@ codecov = "*"
 bandit = "*"
 pylint = "*"
 pycodestyle = "*"
+mypy = "*"
 
 [packages]
 graphviz = "==0.11"

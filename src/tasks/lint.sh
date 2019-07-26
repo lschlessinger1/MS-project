@@ -13,6 +13,9 @@ pipenv run pylint --ignore=playground,demos evalg autoks training datasets || FA
 echo "pycodestyle"
 pipenv run pycodestyle --exclude=playground,demos,.ipynb_checkpoints evalg autoks training datasets || FAILURE=true
 
+echo "mypy"
+pipenv run mypy evalg autoks training datasets || FAILURE=true
+
 echo "bandit"
 pipenv run bandit -ll -r {autoks,evalg,datasets,training} -x demos,playground || FAILURE=true
 
