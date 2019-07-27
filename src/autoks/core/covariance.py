@@ -273,6 +273,10 @@ def alignment(k1: np.ndarray, k2: np.ndarray) -> float:
     It can be viewed as the cosine of the angle between the matrices viewed as 2-d vectors
 
     0 <= A(k1, k2) <= 1
+
+        Alignment $A$ between two kernel matrices $K_1$ and $K_2$:
+
+    $$A(K_1, K_2) = \frac{\langle K_1, K_2 \rangle_F}{\sqrt{\langle K_1, K_1 \rangle_F \langle K_2, K_2 \rangle_F}}$$
     """
     k1_dot_k2 = inner_frob(k1, k2)
     k1_dot_k1 = inner_frob(k1, k1)
