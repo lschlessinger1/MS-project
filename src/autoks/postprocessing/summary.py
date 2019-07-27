@@ -11,12 +11,12 @@ from src.autoks.callbacks import ModelSearchLogger
 from src.autoks.core.fitness_functions import log_likelihood_normalized
 from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.model_selection_criteria import AIC, BIC, pl2
-from src.autoks.plotting import plot_kernel_tree, plot_best_scores, plot_cov_dist_summary, \
-    plot_kernel_diversity_summary, plot_base_kernel_freqs, plot_n_operands_summary, plot_n_hyperparams_summary, \
-    plot_score_summary
 from src.autoks.postprocessing import compute_gpy_model_rmse, rmse_svr, rmse_lin_reg, rmse_rbf, rmse_knn, rmse_to_smse
 from src.autoks.statistics import StatBook
 from src.autoks.util import pretty_time_delta
+from src.autoks.visualization import plot_kernel_tree, plot_best_scores, plot_cov_dist_summary, \
+    plot_kernel_diversity_summary, plot_base_kernel_freqs, plot_n_operands_summary, plot_n_hyperparams_summary, \
+    plot_score_summary
 
 
 def summarize(experiment_dirname):
