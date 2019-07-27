@@ -3,7 +3,7 @@ from matplotlib.ticker import MaxNLocator
 
 from src.autoks.core.gp_model import GPModel
 from src.autoks.statistics import StatBook
-from src.evalg.plotting import plot_distribution, plot_best_so_far
+from src.evalg.visualization import plot_distribution, plot_best_so_far
 
 
 def plot_best_scores(score_name: str,
