@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from src.autoks.postprocessing.summary import _parse_experiment
-from src.evalg.plotting import plot_distribution
+from src.evalg.visualization import plot_distribution
 
 
 def summarize_exp_group(experiment_group_dir_name):
