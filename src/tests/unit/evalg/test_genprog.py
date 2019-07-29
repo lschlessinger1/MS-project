@@ -12,7 +12,7 @@ from src.evalg.genprog.crossover import SubtreeExchangeRecombinatorBase, Subtree
 from src.evalg.genprog.generators import BinaryTreeGenerator, HalfAndHalfGenerator
 from src.evalg.genprog.mutation import TreeMutator, SubTreeExchangeMutator, GrowMutator
 from src.evalg.serialization import Serializable
-from src.tests.evalg.support.util import NodeCheckTestCase
+from src.tests.unit.evalg.support.util import NodeCheckTestCase
 
 
 class TestBinaryTreeGenerator(TestCase):

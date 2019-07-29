@@ -8,7 +8,7 @@ from src.autoks.backend.kernel import get_allowable_kernels, get_matching_kernel
     set_priors, subkernel_expression, sort_kernel, get_all_1d_kernels, additive_part_to_vec, decode_kernel, \
     encode_kernel, kernels_to_kernel_vecs, KERNEL_DICT
 from src.autoks.core.prior import PriorDist
-from src.tests.autoks.support.util import has_combo_kernel_type
+from src.tests.unit.autoks.support.util import has_combo_kernel_type
 
 
 class TestBackendKernel(TestCase):
