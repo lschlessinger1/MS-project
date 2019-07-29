@@ -104,7 +104,8 @@ venv.bak/
 .mypy_cache/
 
 # Misc.
-results/*
+results/
+archive/
 
 # for PyCharm LaTeX compiler
 auxil/
