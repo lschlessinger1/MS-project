@@ -109,7 +109,7 @@ class TestCKSGrammar(unittest.TestCase):
         scored_kernel.score = 1
         result = grammar.expand([scored_kernel])
         self.assertIsInstance(result, list)
-        # TODO: test that expand_full_kernel is called with each kernel
+        # TODO: tests that expand_full_kernel is called with each kernel
 
     def test_expand_one_dim(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ', 'LIN'])
@@ -151,7 +151,7 @@ class TestCKSGrammar(unittest.TestCase):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
         grammar.build(n_dims=2)
 
-        # first, test 1d expansion of base kernel
+        # first, tests 1d expansion of base kernel
         k = self.se0
         expected_kernels = grammar.expand_single_kernel(k)
 
@@ -163,7 +163,7 @@ class TestCKSGrammar(unittest.TestCase):
         expected_infixes = [k.infix for k in expected_kernels]
         self.assertCountEqual(expected_infixes, new_kernels_infixes)
 
-        # test combination kernel expansion
+        # tests combination kernel expansion
         k = self.se1 * self.rq1
         new_kernels = grammar.expand_single_kernel(k)
 
@@ -226,7 +226,7 @@ class TestCKSGrammar(unittest.TestCase):
         expected = (n * n_dim + 1) * n * n_dim
         self.assertEqual(expected, len(kernels))
 
-    @unittest.skip("Skipping expand full brute force test level 2 and 3 in the interest of time.")
+    @unittest.skip("Skipping expand full brute force tests level 2 and 3 in the interest of time.")
     def test_expand_full_brute_force_level_2_and_3(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
         grammar.build(n_dims=2)
@@ -246,7 +246,7 @@ class TestCKSGrammar(unittest.TestCase):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
         grammar.build(n_dims=2)
 
-        # first, test 1d expansion of base kernel
+        # first, tests 1d expansion of base kernel
         k = self.se0
         new_kernels = grammar.expand_full_kernel(k)
 
@@ -256,7 +256,7 @@ class TestCKSGrammar(unittest.TestCase):
         expected_infixes = [k.infix for k in expected_kernels]
         self.assertCountEqual(expected_infixes, new_kernels_infixes)
 
-        # test combination kernel expansion
+        # tests combination kernel expansion
         k = self.se1 * self.rq1
         new_kernels = grammar.expand_full_kernel(k)
 

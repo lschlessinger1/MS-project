@@ -23,7 +23,7 @@ class TestTreeNode(TestCase):
         self.kernel_node = TreeNode(self.kernel_node_val_prev)
 
     def test_value(self):
-        # test value
+        # tests value
         self.assertEqual(self.child.value, self.child_val)
         self.assertEqual(self.parent.value, self.parent_val)
         self.assertEqual(self.kernel_node.value, self.kernel_node_val_prev)
@@ -35,7 +35,7 @@ class TestTreeNode(TestCase):
 
         self.assertEqual(self.kernel_node.value, new_val)
 
-        # test label
+        # tests label
         self.assertEqual(self.parent.label, self.parent_label)
         self.assertEqual(self.child.label, self.child_label)
         self.assertEqual(self.kernel_node.label, new_label)

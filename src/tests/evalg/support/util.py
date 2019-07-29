@@ -5,7 +5,7 @@ from src.evalg.encoding import BinaryTreeNode
 
 
 class NodeCheckTestCase(TestCase):
-    """Base test case class used for checking binary tree nodes"""
+    """Base tests case class used for checking binary tree nodes"""
     T = TypeVar('T')
 
     def _check_node(self,

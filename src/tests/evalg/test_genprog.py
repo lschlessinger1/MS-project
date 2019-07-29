@@ -12,7 +12,7 @@ from src.evalg.genprog.crossover import SubtreeExchangeRecombinatorBase, Subtree
 from src.evalg.genprog.generators import BinaryTreeGenerator, HalfAndHalfGenerator
 from src.evalg.genprog.mutation import TreeMutator, SubTreeExchangeMutator, GrowMutator
 from src.evalg.serialization import Serializable
-from src.test.evalg.support.util import NodeCheckTestCase
+from src.tests.evalg.support.util import NodeCheckTestCase
 
 
 class TestBinaryTreeGenerator(TestCase):
@@ -780,7 +780,7 @@ class TestSubtreeExchangeRecombinator(TestCase):
         tree_2.root.add_left('C')
         tree_2.root.add_right('D')
 
-        # test bad type
+        # tests bad type
         self.assertRaises(TypeError, SubtreeExchangeRecombinator.crossover, 'bad type')
         self.assertRaises(TypeError, SubtreeExchangeRecombinator.crossover, [tree_1, tree_2, 45])
 
@@ -839,7 +839,7 @@ class TestSubtreeExchangeLeafBiasedRecombinator(TestCase):
         tree_2.root.add_left('C')
         tree_2.root.add_right('D')
 
-        # test bad type
+        # tests bad type
         self.assertRaises(TypeError, SubtreeExchangeLeafBiasedRecombinator.crossover, 'bad type')
         self.assertRaises(TypeError, SubtreeExchangeLeafBiasedRecombinator.crossover, [tree_1, tree_2, 45])
 

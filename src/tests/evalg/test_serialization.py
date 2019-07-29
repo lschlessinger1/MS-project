@@ -36,7 +36,7 @@ class TestSerialization(TestCase):
         )
         for compress, description in test_cases:
             with self.subTest(description=description):
-                output_file_name = self.serializable.save(output_filename='test', compress=compress)
+                output_file_name = self.serializable.save(output_filename='tests', compress=compress)
                 self.addCleanup(os.remove, output_file_name)
 
     def test_load(self):
@@ -46,7 +46,7 @@ class TestSerialization(TestCase):
         )
         for compress, description in test_cases:
             with self.subTest(description=description):
-                output_file_name = self.serializable.save(output_filename='test', compress=compress)
+                output_file_name = self.serializable.save(output_filename='tests', compress=compress)
                 self.addCleanup(os.remove, output_file_name)
 
                 new_serializable = Serializable.load(output_file_name)

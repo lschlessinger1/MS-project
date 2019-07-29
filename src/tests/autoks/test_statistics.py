@@ -10,19 +10,19 @@ from src.autoks.statistics import Statistic, MultiStat, StatBook, StatBookCollec
 class TestStatistic(TestCase):
 
     def test_record(self):
-        stat = Statistic(name='test', function=lambda x: x + 1)
+        stat = Statistic(name='tests', function=lambda x: x + 1)
         self.assertEqual(2, stat.function(1))
         stat.record(5)
         self.assertListEqual(stat.data, [6])
 
     def test_clear(self):
-        stat = Statistic(name='test')
+        stat = Statistic(name='tests')
         stat.record(5)
         stat.clear()
         self.assertListEqual(stat.data, [])
 
     def test_to_dict(self):
-        stat = Statistic(name='test')
+        stat = Statistic(name='tests')
         stat.record(5)
         output_dict = stat.to_dict()
         self.assertEqual(stat.name, output_dict["name"])
@@ -30,7 +30,7 @@ class TestStatistic(TestCase):
         self.assertEqual(stat.function.__name__, output_dict["function"])
 
     def test_from_dict(self):
-        stat = Statistic(name='test')
+        stat = Statistic(name='tests')
         stat.record(5)
         output_dict = stat.to_dict()
 
@@ -42,7 +42,7 @@ class TestStatistic(TestCase):
         def square(x):
             return x ** 2
 
-        stat = Statistic(name='test', function=square)
+        stat = Statistic(name='tests', function=square)
         stat.record(2)
         output_dict = stat.to_dict()
 

@@ -42,7 +42,7 @@ class TestNaiveQueryStrategy(TestCase):
         self.qs = NaiveQueryStrategy()
 
     def test_query(self):
-        # test all are selected and that scores are of some constant
+        # tests all are selected and that scores are of some constant
         result = self.qs.query(list(range(len(self.kernels))), self.kernels, self.x_train, self.y_train)
         self.assertIsInstance(result[0], np.ndarray)
         self.assertCountEqual(result[0].tolist(), [i for i in range(len(self.kernels))])
