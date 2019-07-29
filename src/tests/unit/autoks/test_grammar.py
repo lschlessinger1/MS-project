@@ -82,6 +82,30 @@ class TestCKSGrammar(unittest.TestCase):
         self.assertEqual(self.rq0.infix, grammar.base_kernels[1].infix)
         self.assertNotEqual(self.se0.infix, grammar.base_kernels[1].infix)
 
+    def test_create_grammar_default_base_kern_names_one_d(self):
+        dim = 1
+        grammar = CKSGrammar()
+        grammar.build(dim)
+
+        expected = ['SE', 'RQ', 'LIN', 'PER']
+        actual = grammar.base_kernel_names
+        self.assertListEqual(expected, actual)
+
+    def test_create_grammar_default_base_kern_names_multi_d(self):
+        expected = ['SE', 'RQ']
+        test_cases = (
+            (expected, 2),
+            (expected, 3),
+            (expected, 10),
+        )
+
+        for expected_base_kern_names, n_dim in test_cases:
+            with self.subTest(n_dims=n_dim):
+                grammar = CKSGrammar()
+                grammar.build(n_dim)
+                actual = grammar.base_kernel_names
+                self.assertListEqual(expected_base_kern_names, actual)
+
     def test_mask_kernels_multi_d(self):
         base_kernel_names = ['SE', 'RQ']
         dim = 3
@@ -471,8 +495,33 @@ class TestBomsGrammar(unittest.TestCase):
 class TestEvolutionaryGrammar(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.grammar = EvolutionaryModelSelector._create_default_grammar(0.1, 0.5, 0.9)
+        self.ms_grammar_params = (10, 0.5, 0.9)
+        self.grammar = EvolutionaryModelSelector._create_default_grammar(*self.ms_grammar_params)
         self.grammar.build(n_dims=2)
+
+    def test_create_grammar_default_base_kern_names_one_d(self):
+        dim = 1
+        grammar = EvolutionaryModelSelector._create_default_grammar(*self.ms_grammar_params)
+        grammar.build(dim)
+
+        expected = ['SE', 'RQ', 'LIN', 'PER']
+        actual = grammar.base_kernel_names
+        self.assertListEqual(expected, actual)
+
+    def test_create_grammar_default_base_kern_names_multi_d(self):
+        expected = ['SE', 'RQ']
+        test_cases = (
+            (expected, 2),
+            (expected, 3),
+            (expected, 10),
+        )
+
+        for expected_base_kern_names, n_dim in test_cases:
+            with self.subTest(n_dims=n_dim):
+                grammar = EvolutionaryModelSelector._create_default_grammar(*self.ms_grammar_params)
+                grammar.build(n_dim)
+                actual = grammar.base_kernel_names
+                self.assertListEqual(expected_base_kern_names, actual)
 
     def test_to_dict(self):
         grammar = self.grammar
