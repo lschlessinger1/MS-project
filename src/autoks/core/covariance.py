@@ -8,13 +8,12 @@ from sympy import pprint, latex, mathml, dotprint
 
 from src.autoks.backend.kernel import RawKernelType, kernel_to_infix_tokens, tokens_to_str, sort_kernel, additive_form, \
     is_base_kernel, subkernel_expression, kernels_to_kernel_vecs, is_prod_kernel, is_sum_kernel, compute_kernel
-from src.autoks.core.kernel_encoding import kernel_to_tree
+from src.autoks.core.kernel_encoding import kernel_to_tree, KernelTree
 from src.autoks.symbolic.kernel_symbol import KernelSymbol
 from src.autoks.symbolic.util import postfix_tokens_to_symbol
 from src.autoks.util import remove_duplicates
 from src.evalg.encoding import infix_tokens_to_postfix_tokens
 from src.evalg.serialization import Serializable
-from src.test.autoks.test_kernel_encoding import KernelTree
 
 
 class Covariance(Serializable):
