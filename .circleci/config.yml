@@ -52,6 +52,13 @@ jobs:
           file: src/coverage.xml
           flags: unittests
 
+      - run:
+          - name: Upload coverage results to coveralls.
+          - command: |
+              - cd src && coveralls
+          environment:
+            COVERALLS_REPO_TOKEN: 0snrott59JS35QqwGChArMXLfgsRMQO8r
+
       - store_artifacts:
           path: test-results
           destination: test-results
