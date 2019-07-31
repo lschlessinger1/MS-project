@@ -23,4 +23,4 @@ See the corresponding notebooks with kernel definitions [here](https://github.co
 
 ## Testing
 
-Unit tests are included in the `src/test` folder. You can invoke them using the [pytest](https://docs.pytest.org/en/latest/) package.
+Tests are included in the `src/tests` folder. You can invoke them using the [pytest](https://docs.pytest.org/en/latest/) package.
