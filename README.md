@@ -1,6 +1,7 @@
 # MS-project
 Master's Project
 
+[![CircleCI](https://circleci.com/gh/lschlessinger1/MS-project.svg?style=svg)](https://circleci.com/gh/lschlessinger1/MS-project)
 [![Travis](https://travis-ci.com/lschlessinger1/MS-project.svg?branch=master)](https://travis-ci.com/lschlessinger1/MS-project)
 [![Coverage Status](https://coveralls.io/repos/github/lschlessinger1/MS-project/badge.svg?branch=master)](https://coveralls.io/github/lschlessinger1/MS-project?branch=master)
 [![codecov](https://codecov.io/gh/lschlessinger1/MS-project/branch/master/graph/badge.svg)](https://codecov.io/gh/lschlessinger1/MS-project)
