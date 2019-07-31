@@ -44,6 +44,11 @@ jobs:
           environment:
             PYTHONWARNINGS: "ignore::DeprecationWarning"
 
+      - run:
+          name: Submit coverage data to codecov.
+          command: codecov
+          when: always
+
       - store_artifacts:
           path: test-results
           destination: test-results
