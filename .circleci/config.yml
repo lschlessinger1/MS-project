@@ -55,7 +55,7 @@ jobs:
       - run:
           name: Upload coverage results to coveralls.
           command: |
-            - cd src && pipenv run coveralls
+            cd src && pipenv run coveralls
           environment:
             COVERALLS_REPO_TOKEN: 0snrott59JS35QqwGChArMXLfgsRMQO8r
 
