@@ -48,10 +48,8 @@ jobs:
           environment:
             PYTHONWARNINGS: "ignore::DeprecationWarning"
 
-      - run:
-          name: Submit coverage data to codecov.
-          command: codecov
-          when: always
+      - codecov/upload:
+          flags: unittests
 
       - store_artifacts:
           path: test-results
