@@ -40,7 +40,7 @@ jobs:
       - run:
           name: run unit tests
           command: |
-            cd src/tests && PYTHONPATH=. pipenv run pytest -s unit/*
+            cd src/tests && PYTHONPATH=. pipenv run pytest -s unit/* --cov
           environment:
             PYTHONWARNINGS: "ignore::DeprecationWarning"
 
