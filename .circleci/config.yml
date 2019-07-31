@@ -49,7 +49,7 @@ jobs:
             PYTHONWARNINGS: "ignore::DeprecationWarning"
 
       - codecov/upload:
-          file: coverage.xml
+          file: src/tests/coverage.xml
           flags: unittests
 
       - store_artifacts:
