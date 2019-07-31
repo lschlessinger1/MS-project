@@ -44,12 +44,12 @@ jobs:
       - run:
           name: run unit tests
           command: |
-            cd src/tests && PYTHONPATH=. pipenv run pytest -s unit/* --cov=./ --cov-report xml:coverage.xml
+            cd src && PYTHONPATH=. pipenv run pytest -s tests/unit/* --cov=./ --cov-report xml:coverage.xml
           environment:
             PYTHONWARNINGS: "ignore::DeprecationWarning"
 
       - codecov/upload:
-          file: src/tests/coverage.xml
+          file: src/coverage.xml
           flags: unittests
 
       - store_artifacts:
