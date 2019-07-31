@@ -41,6 +41,8 @@ jobs:
           name: run unit tests
           command: |
             cd src/tests && PYTHONPATH=. pipenv run pytest -s unit/*
+          environment:
+            PYTHONWARNINGS: "ignore::DeprecationWarning"
 
       - store_artifacts:
           path: test-results
