@@ -104,7 +104,9 @@ def run_experiment(experiment_config: dict,
 
         # Create results directories.
         DIR_NAME.mkdir(parents=True, exist_ok=True)
-        exp_group_dir_name = DIR_NAME / experiment_config['experiment_group'].replace(" ", "_")
+        exp_group_dir_name = DIR_NAME
+        if experiment_config["experiment_group"]:
+            exp_group_dir_name /= experiment_config['experiment_group'].replace(" ", "_")
         exp_group_dir_name.mkdir(parents=True, exist_ok=True)
         exp_dir_name = exp_group_dir_name / f'{model_selector.name}_{timestamp}_experiment'
 
