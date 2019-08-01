@@ -13,7 +13,7 @@ def run_experiments(experiments_filename):
     for i in range(n_experiments):
         experiment_config = experiments_config['experiments'][i]
         experiment_config['experiment_group'] = experiments_config['experiment_group']
-        print(f"python src/training/run_experiment.py '{json.dumps(experiment_config)}'")
+        print(f"pipenv run python src/training/run_experiment.py '{json.dumps(experiment_config)}'")
 
 
 def main():
