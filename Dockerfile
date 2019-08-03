@@ -20,5 +20,3 @@ ENV LANG C.UTF-8
 RUN pipenv install --deploy --system
 
 ENV PYTHONPATH /repo
-
-ENTRYPOINT ["python3", "src/training/run_experiment.py"]
