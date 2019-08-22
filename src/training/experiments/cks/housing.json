@@ -1,0 +1,21 @@
+{
+  "experiment_group": "CKS Housing Experiments",
+  "experiments": [
+    {
+      "dataset": "HousingDataset",
+      "model_selector": "CKSModelSelector",
+      "model_selector_args": {
+        "optimizer": null,
+        "fitness_fn": "loglikn"
+      },
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "laplace"
+      },
+      "train_args": {
+        "eval_budget": 50,
+        "verbose": 1
+      }
+    }
+  ]
+}
