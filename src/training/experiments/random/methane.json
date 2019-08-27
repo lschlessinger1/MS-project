@@ -1,0 +1,17 @@
+{
+  "experiment_group": "Random Methane Experiments",
+  "experiments": [
+    {
+      "dataset": "MethaneDataset",
+      "model_selector": "RandomModelSelector",
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "laplace"
+      },
+      "train_args": {
+        "eval_budget": 50,
+        "verbose": 1
+      }
+    }
+  ]
+}
