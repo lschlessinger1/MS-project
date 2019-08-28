@@ -215,6 +215,52 @@ class HellingerDistanceBuilder(DistanceBuilder):
         return log_det, mini_gram_matrices
 
 
+class FrobeniusDistanceBuilder(DistanceBuilder):
+
+    def __init__(self, noise_prior: Prior, num_samples: int, max_num_hyperparameters: int, max_num_kernels: int,
+                 active_models: ActiveModels, initial_model_indices: List[int], data_X: np.ndarray):
+        super().__init__(noise_prior, num_samples, max_num_hyperparameters, max_num_kernels, active_models,
+                         initial_model_indices, data_X)
+
+    @staticmethod
+    def frobenius_distance(a: np.ndarray,
+                           b: np.ndarray,
+                           n_points: int) -> float:
+        return np.mean(np.sum((a - b) ** 2, axis=0), axis=0) / n_points
+
+    def compute_distance(self,
+                         active_models: ActiveModels,
+                         indices_i: List[int],
+                         indices_j: List[int]) -> None:
+        n_points = active_models.models[indices_i[0]].info.shape[0]
+        for i in indices_i:
+            for j in indices_j:
+                dist = self.frobenius_distance(active_models.models[i].info, active_models.models[j].info, n_points)
+                self._average_distance[i, j] = dist
+                self._average_distance[j, i] = dist
+
+    def create_precomputed_info(self,
+                                covariance: Covariance,
+                                data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+
+        n = data_X.shape[0]
+
+        vectors = np.full((n ** 2, self.num_samples), np.nan)
+
+        cov_priors = get_priors(covariance.raw_kernel)
+        hyperparameters = prior_sample(cov_priors, self.probability_samples)
+        for i in range(hyperparameters.shape[0]):
+            hyp = hyperparameters[i, :]
+            lmbda = self.hyperparameter_data_noise_samples[i]
+
+            covariance.raw_kernel[:] = hyp
+            k = covariance.raw_kernel.K(data_X, data_X)
+            k = k + lmbda * np.eye(k.shape[0])
+            vectors[:, i] = k.reshape(n * n).copy()
+
+        return vectors
+
+
 def fix_numerical_problem(k: np.ndarray,
                           tolerance: float) -> np.ndarray:
     """
