@@ -18,7 +18,7 @@ def run_experiments(experiments_filename, save: bool):
     for i in range(n_experiments):
         experiment_config = experiments_config['experiments'][i]
         experiment_config['experiment_group'] = experiments_config['experiment_group']
-        exp_dirname = run_experiment(experiment_config, save_models=save)
+        exp_dirname = run_experiment(experiment_config, save_models=save, use_gcp=False)
         exp_dir_names.append(exp_dirname)
 
     return exp_dir_names

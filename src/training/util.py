@@ -3,9 +3,10 @@ import warnings
 from time import time
 from typing import Tuple
 
-from src.autoks.callbacks import ModelSearchLogger
+from src.autoks.callbacks import ModelSearchLogger, GCPCallback
 from src.autoks.core.model_selection.base import ModelSelector
 from src.datasets.dataset import Dataset
+from src.training import gcp
 
 HIDE_WARNINGS = True
 
@@ -14,9 +15,15 @@ def train_model(
         model: ModelSelector,
         dataset: Dataset,
         eval_budget: int,
-        verbose: int) -> Tuple[ModelSelector, ModelSearchLogger]:
+        verbose: int,
+        use_gcp: bool = False) -> Tuple[ModelSelector, ModelSearchLogger]:
     """Train model."""
     callbacks = []
+
+    if use_gcp:
+        gcp.init()
+        gcp_callback = GCPCallback()
+        callbacks.append(gcp_callback)
 
     print(model.model_dict)  # summarize GP
 

@@ -316,3 +316,16 @@ class ModelSearchLogger(Callback, Serializable):
         sbc = StatBookCollection.load(output_file_name)
         mst.stat_book_collection = sbc
         return mst
+
+
+class GCPCallback(Callback, Serializable):
+    """Google Cloud Platform (GCP) callback.
+
+    TODO: Implement experiment saving on GCP.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def on_train_end(self, logs: Optional[dict] = None):
+        pass

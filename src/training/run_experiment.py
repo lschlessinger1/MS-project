@@ -3,9 +3,12 @@ import argparse
 import gzip
 import importlib
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 
+from src.training import gcp
+from src.training.gcp.storage import upload_blob
 from src.training.util import train_model
 
 DEFAULT_TRAIN_ARGS = {
@@ -18,7 +21,8 @@ DIR_NAME = Path(__file__).parents[2].resolve() / 'results'
 
 def run_experiment(experiment_config: dict,
                    save_models: bool,
-                   save_experiment: bool = True):
+                   save_experiment: bool = True,
+                   use_gcp: bool = True):
     """
     Run a training experiment.
     Parameters
@@ -73,6 +77,9 @@ def run_experiment(experiment_config: dict,
     experiment_config['train_args'] = {**DEFAULT_TRAIN_ARGS, **experiment_config.get('train_args', {})}
     experiment_config['experiment_group'] = experiment_config.get('experiment_group', None)
 
+    if use_gcp:
+        gcp.init()
+
     # Starting time of experiment (used if saving experiment)
     timestamp = str("_".join(str(datetime.today()).split(" "))).replace(":", "-")
 
@@ -80,7 +87,8 @@ def run_experiment(experiment_config: dict,
         model_selector,
         dataset,
         eval_budget=experiment_config['train_args']['eval_budget'],
-        verbose=experiment_config['train_args']['verbose']
+        verbose=experiment_config['train_args']['verbose'],
+        use_gcp=use_gcp
     )
 
     # Evaluate model selector.
@@ -90,6 +98,9 @@ def run_experiment(experiment_config: dict,
     else:
         score = model_selector.evaluate(dataset.x, dataset.y)
     print(f'Test evaluation: {score}')
+
+    if use_gcp:
+        logging.info({'test_metric': score})
 
     if save_models:
         model_selector.save_best_model()
@@ -117,6 +128,13 @@ def run_experiment(experiment_config: dict,
             json_bytes = json_str.encode('utf-8')
             outfile.write(json_bytes)
 
+        if use_gcp:
+            # Save output file(s) to bucket
+            # TODO: this should be done in the background uploading everything in gcp.run.dir
+            bucket_name = "automated-kernel-search"
+            upload_blob(bucket_name, json_bytes, outfile.name)
+            logging.info(f"Uploaded blob {outfile.name} to bucket {bucket_name}")
+
         return output_filename
 
 
@@ -136,6 +154,12 @@ def _parse_args():
         help="Experiment JSON ('{\"dataset\": \"AirlineDataset\", \"model_selector\": \"EvolutionaryModelSelector\", "
              "\"gp\": \"gp_regression\"}' "
     )
+    parser.add_argument(
+        "--nogcp",
+        default=False,
+        action='store_true',
+        help='If true, do not use GCP for this run.'
+    )
     args = parser.parse_args()
     return args
 
@@ -144,7 +168,7 @@ def main():
     """Run experiment."""
     args = _parse_args()
     experiment_config = json.loads(args.experiment_config)
-    run_experiment(experiment_config, args.save)
+    run_experiment(experiment_config, args.save, use_gcp=not args.nogcp)
 
 
 if __name__ == '__main__':
