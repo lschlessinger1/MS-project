@@ -322,8 +322,6 @@ class ModelSelector(Serializable):
         """Evaluate a set models on some training data.
 
         :param models:
-        :param x:
-        :param y:
         :param eval_budget:
         :param verbose:
         :return:
@@ -346,14 +344,7 @@ class ModelSelector(Serializable):
                 continue
 
             if not gp_model.evaluated:
-                t0 = time()
-                gp_model.score_model(self._x_train, self._y_train, self.fitness_fn, optimizer=self.optimizer,
-                                     n_restarts=self.n_restarts_optimizer)
-                self.total_eval_time += time() - t0
-                self.n_evals += 1
-                self.visited.add(gp_model.covariance.symbolic_expr_expanded)
-                if verbose:
-                    self.pbar.update()
+                gp_model = self._evaluate_model(gp_model, verbose=verbose)
 
             evaluated_models.append(gp_model)
 
@@ -378,6 +369,26 @@ class ModelSelector(Serializable):
             print('')
 
         return evaluated_models
+
+    def _evaluate_model(self,
+                        model: GPModel,
+                        verbose: int = 0) -> GPModel:
+        """Evaluate a single model on some training data.
+
+        :param model:
+        :param verbose:
+        :return:
+        """
+        t0 = time()
+        model.score_model(self._x_train, self._y_train, self.fitness_fn, optimizer=self.optimizer,
+                          n_restarts=self.n_restarts_optimizer)
+        self.total_eval_time += time() - t0
+        self.n_evals += 1
+        self.visited.add(model.covariance.symbolic_expr_expanded)
+        if verbose:
+            self.pbar.update()
+
+        return model
 
     def best_model(self) -> GPModel:
         """Get the best scoring model."""
@@ -615,7 +626,7 @@ class SurrogateBasedModelSelector(ModelSelector, ABC):
 
     def __str__(self):
         return f'{self.name}'f'(grammar={self.grammar.__class__.__name__}, ' \
-            f'fitness_fn={self.fitness_fn_name})'
+               f'fitness_fn={self.fitness_fn_name})'
 
     def __repr__(self):
         return f'{self.__class__.__name__}'f'(grammar={self.grammar.__class__.__name__}, fitness_fn={self.fitness_fn_name})'
