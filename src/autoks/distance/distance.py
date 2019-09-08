@@ -203,7 +203,7 @@ class FrobeniusDistanceBuilder(DistanceBuilder):
     def frobenius_distance(a: np.ndarray,
                            b: np.ndarray,
                            n_points: int) -> float:
-        """Average squared Frobenious distance between a vs b."""
+        """Average squared Frobenius distance between a vs b."""
         return np.mean(np.sum((a - b) ** 2, axis=0), axis=0) / n_points
 
     def compute_distance(self,
@@ -248,8 +248,8 @@ def fix_numerical_problem(k: np.ndarray,
     :return:
     """
     k = cov_nearest(k, threshold=tolerance)
-    chol_k = np.linalg.cholesky(k).T
-    return chol_k
+    cholesky_k = np.linalg.cholesky(k).T
+    return cholesky_k
 
 
 def chol_safe(k: np.ndarray,
@@ -259,9 +259,9 @@ def chol_safe(k: np.ndarray,
     k: covariance matrix (n x n)
     """
     try:
-        chol_k = np.linalg.cholesky(k).T
+        cholesky_k = np.linalg.cholesky(k).T
     except LinAlgError:
         # Decomposition failed, k may not be positive-definite.
         # Try to recover by making the covariance matrix positive-definite.
-        chol_k = fix_numerical_problem(k, tolerance)
-    return chol_k
+        cholesky_k = fix_numerical_problem(k, tolerance)
+    return cholesky_k
