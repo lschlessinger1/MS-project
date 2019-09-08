@@ -39,6 +39,12 @@ class DistanceBuilder:
         self.probability_samples = util.probability_samples(max_num_hyperparameters=self.max_num_hyperparameters,
                                                             num_samples=self.num_samples)
 
+        # Add jitter to probability samples.
+        jitter_size = 1e-4
+        jitter = np.random.uniform(-jitter_size, jitter_size, self.probability_samples.shape)
+        self.probability_samples += jitter
+        np.clip(self.probability_samples, 0, 1)
+
         # FIXME: This forces the noise prior to be gaussian because we then exponentiate it, making it a Log-Gaussian
         assert noise_prior.__class__ == Gaussian
         noise_prior = np.array([noise_prior])
