@@ -102,11 +102,15 @@ def get_priors(kernel: RawKernelType):
     return priors
 
 
-def set_priors(param: Parameterized, priors: Dict[str, PriorDist]) -> Parameterized:
-    param_copy = param.copy()
+def set_priors(param: Parameterized,
+               priors: Dict[str, PriorDist],
+               in_place: bool = False) -> Parameterized:
+    param_copy = param if in_place else param.copy()
     for param_name in priors:
         if param_name in param_copy.parameter_names():
-            param_copy[param_name].set_prior(priors[param_name].raw_prior, warning=False)
+            param = getattr(param_copy, param_name)
+            prior = priors[param_name].raw_prior
+            param.set_prior(prior, warning=False)
         else:
             warnings.warn(f'parameter {param_name} not found in {param.__class__.__name__}.')
     return param_copy
