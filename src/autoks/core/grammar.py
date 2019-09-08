@@ -153,6 +153,11 @@ class EvolutionaryGrammar(BaseGrammar):
 
         new_covariances = remove_duplicate_kernels(covariances)
 
+        # Because GPy doesn't serialize hyperparameter priors in `to_dict`, they must be reset.
+        if self.hyperpriors:
+            for cov in new_covariances:
+                cov.set_hyperpriors(self.hyperpriors)
+
         return new_covariances
 
     @staticmethod
