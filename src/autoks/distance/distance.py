@@ -2,14 +2,13 @@ from typing import Tuple, List
 
 import numpy as np
 from GPy.core.parameterization.priors import Prior, Gaussian
-# from GPy.kern import Kern
 from numpy.linalg import LinAlgError
 from statsmodels.stats.correlation_tools import cov_nearest
 
 from src.autoks.backend.kernel import get_priors
 from src.autoks.core.active_set import ActiveSet
 from src.autoks.core.covariance import Covariance
-from src.autoks.distance.util import probability_samples, prior_sample
+from src.autoks.distance import util
 
 # Adapted from Malkomes, 2016
 # Bayesian optimization for automated model selection (BOMS)
@@ -37,13 +36,13 @@ class DistanceBuilder:
         self.max_num_hyperparameters = max_num_hyperparameters
         self.max_num_kernels = max_num_kernels
 
-        self.probability_samples = probability_samples(max_num_hyperparameters=self.max_num_hyperparameters,
-                                                       num_samples=self.num_samples)
+        self.probability_samples = util.probability_samples(max_num_hyperparameters=self.max_num_hyperparameters,
+                                                            num_samples=self.num_samples)
 
         # FIXME: This forces the noise prior to be gaussian because we then exponentiate it, making it a Log-Gaussian
         assert noise_prior.__class__ == Gaussian
         noise_prior = np.array([noise_prior])
-        noise_samples = prior_sample(noise_prior, self.probability_samples)
+        noise_samples = util.prior_sample(noise_prior, self.probability_samples)
         self.hyperparameter_data_noise_samples = np.exp(noise_samples)
 
         self._average_distance = np.full((self.max_num_kernels, self.max_num_kernels), np.nan)
@@ -62,37 +61,9 @@ class DistanceBuilder:
         :return:
         """
         for i in new_candidates_indices:
-            # covariance = active_models.models[i].covariance
             covariance = active_models.models[i].covariance
             precomputed_info = self.create_precomputed_info(covariance, data_X)
-            # active_models.models[i].info = precomputed_info
             active_models.models[i].info = precomputed_info
-
-    # TODO: remove and refactor original update method
-    def update_multiple(self,
-                        active_models: ActiveModels,
-                        new_candidates_ind: List[int],
-                        all_candidates_ind: List[int],
-                        old_selected_ind: List[int],
-                        new_selected_ind: List[int],
-                        data_X: np.ndarray) -> None:
-        # First step is to precompute information for the new candidate models
-        self.precompute_information(active_models, new_candidates_ind, data_X)
-
-        # Second step is to compute the distance between the trained models vs candidate models.
-        new_evaluated_models = new_selected_ind
-        all_old_candidates_indices = np.setdiff1d(all_candidates_ind, new_candidates_ind)
-
-        # compute distance between evaluated gp_models
-        if len(new_evaluated_models) > 1:
-            self.compute_distance(active_models, new_evaluated_models, new_evaluated_models)
-
-        # i) new evaluated models vs all old candidates.
-        self.compute_distance(active_models, new_evaluated_models, list(all_old_candidates_indices.tolist()))
-
-        # ii) new candidate models vs all trained models
-        all_selected = old_selected_ind + new_selected_ind
-        self.compute_distance(active_models, all_selected, new_candidates_ind)
 
     def update(self,
                active_models: ActiveModels,
@@ -198,7 +169,7 @@ class HellingerDistanceBuilder(DistanceBuilder):
         mini_gram_matrices = np.full((n, n, self.num_samples), np.nan)
 
         cov_priors = get_priors(covariance.raw_kernel)
-        hyperparameters = prior_sample(cov_priors, self.probability_samples)
+        hyperparameters = util.prior_sample(cov_priors, self.probability_samples)
 
         for i in range(hyperparameters.shape[0]):
             hyp = hyperparameters[i, :]
@@ -226,6 +197,7 @@ class FrobeniusDistanceBuilder(DistanceBuilder):
     def frobenius_distance(a: np.ndarray,
                            b: np.ndarray,
                            n_points: int) -> float:
+        """Average squared Frobenious distance between a vs b."""
         return np.mean(np.sum((a - b) ** 2, axis=0), axis=0) / n_points
 
     def compute_distance(self,
@@ -248,7 +220,7 @@ class FrobeniusDistanceBuilder(DistanceBuilder):
         vectors = np.full((n ** 2, self.num_samples), np.nan)
 
         cov_priors = get_priors(covariance.raw_kernel)
-        hyperparameters = prior_sample(cov_priors, self.probability_samples)
+        hyperparameters = util.prior_sample(cov_priors, self.probability_samples)
         for i in range(hyperparameters.shape[0]):
             hyp = hyperparameters[i, :]
             lmbda = self.hyperparameter_data_noise_samples[i]
