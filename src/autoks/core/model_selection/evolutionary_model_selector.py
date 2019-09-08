@@ -14,9 +14,9 @@ from src.autoks.core.kernel_encoding import tree_to_kernel, KernelNode
 from src.autoks.core.model_selection.base import ModelSelector, SurrogateBasedModelSelector
 from src.autoks.core.query_strategy import QueryStrategy
 from src.evalg.fitness import shared_fitness_scores
-from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeLeafBiasedRecombinator
+from src.evalg.genprog import HalfAndHalfMutator, OnePointStrictRecombinator
 from src.evalg.genprog.generators import BinaryTreeGenerator, HalfAndHalfGenerator
-from src.evalg.selection import ExponentialRankingSelector, TruncationSelector, FitnessProportionalSelector
+from src.evalg.selection import TruncationSelector, FitnessProportionalSelector
 from src.evalg.vary import CrossoverVariator, MutationVariator, CrossMutPopOperator
 
 
@@ -82,9 +82,9 @@ class EvolutionaryModelSelector(ModelSelector):
     def _select_parents(self, population: ActiveModelPopulation) -> List[GPModel]:
         """Select parents to expand.
 
-        Here, exponential ranking selection is used.
+        Here, fitness proportional selection is used.
         """
-        selector = ExponentialRankingSelector(self.n_parents, c=0.7)
+        selector = FitnessProportionalSelector(self.n_parents)
         raw_fitness_scores = population.fitness_scores()
         models = np.array(population.models)
         if self.fitness_sharing:
@@ -153,7 +153,7 @@ class EvolutionaryModelSelector(ModelSelector):
                                 m_prob: float,
                                 base_kernel_names: Optional[List[str]] = None):
         mutator = HalfAndHalfMutator(binary_tree_node_cls=KernelNode, max_depth=1)
-        recombinator = SubtreeExchangeLeafBiasedRecombinator()
+        recombinator = OnePointStrictRecombinator()
 
         cx_variator = CrossoverVariator(recombinator, n_offspring=n_offspring, c_prob=cx_prob)
         mut_variator = MutationVariator(mutator, m_prob=m_prob)
