@@ -19,6 +19,12 @@ class TestActiveSet(TestCase):
             remove_priority = [10]
             self.active_set.remove_priority = remove_priority
 
+    def test_set_empty_remove_priority(self):
+        self.active_set.remove_priority = []
+        expected_list = []
+        actual_list = self.active_set.remove_priority
+        self.assertListEqual(expected_list, actual_list)
+
     def test_get_index_to_insert_empty(self):
         expected_index = 0
         actual_index = self.active_set.get_index_to_insert()

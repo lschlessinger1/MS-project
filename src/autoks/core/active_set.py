@@ -22,6 +22,10 @@ class ActiveSet:
 
     @remove_priority.setter
     def remove_priority(self, remove_priority) -> None:
+        if len(remove_priority) == 0:
+            self._remove_priority = []
+            return
+
         if len(remove_priority) > self.max_n_models:
             raise ValueError(f'Size of removal priority {len(remove_priority)} cannot be greater than maximum number '
                              f'of models {self.max_n_models}.')
