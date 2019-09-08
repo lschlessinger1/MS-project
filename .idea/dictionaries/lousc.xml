@@ -2,16 +2,27 @@
   <dictionary name="lousc">
     <words>
       <w>akaike</w>
+      <w>boms</w>
+      <w>cholesky</w>
       <w>datasets</w>
+      <w>exponentiate</w>
+      <w>frobenius</w>
       <w>genotypic</w>
       <w>hellinger</w>
+      <w>hyperparameter</w>
+      <w>hyperparameters</w>
       <w>hyperprior</w>
       <w>hyperpriors</w>
+      <w>lmbda</w>
+      <w>logdet</w>
+      <w>malkomes</w>
       <w>mauna</w>
       <w>nlpd</w>
       <w>phenotypic</w>
+      <w>precompute</w>
       <w>rmse</w>
       <w>runtimes</w>
+      <w>schlessinger</w>
       <w>smse</w>
     </words>
   </dictionary>
