@@ -1,5 +1,7 @@
 from typing import Dict, Optional
 
+import numpy as np
+
 from src.autoks.core.prior import PriorDist
 from src.evalg.serialization import Serializable
 
@@ -49,7 +51,7 @@ class HyperpriorMap(Serializable):
         del self.prior_map[key]
 
 
-def boms_hyperpriors() -> HyperpriorMap:
+def boms_hyperpriors(data_noise: float = 0.01) -> HyperpriorMap:
     """
 
     Malkomes et al., 2016
@@ -57,22 +59,25 @@ def boms_hyperpriors() -> HyperpriorMap:
     :return: The hyperparameter priors used in BOMS.
     """
     # length scales (period of a periodic covariance, etc.)
-    prior_l = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.1, 'sigma': 0.7 ** 2})
+    prior_l = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(0.1), 'sigma': 1})
 
     # signal variance
-    prior_sigma = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.4, 'sigma': 0.7 ** 2})
+    prior_sigma = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(0.4), 'sigma': 1})
 
     # observation noise
-    prior_sigma_n = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.1, 'sigma': 1 ** 2})
+    prior_sigma_n = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(data_noise), 'sigma': np.sqrt(0.1)})
 
     # α parameter of the rational quadratic covariance
-    prior_alpha = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0.05, 'sigma': 0.7 ** 2})
+    prior_alpha = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(0.05), 'sigma': 0.7})
 
     # the "length scale" of the periodic covariance
-    prior_l_p = PriorDist.from_prior_str("LOGNORMAL", {'mu': 2, 'sigma': 0.7 ** 2})
+    prior_l_p = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(2), 'sigma': 0.7})
 
     # offset in linear covariance
-    prior_sigma_0 = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0, 'sigma': 2 ** 2})
+    prior_sigma_0 = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0, 'sigma': 1})
+
+    # period in standard periodic
+    prior_p = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(0.1), 'sigma': 0.7})
 
     # create map from kernel to priors
     prior_map = dict()
@@ -90,8 +95,8 @@ def boms_hyperpriors() -> HyperpriorMap:
 
     prior_map['PER'] = {
         'variance': prior_sigma,
-        'lengthscale': prior_l,
-        'period': prior_l_p
+        'lengthscale': prior_l_p,
+        'period': prior_p
     }
     # make sure LinScaleCovariance is used
     prior_map['LIN'] = {

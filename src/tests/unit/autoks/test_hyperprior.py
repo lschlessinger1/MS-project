@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+import numpy as np
+
 from src.autoks.core.hyperprior import boms_hyperpriors, HyperpriorMap
 from src.autoks.core.prior import PriorDist
 from src.evalg.serialization import Serializable
@@ -36,32 +38,32 @@ class TestHyperprior(TestCase):
 
         self.assertIsInstance(result['GP']['variance'], PriorDist)
 
-        self.assertEqual(result['SE']['variance'].raw_prior.mu, 0.4)
-        self.assertEqual(result['SE']['variance'].raw_prior.sigma, 0.7 ** 2)
-        self.assertEqual(result['SE']['lengthscale'].raw_prior.mu, 0.1)
-        self.assertEqual(result['SE']['lengthscale'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['SE']['variance'].raw_prior.mu, np.log(0.4))
+        self.assertEqual(result['SE']['variance'].raw_prior.sigma, 1)
+        self.assertEqual(result['SE']['lengthscale'].raw_prior.mu, np.log(0.1))
+        self.assertEqual(result['SE']['lengthscale'].raw_prior.sigma, 1)
 
-        self.assertEqual(result['RQ']['variance'].raw_prior.mu, 0.4)
-        self.assertEqual(result['RQ']['variance'].raw_prior.sigma, 0.7 ** 2)
-        self.assertEqual(result['RQ']['lengthscale'].raw_prior.mu, 0.1)
-        self.assertEqual(result['RQ']['lengthscale'].raw_prior.sigma, 0.7 ** 2)
-        self.assertEqual(result['RQ']['power'].raw_prior.mu, 0.05)
-        self.assertEqual(result['RQ']['power'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['RQ']['variance'].raw_prior.mu, np.log(0.4))
+        self.assertEqual(result['RQ']['variance'].raw_prior.sigma, 1)
+        self.assertEqual(result['RQ']['lengthscale'].raw_prior.mu, np.log(0.1))
+        self.assertEqual(result['RQ']['lengthscale'].raw_prior.sigma, 1)
+        self.assertEqual(result['RQ']['power'].raw_prior.mu, np.log(0.05))
+        self.assertEqual(result['RQ']['power'].raw_prior.sigma, 0.7)
 
-        self.assertEqual(result['PER']['variance'].raw_prior.mu, 0.4)
-        self.assertEqual(result['PER']['variance'].raw_prior.sigma, 0.7 ** 2)
-        self.assertEqual(result['PER']['lengthscale'].raw_prior.mu, 0.1)
-        self.assertEqual(result['PER']['lengthscale'].raw_prior.sigma, 0.7 ** 2)
-        self.assertEqual(result['PER']['period'].raw_prior.mu, 2)
-        self.assertEqual(result['PER']['period'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['PER']['variance'].raw_prior.mu, np.log(0.4))
+        self.assertEqual(result['PER']['variance'].raw_prior.sigma, 1)
+        self.assertEqual(result['PER']['lengthscale'].raw_prior.mu, np.log(2))
+        self.assertEqual(result['PER']['lengthscale'].raw_prior.sigma, 0.7)
+        self.assertEqual(result['PER']['period'].raw_prior.mu, np.log(0.1))
+        self.assertEqual(result['PER']['period'].raw_prior.sigma, 0.7)
 
-        self.assertEqual(result['LIN']['variances'].raw_prior.mu, 0.4)
-        self.assertEqual(result['LIN']['variances'].raw_prior.sigma, 0.7 ** 2)
+        self.assertEqual(result['LIN']['variances'].raw_prior.mu, np.log(0.4))
+        self.assertEqual(result['LIN']['variances'].raw_prior.sigma, 1)
         self.assertEqual(result['LIN']['shifts'].raw_prior.mu, 0)
-        self.assertEqual(result['LIN']['shifts'].raw_prior.sigma, 2 ** 2)
+        self.assertEqual(result['LIN']['shifts'].raw_prior.sigma, 1)
 
-        self.assertEqual(result['GP']['variance'].raw_prior.mu, 0.1)
-        self.assertEqual(result['GP']['variance'].raw_prior.sigma, 1 ** 2)
+        self.assertEqual(result['GP']['variance'].raw_prior.mu, np.log(0.01))
+        self.assertEqual(result['GP']['variance'].raw_prior.sigma, np.sqrt(0.1))
 
     def test_to_dict(self):
         prior_map = dict()
