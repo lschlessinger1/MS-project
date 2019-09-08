@@ -2,12 +2,15 @@ from typing import Optional, List, Union
 
 import numpy as np
 from GPy.kern import Kern
+from GPy.kern.src.kern import CombinationKernel
 from graphviz import Source
 from scipy.spatial.distance import cdist, pdist
 from sympy import pprint, latex, mathml, dotprint
 
 from src.autoks.backend.kernel import RawKernelType, kernel_to_infix_tokens, tokens_to_str, sort_kernel, additive_form, \
-    is_base_kernel, subkernel_expression, kernels_to_kernel_vecs, is_prod_kernel, is_sum_kernel, compute_kernel
+    is_base_kernel, subkernel_expression, kernels_to_kernel_vecs, is_prod_kernel, is_sum_kernel, compute_kernel, \
+    KERNEL_DICT, set_priors
+from src.autoks.core.hyperprior import HyperpriorMap
 from src.autoks.core.kernel_encoding import kernel_to_tree, KernelTree
 from src.autoks.symbolic.kernel_symbol import KernelSymbol
 from src.autoks.symbolic.util import postfix_tokens_to_symbol
@@ -102,6 +105,17 @@ class Covariance(Serializable):
     def priors(self) -> Optional:
         """Get the priors of the kernel."""
         raise NotImplementedError('This will be implemented soon')
+
+    def set_hyperpriors(self, hyperpriors: HyperpriorMap) -> None:
+        inv_KERNEL_DICT = {v: k for k, v in KERNEL_DICT.items()}
+
+        def set_kern_prior(x):
+            if not isinstance(x, CombinationKernel) and isinstance(x, Kern):
+                cls_name = inv_KERNEL_DICT[x.__class__]
+                set_priors(x, hyperpriors[cls_name], in_place=True)
+
+        for part in self.infix_tokens:
+            set_kern_prior(part)
 
     def symbolically_equals(self, other) -> bool:
         """Determine whether this covariance's kernel expression is the same as another's kernel expression."""
