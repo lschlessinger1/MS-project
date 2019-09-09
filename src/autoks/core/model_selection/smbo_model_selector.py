@@ -45,7 +45,7 @@ class SMBOModelSelector(ModelSelector):
             if depth > max_generations:
                 break
 
-            self._print_search_summary(depth, population, eval_budget, max_generations, verbose=3)
+            self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
             selected_models = [model for model in population.models if model.evaluated]
             fitness_scores = population.fitness_scores()
