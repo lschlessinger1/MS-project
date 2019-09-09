@@ -1,5 +1,5 @@
 import warnings
-from typing import List, Callable, Optional, Union
+from typing import Callable, Union, List, Optional
 
 import numpy as np
 
@@ -10,9 +10,9 @@ from src.autoks.core.covariance import Covariance, centered_alignment
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.grammar import EvolutionaryGrammar
+from src.autoks.core.hyperprior import HyperpriorMap
 from src.autoks.core.kernel_encoding import tree_to_kernel, KernelNode
-from src.autoks.core.model_selection.base import ModelSelector, SurrogateBasedModelSelector
-from src.autoks.core.query_strategy import QueryStrategy
+from src.autoks.core.model_selection.base import ModelSelector
 from src.evalg.fitness import shared_fitness_scores
 from src.evalg.genprog import HalfAndHalfMutator, OnePointStrictRecombinator
 from src.evalg.genprog.generators import BinaryTreeGenerator, HalfAndHalfGenerator
@@ -37,12 +37,14 @@ class EvolutionaryModelSelector(ModelSelector):
                  optimizer: Optional[str] = None,
                  n_restarts_optimizer: int = 3,
                  gp_fn: Union[str, Callable] = 'gp_regression',
-                 gp_args: Optional[dict] = None):
+                 gp_args: Optional[dict] = None,
+                 hyperpriors: Optional[HyperpriorMap] = None):
         if grammar is None:
             variation_pct = m_prob + cx_prob  # 60% of individuals created using crossover and 10% mutation
             n_offspring = int(variation_pct * pop_size)
             n_parents = n_offspring
-            grammar = self._create_default_grammar(n_offspring, cx_prob, m_prob, base_kernel_names=base_kernel_names)
+            grammar = self._create_default_grammar(n_offspring, cx_prob, m_prob, base_kernel_names=base_kernel_names,
+                                                   hyperpriors=hyperpriors)
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
         if initializer is None:
@@ -115,7 +117,6 @@ class EvolutionaryModelSelector(ModelSelector):
             trees = [self.initializer.generate(operators, operands) for _ in range(self.n_init_trees)]
             kernels = [tree_to_kernel(tree) for tree in trees]
             covariances = [Covariance(k) for k in kernels]
-
             return covariances
         else:
             return self.grammar.base_kernels
@@ -151,7 +152,8 @@ class EvolutionaryModelSelector(ModelSelector):
     def _create_default_grammar(n_offspring: int,
                                 cx_prob: float,
                                 m_prob: float,
-                                base_kernel_names: Optional[List[str]] = None):
+                                base_kernel_names: Optional[List[str]] = None,
+                                hyperpriors: Optional[HyperpriorMap] = None):
         mutator = HalfAndHalfMutator(binary_tree_node_cls=KernelNode, max_depth=1)
         recombinator = OnePointStrictRecombinator()
 
@@ -160,49 +162,8 @@ class EvolutionaryModelSelector(ModelSelector):
         variators = [cx_variator, mut_variator]
         pop_operator = CrossMutPopOperator(variators)
 
-        return EvolutionaryGrammar(population_operator=pop_operator, base_kernel_names=base_kernel_names)
+        return EvolutionaryGrammar(population_operator=pop_operator, base_kernel_names=base_kernel_names,
+                                   hyperpriors=hyperpriors)
 
     def __str__(self):
         return self.name
-
-
-class SurrogateEvolutionaryModelSelector(SurrogateBasedModelSelector):
-
-    def __init__(self,
-                 grammar: Optional[EvolutionaryGrammar] = None,
-                 fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
-                 query_strategy: Optional[QueryStrategy] = None,
-                 initializer: Optional[BinaryTreeGenerator] = None,
-                 n_init_trees: int = 10,
-                 n_parents: int = 10,
-                 max_offspring: int = 25,
-                 additive_form: bool = False,
-                 optimizer: Optional[str] = None,
-                 n_restarts_optimizer: int = 3,
-                 gp_fn: Union[str, Callable] = 'gp_regression',
-                 gp_args: Optional[dict] = None):
-        super().__init__(grammar, fitness_fn, query_strategy, n_parents, additive_form, gp_fn, gp_args, optimizer,
-                         n_restarts_optimizer)
-        self.initializer = initializer
-        self.n_init_trees = n_init_trees
-        self.max_offspring = max_offspring
-
-    def _train(self,
-               eval_budget: int,
-               max_generations: int,
-               callbacks: CallbackList,
-               verbose: int = 1) -> GPModelPopulation:
-        pass
-
-    def _get_initial_candidate_covariances(self) -> List[Covariance]:
-        if self.initializer is not None:
-            # Generate trees
-            operators = self.grammar.operators
-            operands = [cov.raw_kernel for cov in self.grammar.base_kernels]
-            trees = [self.initializer.generate(operators, operands) for _ in range(self.n_init_trees)]
-            kernels = [tree_to_kernel(tree) for tree in trees]
-            covariances = [Covariance(k) for k in kernels]
-
-            return covariances
-        else:
-            return self.grammar.base_kernels
