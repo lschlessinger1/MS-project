@@ -1,0 +1,22 @@
+{
+  "experiment_group": "Surrogate Evolutionary Airline Experiments PS100 EV300 MP25 STE",
+  "experiments": [
+    {
+      "dataset": "AirlineDataset",
+      "model_selector": "SMBOModelSelector",
+      "model_selector_args": {
+        "eval_budget_low_level": 300,
+        "pop_size": 100,
+        "m_prob": 0.25
+      },
+      "gp": "gp_regression",
+      "gp_args": {
+        "inference_method": "laplace"
+      },
+      "train_args": {
+        "eval_budget": 50,
+        "verbose": 1
+      }
+    }
+  ]
+}

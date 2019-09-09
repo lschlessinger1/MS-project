@@ -1,5 +1,4 @@
 import importlib
-from abc import ABC
 from collections import namedtuple
 from pathlib import Path
 from time import time
@@ -17,9 +16,7 @@ from src.autoks.core.fitness_functions import negative_bic, log_likelihood_norma
 from src.autoks.core.gp_model import GPModel, pretty_print_gp_models
 from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
 from src.autoks.core.grammar import BaseGrammar
-from src.autoks.core.hyperprior import PriorsMap
 from src.autoks.core.prior import PriorDist
-from src.autoks.core.query_strategy import QueryStrategy, NaiveQueryStrategy
 from src.autoks.preprocessing import standardize
 from src.evalg.selection import TruncationSelector
 from src.evalg.serialization import Serializable
@@ -548,85 +545,3 @@ class ModelSelector(Serializable):
             gp_model.covariance = gp_model.covariance.to_additive_form()
 
         return gp_model
-
-
-class SurrogateBasedModelSelector(ModelSelector, ABC):
-
-    def __init__(self,
-                 grammar: BaseGrammar,
-                 fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
-                 query_strategy: Optional[QueryStrategy] = None,
-                 n_parents: int = 1,
-                 additive_form: bool = False,
-                 gp_fn: Union[str, Callable] = 'gp_regression',
-                 gp_args: Optional[dict] = None,
-                 optimizer: Optional[str] = None,
-                 n_restarts_optimizer: int = 10):
-        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
-
-        if query_strategy is not None:
-            self.query_strategy = query_strategy
-        else:
-            self.query_strategy = NaiveQueryStrategy()
-
-        self.total_query_time = 0
-
-    def query_models(self,
-                     population: GPModelPopulation,
-                     query_strategy: QueryStrategy,
-                     x_train,
-                     y_train,
-                     hyperpriors: Optional[PriorsMap] = None,
-                     verbose: int = 0) \
-            -> Tuple[List[GPModel], List[int], List[float]]:
-        """Select gp_models using the acquisition function of the query strategy.
-
-        :param population:
-        :param query_strategy:
-        :param hyperpriors:
-        :param verbose: Verbosity mode, 0 or 1.
-        :return:
-        """
-        t0 = time()
-        kernels = population.models
-        unevaluated_kernels_ind = [i for (i, kernel) in enumerate(kernels) if not kernel.evaluated]
-        unevaluated_kernels = [kernels[i] for i in unevaluated_kernels_ind]
-        ind, acq_scores = query_strategy.query(unevaluated_kernels_ind, kernels, x_train, y_train,
-                                               hyperpriors, None)
-        selected_kernels = query_strategy.select(np.array(unevaluated_kernels), np.array(acq_scores))
-        self.total_query_time += time() - t0
-
-        if verbose:
-            n_selected = len(ind)
-            plural_suffix = '' if n_selected == 1 else 's'
-            print(f'Query strategy selected {n_selected} kernel{plural_suffix}:')
-
-            for kern in selected_kernels:
-                kern.covariance.pretty_print()
-            print('')
-
-        return selected_kernels, ind, acq_scores
-
-    def get_timing_report(self) -> Tuple[List[str], np.ndarray, np.ndarray]:
-        """Get the runtime report of the kernel search.
-
-        :return:
-        """
-        eval_time = self.total_eval_time
-        expansion_time = self.total_expansion_time
-        query_time = self.total_query_time
-        total_time = self.total_model_search_time
-        other_time = total_time - eval_time - expansion_time - query_time
-
-        labels = ['Evaluation', 'Expansion', 'Query', 'Other']
-        x = np.array([eval_time, expansion_time, query_time, other_time])
-        x_pct = 100 * (x / total_time)
-
-        return labels, x, x_pct
-
-    def __str__(self):
-        return f'{self.name}'f'(grammar={self.grammar.__class__.__name__}, ' \
-               f'fitness_fn={self.fitness_fn_name})'
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}'f'(grammar={self.grammar.__class__.__name__}, fitness_fn={self.fitness_fn_name})'

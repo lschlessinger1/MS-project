@@ -233,6 +233,10 @@ class FitnessProportionalSelector(Selector, ProbabilityMixin):
         return ind
 
     def get_probabilities(self, raw_fitness: np.ndarray) -> np.ndarray:
+        if (raw_fitness == 0).all():
+            # Make all models equiprobable.
+            raw_fitness += 1
+
         min_fitness = raw_fitness.min()
         if min_fitness < 0:
             fitness_normalized = raw_fitness + np.abs(min_fitness)

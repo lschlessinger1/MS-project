@@ -2,23 +2,20 @@ from typing import List, Callable, Optional, Union
 
 from src.autoks.backend.model import RawGPModelType
 from src.autoks.callbacks import CallbackList
-from src.autoks.core.acquisition_function import ExpectedImprovementPerSec
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model_population import GPModelPopulation
 from src.autoks.core.grammar import BomsGrammar
 from src.autoks.core.hyperprior import boms_hyperpriors
-from src.autoks.core.model_selection.base import SurrogateBasedModelSelector
-from src.autoks.core.query_strategy import BestScoreStrategy, QueryStrategy
+from src.autoks.core.model_selection.base import ModelSelector
 
 
-class BomsModelSelector(SurrogateBasedModelSelector):
+class BomsModelSelector(ModelSelector):
 
     def __init__(self,
                  grammar: Optional[BomsGrammar] = None,
                  base_kernel_names: Optional[List[str]] = None,
                  fitness_fn: Union[str, Callable[[RawGPModelType], float]] = 'loglikn',
                  n_parents: int = 1,
-                 query_strategy: Optional[QueryStrategy] = None,
                  additive_form: bool = False,
                  gp_fn: Union[str, Callable] = 'gp_regression',
                  gp_args: Optional[dict] = None,
@@ -29,18 +26,13 @@ class BomsModelSelector(SurrogateBasedModelSelector):
             hyperpriors = boms_hyperpriors()
             grammar = BomsGrammar(hyperpriors=hyperpriors, base_kernel_names=base_kernel_names)
 
-        if query_strategy is None:
-            acq = ExpectedImprovementPerSec()
-            query_strategy = BestScoreStrategy(scoring_func=acq)
-
         # Use Laplace inference by default.
         if gp_args is not None and 'inference_method' not in gp_args:
             gp_args['inference_method'] = 'laplace'
         else:
             gp_args = {'inference_method': 'laplace'}
 
-        super().__init__(grammar, fitness_fn, n_parents, query_strategy, additive_form, gp_fn, gp_args, optimizer,
-                         n_restarts_optimizer)
+        super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
 
     def _train(self,
                eval_budget: int,

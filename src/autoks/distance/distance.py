@@ -223,7 +223,7 @@ class FrobeniusDistanceBuilder(DistanceBuilder):
 
         n = data_X.shape[0]
 
-        vectors = np.full((n ** 2, self.num_samples), np.nan)
+        vectors = np.full((n ** 2, self.num_samples), np.nan, dtype=np.float32)
 
         cov_priors = get_priors(covariance.raw_kernel)
         hyperparameters = util.prior_sample(cov_priors, self.probability_samples)

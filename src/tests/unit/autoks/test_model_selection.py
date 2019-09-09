@@ -6,13 +6,12 @@ from GPy.kern import RationalQuadratic, RBF, LinScaleShift
 
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.gp_model_population import GPModelPopulation, ActiveModelPopulation
+from src.autoks.core.gp_model_population import ActiveModelPopulation
 from src.autoks.core.grammar import CKSGrammar, RandomGrammar
 from src.autoks.core.model_selection import EvolutionaryModelSelector
 from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.core.model_selection.boms_model_selector import BomsModelSelector
 from src.autoks.core.model_selection.cks_model_selector import CKSModelSelector
-from src.autoks.core.query_strategy import QueryStrategy
 from src.evalg.serialization import Serializable
 
 
@@ -206,22 +205,6 @@ class TestBomsModelSelector(TestCase):
         self.x_test = np.array([[10, 20, 30], [40, 50, 60]])
         self.y_test = np.array([[2], [1]])
         self.model_selector = BomsModelSelector(grammar, kernel_selector, objective)
-
-    def test_query_kernels(self):
-        scoring_func = MagicMock(name='acq_func')
-        scores = [10, 20, 30]
-        scoring_func.score.side_effect = scores
-        qs = QueryStrategy(1, scoring_func)
-        qs.arg_select = MagicMock()
-        ind = [1, 2]
-        qs.arg_select.return_value = ind
-
-        pop = GPModelPopulation()
-        pop.update(self.gp_models)
-        result = self.model_selector.query_models(pop, qs, self.x_train, self.y_train)
-        self.assertListEqual([self.gp_models[i] for i in ind], result[0].tolist())
-        self.assertListEqual(ind, result[1])
-        self.assertListEqual(scores, result[2])
 
 
 class TestEvolutionaryModelSelector(TestCase):

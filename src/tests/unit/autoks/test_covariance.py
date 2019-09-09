@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import numpy as np
-from GPy.kern import RationalQuadratic, RBF, RBFKernelKernel
+from GPy.kern import RationalQuadratic, RBF
 from graphviz import Source
 
 from src.autoks.backend.kernel import get_all_1d_kernels, RawKernelType
@@ -9,7 +9,6 @@ from src.autoks.core.covariance import Covariance, tokens_to_kernel_symbols, ker
     remove_duplicate_kernels
 from src.autoks.core.gp_model import GPModel, encode_gp_models
 from src.autoks.core.kernel_encoding import KernelTree
-from src.autoks.core.kernel_kernel import shd_kernel_kernel, euclidean_kernel_kernel
 from src.autoks.distance.metrics import shd_metric, euclidean_metric
 from src.autoks.symbolic.kernel_symbol import KernelSymbol
 from src.evalg.serialization import Serializable
@@ -419,19 +418,6 @@ class TestCovarianceModule(TestCase):
         result = shd_metric(u, v)
         self.assertEqual(result, 1)
 
-    def test_shd_kernel_kernel(self):
-        result = shd_kernel_kernel(variance=1, lengthscale=1)
-        self.assertIsInstance(result, RBFKernelKernel)
-        self.assertEqual(result.dist_metric, shd_metric)
-
-        gp_models_evaluated = [GPModel(Covariance(RBF(1))), GPModel(Covariance(RationalQuadratic(1)))]
-        x = encode_gp_models(gp_models_evaluated)
-        d = result._unscaled_dist(x)
-        self.assertIsInstance(d, np.ndarray)
-        self.assertTrue(np.array_equal(d, np.array([[0, 1], [1, 0]])))
-        k = RBF(1, variance=1, lengthscale=1)
-        self.assertTrue(np.array_equal(result.K(x), k.K(d)))
-
     def test_euclidean_metric(self):
         x_train = np.array([[1, 2], [3, 4]])
         gp_models = [GPModel(Covariance(RBF(1) + RationalQuadratic(1))), GPModel(Covariance(RBF(1)))]
@@ -442,9 +428,3 @@ class TestCovarianceModule(TestCase):
         self.assertAlmostEqual(result,
                                np.linalg.norm(gp_models[0].covariance.raw_kernel.K(x_train, x_train) -
                                               gp_models[1].covariance.raw_kernel.K(x_train, x_train)))
-
-    def test_euclidean_kernel_kernel(self):
-        x_train = np.array([[1, 2], [3, 4]])
-        result = euclidean_kernel_kernel(x_train)
-        self.assertIsInstance(result, RBFKernelKernel)
-        self.assertEqual(result.dist_metric, euclidean_metric)
