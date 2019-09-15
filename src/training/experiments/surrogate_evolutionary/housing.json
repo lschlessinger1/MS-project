@@ -1,12 +1,12 @@
 {
-  "experiment_group": "Surrogate Evolutionary Housing Experiments PS100 EV300 MP25 STE",
+  "experiment_group": "Surrogate Evolutionary Housing Experiments PS50 EV100 MP25 STE HYP",
   "experiments": [
     {
       "dataset": "HousingDataset",
       "model_selector": "SMBOModelSelector",
       "model_selector_args": {
-        "eval_budget_low_level": 300,
-        "pop_size": 100,
+        "eval_budget_low_level": 100,
+        "pop_size": 50,
         "m_prob": 0.25
       },
       "gp": "gp_regression",
@@ -15,7 +15,7 @@
       },
       "train_args": {
         "eval_budget": 50,
-        "verbose": 3
+        "verbose": 1
       }
     }
   ]

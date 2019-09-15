@@ -1,12 +1,12 @@
 {
-  "experiment_group": "Surrogate Evolutionary Airline Experiments PS100 EV300 MP25 STE",
+  "experiment_group": "Surrogate Evolutionary Airline Experiments PS50 EV100 MP25 STE",
   "experiments": [
     {
       "dataset": "AirlineDataset",
       "model_selector": "SMBOModelSelector",
       "model_selector_args": {
-        "eval_budget_low_level": 300,
-        "pop_size": 100,
+        "eval_budget_low_level": 100,
+        "pop_size": 50,
         "m_prob": 0.25
       },
       "gp": "gp_regression",
