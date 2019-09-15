@@ -50,6 +50,7 @@ class EvolutionaryModelSelector(ModelSelector):
             variation_pct = m_prob + cx_prob  # 60% of individuals created using crossover and 10% mutation
             n_offspring = int(variation_pct * pop_size)
             n_parents = n_offspring
+            hyperpriors = hyperpriors or boms_hyperpriors()
             grammar = self._create_default_grammar(n_offspring, cx_prob, m_prob, base_kernel_names=base_kernel_names,
                                                    hyperpriors=hyperpriors)
         super().__init__(grammar, fitness_fn, n_parents, additive_form, gp_fn, gp_args, optimizer, n_restarts_optimizer)
