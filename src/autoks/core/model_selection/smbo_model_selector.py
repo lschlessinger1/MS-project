@@ -67,7 +67,6 @@ class SMBOModelSelector(ModelSelector):
             else:
                 next_model_index = int(np.argmax([model.score for model in new_models]))
                 next_model = new_models[next_model_index]
-            next_model.covariance.raw_kernel.unset_priors()
             # Reinitialize to get rid of acquisition score.
             next_model = GPModel(next_model.covariance, next_model.likelihood)
 
@@ -107,5 +106,4 @@ class SMBOModelSelector(ModelSelector):
 
     def _get_initial_candidate_covariances(self) -> List[Covariance]:
         covariance = self.grammar.base_kernels[0]
-        covariance.raw_kernel.unset_priors()
         return [covariance]
