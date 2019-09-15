@@ -66,6 +66,7 @@ def create_instance(compute,
     startup_script = startup_script.open().read()
 
     exp_script = "src/training/run_experiment.py"
+    subnetwork_region = "-".join(zone.split('-')[:2])
 
     config = {
         "canIpForward": False,
@@ -170,7 +171,7 @@ def create_instance(compute,
                 "kind": "compute#networkInterface",
                 "name": "nic0",
                 "network": f"projects/{project}/global/networks/default",
-                "subnetwork": f"projects/{project}/regions/us-central1/subnetworks/default"
+                "subnetwork": f"projects/{project}/regions/{subnetwork_region}/subnetworks/default"
             }
         ],
         "reservationAffinity": {
