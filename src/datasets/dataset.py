@@ -17,6 +17,7 @@ class Dataset:
     def __init__(self):
         self.x = None
         self.y = None
+        self.name = self.__class__.__name__.split(Dataset.__name__)[0]
 
     @classmethod
     def data_dirname(cls) -> Path:
