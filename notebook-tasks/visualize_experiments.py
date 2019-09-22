@@ -2,7 +2,6 @@ import argparse
 from pathlib import Path
 
 import papermill as pm
-import scrapbook as sb
 
 
 def _parse_args():
@@ -50,8 +49,6 @@ def main():
                   result_dir=result_dir)
 
     pm.execute_notebook(input_path, output_path, parameters=params)
-    nb_parse = sb.read_notebook(output_path)
-    nb_parse
 
 
 if __name__ == '__main__':
