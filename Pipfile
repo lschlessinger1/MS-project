@@ -12,6 +12,7 @@ pylint = "*"
 pycodestyle = "*"
 mypy = "*"
 google-api-python-client = "*"
+papermill = "*"
 
 [packages]
 graphviz = "==0.13"
