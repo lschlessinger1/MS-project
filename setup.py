@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Louis Schlessinger",
     author_email="louschlessinger96@gmail.com",
-    description="Automated model search using evolutionary algorithms.",
+    description="Automated model search using Bayesian optimization and genetic programming.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lschlessinger1/MS-project",
