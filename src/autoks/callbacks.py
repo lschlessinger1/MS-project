@@ -329,3 +329,28 @@ class GCPCallback(Callback, Serializable):
 
     def on_train_end(self, logs: Optional[dict] = None):
         pass
+
+
+class CometCallback(Callback, Serializable):
+    """Comet ML callback."""
+
+    def __init__(self, experiment):
+        super().__init__()
+        self.experiment = experiment
+        self.best_fitness = float('-inf')
+
+    def on_evaluate_end(self, logs: Optional[dict] = None):
+        logs = logs or {}
+        model = logs.get('gp_model', None)
+
+        if model and model.evaluated:
+            new_score = model.score
+            self.best_fitness = max(self.best_fitness, new_score)
+            self.experiment.log_metrics({
+                "fitness": model.score,
+                "best_fitness": self.best_fitness
+            },
+                step=self.model.n_evals)
+
+    def on_generation_end(self, gen: int, logs: Optional[dict] = None):
+        self.experiment.log_current_epoch(gen)

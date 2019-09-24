@@ -32,6 +32,7 @@ google-cloud-storage = "*"
 google-cloud-logging = "*"
 jupyter = "*"
 src = {editable = true,path = "."}
+comet-ml = "*"
 
 [requires]
 python_version = "3.6"
