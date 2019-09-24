@@ -1,5 +1,14 @@
+import json
+import time
 from collections import defaultdict, deque
 from typing import Optional, Iterable, List
+
+if hasattr(time, "monotonic"):
+    get_time = time.monotonic
+else:
+    # Python2 just won't have accurate time durations
+    # during clock adjustments, like leap year, etc.
+    get_time = time.time
 
 from src.autoks.statistics import StatBookCollection, Statistic
 from src.autoks.tracking import get_best_n_operands, get_model_scores, get_best_n_hyperparams, get_cov_dists, \
@@ -334,23 +343,64 @@ class GCPCallback(Callback, Serializable):
 class CometCallback(Callback, Serializable):
     """Comet ML callback."""
 
-    def __init__(self, experiment):
+    def __init__(self,
+                 experiment,
+                 log_params: bool = True,
+                 log_metrics: bool = True,
+                 log_graph: bool = True):
         super().__init__()
         self.experiment = experiment
+        self.log_params = log_params
+        self.log_metrics = log_metrics
+        self.log_graph = log_graph
+        self.generation_start_time = None
+        self.our_step = 0
         self.best_fitness = float('-inf')
 
-    def on_evaluate_end(self, logs: Optional[dict] = None):
-        logs = logs or {}
-        model = logs.get('gp_model', None)
+    def on_train_begin(self, logs: Optional[dict] = None):
+        if self.log_graph:
+            json_re = json.dumps(self.model.to_dict(), sort_keys=True, indent=4)
+            self.experiment.set_model_graph(json_re)
 
-        if model and model.evaluated:
-            new_score = model.score
-            self.best_fitness = max(self.best_fitness, new_score)
-            self.experiment.log_metrics({
-                "fitness": model.score,
-                "best_fitness": self.best_fitness
-            },
-                step=self.model.n_evals)
+        if self.log_params:
+            # if logs:
+            #     for k, v in logs.items():
+            #         self.experiment.log_parameter(k, v)
+
+            # Callback doesn't set this parameter at creation by default.
+            if hasattr(self, "params") and self.params:
+                for k, v in self.params.items():
+                    if k != "metrics":
+                        self.experiment.log_parameter(k, v)
+
+            self.experiment.log_parameters({'optimizer': self.model.optimizer,
+                                            'n_restarts_optimizer': self.model.n_restarts_optimizer})
+
+    def on_evaluate_end(self, logs: Optional[dict] = None):
+        if self.log_metrics:
+            logs = logs or {}
+            model = logs.get('gp_model', None)
+            self.our_step = self.model.n_evals
+            if model and model.evaluated:
+                new_score = model.score
+                self.best_fitness = max(self.best_fitness, new_score)
+                self.experiment.log_metrics({
+                    "fitness": model.score,
+                    "best_fitness": self.best_fitness
+                },
+                    step=self.our_step)
+
+    def on_generation_begin(self, gen: int, logs: Optional[dict] = None):
+        self.experiment.set_epoch(gen)
+        self.generation_start_time = get_time()
 
     def on_generation_end(self, gen: int, logs: Optional[dict] = None):
-        self.experiment.log_current_epoch(gen)
+        if self.log_metrics:
+            if self.generation_start_time is not None:
+                self.experiment.log_metric("generation_duration", get_time() - self.generation_start_time,
+                                           step=self.our_step)
+                self.generation_start_time = None
+            self.experiment.log_epoch_end(gen, step=self.our_step)
+            # if logs:
+            #     for name, val in logs.items():
+            #         self.experiment.log_metric(name, val, step=self.our_step)
