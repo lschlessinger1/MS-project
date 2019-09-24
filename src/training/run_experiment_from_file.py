@@ -3,8 +3,8 @@ import json
 import warnings
 from multiprocessing.pool import Pool
 
-from src.autoks.postprocessing.summary import summarize
 from src.training.run_experiment import run_experiment
+from src.autoks.postprocessing.summary import summarize
 
 
 def run_experiments(experiments_filename, save: bool):
