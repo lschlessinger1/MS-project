@@ -92,8 +92,10 @@ def run_experiment(experiment_config: dict,
     experiment = None
     if use_comet:
         if comet_available:
-            experiment = Experiment(project_name="boems",
-                                    workspace=None)
+            comet_config = experiment_config.get('comet_args', {})
+            tags = comet_config.pop('tags', [])
+            experiment = Experiment(**comet_config)
+            experiment.add_tags(tags)
             experiment.log_parameters(experiment_config)
             experiment.log_dataset_hash(dataset.x)
             experiment.log_dataset_info(name=dataset.name)
