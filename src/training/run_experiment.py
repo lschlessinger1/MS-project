@@ -10,11 +10,13 @@ from datetime import datetime
 from pathlib import Path
 
 try:
-    from comet_ml import Experiment
+    import comet_ml
 
-    comet_available = True
+    assert comet_ml
+    _has_comet_ml = True
 except ImportError:
-    comet_available = False
+    _has_comet_ml = False
+
 from src.training import gcp
 from src.training.gcp.storage import upload_blob
 from src.training.util import train_model
@@ -91,10 +93,10 @@ def run_experiment(experiment_config: dict,
 
     experiment = None
     if use_comet:
-        if comet_available:
+        if _has_comet_ml:
             comet_config = experiment_config.get('comet_args', {})
             tags = comet_config.pop('tags', [])
-            experiment = Experiment(**comet_config)
+            experiment = comet_ml.Experiment(**comet_config)
             experiment.add_tags(tags)
             experiment.log_parameters(experiment_config)
             experiment.log_dataset_hash(dataset.x)
