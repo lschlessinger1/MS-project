@@ -155,6 +155,18 @@ def plot_kernel_diversity_summary(diversity_scores_name: str,
     plt.show()
 
 
+def create_kernel_tree_img(gp_model: GPModel,
+                           graph_name: str = 'best_kernel_tree',
+                           directory: str = '../results/figures'):
+    graph = gp_model.covariance.to_binary_tree().create_graph(name=graph_name)
+    graph.format = 'png'  # only tested with PNG
+    graph.render(f"{graph_name}.gv", directory, view=False, cleanup=True)
+
+    img = plt.imread(graph.filepath + '.' + graph.format)
+
+    return img
+
+
 def plot_kernel_tree(gp_model: GPModel,
                      graph_name: str = 'best_kernel_tree',
                      directory: str = '../results/figures') -> None:
@@ -165,10 +177,7 @@ def plot_kernel_tree(gp_model: GPModel,
     :param directory:
     :return:
     """
-    graph = gp_model.covariance.to_binary_tree().create_graph(name=graph_name)
-    graph.format = 'png'  # only tested with PNG
-    graph.render(f"{graph_name}.gv", directory, view=False, cleanup=True)
-    img = plt.imread(graph.filepath + '.' + graph.format)
+    img = create_kernel_tree_img(gp_model, graph_name, directory)
 
     f, ax = plt.subplots(figsize=(5, 5), dpi=100)
     f.subplots_adjust(0, 0, 1, 1)
