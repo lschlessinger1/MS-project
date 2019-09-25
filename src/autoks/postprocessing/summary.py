@@ -104,7 +104,6 @@ def create_figures(best_gp_model, best_model, tracker):
     # If training data is 1D, show a plot.
     if best_model.input_dim == 1:
         best_model.plot(plot_density=True, title='Best Model')
-        plt.show()
 
     # View results of experiment
     for stat_book in tracker.stat_book_collection.stat_book_list():
@@ -112,6 +111,8 @@ def create_figures(best_gp_model, best_model, tracker):
 
     # Plot the kernel tree of the best model
     plot_kernel_tree(best_gp_model)
+
+    plt.show()
 
 
 def print_summary(best_gp_model, best_model, x_train, y_train, x_test=None, y_test=None):

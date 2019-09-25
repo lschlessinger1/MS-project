@@ -20,9 +20,10 @@ def plot_best_scores(score_name: str,
         best_scores = stat_book.maximum(score_name)
         x_label = 'generation'
 
-    plot_best_so_far(best_scores, x_label=x_label)
-    plt.gcf().suptitle(f'{stat_book.label}', y=1)
-    plt.gcf().subplots_adjust(top=0.88)
+    ax = plot_best_so_far(best_scores, x_label=x_label)
+    fig = ax.figure
+    fig.suptitle(f'{stat_book.label}', y=1)
+    fig.subplots_adjust(top=0.88)
     plt.show()
 
 
@@ -44,9 +45,10 @@ def plot_score_summary(score_name: str,
         std_scores = stat_book.std(score_name)
         x_label = 'generation'
 
-    plot_distribution(mean_scores, std_scores, best_scores, x_label=x_label)
-    plt.gcf().suptitle(f'{stat_book.label}', y=1)
-    plt.gcf().subplots_adjust(top=0.88)
+    ax = plot_distribution(mean_scores, std_scores, best_scores, x_label=x_label)
+    fig = ax.figure
+    fig.suptitle(f'{stat_book.label}', y=1)
+    fig.subplots_adjust(top=0.88)
     plt.show()
 
 
@@ -64,10 +66,11 @@ def plot_n_hyperparams_summary(n_hyperparams_name: str,
         best_n_hyperparameters = None
     median_n_hyperparameters = stat_book.median(n_hyperparams_name)
     std_n_hyperparameters = stat_book.std(n_hyperparams_name)
-    plot_distribution(median_n_hyperparameters, std_n_hyperparameters, best_n_hyperparameters,
-                      value_name='median', metric_name='# Hyperparameters', x_label=x_label)
-    plt.gcf().suptitle(f'{stat_book.label}', y=1)
-    plt.gcf().subplots_adjust(top=0.88)
+    ax = plot_distribution(median_n_hyperparameters, std_n_hyperparameters, best_n_hyperparameters,
+                           value_name='median', metric_name='# Hyperparameters', x_label=x_label)
+    fig = ax.figure
+    fig.suptitle(f'{stat_book.label}', y=1)
+    fig.subplots_adjust(top=0.88)
     plt.show()
 
 
@@ -85,10 +88,11 @@ def plot_n_operands_summary(n_operands_name: str,
         best_n_operands = None
     median_n_operands = stat_book.median(n_operands_name)
     std_n_operands = stat_book.std(n_operands_name)
-    plot_distribution(median_n_operands, std_n_operands, best_n_operands, value_name='median',
-                      metric_name='# Operands', x_label=x_label)
-    plt.gcf().suptitle(f'{stat_book.label}', y=1)
-    plt.gcf().subplots_adjust(top=0.88)
+    ax = plot_distribution(median_n_operands, std_n_operands, best_n_operands, value_name='median',
+                           metric_name='# Operands', x_label=x_label)
+    fig = ax.figure
+    fig.suptitle(f'{stat_book.label}', y=1)
+    fig.subplots_adjust(top=0.88)
     plt.show()
 
 
@@ -127,9 +131,10 @@ def plot_cov_dist_summary(cov_dists_name: str,
     """
     mean_cov_dists = stat_book.mean(cov_dists_name)
     std_cov_dists = stat_book.std(cov_dists_name)
-    plot_distribution(mean_cov_dists, std_cov_dists, metric_name='covariance distance', x_label=x_label)
-    plt.gcf().suptitle(f'{stat_book.label}', y=1)
-    plt.gcf().subplots_adjust(top=0.88)
+    ax = plot_distribution(mean_cov_dists, std_cov_dists, metric_name='covariance distance', x_label=x_label)
+    fig = ax.figure
+    fig.suptitle(f'{stat_book.label}', y=1)
+    fig.subplots_adjust(top=0.88)
     plt.show()
 
 
@@ -142,10 +147,11 @@ def plot_kernel_diversity_summary(diversity_scores_name: str,
     """
     mean_diversity_scores = stat_book.running_mean(diversity_scores_name)
     std_diversity_scores = stat_book.running_std(diversity_scores_name)
-    plot_distribution(mean_diversity_scores, std_diversity_scores, metric_name='diversity',
-                      value_name='population', x_label=x_label)
-    plt.gcf().suptitle(f'{stat_book.label}', y=1)
-    plt.gcf().subplots_adjust(top=0.88)
+    ax = plot_distribution(mean_diversity_scores, std_diversity_scores, metric_name='diversity',
+                           value_name='population', x_label=x_label)
+    fig = ax.figure
+    fig.suptitle(f'{stat_book.label}', y=1)
+    fig.subplots_adjust(top=0.88)
     plt.show()
 
 
@@ -163,5 +169,10 @@ def plot_kernel_tree(gp_model: GPModel,
     graph.format = 'png'  # only tested with PNG
     graph.render(f"{graph_name}.gv", directory, view=False, cleanup=True)
     img = plt.imread(graph.filepath + '.' + graph.format)
-    plt.imshow(img)
-    plt.show()
+
+    f, ax = plt.subplots(figsize=(5, 5), dpi=100)
+    f.subplots_adjust(0, 0, 1, 1)
+    ax.imshow(img)
+    ax.set_axis_off()
+
+    return ax
