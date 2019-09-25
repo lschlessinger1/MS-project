@@ -159,16 +159,15 @@ def run_experiment(experiment_config: dict,
             json_bytes = json_str.encode('utf-8')
             outfile.write(json_bytes)
 
+        if experiment:
+            experiment.log_asset_data(output_dict, file_name=str(exp_dir_name) + ".json")
+
         if use_gcp:
             # Save output file(s) to bucket
             # TODO: this should be done in the background uploading everything in gcp.run.dir
             bucket_name = "automated-kernel-search"
             upload_blob(bucket_name, json_bytes, outfile.name)
             logging.info(f"Uploaded blob {outfile.name} to bucket {bucket_name}")
-
-        if experiment:
-            with gzip.GzipFile(output_filename, 'r') as outfile:
-                experiment.log_asset(outfile, file_name=outfile.name)
 
         return output_filename
 
