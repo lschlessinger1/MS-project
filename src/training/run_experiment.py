@@ -164,6 +164,10 @@ def run_experiment(experiment_config: dict,
             upload_blob(bucket_name, json_bytes, outfile.name)
             logging.info(f"Uploaded blob {outfile.name} to bucket {bucket_name}")
 
+        if experiment:
+            with gzip.GzipFile(output_filename, 'r') as outfile:
+                experiment.log_asset(outfile, file_name=outfile.name)
+
         return output_filename
 
 
