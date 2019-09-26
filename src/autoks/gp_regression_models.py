@@ -11,7 +11,7 @@ from src.autoks.core.hyperprior import HyperpriorMap
 class KernelKernelGPModel:
 
     def __init__(self,
-                 kernel_kernel: Covariance,
+                 kernel_kernel: Optional[Covariance] = None,
                  noise_var: Optional[float] = None,
                  exact_f_eval: bool = False,
                  optimizer: Optional[str] = 'lbfgsb',
