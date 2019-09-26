@@ -11,8 +11,6 @@ from src.autoks.core.hyperprior import HyperpriorMap
 class KernelKernelGPModel:
 
     def __init__(self,
-                 x: np.ndarray,
-                 y: np.ndarray,
                  kernel_kernel: Covariance,
                  noise_var: Optional[float] = None,
                  exact_f_eval: bool = False,
@@ -23,8 +21,6 @@ class KernelKernelGPModel:
                  kernel_kernel_hyperpriors: Optional[HyperpriorMap] = None):
         """
 
-        :param x: 2d array of indices of distance builder
-        :param y: model fitness scores
         :param kernel_kernel:
         :param noise_var:
         :param exact_f_eval:
@@ -40,21 +36,58 @@ class KernelKernelGPModel:
         self.optimizer = optimizer
         self.max_iters = max_iters
         self.verbose = verbose
+        self.covariance = kernel_kernel
+        self.kernel_hyperpriors = kernel_kernel_hyperpriors
+        self.model = None
+
+    def train(self):
+        """Train (optimize) the model."""
+        if self.max_iters > 0:
+            # Update the model maximizing the marginal likelihood.
+            if self.optimize_restarts == 1:
+                self.model.optimize(optimizer=self.optimizer, max_iters=self.max_iters, messages=False,
+                                    ipython_notebook=False)
+            else:
+                self.model.optimize_restarts(num_restarts=self.optimize_restarts, optimizer=self.optimizer,
+                                             max_iters=self.max_iters, ipython_notebook=False, verbose=self.verbose,
+                                             robust=True, messages=False)
+
+    def _create_model(self,
+                      x: np.ndarray,
+                      y: np.ndarray):
+        """Create model given input data X and output data Y.
+
+        :param x: 2d array of indices of distance builder
+        :param y: model fitness scores
+        :return:
+        """
         # Make sure input data consists only of positive integers.
         assert np.issubdtype(x.dtype, np.integer) and x.min() >= 0
 
+        # Define kernel
+        self.input_dim = x.shape[1]
+        # TODO: figure out default kernel kernel initialization
+        if self.covariance is None:
+            assert self.covariance is not None
+            # kern = GPy.kern.RBF(self.input_dim, variance=1.)
+        else:
+            kern = self.covariance.raw_kernel
+            self.covariance = None
+
+        # Define model
         noise_var = y.var() * 0.01 if self.noise_var is None else self.noise_var
         normalize = x.size > 1  # only normalize if more than 1 observation.
-        self._model = GPRegression(x, y, kernel_kernel.raw_kernel, noise_var=noise_var, normalizer=normalize)
+        self.model = GPRegression(x, y, kern, noise_var=noise_var, normalizer=normalize)
 
-        if kernel_kernel_hyperpriors is not None:
-            if 'GP' in kernel_kernel_hyperpriors:
+        # Set hyperpriors
+        if self.kernel_hyperpriors is not None:
+            if 'GP' in self.kernel_hyperpriors:
                 # Set likelihood hyperpriors.
-                likelihood_hyperprior = kernel_kernel_hyperpriors['GP']
+                likelihood_hyperprior = self.kernel_hyperpriors['GP']
                 set_priors(self.model.likelihood, likelihood_hyperprior, in_place=True)
-            if 'SE' in kernel_kernel_hyperpriors:
+            if 'SE' in self.kernel_hyperpriors:
                 # Set kernel hyperpriors.
-                se_hyperprior = kernel_kernel_hyperpriors['SE']
+                se_hyperprior = self.kernel_hyperpriors['SE']
                 set_priors(self.model.kern, se_hyperprior, in_place=True)
 
         # Restrict variance if exact evaluations of the objective.
@@ -68,16 +101,14 @@ class KernelKernelGPModel:
             else:
                 self.model.Gaussian_noise.constrain_bounded(1e-9, 1e6, warning=False)
 
-    def train(self):
-        if self.max_iters > 0:
-            # Update the model maximizing the marginal likelihood.
-            if self.optimize_restarts == 1:
-                self.model.optimize(optimizer=self.optimizer, max_iters=self.max_iters, messages=False,
-                                    ipython_notebook=False)
-            else:
-                self.model.optimize_restarts(num_restarts=self.optimize_restarts, optimizer=self.optimizer,
-                                             max_iters=self.max_iters, ipython_notebook=False, verbose=self.verbose,
-                                             robust=True, messages=False)
+    def update(self, x_all, y_all, x_new, y_new):
+        """Update model with new observations."""
+        if self.model is None:
+            self._create_model(x_all, y_all)
+        else:
+            self.model.set_XY(x_all, y_all)
+
+        self.train()
 
     def _predict(self,
                  x: np.ndarray,
@@ -95,10 +126,6 @@ class KernelKernelGPModel:
         m, v = self._predict(x, False, with_noise)
         # We can take the square root because v is just a diagonal matrix of variances
         return m, np.sqrt(v)
-
-    @property
-    def model(self):
-        return self._model
 
     def get_f_max(self):
         """

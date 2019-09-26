@@ -265,9 +265,9 @@ class SurrogateEvolutionaryModelSelector(EvolutionaryModelSelector):
         kernel_kernel = Covariance(RBFDistanceBuilderKernelKernel(self.kernel_builder, n_models=len(self.active_models),
                                                                   lengthscale=ell))
         kernel_kernel_hyperpriors = ms_args['hyperpriors']
-        self.kernel_kernel_gp_model = KernelKernelGPModel(meta_x_init, meta_y_init, kernel_kernel, verbose=False,
-                                                          exact_f_eval=False,
+        self.kernel_kernel_gp_model = KernelKernelGPModel(kernel_kernel, verbose=False, exact_f_eval=False,
                                                           kernel_kernel_hyperpriors=kernel_kernel_hyperpriors)
+        self.kernel_kernel_gp_model.update(meta_x_init, meta_y_init, None, None)
 
         self.kernel_kernel_gp_model_train_freq = 10
 
