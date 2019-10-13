@@ -251,6 +251,7 @@ class TestCKSGrammar(unittest.TestCase):
         self.assertEqual(expected, len(kernels))
 
     @unittest.skip("Skipping expand full brute force tests level 2 and 3 in the interest of time.")
+    @np.testing.dec.slow
     def test_expand_full_brute_force_level_2_and_3(self):
         grammar = CKSGrammar(base_kernel_names=['SE', 'RQ'])
         grammar.build(n_dims=2)
@@ -360,6 +361,7 @@ class TestBomsGrammar(unittest.TestCase):
         self.assertIsNotNone(grammar._number_of_top_k_best)
         self.assertIsNotNone(grammar._number_of_random_walks)
 
+    @np.testing.dec.slow
     def test_get_candidates_empty(self):
         base_kernel_names = ['SE', 'RQ']
         n_dim = 2
@@ -378,6 +380,7 @@ class TestBomsGrammar(unittest.TestCase):
 
         self.assertEqual(len(expected_candidates), len(candidates))
 
+    @np.testing.dec.slow
     def test_get_candidates(self):
         base_kernel_names = ['SE', 'RQ']
         n_dim = 2
