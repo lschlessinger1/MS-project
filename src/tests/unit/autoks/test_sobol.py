@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from src.autoks.distance.sobol import gen_sobol, sobol_sample
+from src.autoks.distance.sampling.sobol import gen_sobol, sobol_sample
 
 
 class TestSobol(TestCase):

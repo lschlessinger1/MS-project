@@ -1,6 +1,8 @@
 import numpy as np
-
 from sobol_seq import i4_sobol_generate
+
+from src.autoks.distance.sampling.sampler import Sampler
+from src.autoks.distance.sampling.scramble import scramble_array
 
 # FIXME: This should actually accept up to 1111 dimensions
 MAX_DIMS = 40
@@ -57,10 +59,6 @@ def sobol_sample(n_samples: int,
     return samples
 
 
-def scramble_array(a: np.ndarray) -> None:
-    """In-place scrambling of an array."""
-    # FIXME: This should actually use the Matousek-Affine-Owen scrambling algorithm
-    # Matousek, J. “On the L2-Discrepancy for Anchored Boxes.” Journal of Complexity.
-    # Vol. 14, Number 4, 1998, pp. 527–556.
-    # for now, use a Naive scrambling method
-    np.random.shuffle(a)
+class SobolSampler(Sampler):
+    def sample(self, n_points: int, n_dims: int) -> np.ndarray:
+        return sobol_sample(n_points, n_dims)

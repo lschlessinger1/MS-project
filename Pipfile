@@ -33,6 +33,7 @@ google-cloud-logging = "*"
 jupyter = "*"
 src = {editable = true,path = "."}
 comet-ml = "*"
+ghalton = "*"
 
 [requires]
 python_version = "3.6"
