@@ -1,8 +1,9 @@
 from unittest import TestCase
 
-from GPy.kern import RBF, RationalQuadratic
+from GPy.kern import RBF, RationalQuadratic, StandardPeriodic, LinScaleShift
 
 from src.autoks.core.active_set import ActiveSet
+from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
 
 
@@ -32,7 +33,7 @@ class TestActiveSet(TestCase):
 
     def test_get_index_to_insert_one_item(self):
         # add one model
-        self.active_set.add_model(GPModel(RBF(1)))
+        self.active_set.add_model(GPModel(Covariance(RBF(1))))
 
         expected_index = 1
         actual_index = self.active_set.get_index_to_insert()
@@ -40,21 +41,21 @@ class TestActiveSet(TestCase):
 
     def test_get_index_to_insert_full_no_priority(self):
         # add five models
-        self.active_set.add_model(GPModel(RBF(1)))
-        self.active_set.add_model(GPModel(RationalQuadratic(1)))
-        self.active_set.add_model(GPModel(RBF(1)))
-        self.active_set.add_model(GPModel(RationalQuadratic(1)))
-        self.active_set.add_model(GPModel(RBF(1)))
+        self.active_set.add_model(GPModel(Covariance(RBF(1))))
+        self.active_set.add_model(GPModel(Covariance(RationalQuadratic(1))))
+        self.active_set.add_model(GPModel(Covariance(StandardPeriodic(1))))
+        self.active_set.add_model(GPModel(Covariance(LinScaleShift(1))))
+        self.active_set.add_model(GPModel(Covariance(RBF(1) + RBF(1))))
 
         self.assertRaises(ValueError, self.active_set.get_index_to_insert)
 
     def test_get_index_to_insert_full_with_priority(self):
         # add five models
-        self.active_set.add_model(GPModel(RBF(1)))
-        self.active_set.add_model(GPModel(RationalQuadratic(1)))
-        self.active_set.add_model(GPModel(RBF(1)))
-        self.active_set.add_model(GPModel(RationalQuadratic(1)))
-        self.active_set.add_model(GPModel(RBF(1)))
+        self.active_set.add_model(GPModel(Covariance(RBF(1))))
+        self.active_set.add_model(GPModel(Covariance(RationalQuadratic(1))))
+        self.active_set.add_model(GPModel(Covariance(StandardPeriodic(1))))
+        self.active_set.add_model(GPModel(Covariance(LinScaleShift(1))))
+        self.active_set.add_model(GPModel(Covariance(RBF(1) + RBF(1))))
 
         remove_priority = [2]
         self.active_set.remove_priority = remove_priority
@@ -71,7 +72,7 @@ class TestActiveSet(TestCase):
         self.assertEqual(self.active_set.remove_priority, [2, 3])
 
     def test_add_model_empty(self):
-        candidate = GPModel(RBF(1))
+        candidate = GPModel(Covariance(RBF(1)))
         expected_ind, expected_status = 0, True
         actual_ind, actual_status = self.active_set.add_model(candidate)
         self.assertEqual(expected_ind, actual_ind)
@@ -85,7 +86,7 @@ class TestActiveSet(TestCase):
 
     def test_add_model_same(self):
         # TODO: should this actually be same kernel?
-        models = [GPModel(RBF(1))] * 2
+        models = [GPModel(Covariance(RBF(1)))] * 2
         self.active_set.add_model(models[0])
 
         expected_ind = -1
@@ -101,7 +102,7 @@ class TestActiveSet(TestCase):
         self.assertEqual(expected_next_ind, self.active_set.get_index_to_insert())
 
     def test_update_empty(self):
-        candidates = [GPModel(RBF(1)), GPModel(RationalQuadratic(1))]
+        candidates = [GPModel(Covariance(RBF(1))), GPModel(Covariance(RationalQuadratic(1)))]
         expected_candidates_ind = [0, 1]
         new_candidates_ind = self.active_set.update(candidates)
         self.assertEqual(expected_candidates_ind, new_candidates_ind)
@@ -113,13 +114,15 @@ class TestActiveSet(TestCase):
         self.assertEqual(expected_next_ind, self.active_set.get_index_to_insert())
 
     def test_update_exceed_max_no_remove(self):
-        candidates = [GPModel(RBF(1)), GPModel(RBF(1)), GPModel(RBF(1)), GPModel(RBF(1)), GPModel(RBF(1)),
-                      GPModel(RBF(1))]
+        candidates = [GPModel(Covariance(RBF(1))), GPModel(Covariance(RationalQuadratic(1))),
+                      GPModel(Covariance(LinScaleShift(1))), GPModel(Covariance(StandardPeriodic(1))),
+                      GPModel(Covariance(RBF(1) + RBF(1))), GPModel(Covariance(RBF(1) * RBF(1)))]
         self.assertRaises(ValueError, self.active_set.update, candidates)
 
     def test_update_exceed_max_remove_set(self):
-        candidates = [GPModel(RBF(1)), GPModel(RBF(1)), GPModel(RBF(1)), GPModel(RBF(1)), GPModel(RBF(1)),
-                      GPModel(RationalQuadratic(1))]
+        candidates = [GPModel(Covariance(RBF(1))), GPModel(Covariance(RationalQuadratic(1))),
+                      GPModel(Covariance(LinScaleShift(1))), GPModel(Covariance(StandardPeriodic(1))),
+                      GPModel(Covariance(RBF(1) + RBF(1))), GPModel(Covariance(RBF(1) * RBF(1)))]
         self.active_set.remove_priority = [0, 1, 2, 3, 4]
         actual_new_candidates_ind = self.active_set.update(candidates)
         expected_new_candidates_ind = [1, 2, 3, 4, 0]
