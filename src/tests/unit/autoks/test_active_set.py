@@ -133,3 +133,73 @@ class TestActiveSet(TestCase):
 
         expected_next_ind = 1
         self.assertEqual(expected_next_ind, self.active_set.get_index_to_insert())
+
+    def test_update_with_duplicates(self):
+        candidates = [GPModel(Covariance(RBF(1))), GPModel(Covariance(RBF(1)))]
+        expected_candidates_ind = [0]
+        new_candidates_ind = self.active_set.update(candidates)
+        self.assertEqual(expected_candidates_ind, new_candidates_ind)
+
+        expected_models = [candidates[0], None, None, None, None]
+        self.assertListEqual(expected_models, self.active_set.models)
+
+        expected_next_ind = 1
+        self.assertEqual(expected_next_ind, self.active_set.get_index_to_insert())
+
+    def test_get_same_candidate(self):
+        candidates = [GPModel(Covariance(RBF(1)))]
+        self.active_set.update(candidates)
+        actual = self.active_set.get(candidates[0])
+        self.assertIsInstance(actual, int)
+        expected_ind = 0
+        self.assertEqual(expected_ind, actual)
+
+    def test_get_same_candidate_expression(self):
+        candidates = [GPModel(Covariance(RBF(1)))]
+        self.active_set.update(candidates)
+        new_model = GPModel(Covariance(RBF(1)))
+        actual = self.active_set.get(new_model)
+        self.assertIsInstance(actual, int)
+        expected_ind = 0
+        self.assertEqual(expected_ind, actual)
+
+    def test_get_same_candidate_with_default(self):
+        candidates = [GPModel(Covariance(RBF(1)))]
+        self.active_set.update(candidates)
+        actual = self.active_set.get(candidates[0], -1)
+        self.assertIsInstance(actual, int)
+        expected_ind = 0
+        self.assertEqual(expected_ind, actual)
+
+    def test_get_new_candidate_with_default(self):
+        candidates = [GPModel(Covariance(RBF(1)))]
+        self.active_set.update(candidates)
+        new_model = GPModel(Covariance(RationalQuadratic(1)))
+        default = 2
+        actual = self.active_set.get(new_model, default)
+        self.assertIsInstance(actual, int)
+        expected_ind = default
+        self.assertEqual(expected_ind, actual)
+
+    def test_index_same_candidate(self):
+        candidates = [GPModel(Covariance(RBF(1)))]
+        self.active_set.update(candidates)
+        actual = self.active_set.index(candidates[0])
+        self.assertIsInstance(actual, int)
+        expected_ind = 0
+        self.assertEqual(expected_ind, actual)
+
+    def test_index_same_candidate_expression(self):
+        candidates = [GPModel(Covariance(RBF(1)))]
+        self.active_set.update(candidates)
+        new_model = GPModel(Covariance(RBF(1)))
+        actual = self.active_set.index(new_model)
+        self.assertIsInstance(actual, int)
+        expected_ind = 0
+        self.assertEqual(expected_ind, actual)
+
+    def test_index_new_model(self):
+        candidates = [GPModel(Covariance(RBF(1)))]
+        self.active_set.update(candidates)
+        new_model = GPModel(Covariance(RationalQuadratic(1)))
+        self.assertRaises(KeyError, self.active_set.index, new_model)

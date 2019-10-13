@@ -15,6 +15,7 @@ class ActiveSet:
         self._models = [None] * self.max_n_models
         self._remove_priority = []  # list of indices representing order in which to remove models
         self.selected_indices = []
+        self._model_dict_cache = dict()
 
     @property
     def remove_priority(self) -> List[int]:
@@ -61,7 +62,10 @@ class ActiveSet:
         """Returns new candidate indices"""
         newly_inserted_indices = []
 
-        for candidate in candidates:
+        # i.e. candidates that haven't already been inserted.
+        unique_candidates = [c for c in candidates if c.covariance.symbolic_expr_expanded not in self._model_dict_cache]
+
+        for candidate in unique_candidates:
             inserted_index, success = self.add_model(candidate)
             if success:
                 newly_inserted_indices.append(inserted_index)
@@ -70,12 +74,19 @@ class ActiveSet:
         return newly_inserted_indices[-self.max_n_models:]
 
     def add_model(self, model: Model) -> Tuple[int, bool]:
-        if model in self.models:
+        new_model_key = model.covariance.symbolic_expr_expanded
+        if model in self.models or new_model_key in self._model_dict_cache:
             return -1, False
 
         idx = self.get_index_to_insert()
 
         self._models[idx] = model
+
+        if idx in self._model_dict_cache:
+            old_model_key = self._model_dict_cache[idx]
+            del self._model_dict_cache[old_model_key]
+        self._model_dict_cache[idx] = new_model_key
+        self._model_dict_cache[new_model_key] = idx
 
         return idx, True
 
@@ -87,6 +98,12 @@ class ActiveSet:
 
     def get_candidates(self) -> List[Model]:
         return [self.models[i] for i in self.get_candidate_indices()]
+
+    def index(self, model: Model) -> int:
+        return self._model_dict_cache[model.covariance.symbolic_expr_expanded]
+
+    def get(self, model: Model, default: Optional = None) -> int:
+        return self._model_dict_cache.get(model.covariance.symbolic_expr_expanded, default)
 
     def __len__(self) -> int:
         return sum(1 for m in self.models if m is not None)
