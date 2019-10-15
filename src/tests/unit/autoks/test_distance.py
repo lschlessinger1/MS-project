@@ -1,7 +1,9 @@
+from typing import List
 from unittest import TestCase, mock
 from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 from GPy.core.parameterization.priors import LogGaussian, Gaussian
 from GPy.kern import RBF, RationalQuadratic
 from numpy.linalg import LinAlgError
@@ -9,7 +11,91 @@ from numpy.linalg import LinAlgError
 from src.autoks.core.active_set import ActiveSet
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
-from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder, DistanceBuilder
+from src.autoks.core.grammar import BomsGrammar
+from src.autoks.distance.distance import fix_numerical_problem, chol_safe, HellingerDistanceBuilder, DistanceBuilder, \
+    FrobeniusDistanceBuilder, CorrelationDistanceBuilder
+
+
+class DistanceMetricCase:
+
+    def __init__(self, metric, pool, n):
+        self.metric = metric
+        self.pool = pool
+        self.n = n
+
+    @pytest.mark.slow
+    def test_non_negativity(self):
+        """Test distance metric non-negativity for n samples.
+
+        d(x, y) >= 0
+        """
+        # pool = np.asarray(self.pool)
+        for _ in range(self.n):
+            ind = np.random.choice(len(self.pool), size=2)
+            x, y = (self.pool[i] for i in ind)
+            distance = self.metric(x, y)
+            assert distance >= 0
+
+    @pytest.mark.slow
+    def test_identity_of_indiscernibles(self):
+        """Test distance metric identity of indiscernibles for n samples.
+
+        Also known as Leibniz's law
+
+        d(x, y) = 0 <=> x = y
+        """
+        for _ in range(self.n):
+            ind = np.random.choice(len(self.pool), size=1)[0]
+            x = self.pool[ind]
+            distance = self.metric(x, x)
+            expected = 0
+            assert distance == pytest.approx(expected, abs=1e-3)
+
+    @pytest.mark.slow
+    def test_symmetry(self):
+        """Test distance metric symmetry for n samples.
+
+        d(x, y) = d(y, x)
+        """
+
+        for _ in range(self.n):
+            ind = np.random.choice(len(self.pool), size=2)
+            x, y = (self.pool[i] for i in ind)
+
+            distance_1 = self.metric(x, y)
+            distance_2 = self.metric(y, x)
+            # doesn't work if x == y
+            diff = distance_1 - distance_2
+            expected = 0.
+            assert diff == pytest.approx(expected, abs=1e-2)
+
+    @pytest.mark.slow
+    def test_triangle_inequality(self):
+        """Test distance metric triangle inequality for n samples.
+
+        d(x, z) <= d(x, y) + d(y, z)
+        """
+        for _ in range(self.n):
+            ind = np.random.choice(len(self.pool), size=3)
+            x, y, z = (self.pool[i] for i in ind)
+
+            tol = 1e-3
+            assert self.metric(x, z) - tol <= self.metric(x, y) + self.metric(y, z)
+
+
+class BoundedMetricCase(DistanceMetricCase):
+
+    @pytest.mark.slow
+    def test_boundedness(self):
+        """Test distance metric boundedness for n samples.
+
+        d(x, y) <= b
+        """
+        for _ in range(self.n):
+            ind = np.random.choice(len(self.pool), size=2)
+            x, y = (self.pool[i] for i in ind)
+            distance = self.metric(x, y)
+            assert distance <= self.bound
 
 
 class TestDistance(TestCase):
@@ -90,6 +176,9 @@ class TestDistanceBuilder(TestCase):
                                               [nan, nan, 0]]))
 
         mock_precompute_information.assert_called_once_with(self.active_models, self.ind_init, self.x)
+
+    def test_metric(self):
+        self.assertRaises(NotImplementedError, DistanceBuilder.metric, 'arg1', 'arg2')
 
 
 class TestHellingerDistanceBuilder(TestCase):
@@ -211,3 +300,58 @@ class TestHellingerDistanceBuilder(TestCase):
         self.assertIsInstance(result[1], np.ndarray)
         self.assertEqual(result[0].shape, (num_samples,))
         self.assertEqual(result[1].shape, (x.shape[0], x.shape[0], num_samples))
+
+
+class TestHellingerDistanceMetric(TestCase, BoundedMetricCase):
+
+    def setUp(self) -> None:
+        x = np.array([[1, 2], [4, 5], [6, 7], [8, 9], [10, 11]])
+        noise_prior = Gaussian(mu=np.log(0.01), sigma=1)
+        builder = HellingerDistanceBuilder(noise_prior, num_samples=20, max_num_hyperparameters=40, max_num_kernels=10,
+                                           active_models=MagicMock(), initial_model_indices=MagicMock(), data_X=x)
+
+        self.metric = builder.metric
+        self.n = 50
+        pool = create_pool_of_covariances(self.n)
+        self.pool = [builder.create_precomputed_info(cov, x) for cov in pool]
+        self.bound = 1
+
+
+class TestCorrelationDistanceMetric(TestCase, BoundedMetricCase):
+
+    def setUp(self) -> None:
+        x = np.array([[1, 2], [4, 5], [6, 7], [8, 9], [10, 11]])
+        noise_prior = Gaussian(mu=np.log(0.01), sigma=1)
+        builder = CorrelationDistanceBuilder(noise_prior, num_samples=20, max_num_hyperparameters=40,
+                                             max_num_kernels=10,
+                                             active_models=MagicMock(), initial_model_indices=MagicMock(), data_X=x)
+
+        self.metric = builder.metric
+        self.n = 50
+        pool = create_pool_of_covariances(self.n)
+        self.pool = [builder.create_precomputed_info(cov, x) for cov in pool]
+        self.bound = 1
+
+
+class TestFrobeniusDistanceMetric(TestCase, DistanceMetricCase):
+
+    def setUp(self) -> None:
+        x = np.array([[1, 2], [4, 5], [6, 7], [8, 9], [10, 11]])
+        noise_prior = Gaussian(mu=np.log(0.01), sigma=1)
+        builder = FrobeniusDistanceBuilder(noise_prior, num_samples=20, max_num_hyperparameters=40, max_num_kernels=10,
+                                           active_models=MagicMock(), initial_model_indices=MagicMock(), data_X=x)
+
+        self.metric = builder.metric
+        self.n = 50
+        pool = create_pool_of_covariances(self.n)
+        self.pool = [builder.create_precomputed_info(cov, x) for cov in pool]
+
+
+def create_pool_of_covariances(n: int = 50, n_dims: int = 1) -> List[Covariance]:
+    grammar = BomsGrammar(base_kernel_names=['SE', 'RQ', 'LIN', 'PER'])
+    grammar.build(n_dims=n_dims)
+    max_number_of_models = n
+
+    level = 3
+    covariances = grammar.expand_full_brute_force(level, max_number_of_models)
+    return covariances

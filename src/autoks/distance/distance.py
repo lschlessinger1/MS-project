@@ -39,12 +39,6 @@ class DistanceBuilder:
         self.probability_samples = util.probability_samples(max_num_hyperparameters=self.max_num_hyperparameters,
                                                             num_samples=self.num_samples)
 
-        # Add jitter to probability samples.
-        jitter_size = 1e-4
-        jitter = np.random.uniform(-jitter_size, jitter_size, self.probability_samples.shape)
-        self.probability_samples += jitter
-        np.clip(self.probability_samples, 0, 1)
-
         # FIXME: This forces the noise prior to be gaussian because we then exponentiate it, making it a Log-Gaussian
         assert noise_prior.__class__ == Gaussian
         noise_prior = np.array([noise_prior])
@@ -107,11 +101,19 @@ class DistanceBuilder:
         """
         return self._average_distance[:index, :index]
 
+    @staticmethod
+    def metric(data_i, data_j, **kwargs) -> float:
+        raise NotImplementedError
+
     def compute_distance(self,
                          active_models: ActiveModels,
                          indices_i: List[int],
                          indices_j: List[int]) -> None:
-        raise NotImplementedError
+        for i in indices_i:
+            for j in indices_j:
+                dist = self.metric(active_models.models[i].info, active_models.models[j].info)
+                self._average_distance[i, j] = dist
+                self._average_distance[j, i] = dist
 
     def create_precomputed_info(self,
                                 covariance: Covariance,
@@ -124,10 +126,9 @@ class HellingerDistanceBuilder(DistanceBuilder):
     the model's Gram matrices.
     """
 
-    def __init__(self, noise_prior, num_samples, max_num_hyperparameters, max_num_kernels,
-                 active_models, initial_model_indices, data_X):
-        super().__init__(noise_prior, num_samples, max_num_hyperparameters, max_num_kernels,
-                         active_models, initial_model_indices, data_X)
+    @staticmethod
+    def metric(data_i, data_j, **kwargs) -> float:
+        return HellingerDistanceBuilder.hellinger_distance(*data_i, *data_j, **kwargs)
 
     @staticmethod
     def hellinger_distance(log_det_i: np.ndarray,
@@ -135,12 +136,17 @@ class HellingerDistanceBuilder(DistanceBuilder):
                            log_det_j: np.ndarray,
                            mini_gram_matrices_j: np.ndarray,
                            tol: float = 0.02) -> float:
+        """Hellinger distance between two multivariate Gaussian distributions with zero means zero.
+
+        https://en.wikipedia.org/wiki/Hellinger_distance
+        """
         are_different = np.abs(log_det_i - log_det_j) > tol
         indices = np.arange(are_different.size)
-        logdet_p_and_q = log_det_i
+        logdet_p_and_q = log_det_i.copy()
         for i in indices[are_different]:
             p_K = mini_gram_matrices_i[:, :, i]
             q_K = mini_gram_matrices_j[:, :, i]
+
             p_and_q_kernels = 0.5 * (p_K + q_K)
             chol_p_and_q = chol_safe(p_and_q_kernels, tol)
             logdet_p_and_q[i] = 2 * np.sum(np.log(np.diag(chol_p_and_q)), axis=0)
@@ -152,18 +158,12 @@ class HellingerDistanceBuilder(DistanceBuilder):
         # Exponentiate.
         hellinger = 1 - np.exp(log_hellinger)
         distance = np.mean(hellinger, axis=0)
-        return float(distance)
 
-    def compute_distance(self,
-                         active_models: ActiveModels,
-                         indices_i: List[int],
-                         indices_j: List[int]) -> None:
-        # TODO: test correctness
-        for i in indices_i:
-            for j in indices_j:
-                dist = self.hellinger_distance(*active_models.models[i].info, *active_models.models[j].info)
-                self._average_distance[i, j] = dist
-                self._average_distance[j, i] = dist
+        # for numerical stability, clip distance to [0, 1] before taking sqrt
+        distance = np.clip(distance, 0, 1)
+        distance = np.sqrt(distance)
+
+        return float(distance)
 
     def create_precomputed_info(self,
                                 covariance: Covariance,
@@ -200,27 +200,19 @@ class FrobeniusDistanceBuilder(DistanceBuilder):
                          initial_model_indices, data_X)
 
     @staticmethod
-    def frobenius_distance(a: np.ndarray,
-                           b: np.ndarray,
-                           n_points: int) -> float:
-        """Average squared Frobenius distance between a vs b."""
-        return np.mean(np.sum((a - b) ** 2, axis=0), axis=0) / n_points
+    def metric(data_i, data_j, **kwargs) -> float:
+        return FrobeniusDistanceBuilder.frobenius_distance(data_i, data_j)
 
-    def compute_distance(self,
-                         active_models: ActiveModels,
-                         indices_i: List[int],
-                         indices_j: List[int]) -> None:
-        n_points = active_models.models[indices_i[0]].info.shape[0]
-        for i in indices_i:
-            for j in indices_j:
-                dist = self.frobenius_distance(active_models.models[i].info, active_models.models[j].info, n_points)
-                self._average_distance[i, j] = dist
-                self._average_distance[j, i] = dist
+    @staticmethod
+    def frobenius_distance(a: np.ndarray,
+                           b: np.ndarray) -> float:
+        """Average Frobenius distance between a vs b."""
+        distance = np.mean(np.sqrt(np.sum((a - b) ** 2, axis=0)))
+        return float(distance)
 
     def create_precomputed_info(self,
                                 covariance: Covariance,
                                 data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-
         n = data_X.shape[0]
 
         vectors = np.full((n ** 2, self.num_samples), np.nan, dtype=np.float32)
@@ -229,12 +221,63 @@ class FrobeniusDistanceBuilder(DistanceBuilder):
         hyperparameters = util.prior_sample(cov_priors, self.probability_samples)
         for i in range(hyperparameters.shape[0]):
             hyp = hyperparameters[i, :]
-            lmbda = self.hyperparameter_data_noise_samples[i]
-
+            noise_var = self.hyperparameter_data_noise_samples[i]
             covariance.raw_kernel[:] = hyp
-            k = covariance.raw_kernel.K(data_X, data_X)
-            k = k + lmbda * np.eye(k.shape[0])
-            vectors[:, i] = k.reshape(n * n).copy()
+            prior_covariance = covariance.raw_kernel.K(data_X, data_X)
+            prior_covariance += noise_var * np.eye(prior_covariance.shape[0])
+            vectors[:, i] = prior_covariance.reshape(n * n).copy()
+
+        return vectors
+
+
+class CorrelationDistanceBuilder(DistanceBuilder):
+
+    @staticmethod
+    def metric(data_i, data_j, **kwargs) -> float:
+        return CorrelationDistanceBuilder.correlation_distance(data_i, data_j)
+
+    @staticmethod
+    def correlation_distance(a: np.ndarray,
+                             b: np.ndarray) -> float:
+        """Average correlation distance between a vs b."""
+        a_mean = np.mean(a, axis=0)
+        b_mean = np.mean(b, axis=0)
+        a_centered = a - a_mean
+        b_centered = b - b_mean
+        # Batch dot product: sum of dot products for all vectors in a and
+        dot_prod = np.einsum('ij,ji->i', a_centered.T, b_centered)
+        a_norm = np.linalg.norm(a_centered, axis=0)
+        b_norm = np.linalg.norm(b_centered, axis=0)
+        correlation = dot_prod / (a_norm * b_norm)
+
+        # For numerical stability, clip distance to [0, 1] before taking sqrt.
+        correlation = np.clip(correlation, 0, 1)
+
+        # Ordinally equivalent to the angular distance (arccos(correlation)).
+        # See Metric distances derived from cosine similarity and Pearson and
+        # Spearman correlations, Dongen & Enright (2012).
+        correlation_dist = np.sqrt(0.5 * (1 - correlation))
+
+        distance = np.mean(correlation_dist, axis=0)
+
+        return float(distance)
+
+    def create_precomputed_info(self,
+                                covariance: Covariance,
+                                data_X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        n = data_X.shape[0]
+
+        vectors = np.full((n ** 2, self.num_samples), np.nan, dtype=np.float32)
+
+        cov_priors = get_priors(covariance.raw_kernel)
+        hyperparameters = util.prior_sample(cov_priors, self.probability_samples)
+        for i in range(hyperparameters.shape[0]):
+            hyp = hyperparameters[i, :]
+            noise_var = self.hyperparameter_data_noise_samples[i]
+            covariance.raw_kernel[:] = hyp
+            prior_covariance = covariance.raw_kernel.K(data_X, data_X)
+            prior_covariance += noise_var * np.eye(prior_covariance.shape[0])
+            vectors[:, i] = prior_covariance.reshape(n * n).copy()
 
         return vectors
 
