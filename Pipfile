@@ -34,6 +34,7 @@ jupyter = "*"
 src = {editable = true,path = "."}
 comet-ml = "*"
 ghalton = "*"
+xlrd = "*"
 
 [requires]
 python_version = "3.6"
