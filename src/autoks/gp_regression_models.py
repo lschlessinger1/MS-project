@@ -133,7 +133,8 @@ class KernelKernelGPModel:
         """
         return self.model.predict(self.model.X)[0].max()
 
-    def plot(self):
+    def plot(self, **plot_kwargs):
         import matplotlib.pyplot as plt
-        self.model.plot(plot_limits=(0, self.model.kern.n_models - 1))
+        self.model.plot(plot_limits=(0, self.model.kern.n_models - 1), resolution=self.model.kern.n_models,
+                        **plot_kwargs)
         plt.show()
