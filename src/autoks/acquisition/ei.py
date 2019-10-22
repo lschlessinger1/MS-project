@@ -4,9 +4,9 @@ from src.autoks.acquisition.util import get_quantiles
 from src.autoks.gp_regression_models import KernelKernelGPModel
 
 
-def compute_ei(x: np.ndarray,
-               model: KernelKernelGPModel,
-               jitter: float = 0.01):
+def expected_improvement(x: np.ndarray,
+                         model: KernelKernelGPModel,
+                         jitter: float = 0.01):
     """
     Computes the Expected Improvement per unit of cost.
     """

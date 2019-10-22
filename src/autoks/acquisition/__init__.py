@@ -1,1 +1,1 @@
-from .ei import compute_ei
+from .ei import expected_improvement
