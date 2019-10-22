@@ -35,6 +35,7 @@ src = {editable = true,path = "."}
 comet-ml = "*"
 ghalton = "*"
 xlrd = "*"
+psutil = "*"
 
 [requires]
 python_version = "3.6"
