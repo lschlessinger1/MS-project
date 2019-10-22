@@ -128,7 +128,6 @@ def run_experiment(experiment_config: dict,
         x_test, y_test = getattr(dataset, 'x_test', dataset.x), getattr(dataset, 'y_test', dataset.y)
         score = model_selector.evaluate(x_test, y_test)
         print(f'Test evaluation: {score}')
-        experiment.log_metric("test_metric", score)
 
     if use_gcp:
         logging.info({'test_metric': score})
