@@ -7,7 +7,7 @@ from src.training.run_experiment import run_experiment
 from src.autoks.postprocessing.summary import summarize
 
 
-def run_experiments(experiments_filename, save: bool):
+def run_experiments(experiments_filename, save: bool, use_comet: bool):
     """Run experiments from file."""
     with open(experiments_filename) as f:
         experiments_config = json.load(f)
@@ -18,7 +18,7 @@ def run_experiments(experiments_filename, save: bool):
     for i in range(n_experiments):
         experiment_config = experiments_config['experiments'][i]
         experiment_config['experiment_group'] = experiments_config['experiment_group']
-        exp_dirname = run_experiment(experiment_config, save_models=save, use_gcp=False)
+        exp_dirname = run_experiment(experiment_config, save_models=save, use_gcp=False, use_comet=use_comet)
         exp_dir_names.append(exp_dirname)
 
     return exp_dir_names
@@ -68,16 +68,25 @@ def main():
         help="If using multiprocessing, then the experiment will use `num_processes` processes"
     )
 
+    parser.add_argument(
+        "--nocomet",
+        default=False,
+        action='store_true',
+        help='If true, do not use Comet for this run.'
+    )
+
     parser.add_argument("experiments_filename", type=str, help="Filename of JSON file of experiments to run.")
     args = parser.parse_args()
 
     if args.parallel:
         with Pool(processes=args.num_processes) as p:
-            results = p.starmap(run_experiments, [(args.experiments_filename, args.save)] * args.n_repeats)
+            results = p.starmap(run_experiments,
+                                [(args.experiments_filename, args.save, not args.nocomet)] * args.n_repeats)
     else:
         if args.num_processes:
             warnings.warn("--num_processes was set, but --parallel was not. Experiments will be run sequentially.")
-        results = [run_experiments(args.experiments_filename, args.save) for _ in range(args.n_repeats)]
+        results = [run_experiments(args.experiments_filename, args.save, use_comet=not args.nocomet)
+                   for _ in range(args.n_repeats)]
 
     if args.summarize:
         for results_dir_names in results:
