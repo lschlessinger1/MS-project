@@ -1,5 +1,6 @@
-from src.autoks.distance.sampling.halton import generate_halton, generate_generalized_halton, halton_sample
 import numpy as np
+
+from src.autoks.distance.sampling.halton import generate_halton, generate_generalized_halton, halton_sample
 
 
 def test_generate_halton_one_d():
@@ -42,7 +43,7 @@ def test_generate_generalized_halton():
 def test_halton_sample_0_leap_no_scramble():
     n = 9
     d = 1
-    samples = halton_sample(n, d, leap=0, scramble=False)
+    samples = halton_sample(n, d, scramble=False)
     assert isinstance(samples, list)
     assert len(samples) == n
     assert isinstance(samples[0], list)
@@ -50,28 +51,15 @@ def test_halton_sample_0_leap_no_scramble():
     expected = [[1 / 2], [1 / 4], [3 / 4], [1 / 8], [5 / 8], [3 / 8], [7 / 8], [1 / 16], [9 / 16]]
     assert samples == expected
 
-
-def test_halton_sample_2_leap_no_scramble():
-    n = 9
-    d = 1
-    samples = halton_sample(n, d, leap=2, scramble=False)
-    assert isinstance(samples, list)
-    assert len(samples) == n
-    assert isinstance(samples[0], list)
-    assert len(samples[0]) == d
-    expected = [[1 / 2], [3 / 4], [5 / 8], [7 / 8], [9 / 16], [13 / 16], [11 / 16], [15 / 16], [17 / 32]]
-    assert samples == expected
-
-
 def test_halton_sample_0_leap_scramble():
     np.random.seed(42)
     n = 9
     d = 1
-    samples = halton_sample(n, d, leap=0, scramble=True)
+    samples = halton_sample(n, d, scramble=True)
     assert isinstance(samples, list)
     assert len(samples) == n
     assert isinstance(samples[0], list)
     assert len(samples[0]) == d
-    expected = [[1 / 16], [1 / 4], [3 / 8], [1 / 2], [9 / 16], [3 / 4], [5 / 8], [1 / 8], [7 / 8]]
+    expected = [[1 / 2], [1 / 4], [3 / 4], [1 / 8], [5 / 8], [3 / 8], [7 / 8], [1 / 16], [9 / 16]]
     assert samples == expected
     np.random.seed()

@@ -17,7 +17,7 @@ class TestSobol(TestCase):
     def test_sobol_sample(self):
         d = 2
         n = 3
-        result = sobol_sample(n, d, skip=1000, leap=100)
+        result = sobol_sample(n, d, skip=1000)
         # TODO: tests same result as MATLAB `sobolset`
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (n, d))
@@ -26,7 +26,7 @@ class TestSobol(TestCase):
 
         d = 2
         n = 4
-        result = sobol_sample(n, d, skip=0, leap=0, scramble=False)
+        result = sobol_sample(n, d, skip=0, scramble=False)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (n, d))
         self.assertGreaterEqual(result.min(), 0)
