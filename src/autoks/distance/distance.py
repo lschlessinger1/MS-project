@@ -10,9 +10,9 @@ from src.autoks.core.active_set import ActiveSet
 from src.autoks.core.covariance import Covariance
 from src.autoks.distance import util
 
-# Adapted from Malkomes, 2016
+# Adapted from Malkomes et al., 2016
 # Bayesian optimization for automated model selection (BOMS)
-# https://github.com/gustavomalkomes/automated_model_selection
+# c.f. https://github.com/gustavomalkomes/automated_model_selection
 
 
 # For now this represents the active set class
@@ -31,15 +31,17 @@ class DistanceBuilder:
                  max_num_kernels: int,
                  active_models: ActiveModels,
                  initial_model_indices: List[int],
-                 data_X: np.ndarray):
+                 data_X: np.ndarray,
+                 sampling_method: str = 'generalized_halton'):
         self.num_samples = num_samples
         self.max_num_hyperparameters = max_num_hyperparameters
         self.max_num_kernels = max_num_kernels
 
+        self._sampling_method = sampling_method
         self.probability_samples = util.probability_samples(max_num_hyperparameters=self.max_num_hyperparameters,
-                                                            num_samples=self.num_samples)
+                                                            num_samples=self.num_samples,
+                                                            sampling_method=self._sampling_method)
 
-        # FIXME: This forces the noise prior to be gaussian because we then exponentiate it, making it a Log-Gaussian
         assert noise_prior.__class__ == Gaussian
         noise_prior = np.array([noise_prior])
         noise_samples = util.prior_sample(noise_prior, self.probability_samples)
