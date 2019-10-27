@@ -48,14 +48,14 @@ def prior_sample_gaussian(priors: np.ndarray,
     """
     num_samples = prob_samples.shape[0]
     num_hyp = priors.size
-    prior_mean = np.zeros((1, priors.size))
-    prior_std = np.zeros((1, priors.size))
+    prior_mean = np.zeros(num_hyp)
+    prior_std = np.zeros(num_hyp)
     for i in range(num_hyp):
         prior = priors[i]
         if not isinstance(prior, Gaussian):
             raise ValueError('All priors must be Gaussian')
-        prior_mean[0, i] = prior.mu
-        prior_std[0, i] = prior.sigma
+        prior_mean[i] = prior.mu
+        prior_std[i] = prior.sigma
 
     hyps = norm.ppf(prob_samples[:, :num_hyp],
                     np.tile(prior_mean, (num_samples, 1)),
