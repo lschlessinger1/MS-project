@@ -31,26 +31,18 @@ def gen_sobol(n: int,
 def sobol_sample(n_samples: int,
                  n_dims: int,
                  skip: int = 1000,
-                 leap: int = 100,
                  scramble: bool = True) -> np.ndarray:
     """Get samples from a Sobol sequence.
 
     n_samples: The number of points in the sequence.
     n_dims: Number of dimensions in the set.
     skip: Number of initial points to omit.
-    leap: Number of points to miss out between returned points.
     """
     if n_dims > MAX_DIMS:
         raise ValueError(f'sobol_seq supports up to {MAX_DIMS} spatial dimensions.')
 
     # Generate samples
-    n_gen = n_samples * leap if leap > 0 else n_samples
-
-    samples = gen_sobol(n_gen, n_dims, skip=skip)
-
-    # Apply leap
-    if leap > 0:
-        samples = samples[::leap]
+    samples = gen_sobol(n_samples, n_dims, skip=skip)
 
     # Scramble
     if scramble:
