@@ -1,6 +1,7 @@
 import numpy as np
 
 from src.autoks.distance.sampling.halton import HaltonSampler, GeneralizedHaltonSampler
+from src.autoks.distance.sampling.random import RandomSampler
 from src.autoks.distance.sampling.sampler import Sampler
 from src.autoks.distance.sampling.sobol import SobolSampler
 
@@ -23,5 +24,7 @@ def _create_sampler(sampler_type: str, *args, **kwargs) -> Sampler:
         return GeneralizedHaltonSampler(*args, **kwargs)
     elif sampler_type == 'sobol':
         return SobolSampler(*args, **kwargs)
+    elif sampler_type == 'random':
+        return RandomSampler(*args, **kwargs)
     else:
         raise ValueError(f'Sampler type {sampler_type} not found.')
