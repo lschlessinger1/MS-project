@@ -17,20 +17,12 @@ def generate_generalized_halton(n: int, d: int):
 
 def halton_sample(n_samples: int,
                   n_dims: int,
-                  leap: int = 100,
                   scramble: bool = True):
-    # Generate samples
-    n_gen = n_samples * leap if leap > 0 else n_samples
-
-    samples = generate_halton(n_gen, n_dims)
-
-    # Apply leap
-    if leap > 0:
-        samples = samples[::leap]
+    samples = generate_halton(n_samples, n_dims)
 
     # Scramble
     if scramble:
-        scramble_array(samples)
+        scramble_array(np.asarray(samples))
 
     return samples
 
@@ -43,7 +35,10 @@ def generalized_halton_sample(n_samples: int,
         raise ValueError(
             f'{ghalton.GeneralizedHalton.__class__.__name__} supports up to {max_dims} spatial dimensions.')
 
-    return generate_generalized_halton(n_samples, n_dims)
+    # Generate samples
+    samples = generate_generalized_halton(n_samples, n_dims)
+
+    return samples
 
 
 class HaltonSampler(Sampler):
