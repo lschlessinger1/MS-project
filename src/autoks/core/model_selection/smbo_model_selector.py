@@ -10,7 +10,7 @@ from src.autoks.core.grammar import BaseGrammar
 from src.autoks.core.hyperprior import boms_hyperpriors
 from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.core.prior import PriorDist
-from src.autoks.core.strategies.bayes_opt_gp_strategy import BayesOptGPStrategy
+from src.autoks.core.strategies import BayesOptGPStrategy
 from src.autoks.distance.distance import ActiveModels, CorrelationDistanceBuilder
 
 
