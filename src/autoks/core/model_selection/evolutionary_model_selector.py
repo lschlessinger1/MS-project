@@ -3,10 +3,7 @@ from time import time
 from typing import Callable, Union, List, Optional
 
 import numpy as np
-from GPy.core.parameterization.priors import Gaussian
-from GPy.kern import RBFDistanceBuilderKernelKernel
 
-from src.autoks.acquisition import compute_ei
 from src.autoks.backend.kernel import compute_kernel
 from src.autoks.backend.model import RawGPModelType
 from src.autoks.callbacks import CallbackList
@@ -18,7 +15,7 @@ from src.autoks.core.hyperprior import HyperpriorMap, boms_hyperpriors
 from src.autoks.core.kernel_encoding import KernelNode
 from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.debugging import assert_valid_kernel_kernel
-from src.autoks.distance.distance import FrobeniusDistanceBuilder, ActiveModels
+from src.autoks.distance.distance import ActiveModels
 from src.autoks.gp_regression_models import KernelKernelGPModel
 from src.evalg.fitness import shared_fitness_scores
 from src.evalg.genprog import HalfAndHalfMutator, SubtreeExchangeRecombinator
@@ -101,7 +98,7 @@ class EvolutionaryModelSelector(ModelSelector):
             if not isinstance(selector, FitnessProportionalSelector):
                 warnings.warn('When using fitness sharing, fitness proportional selection is assumed.')
             individuals = [compute_kernel(gp_model.covariance.raw_kernel, self._x_train) for gp_model in models]
-            metric = centered_alignment
+            metric = lambda k1, k2: 1 - centered_alignment(k1, k2)
             effective_fitness_scores = shared_fitness_scores(individuals, raw_fitness_scores, metric)
         else:
             effective_fitness_scores = np.array(raw_fitness_scores)
@@ -192,114 +189,30 @@ class EvolutionaryModelSelector(ModelSelector):
         return self.name
 
 
-class SurrogateEvolutionaryModelSelector(EvolutionaryModelSelector):
+class BoemsSurrogateSelector(EvolutionaryModelSelector):
 
     def __init__(self,
-                 selected_models: List[GPModel],
-                 fitness_scores: List[float],
-                 data_x: np.ndarray,
-                 covariance_to_info_map: dict,
+                 active_models: ActiveModels,
+                 acquisition_fn: Callable,
+                 kernel_kernel_model: KernelKernelGPModel,
                  **ms_args):
         ms_args.update({'hyperpriors': boms_hyperpriors()})
         super().__init__(**ms_args)
-
-        # Copy selected models.
-        covariance_dicts = [m.covariance.to_dict() for m in selected_models]
-        covariances = [Covariance.from_dict(d) for d in covariance_dicts]
-        self.selected_models = self._covariances_to_gp_models(covariances)
-        self.fitness_scores = fitness_scores
-        self.covariance_to_info_map = covariance_to_info_map
-
+        # Don't standardize because input data are indices, output data already standardized.
         self.standardize_x = False
         self.standardize_y = False
 
-        # FIXME: these should not be hard-coded.
-        max_n_models = 1000
-        num_samples = 20
-        max_num_hyperparameters = 40
-        noise_prior = Gaussian(np.log(0.01), np.sqrt(0.1))
-
-        meta_x_init = np.array(list(range(len(selected_models))))[:, None]
-        meta_y_init = np.array(fitness_scores)[:, None]
-
-        # Check shapes of meta_x and meta_y
-        assert meta_x_init.ndim == 2 and meta_y_init.ndim == 2
-        assert meta_x_init.shape == (len(selected_models), 1) and meta_y_init.shape == (len(fitness_scores), 1)
-        assert meta_x_init.shape == meta_y_init.shape
-
-        # Set hyperpriors for selected models.
-        if ms_args['hyperpriors']:
-            for m in self.selected_models:
-                m.covariance.set_hyperpriors(ms_args['hyperpriors'])
-
-        self.active_models = ActiveModels(max_n_models)
-        newly_inserted_indices = self.active_models.update(self.selected_models)
-        self.active_models.selected_indices = newly_inserted_indices
-
-        self.kernel_to_index_map = dict()  # kernel index in kernel builder matrix
-        for i in newly_inserted_indices:
-            self.kernel_to_index_map[GPModelPopulation._hash_model(self.active_models.models[i])] = i
-
-        initial_candidate_indices = list(meta_x_init.flatten().tolist())
-        self.kernel_builder = FrobeniusDistanceBuilder(noise_prior,
-                                                       num_samples,
-                                                       max_num_hyperparameters,
-                                                       max_n_models,
-                                                       self.active_models,
-                                                       initial_candidate_indices,
-                                                       data_x)
-        # Compute K_XX.
-        selected_ind = self.active_models.selected_indices
-        self.kernel_builder.compute_distance(self.active_models, selected_ind, selected_ind)
-
-        #### set info map
-        for model in self.active_models.get_selected_models():
-            self.covariance_to_info_map[GPModelPopulation._hash_model(model)] = model.info
-        ####
-
-        assert_valid_kernel_kernel(self.kernel_builder, len(self.active_models), self.active_models.selected_indices,
-                                   self.active_models.get_candidate_indices())
-
-        # TODO: figure out better initial lengthscale guess
-        ell = np.nanmax(self.kernel_builder.get_kernel(len(self.active_models))) * 10
-        kernel_kernel = Covariance(RBFDistanceBuilderKernelKernel(self.kernel_builder, n_models=len(self.active_models),
-                                                                  lengthscale=ell))
-        kernel_kernel_hyperpriors = ms_args['hyperpriors']
-        self.kernel_kernel_gp_model = KernelKernelGPModel(kernel_kernel, verbose=False, exact_f_eval=False,
-                                                          kernel_kernel_hyperpriors=kernel_kernel_hyperpriors)
-        self.kernel_kernel_gp_model.update(meta_x_init, meta_y_init, None, None)
-
-        self.kernel_kernel_gp_model_train_freq = 10
-
-    def _initialize(self,
-                    eval_budget: int,
-                    callbacks: CallbackList,
-                    verbose: int = 0) -> ActiveModelPopulation:
-        population = ActiveModelPopulation()
-
-        initial_candidates = self._covariances_to_gp_models(self._get_initial_candidate_covariances())
-        all_candidate_indices, new_candidates_indices = self._update_gp_model_pop(population, initial_candidates, 0)
-
-        self._set_acq_scores_to_zero(population, all_candidate_indices)
-
-        # Compute EI for new candidates.
-        t0 = time()
-        self._evaluate_candidates(new_candidates_indices, verbose=verbose,
-                                  eval_budget=eval_budget)
-        self.total_eval_time += time() - t0
-
-        # Set remove priority.
-        acquisition_function_values = [model.score for model in self.active_models.get_candidates()]
-        indices_acquisition = np.argsort(np.array(acquisition_function_values).flatten())
-        self.active_models.remove_priority = [all_candidate_indices[i] for i in indices_acquisition]
-
-        return population
+        self.active_models = active_models
+        self.acquisition_fn = acquisition_fn
+        self.kernel_kernel_model = kernel_kernel_model
 
     def _train(self,
                eval_budget: int,
                max_generations: int,
                callbacks: CallbackList,
                verbose: int = 1) -> GPModelPopulation:
+        assert self.active_models.max_n_models >= eval_budget
+
         population = self._initialize(eval_budget, verbose=verbose, callbacks=callbacks)
 
         depth = 0
@@ -312,22 +225,20 @@ class SurrogateEvolutionaryModelSelector(EvolutionaryModelSelector):
             self._print_search_summary(depth, population, eval_budget, max_generations, verbose=verbose)
 
             new_models = self._propose_new_models(population, callbacks=callbacks, verbose=verbose)
+            population.update(new_models)
 
-            all_candidate_indices, new_candidates_indices = self._update_gp_model_pop(population, new_models, depth + 1)
-
-            self._set_acq_scores_to_zero(population, all_candidate_indices)
+            # update active models
+            new_candidates_indices, all_candidate_indices = self.update_population(population)
 
             # Compute EI for new candidates.
-
             t0 = time()
             self._evaluate_candidates(new_candidates_indices, verbose=verbose,
                                       eval_budget=eval_budget)
             self.total_eval_time += time() - t0
 
-            # Set remove priority.
-            acquisition_function_values = [model.score for model in self.active_models.get_candidates()]
-            indices_acquisition = np.argsort(np.array(acquisition_function_values).flatten())
-            self.active_models.remove_priority = [all_candidate_indices[i] for i in indices_acquisition]
+            # Set remove priority after evaluation.
+            self._set_remove_priority(all_candidate_indices)
+
 
             population.models = self.select_offspring(population)
 
@@ -345,10 +256,89 @@ class SurrogateEvolutionaryModelSelector(EvolutionaryModelSelector):
 
         return population
 
+    def _initialize(self,
+                    eval_budget: int,
+                    callbacks: CallbackList,
+                    verbose: int = 0) -> ActiveModelPopulation:
+        population = ActiveModelPopulation()
+
+        initial_candidates = self._covariances_to_gp_models(self._get_initial_candidate_covariances())
+        population.update(initial_candidates)
+
+        new_candidates_indices, all_candidate_indices = self.update_population(population)
+
+        # Compute EI for new candidates.
+        t0 = time()
+        self._evaluate_candidates(new_candidates_indices, verbose=verbose,
+                                  eval_budget=eval_budget)
+        self.total_eval_time += time() - t0
+
+        # Set fitness scores of all selected indices to 0
+        # Assume exact function evaluation
+        for i in self.active_models.selected_indices:
+            self.active_models.models[i].score = 0.
+
+        # Set remove priority.
+        self._set_remove_priority(all_candidate_indices)
+
+        return population
+
+    def update_population(self, population: GPModelPopulation):
+        # update active models
+        candidates = population.candidates()
+        models_existing = [self.active_models.models[self.active_models.get(c, None)] for c in candidates if
+                           self.active_models.get(c, None) is not None]
+        new_candidates_indices = self.active_models.update(candidates)
+
+        # Pool of models.
+        selected_indices = self.active_models.selected_indices
+        all_candidate_indices = set(range(len(self.active_models)))
+        all_candidate_indices = list(all_candidate_indices - set(selected_indices))
+
+        # First step is to precompute information for the new candidate models
+        kernel_builder = self.kernel_kernel_model.model.kern.distance_builder
+        kernel_builder.precompute_information(self.active_models, new_candidates_indices, self._x_train)
+
+        # ii) new candidate models vs all trained models
+        kernel_builder.compute_distance(self.active_models, selected_indices, new_candidates_indices)
+
+        # Make sure all necessary indices are not NaN.
+        assert_valid_kernel_kernel(kernel_builder, len(self.active_models), self.active_models.selected_indices,
+                                   self.active_models.get_candidate_indices())
+
+        # Train the GP.
+        self.kernel_kernel_model.model.kern.n_models = len(self.active_models)
+
+        for m in population.models:
+            try:
+                global_index = self.active_models.index(m)
+
+                if global_index not in all_candidate_indices and np.isnan(m.score):
+                    m.score = 0.
+                # if it previously was a candidate, assume it keeps previous acq score
+                # TODO: test this
+                if global_index not in new_candidates_indices and np.isnan(m.score):
+                    m.score = self.active_models.models[global_index].score
+
+            except KeyError:
+                if np.isnan(m.score):
+                    # model was removed from active models, but is still in population
+                    score = [m.score for m in models_existing if m.covariance.symbolic_expanded_equals(m.covariance)][0]
+                    m.score = score
+
+        return new_candidates_indices, all_candidate_indices
+
+    def _set_remove_priority(self, all_candidate_indices: List[int]):
+        acquisition_function_values = [model.score for model in self.active_models.get_candidates()]
+        # Convert NaNs to -inf only when evaluation budget is reached.
+        np.nan_to_num(acquisition_function_values, nan=np.NINF, copy=False)
+        indices_acquisition = np.argsort(np.array(acquisition_function_values).flatten())
+        self.active_models.remove_priority = [all_candidate_indices[i] for i in indices_acquisition]
+
     def _evaluate_candidates(self, candidate_indices: List[int], eval_budget: int, verbose: int = 0) -> List[float]:
         # TODO: rewrite this to work with super class `evaluate_models`.
         x_test = np.array(candidate_indices)[:, None]
-        fitness_scores = compute_ei(x_test, self.kernel_kernel_gp_model).tolist()
+        fitness_scores = self.acquisition_fn(x_test, self.kernel_kernel_model).tolist()
         for i, score in zip(candidate_indices, fitness_scores):
             if self.n_evals >= eval_budget:
                 if verbose == 3:
@@ -363,78 +353,3 @@ class SurrogateEvolutionaryModelSelector(EvolutionaryModelSelector):
                 self.pbar.update()
 
         return fitness_scores
-
-    def _update_gp_model_pop(self,
-                             population: GPModelPopulation,
-                             candidates: List[GPModel],
-                             generation: int):
-        """Update GP model population and kernel kernel GP model."""
-        population.update(candidates)
-
-        # Update active models.
-        candidate_models = population.candidates()
-        candidate_models = [m for m in candidate_models if
-                            GPModelPopulation._hash_model(m) not in self.kernel_to_index_map]
-        new_candidates_indices = self.active_models.update(candidate_models)
-
-        # Pool of models.
-        selected_indices = self.active_models.selected_indices
-        all_candidate_indices = set(range(len(self.active_models)))
-        all_candidate_indices = list(all_candidate_indices - set(selected_indices))
-
-        # Update kernel index dict.
-        for i in all_candidate_indices:
-            self.kernel_to_index_map[GPModelPopulation._hash_model(self.active_models.models[i])] = i
-
-        # Update model distances using the kernel builder.
-        # self.kernel_builder.update(self.active_models, new_candidates_indices, all_candidate_indices, selected_indices,
-        #                            self._x_train)
-        active_models, all_candidates_indices, data_X = self.active_models, all_candidate_indices, self._x_train
-        ##############################
-        # First step is to precompute information for the new candidate models
-        new_candidates_indice_no_info = []
-        for i in new_candidates_indices:
-            model = self.active_models.models[i]
-            key = GPModelPopulation._hash_model(model)
-            if key not in self.covariance_to_info_map:
-                new_candidates_indice_no_info.append(i)
-
-        # set info for new candidates
-        new_candidates_indices_with_global_info = list(set(new_candidates_indices) - set(new_candidates_indice_no_info))
-        for i in new_candidates_indices_with_global_info:
-            model = self.active_models.models[i]
-            key = GPModelPopulation._hash_model(model)
-            info = self.covariance_to_info_map[key]
-            model.info = info
-
-        self.kernel_builder.precompute_information(active_models, new_candidates_indice_no_info, data_X)
-
-        # save  newly created info!
-        for i in new_candidates_indice_no_info:
-            model = self.active_models.models[i]
-            self.covariance_to_info_map[GPModelPopulation._hash_model(model)] = model.info
-        # ii) new candidate models vs all trained models
-        self.kernel_builder.compute_distance(active_models, selected_indices, new_candidates_indices)
-        ##############################
-
-        # Make sure all necessary indices are not NaN.
-        assert_valid_kernel_kernel(self.kernel_builder, len(self.active_models), self.active_models.selected_indices,
-                                   self.active_models.get_candidate_indices())
-
-        # Train the GP.
-        self.kernel_kernel_gp_model.model.kern.n_models = len(self.active_models)
-        if generation % self.kernel_kernel_gp_model_train_freq == 0:
-            self.kernel_kernel_gp_model.train()
-
-        return all_candidate_indices, new_candidates_indices
-
-    def _set_acq_scores_to_zero(self,
-                                population: GPModelPopulation,
-                                all_candidate_indices: List[int]):
-        """Set acquisition score of evaluated models to 0 (exact objective evaluations assumed)"""
-        for m in population.models:
-            # FIXME: don't call protected method.
-            key = GPModelPopulation._hash_model(m)
-            global_index = self.kernel_to_index_map[key]
-            if global_index not in all_candidate_indices and np.isnan(m.score):
-                m.score = 0.
