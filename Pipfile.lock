@@ -192,11 +192,11 @@
         },
         "google-cloud-storage": {
             "hashes": [
-                "sha256:13a6a820311662eb91a99810568c2bca5ddc7e44e2163fed4cb3f4d47da132cf",
-                "sha256:2e7e2435978bda1c209b70a9a00b8cbc53c3b00d6f09eb2c991ebba857babf24"
+                "sha256:266b233303098e2d9da222072382f0bd70b438a5008a32a5a556fe0f9a6a0d3a",
+                "sha256:e9b6315e39e7b959d19ce16cbc2e954f3ef714360f4369aa2df06c8ddc694f7e"
             ],
             "index": "pypi",
-            "version": "==1.20.0"
+            "version": "==1.21.0"
         },
         "google-resumable-media": {
             "hashes": [
