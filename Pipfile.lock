@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "4d63f3fa269e2131c7a4766504d2fc50a12bf68b63f4d05dc06aa728ae2bc36b"
+            "sha256": "a1b34753ffb538d7f461b59a88eed046c4eae7b8ef6970e62090f9bcb6074bc4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -221,11 +221,11 @@
         },
         "graphviz": {
             "hashes": [
-                "sha256:dc08677f37c65a4a480f00df4bd0d19a0a103c06aad95f21a37f0b7fd440de81",
-                "sha256:df54c2e0d2c8df6aee3397eb44de186d94e2a0610f4052649bfbb26d03d56850"
+                "sha256:c358a98580c9b4d9cb2468b1e88f0a9d49331a8c04528281ccdbe36b95fc0274",
+                "sha256:ef371ea1ddb1749d5b502324b3f645fa90e208956a4ac6ff29affa944bc4d018"
             ],
             "index": "pypi",
-            "version": "==0.13"
+            "version": "==0.13.1"
         },
         "grpcio": {
             "hashes": [
@@ -1003,10 +1003,10 @@
         },
         "astroid": {
             "hashes": [
-                "sha256:09a3fba616519311f1af8a461f804b68f0370e100c9264a035aa7846d7852e33",
-                "sha256:5a79c9b4bd6c4be777424593f957c996e20beb5f74e0bc332f47713c6f675efe"
+                "sha256:71ea07f44df9568a75d0f354c49143a4575d90645e9fead6dfb52c26a85ed13a",
+                "sha256:840947ebfa8b58f318d42301cf8c0a20fd794a33b61cc4638e28e9e61ba32f42"
             ],
-            "version": "==2.3.2"
+            "version": "==2.3.3"
         },
         "atomicwrites": {
             "hashes": [
@@ -1572,10 +1572,10 @@
         },
         "tenacity": {
             "hashes": [
-                "sha256:3a916e734559f1baa2cab965ee00061540c41db71c3bf25375b81540a19758fc",
-                "sha256:e664bd94f088b17f46da33255ae33911ca6a0fe04b156d334b601a4ef66d3c5f"
+                "sha256:72f397c2bb1887e048726603f3f629ea16f88cb3e61e4ed3c57e98582b8e3571",
+                "sha256:947e728aedf06e8db665bb7898112e90d17e48cc3f3289784a2b9ccf6e56fabc"
             ],
-            "version": "==5.1.5"
+            "version": "==6.0.0"
         },
         "testpath": {
             "hashes": [
