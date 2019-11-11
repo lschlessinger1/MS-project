@@ -157,10 +157,28 @@
         },
         "ghalton": {
             "hashes": [
-                "sha256:94d9dbc2c2316bee292f8911b3cf1acfc5942c3b895bfd226ce171a35f73ba02"
+                "sha256:20b46914851f758a49686d6238cc161256f62b11201f2a0a665b24f690a604d0",
+                "sha256:254cbcac55e64a4e8e7571a0ca445ac5f06d35697073af05285c7b7fcb07aa7f",
+                "sha256:2f684bc1140a4c888c475bff4d46ee2831263dae879e2b19cb204bd88f143b3a",
+                "sha256:421e3060fefd6939d29062b460bf4cb6326cb51216ea557e1d236896b69a7609",
+                "sha256:43bd65786ad29fab5fdef74b8cf1c75cf0e3f92d716b9636f318fa9cb79336f8",
+                "sha256:5fecc794f86d5290c98a73c54be6533bceb19376a2cab65290d24b5f4ac3bc50",
+                "sha256:77da8da7ae9deb74da259bbd9b33881b3eb60eb3b550cc1fde6e51aeeb370443",
+                "sha256:7ad5e0ed5415b846b34de4f73aeeaa2347062d600ca248bccd338e6cbacd6fae",
+                "sha256:7f56e26ac785c148804875d3e877fdf4a92b80e93c07aac148bd288d1e59e186",
+                "sha256:86640551d3ba2dc42f620f18071b5e1479006ff764b8aa66d2efa91666203800",
+                "sha256:8992da3bd9d0f71e55fa52adbd8034d6eb831edb18cd8b8320849e05050e41a2",
+                "sha256:8a485c32da32707777a671ad851134d7d0e6320d44afe12f39e77ab010e38ad3",
+                "sha256:8ff6043318fc6f2377b4316badddf79e1824f7cfc16645a5b5874e5843a014ff",
+                "sha256:90ae02bf2625df29dfbf631c97efec22e949e79b98fe46909e71d42691431d57",
+                "sha256:bc599eb6c630b9aee4f92c9a2a194c780f61282a292b25d71e7442040c7475d4",
+                "sha256:c5ee32dbc173586d636d638769531c75641796af865bbf29b39032a9e5ffd82f",
+                "sha256:cb096db215fc06b95e13e2142f1e3377361154f2b15e4624c2b14f8b43626dd1",
+                "sha256:cee31108ce248a7b0102b77ac783298c15a0f33d908ac9b8fbe6f7e2f020952a",
+                "sha256:fcff3f528ead5f77a60ecc774a666c3b24747d05af1c693909bd824049eb30d2"
             ],
             "index": "pypi",
-            "version": "==0.6.1"
+            "version": "==0.6.2"
         },
         "google-api-core": {
             "extras": [
@@ -713,10 +731,10 @@
         },
         "pyparsing": {
             "hashes": [
-                "sha256:4acadc9a2b96c19fe00932a38ca63e601180c39a189a696abce1eaab641447e1",
-                "sha256:61b5ed888beab19ddccab3478910e2076a6b5a0295dffc43021890e136edf764"
+                "sha256:20f995ecd72f2a1f4bf6b072b63b22e2eb457836601e76d6e5dfcd75436acc1f",
+                "sha256:4ca62001be367f01bd3e92ecbb79070272a9d4964dce6a48a82ff0b8bc7e683a"
             ],
-            "version": "==2.4.4"
+            "version": "==2.4.5"
         },
         "pyrsistent": {
             "hashes": [
@@ -1453,10 +1471,10 @@
         },
         "pyparsing": {
             "hashes": [
-                "sha256:4acadc9a2b96c19fe00932a38ca63e601180c39a189a696abce1eaab641447e1",
-                "sha256:61b5ed888beab19ddccab3478910e2076a6b5a0295dffc43021890e136edf764"
+                "sha256:20f995ecd72f2a1f4bf6b072b63b22e2eb457836601e76d6e5dfcd75436acc1f",
+                "sha256:4ca62001be367f01bd3e92ecbb79070272a9d4964dce6a48a82ff0b8bc7e683a"
             ],
-            "version": "==2.4.4"
+            "version": "==2.4.5"
         },
         "pyrsistent": {
             "hashes": [
