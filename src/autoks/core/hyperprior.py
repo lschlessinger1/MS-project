@@ -68,16 +68,16 @@ def boms_hyperpriors(data_noise: float = 0.01) -> HyperpriorMap:
     prior_sigma_n = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(data_noise), 'sigma': np.sqrt(0.1)})
 
     # α parameter of the rational quadratic covariance
-    prior_alpha = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(0.05), 'sigma': 0.7})
+    prior_alpha = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(0.05), 'sigma': np.sqrt(0.5)})
 
     # the "length scale" of the periodic covariance
-    prior_l_p = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(2), 'sigma': 0.7})
+    prior_l_p = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(2), 'sigma': np.sqrt(0.5)})
 
     # offset in linear covariance
     prior_sigma_0 = PriorDist.from_prior_str("LOGNORMAL", {'mu': 0, 'sigma': 1})
 
     # period in standard periodic
-    prior_p = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(0.1), 'sigma': 0.7})
+    prior_p = PriorDist.from_prior_str("LOGNORMAL", {'mu': np.log(0.1), 'sigma': np.sqrt(0.5)})
 
     # create map from kernel to priors
     prior_map = dict()
