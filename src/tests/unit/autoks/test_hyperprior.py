@@ -20,7 +20,7 @@ class TestHyperprior(TestCase):
         self.assertIn('PER', result)
         self.assertIn('GP', result)
 
-        self.assertEqual(len(result), 5)
+        self.assertEqual(5, len(result))
 
         self.assertIsInstance(result['SE']['variance'], PriorDist)
         self.assertIsInstance(result['SE']['lengthscale'], PriorDist)
@@ -38,32 +38,32 @@ class TestHyperprior(TestCase):
 
         self.assertIsInstance(result['GP']['variance'], PriorDist)
 
-        self.assertEqual(result['SE']['variance'].raw_prior.mu, np.log(0.4))
-        self.assertEqual(result['SE']['variance'].raw_prior.sigma, 1)
-        self.assertEqual(result['SE']['lengthscale'].raw_prior.mu, np.log(0.1))
-        self.assertEqual(result['SE']['lengthscale'].raw_prior.sigma, 1)
+        self.assertEqual(np.log(0.4), result['SE']['variance'].raw_prior.mu)
+        self.assertEqual(1, result['SE']['variance'].raw_prior.sigma)
+        self.assertEqual(np.log(0.1), result['SE']['lengthscale'].raw_prior.mu)
+        self.assertEqual(1, result['SE']['lengthscale'].raw_prior.sigma)
 
-        self.assertEqual(result['RQ']['variance'].raw_prior.mu, np.log(0.4))
-        self.assertEqual(result['RQ']['variance'].raw_prior.sigma, 1)
-        self.assertEqual(result['RQ']['lengthscale'].raw_prior.mu, np.log(0.1))
-        self.assertEqual(result['RQ']['lengthscale'].raw_prior.sigma, 1)
-        self.assertEqual(result['RQ']['power'].raw_prior.mu, np.log(0.05))
-        self.assertEqual(result['RQ']['power'].raw_prior.sigma, 0.7)
+        self.assertEqual(np.log(0.4), result['RQ']['variance'].raw_prior.mu)
+        self.assertEqual(1, result['RQ']['variance'].raw_prior.sigma)
+        self.assertEqual(np.log(0.1), result['RQ']['lengthscale'].raw_prior.mu)
+        self.assertEqual(1, result['RQ']['lengthscale'].raw_prior.sigma)
+        self.assertEqual(np.log(0.05), result['RQ']['power'].raw_prior.mu)
+        self.assertEqual(np.sqrt(0.5), result['RQ']['power'].raw_prior.sigma)
 
-        self.assertEqual(result['PER']['variance'].raw_prior.mu, np.log(0.4))
-        self.assertEqual(result['PER']['variance'].raw_prior.sigma, 1)
-        self.assertEqual(result['PER']['lengthscale'].raw_prior.mu, np.log(2))
-        self.assertEqual(result['PER']['lengthscale'].raw_prior.sigma, 0.7)
-        self.assertEqual(result['PER']['period'].raw_prior.mu, np.log(0.1))
-        self.assertEqual(result['PER']['period'].raw_prior.sigma, 0.7)
+        self.assertEqual(np.log(0.4), result['PER']['variance'].raw_prior.mu)
+        self.assertEqual(1, result['PER']['variance'].raw_prior.sigma)
+        self.assertEqual(np.log(2), result['PER']['lengthscale'].raw_prior.mu)
+        self.assertEqual(np.sqrt(0.5), result['PER']['lengthscale'].raw_prior.sigma)
+        self.assertEqual(np.log(0.1), result['PER']['period'].raw_prior.mu)
+        self.assertEqual(np.sqrt(0.5), result['PER']['period'].raw_prior.sigma)
 
-        self.assertEqual(result['LIN']['variances'].raw_prior.mu, np.log(0.4))
-        self.assertEqual(result['LIN']['variances'].raw_prior.sigma, 1)
-        self.assertEqual(result['LIN']['shifts'].raw_prior.mu, 0)
-        self.assertEqual(result['LIN']['shifts'].raw_prior.sigma, 1)
+        self.assertEqual(np.log(0.4), result['LIN']['variances'].raw_prior.mu)
+        self.assertEqual(1, result['LIN']['variances'].raw_prior.sigma)
+        self.assertEqual(0, result['LIN']['shifts'].raw_prior.mu)
+        self.assertEqual(1, result['LIN']['shifts'].raw_prior.sigma)
 
-        self.assertEqual(result['GP']['variance'].raw_prior.mu, np.log(0.01))
-        self.assertEqual(result['GP']['variance'].raw_prior.sigma, np.sqrt(0.1))
+        self.assertEqual(np.log(0.01), result['GP']['variance'].raw_prior.mu)
+        self.assertEqual(np.sqrt(0.1), result['GP']['variance'].raw_prior.sigma)
 
     def test_to_dict(self):
         prior_map = dict()
