@@ -1,9 +1,9 @@
 {
-  "experiment_group": "Random Housing Experiments",
+  "experiment_group": "Uniform Random Housing Experiments",
   "experiments": [
     {
       "dataset": "HousingDataset",
-      "model_selector": "RandomModelSelector",
+      "model_selector": "UniformRandomModelSelector",
       "gp": "gp_regression",
       "gp_args": {
         "inference_method": "laplace"

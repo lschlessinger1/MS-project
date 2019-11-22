@@ -7,7 +7,7 @@ from GPy.kern import RationalQuadratic, RBF, LinScaleShift
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
 from src.autoks.core.gp_model_population import ActiveModelPopulation
-from src.autoks.core.grammar import CKSGrammar, RandomGrammar
+from src.autoks.core.grammar import CKSGrammar, GeometricRandomGrammar
 from src.autoks.core.model_selection import EvolutionaryModelSelector
 from src.autoks.core.model_selection.base import ModelSelector
 from src.autoks.core.model_selection.boms_model_selector import BomsModelSelector
@@ -21,7 +21,7 @@ class TestModelSelector(TestCase):
         self.gp_models = [GPModel(Covariance(RationalQuadratic(1))), GPModel(Covariance(RBF(1) + RBF(1))),
                           GPModel(Covariance(RBF(1)))]
 
-        grammar = RandomGrammar()
+        grammar = GeometricRandomGrammar()
         grammar.build(n_dims=1)
 
         fitness_fn = 'nbic'

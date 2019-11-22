@@ -1,9 +1,9 @@
 {
-  "experiment_group": "Random Concrete Experiments",
+  "experiment_group": "Uniform Random Airline Experiments",
   "experiments": [
     {
-      "dataset": "ConcreteDataset",
-      "model_selector": "RandomModelSelector",
+      "dataset": "AirlineDataset",
+      "model_selector": "UniformRandomModelSelector",
       "gp": "gp_regression",
       "gp_args": {
         "inference_method": "laplace"

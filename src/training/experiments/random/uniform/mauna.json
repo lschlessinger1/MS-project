@@ -1,9 +1,9 @@
 {
-  "experiment_group": "Random Solar Experiments",
+  "experiment_group": "Uniform Random Mauna Experiments",
   "experiments": [
     {
-      "dataset": "SolarDataset",
-      "model_selector": "RandomModelSelector",
+      "dataset": "MaunaDataset",
+      "model_selector": "UniformRandomModelSelector",
       "gp": "gp_regression",
       "gp_args": {
         "inference_method": "laplace"

@@ -1,9 +1,9 @@
 {
-  "experiment_group": "Random Mauna Experiments",
+  "experiment_group": "Uniform Random Methane Experiments",
   "experiments": [
     {
-      "dataset": "MaunaDataset",
-      "model_selector": "RandomModelSelector",
+      "dataset": "MethaneDataset",
+      "model_selector": "UniformRandomModelSelector",
       "gp": "gp_regression",
       "gp_args": {
         "inference_method": "laplace"

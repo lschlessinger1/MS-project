@@ -6,7 +6,8 @@ from GPy.kern.src.kern import CombinationKernel
 
 from src.autoks.core.covariance import Covariance
 from src.autoks.core.gp_model import GPModel
-from src.autoks.core.grammar import BaseGrammar, CKSGrammar, BomsGrammar, EvolutionaryGrammar, RandomGrammar
+from src.autoks.core.grammar import BaseGrammar, CKSGrammar, BomsGrammar, EvolutionaryGrammar, GeometricRandomGrammar, \
+    UniformRandomGrammar
 from src.autoks.core.hyperprior import HyperpriorMap
 from src.autoks.core.model_selection import EvolutionaryModelSelector
 from src.evalg.serialization import Serializable
@@ -567,10 +568,10 @@ class TestEvolutionaryGrammar(unittest.TestCase):
                 self.assertEqual(grammar.population_operator.__class__, actual.population_operator.__class__)
 
 
-class TestRandomGrammar(unittest.TestCase):
+class TestGeometricRandomGrammar(unittest.TestCase):
 
     def test_to_dict(self):
-        grammar = RandomGrammar()
+        grammar = GeometricRandomGrammar()
         grammar.build(n_dims=1)
         actual = grammar.to_dict()
 
@@ -591,14 +592,14 @@ class TestRandomGrammar(unittest.TestCase):
         self.assertEqual(grammar.built, actual['built'])
 
     def test_from_dict(self):
-        test_cases = (BaseGrammar, RandomGrammar, Serializable)
+        test_cases = (BaseGrammar, GeometricRandomGrammar, Serializable)
         for cls in test_cases:
             with self.subTest(name=cls.__name__):
-                grammar = RandomGrammar()
+                grammar = GeometricRandomGrammar()
                 grammar.build(n_dims=1)
                 actual = cls.from_dict(grammar.to_dict())
 
-                self.assertIsInstance(actual, RandomGrammar)
+                self.assertIsInstance(actual, GeometricRandomGrammar)
 
                 self.assertEqual(grammar.operators, actual.operators)
                 self.assertEqual(grammar.base_kernel_names, actual.base_kernel_names)
@@ -607,3 +608,25 @@ class TestRandomGrammar(unittest.TestCase):
                 for expected_cov, actual_cov in zip(grammar.base_kernels, actual.base_kernels):
                     self.assertEqual(expected_cov.infix, actual_cov.infix)
                 self.assertEqual(grammar.built, actual.built)
+
+
+class TestUniformRandomGrammar(unittest.TestCase):
+
+    def test_create(self):
+        grammar = UniformRandomGrammar()
+        self.assertIsInstance(grammar, UniformRandomGrammar)
+        self.assertEqual(1, grammar.n_models)
+        self.assertEqual(1000, grammar.max_n_models)
+        self.assertEqual(3, grammar.max_depth)
+
+    def test_build(self):
+        grammar = UniformRandomGrammar()
+        grammar.build(1)
+        self.assertEqual(1, grammar.n_dims)
+
+    def test_expand_one_d(self):
+        grammar = UniformRandomGrammar(n_models=50)
+        grammar.build(1)
+        expansion = grammar.expand(None)
+        self.assertIsInstance(expansion, list)
+        self.assertEqual(grammar.n_models, len(expansion))

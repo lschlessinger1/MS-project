@@ -109,7 +109,7 @@ class BaseGrammar(Serializable):
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
-            f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r})'
+               f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r})'
 
 
 class EvolutionaryGrammar(BaseGrammar):
@@ -177,8 +177,8 @@ class EvolutionaryGrammar(BaseGrammar):
 
     def __repr__(self):
         return f'{self.__class__.__name__}('f'operators={self.operators!r}, ' \
-            f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r},' \
-            f'population_operator={self.population_operator!r})'
+               f'base_kernel_names={self.base_kernel_names!r}, n_dims={self.n_dims!r}, hyperpriors={self.hyperpriors!r},' \
+               f'population_operator={self.population_operator!r})'
 
 
 class CKSGrammar(BaseGrammar):
@@ -432,7 +432,7 @@ class BomsGrammar(CKSGrammar):
         return grammar
 
 
-class RandomGrammar(BomsGrammar):
+class GeometricRandomGrammar(BomsGrammar):
     """Random grammar randomly expands nodes using a CKS expansion"""
 
     def __init__(self,
@@ -450,3 +450,28 @@ class RandomGrammar(BomsGrammar):
         :return:
         """
         return self.expand_random(self._number_of_random_walks)
+
+
+class UniformRandomGrammar(CKSGrammar):
+    def __init__(self,
+                 n_models: int = 1,
+                 base_kernel_names: List[str] = None,
+                 hyperpriors: Optional[HyperpriorMap] = None):
+        super().__init__(base_kernel_names, hyperpriors)
+
+        self.max_depth = 3
+        self.max_n_models = 1000
+        self.n_models = n_models
+
+    def expand(self, seed_models: List[GPModel], verbose: int = 0) -> List[Covariance]:
+        """Uniform random expansion of nodes.
+
+        Expand all covariances up to a max depth and select k models uniformly at random from that set.
+
+        :param seed_models:  List of GP models to expand.
+        :param verbose: Verbosity mode.
+        :return:
+        """
+        pool = self.expand_full_brute_force(self.max_depth, self.max_n_models)
+        expansion = np.random.choice(pool, size=self.n_models).tolist()
+        return expansion
