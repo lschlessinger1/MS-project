@@ -315,7 +315,8 @@ class ModelSelector(Serializable):
                          models: List[GPModel],
                          eval_budget: int,
                          callbacks: CallbackList,
-                         verbose: int = 0) -> List[GPModel]:
+                         verbose: int = 0,
+                         skip_evaluated: bool = True) -> List[GPModel]:
         """Evaluate a set models on some training data.
 
         :param models:
@@ -333,7 +334,7 @@ class ModelSelector(Serializable):
                 if verbose == 3:
                     print('Stopping optimization and evaluation. Evaluation budget reached.\n')
                 break
-            elif gp_model.covariance.symbolic_expr_expanded in self.visited:
+            elif gp_model.covariance.symbolic_expr_expanded in self.visited and skip_evaluated:
                 if verbose == 3:
                     print('Skipping model because it was previously evaluated')
                     gp_model.covariance.pretty_print()
@@ -512,6 +513,9 @@ class ModelSelector(Serializable):
                               max_generations: int,
                               verbose: int = 0) -> None:
         """Print a summary of the model population at a given generation."""
+        if len(population) == 0:
+            return
+
         best_objective = population.best_fitness()
         if verbose >= 2:
             print()
