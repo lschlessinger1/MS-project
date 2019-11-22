@@ -1,1 +1,2 @@
 from .bayes_opt_gp_strategy import BayesOptGPStrategy
+from .bayes_opt_strategy import BayesOptStrategy
