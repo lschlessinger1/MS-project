@@ -66,11 +66,11 @@
         },
         "comet-ml": {
             "hashes": [
-                "sha256:3033087a02e10642b0850ffdc57390ed386e818d728bcaa8348d335030f5f559",
-                "sha256:e2b61d8e4408ddd2fbc74a5d5554bad4d52194c2120b6e89ed80a41d080ce8ed"
+                "sha256:2c0f56c36ea9d7dd5cd2c818317667bf5eec331122c4ae1732b78b2fd0fd0488",
+                "sha256:9a6b7ceff4a582720a5c0b27f2db6b2396e900faee6c99a5a116982fd84d3445"
             ],
             "index": "pypi",
-            "version": "==2.0.17"
+            "version": "==2.0.18"
         },
         "configobj": {
             "hashes": [
@@ -742,9 +742,9 @@
         },
         "pyrsistent": {
             "hashes": [
-                "sha256:eb6545dbeb1aa69ab1fb4809bfbf5a8705e44d92ef8fc7c2361682a47c46c778"
+                "sha256:f3b280d030afb652f79d67c5586157c5c1355c9a58dfc7940566e28d28f3df1b"
             ],
-            "version": "==0.15.5"
+            "version": "==0.15.6"
         },
         "python-dateutil": {
             "hashes": [
@@ -1482,9 +1482,9 @@
         },
         "pyrsistent": {
             "hashes": [
-                "sha256:eb6545dbeb1aa69ab1fb4809bfbf5a8705e44d92ef8fc7c2361682a47c46c778"
+                "sha256:f3b280d030afb652f79d67c5586157c5c1355c9a58dfc7940566e28d28f3df1b"
             ],
-            "version": "==0.15.5"
+            "version": "==0.15.6"
         },
         "pytest": {
             "hashes": [
